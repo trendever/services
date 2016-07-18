@@ -54,4 +54,4 @@ pids
 *.seed
 
 .bashrc
-*.exvim.*
+*.exvim*
