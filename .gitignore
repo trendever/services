@@ -10,7 +10,7 @@ dump.sql
 *.db
 
 # Go compilled packages
-pkg/
+/pkg/
 bin/
 gin-bin
 
