@@ -1,0 +1,6 @@
+.idea/*
+.git/*
+pkg/*
+.gitignore
+README.md
+example.config.yaml

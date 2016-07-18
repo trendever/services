@@ -1,0 +1,196 @@
+
+service ChatService {
+    //creates new chat
+    rpc CreateChat(NewChatRequest) returns (ChatReply) {}
+    //returns exists chat
+    rpc GetChats(ChatsRequest) returns (ChatsReply) {}
+    //add users to the chat
+    rpc JoinChat (JoinChatRequest) returns (ChatReply) {}
+    //remove users from the chat
+    rpc LeaveChat (LeaveChatRequest) returns (ChatReply) {}
+    //sends new message from the user to the chat
+    rpc SendNewMessage(SendMessageRequest) returns (SendMessageReply) {}
+    //returns chat history
+    rpc GetChatHistory(ChatHistoryRequest) returns (ChatHistoryReply) {}
+    //returns user's chats
+    rpc GetUserChats(UserChatsRequest) returns (UserChatsReply) {}
+    //updated last message id for member
+    rpc MarkAsReaded(MarkAsReadedRequest) returns (MarkAsReadedReply){}
+    //returns total count of unread messages
+    rpc GetTotalCountUnread(TotalCountUnreadRequest) returns (TotalCountUnreadReply){}
+}
+
+service Notifier {
+    //notifies about a new message in the chat
+    rpc NewMessage(NewMessageRequest) returns (NewMessageReply){}
+    //notifies about a message was read by user
+    rpc MessageReaded(MessageReadedRequest) returns (MessageReadedReply){}
+    //notifies about a new member in the chat
+    rpc NewChatMember(NewChatMemberRequest) returns (NewChatMemberReply){}
+}
+
+message NewChatRequest {
+    Chat chat = 1;
+}
+
+message ChatReply {
+    Chat chat = 1;
+    Error error = 2;
+}
+
+message ChatsReply {
+    repeated Chat chats = 1;
+}
+
+message ChatsRequest {
+    repeated uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message JoinChatRequest {
+    uint64 conversation_id = 1;
+    repeated Member members = 2;
+}
+
+message LeaveChatRequest {
+    uint64 conversation_id = 1;
+    repeated uint64 user_ids = 2;
+}
+
+message SendMessageRequest {
+    uint64 conversation_id = 1;
+    repeated Message messages = 2;
+}
+
+message SendMessageReply {
+    Chat chat = 1;
+    Error error = 2;
+    repeated Message messages = 3;
+}
+
+message Chat {
+    uint64 id = 1;
+    repeated Member members = 2;
+    string name = 3;
+    uint64 unread_count = 4;
+    Message recent_message = 5;
+}
+
+message Member {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    MemberRole role = 3;
+    //display name for the member
+    string name = 4;
+    uint64 last_message_id = 5;
+}
+
+enum MemberRole {
+    UNKNOWN = 0;
+    CUSTOMER = 1;
+    SUPPLIER = 2;
+    SELLER = 3;
+    SUPER_SELLER = 4;
+
+}
+
+message Error {
+    ErrorCode code = 1;
+    string message = 2;
+}
+
+enum ErrorCode {
+    NO_ERRORS = 0;
+    NOT_EXISTS = 1;
+    FORBIDDEN = 2;
+}
+
+message Message {
+    uint64 conversation_id = 1;
+    uint64 user_id = 2;
+    repeated MessagePart parts = 3;
+    int64 created_at = 4;
+    uint64 id = 5;
+    Member user = 6;
+}
+
+message MessagePart {
+    string content = 1;
+    string mime_type = 2;
+    string content_id = 3;
+}
+
+message ChatHistoryRequest {
+    //from_message_id start message_id for query. Set 0 for get entire history
+    uint64 from_message_id = 1;
+    uint64 conversation_id = 2;
+    uint64 limit = 3;
+    //We must know, has user access to the chat or not
+    uint64 user_id = 4;
+    //true - asc, false - desc
+    bool direction = 5;
+}
+
+message ChatHistoryReply {
+    repeated Message messages = 1;
+    Chat chat = 2;
+    uint64 total_messages = 3;
+    Error error = 4;
+
+}
+
+message UserChatsRequest {
+    uint64 user_id = 1;
+}
+
+message UserChatsReply {
+    repeated Chat chats = 1;
+    Error error = 2;
+}
+
+message MarkAsReadedRequest {
+    uint64 conversation_id = 1;
+    uint64 user_id = 2;
+    uint64 message_id = 3;
+}
+
+message MarkAsReadedReply {
+    Error error = 1;
+}
+
+message NewMessageRequest {
+    Chat chat = 1;
+    repeated Message messages = 2;
+}
+
+message NewMessageReply {
+
+}
+
+message MessageReadedRequest {
+    Chat chat = 1;
+    uint64 user_id = 2;
+    uint64 message_id = 3;
+}
+
+message MessageReadedReply {
+
+}
+
+message NewChatMemberRequest {
+    Chat chat = 1;
+    Member user = 2;
+
+}
+
+message NewChatMemberReply {
+
+}
+
+message TotalCountUnreadRequest {
+    uint64 user_id = 1;
+}
+
+message TotalCountUnreadReply {
+    uint64 count = 1;
+}

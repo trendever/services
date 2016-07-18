@@ -1,0 +1,16 @@
+debug: true
+channelport: 8081
+coreaddr: core:3005
+authaddr: auth:8433
+chataddr: chat:2010
+natsURL: "nats://nats:4222"
+
+redis:
+  addr: redis:6379
+
+mail:
+  username: 'testo'
+  password: 'pass'
+  host: 'smtp.yandex.ru'
+  sender: 'dev@trendever.com'
+  port: 25

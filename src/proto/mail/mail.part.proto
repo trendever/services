@@ -1,0 +1,25 @@
+service MailService {
+    //Send sends email
+    rpc Send(MessageRequest) returns (StatusReply) {}
+    //Status returns email status
+    rpc Status(StatusRequest) returns (StatusReply) {}
+}
+
+message MessageRequest {
+    string from = 1;
+    string subject = 2;
+    string message = 3;
+    repeated string to = 4;
+}
+
+message StatusReply {
+    string status = 1;
+    //Email unique id
+    uint64 id = 2;
+    string error = 3;
+}
+
+message StatusRequest {
+    //Email unique id
+    uint64 id = 1;
+}

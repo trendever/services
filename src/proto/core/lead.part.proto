@@ -1,0 +1,150 @@
+service LeadService {
+  // Create lead. ID of created lead is returned
+  rpc CreateLead (Lead) returns (CreateLeadResult) {}
+
+  // Find lead id 
+  rpc ReadLead (ReadLeadRequest) returns (ReadLeadResult) {}
+  //returns user leads filtred by user's roles
+  rpc GetUserLeads (UserLeadsRequest) returns (UserLeadsReply){}
+  //returns full lead info
+  rpc GetLead (GetLeadRequest) returns (GetLeadReply){}
+  //changes lead state
+  rpc SetLeadStatus (SetLeadStatusRequest) returns (SetLeadStatusReply){}
+  rpc CallSupplier(CallSupplierRequest) returns (CallSupplierReply){}
+  rpc CallCustomer(CallCustomerRequest) returns (CallCustomerReply){}
+}
+
+message ReadLeadRequest {
+  oneof search_by {
+    int64 id = 1;
+    string instagram_pk = 2;
+    uint64 conversation_id = 3;
+  }
+}
+
+message ReadLeadResult {
+  int64 id = 1;
+}
+
+// representation of lead model
+message Lead {
+    int64 id = 1;
+
+    string source  = 2;
+    string comment = 3;
+
+    int64 customer_id = 4;
+    string instagram_pk = 5;
+    string instagram_link = 7;
+
+    int64 product_id = 6;
+}
+
+
+message CreateLeadResult {
+  int64 id = 1;
+  LeadInfo lead = 2;
+}
+
+message UserLeadsRequest {
+    uint64 user_id = 1;
+    //filter leads by user's role in the lead
+    repeated LeadUserRole role = 2;
+    //todo: remove lead_id
+    //also you can pass concrete lead_id
+    uint64 lead_id = 3;
+    uint64 limit = 4;
+    //if true - asc, false - desc
+    bool direction = 5;
+    //shift to this time
+    int64 from_updated_at = 6;
+}
+
+enum LeadUserRole {
+    UNKNOWN = 0;
+    CUSTOMER = 1;
+    SUPPLIER = 2;
+    SELLER = 3;
+    SUPER_SELLER = 4;
+}
+
+enum LeadStatus {
+    //this status means we created a lead in db, but did not perform any predefined actions
+    EMPTY = 0;
+    NEW = 1;
+    IN_PROGRESS = 2;
+    SUBMITTED = 3;
+    ON_DELIVERY = 4;
+    COMPLETED = 5;
+    CANCELLED = 6;
+}
+
+enum LeadStatusEvent {
+    CREATE = 0;
+    PROGRESS = 1;
+    SUBMIT = 2;
+    DELIVERY = 3;
+    COMPLETE = 4;
+    CANCEL = 5;
+
+}
+
+message UserLeadsReply {
+    repeated LeadInfo leads = 1;
+}
+
+
+message LeadInfo {
+    uint64 id = 1;
+    string source  = 2;
+    string comment = 3;
+    uint64 customer_id = 4;
+    repeated Product products = 5;
+    string instagram_pk = 7;
+    string instagram_link = 14;
+    User customer = 8;
+    LeadStatus status = 9;
+    LeadUserRole user_role = 10;
+    uint64 conversation_id = 11;
+    Shop shop = 12;
+    int64 updated_at = 13;
+}
+
+message SetLeadStatusRequest {
+    uint64 lead_id = 1;
+    LeadStatusEvent event = 2;
+    uint64 user_id = 3;
+
+}
+
+message SetLeadStatusReply {
+    LeadInfo lead = 1;
+}
+
+message CallSupplierRequest {
+    uint64 lead_id = 1;
+}
+
+message CallSupplierReply {
+
+}
+
+message CallCustomerRequest {
+    uint64 lead_id = 1;
+}
+
+message CallCustomerReply {
+
+}
+
+message GetLeadRequest {
+    uint64 user_id = 1;
+    oneof search_by {
+        uint64 id = 2;
+        uint64 conversation_id = 3;
+      }
+}
+
+message GetLeadReply {
+    LeadInfo lead = 1;
+}

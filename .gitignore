@@ -1,0 +1,57 @@
+# Project temp files
+*/media/img/*
+*/CACHE/*
+media/*
+config.yaml
+vendor/pkg
+
+# Temp database and dumps
+dump.sql
+*.db
+
+# Go compilled packages
+pkg/
+bin/
+gin-bin
+
+# Project git files
+/src/.git
+
+# Visual Studio Code User Setting
+.settings
+
+# IntelliJIdea
+*.iml
+.idea
+
+# Python temp
+*.py[cod]
+*.swp
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows shortcuts
+*.lnk
+
+# Mac hidden folders files
+.DS_Store
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+.bashrc
+*.exvim.*

@@ -1,0 +1,30 @@
+service SmsService {
+  rpc SendSMS (SendSMSRequest) returns (SendSMSResult) {}
+  rpc RetrieveSmsStatus (RetrieveSmsStatusRequest) returns (RetrieveSmsStatusResult) {}
+}
+
+message SendSMSRequest {
+    string phone = 1;
+    string msg = 2;
+}
+
+
+message SendSMSResult {
+    int64 sms_id = 1;
+    string sms_status = 2;
+    string sms_error = 3;
+
+    int64 id = 4;
+}
+
+message RetrieveSmsStatusRequest {
+    int64 id = 1;
+}
+
+message RetrieveSmsStatusResult {
+    int64 sms_id = 1;
+    string sms_status = 2;
+    string sms_error = 3;
+
+    int64 id = 4;
+}

@@ -1,0 +1,32 @@
+
+service TagService {
+
+  // get tags that should be displayed in main page
+  rpc GetMainTags (GetMainTagsRequest) returns (TagSearchResult) {}
+
+  // get tags that should be displayed near selected tags (GetRelatedTagsRequest.Tags)
+  rpc GetRelatedTags (GetRelatedTagsRequest) returns (TagSearchResult) {}
+}
+
+message GetMainTagsRequest {
+  int64 limit = 1;
+}
+
+message GetRelatedTagsRequest {
+  // tag list
+  repeated int64 tags = 1 [packed=true];
+
+  int64 limit = 2;
+}
+
+// tag object list
+message TagSearchResult {
+  repeated Tag result = 1; 
+}
+
+// tag model representation
+message Tag {
+  int64 id = 1;
+  string name = 2;
+}
+

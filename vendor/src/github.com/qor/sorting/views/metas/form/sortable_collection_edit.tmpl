@@ -1,0 +1,57 @@
+<div class="qor-field collection-edit qor-fieldset-container qor-sortable" data-toggle="qor.collection.sortable">
+  <label class="qor-field__label" for="{{.InputId}}">
+    {{meta_label .Meta}}
+  </label>
+  <div class="qor-sortable__button">
+    <button class="mdl-button mdl-button--primary mdl-js-button qor-sortable__button-change" type="button">{{t "qor_admin.form.button.change_position" "Change Position"}}</button>
+    <button class="mdl-button mdl-button--primary mdl-js-button qor-sortable__button-done" type="button" style="display: none">{{t "qor_admin.form.button.done" "Done"}}</button>
+  </div>
+  <div class="qor-field__block">
+    {{$meta := .Meta}}
+    {{if .Value}}
+      {{range $index, $value := .Value }}
+        <fieldset class="qor-fieldset qor-sortable__item">
+
+          <div class="qor-sortable__change">
+            <div class="qor-sortable__action" style="display: none;">
+              <button class="mdl-button mdl-button--colored mdl-button--raised mdl-js-button qor-sortable__button-move" type="button" data-item-index="{{$index}}">
+                {{t "qor_admin.form.button.move" "Move"}}
+              </button>
+            </div>
+          </div>
+
+          {{if has_delete_permission $meta}}
+            <button class="mdl-button qor-button--muted mdl-button--icon mdl-js-button qor-fieldset__delete qor-sortable__button-delete" type="button">
+              <i class="material-icons md-18">delete</i>
+            </button>
+          {{end}}
+          {{render_form $value (edit_sections $meta.Resource) $index}}
+        </fieldset>
+      {{end}}
+    {{end}}
+
+    {{if has_create_permission .Meta}}
+      <fieldset class="qor-fieldset qor-sortable__item qor-fieldset--new" style="display: none">
+        <div class="qor-sortable__change">
+          <div class="qor-sortable__action" style="display: none;">
+            <button class="mdl-button mdl-button--colored mdl-button--raised mdl-js-button qor-sortable__button-move" type="button">
+              {{t "qor_admin.form.button.move" "Move"}}
+            </button>
+          </div>
+        </div>
+
+        <button class="mdl-button qor-button--muted mdl-button--icon mdl-js-button qor-fieldset__delete qor-sortable__button-delete" type="button">
+          <i class="material-icons md-18">delete</i>
+        </button>
+        {{render_form $meta.Resource.GetResource.Value (new_sections $meta.Resource) (len .Value)}}
+      </fieldset>
+
+      <button class="mdl-button mdl-button--fab mdl-button--mini-fab mdl-button--primary mdl-js-button mdl-js-ripple-effect qor-fieldset__add qor-sortable__button-add" type="button">
+        <i class="material-icons">add</i>
+      </button>
+    {{end}}
+  </div>
+</div>
+
+{{javascript_tag "sorting-sortable-collection-edit"}}
+{{stylesheet_tag "sorting-sortable-collection-edit"}}

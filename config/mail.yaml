@@ -1,0 +1,7 @@
+port: 12325
+mailgun:
+  domain: "mg.trendever.com"
+  apiKey: "key-267822b9ee3b6abf5821604b98c9fed0"
+  publicApiKey: "pubkey-dafcfbd68d369c8e18f72e9023ff4777"
+db:
+  config: "user=postgres dbname=postgres password=1234 host=db sslmode=disable"

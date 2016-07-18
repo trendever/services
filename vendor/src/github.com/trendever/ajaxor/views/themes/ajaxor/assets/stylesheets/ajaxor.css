@@ -1,0 +1,4 @@
+/* workaround to wrap text in selected select2 elements */
+.select2-selection__choice {
+  white-space: normal !important;
+}

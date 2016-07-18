@@ -1,0 +1,84 @@
+service AuthService {
+    //creates new user
+    rpc RegisterNewUser(NewUserRequest) returns (UserReply) {}
+    //login user and return JWT token
+    rpc Login(LoginRequest) returns (LoginReply) {}
+    //sends password to user as sms message
+    rpc SendNewSmsPassword(SmsPasswordRequest) returns (SmsPasswordReply) {}
+    rpc GetTokenData(TokenDataRequest) returns (TokenDataReply) {}
+    //returns new valid token for user
+    rpc GetNewToken(NewTokenRequest) returns (NewTokenReply) {}
+}
+
+message NewUserRequest {
+    string phone_number = 1;
+    string instagram_username = 2;
+    string username = 3;
+    //country code, by default RU
+    string country = 4;
+}
+
+message UserReply {
+    string phone_number = 1;
+    string instagram_username = 2;
+    string username = 3;
+    //User ID, if user was created
+    uint64 id = 4;
+    ErrorCodes error_code = 5;
+    string error_message = 6;
+}
+
+message LoginRequest {
+    string phone_number = 1;
+    string username = 2;
+    string password = 3;
+}
+
+message LoginReply {
+    string token = 1;
+    ErrorCodes error_code = 2;
+    string error_message = 3;
+}
+
+message SmsPasswordRequest {
+    string phone_number = 1;
+}
+
+message SmsPasswordReply {
+    string status = 1;
+    ErrorCodes error_code = 2;
+    string error_message = 3;
+}
+
+enum ErrorCodes {
+    NO_ERRORS = 0;
+    USER_NOT_EXISTS = 1;
+    USER_ALREADY_EXISTS = 2;
+    WRONG_CREDENTIALS = 3;
+    WRONG_TOKEN_DATA = 4;
+    EXPIRED_TOKEN_DATA = 5;
+    INCORRECT_PHONE_FORMAT = 6;
+}
+
+message TokenDataRequest {
+    string token = 1;
+}
+
+message TokenDataReply {
+    Token token = 1;
+    ErrorCodes errorCode = 2;
+}
+
+message Token {
+    uint64 UID = 1;
+    int64 exp = 2;
+}
+
+message NewTokenRequest {
+    string phone_number = 1;
+    uint64 user_id = 2;
+}
+
+message NewTokenReply {
+    string token = 1;
+}

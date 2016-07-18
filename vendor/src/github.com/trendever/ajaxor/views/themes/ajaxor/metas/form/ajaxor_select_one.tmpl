@@ -1,0 +1,27 @@
+<div class="qor-field">
+  {{ $value := (raw_value_of .ResourceValue .Meta) }}
+  <label class="qor-field__label" for="{{.InputId}}">
+    {{meta_label .Meta}}
+  </label>
+
+  <div class="qor-field__show">
+    {{$res := .Meta.Resource}}
+    {{$url := url_for_override .Context $value}}
+    {{ if $url }}
+      <a data-url="{{$url}}" href="{{$url}}">{{stringify $value}}</a>
+    {{ else }}
+      <p> {{ stringify $value }} </p>
+    {{ end }}
+  </div>
+
+  <div class="qor-field__block qor-field__edit">
+    <select class="qor-field__input" id="{{.InputId}}" style="width: 100%;" name="{{.InputName}}" {{if not (has_update_permission .Meta)}}disabled{{end}}>
+      <option value="{{ primary_key_of $value }}" selected>{{ stringify $value }}</option>
+    </select>
+    <script type="text/javascript">
+jQuery(document).ready(function(){
+  initMeta({{.InputId}}, {{ajaxor_url .Context .BaseResource .ResourceValue}}, {{resource_name .Meta}}, {{.Meta.Name}});
+})
+    </script>
+  </div>
+</div>

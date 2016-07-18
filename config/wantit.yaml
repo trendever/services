@@ -1,0 +1,15 @@
+debug: true
+
+coreServer: core:3005
+fetcherServer: fetcher:3006
+orderUrlFormat: 'https://localhost:8040/order/%v'
+
+instagram:
+  timeoutMin: 500
+  timeoutMax: 2000
+  reloginTimeout: 10000
+  pollTimeout: 10000
+  users:
+    - username: wantit_debug
+      password: cococo
+  wantitUser: happierall2

@@ -1,0 +1,75 @@
+service UserService {
+  
+  // returns a user with a specific email. If not exists, creates it
+  rpc FindOrCreateUser (CreateUserRequest) returns (ReadUserReply) {}
+
+  // returns a user with a specific email.
+  rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
+
+  // returns user's public profile
+  rpc GetUserProfile (UserProfileRequest) returns (UserProfileReply) {}
+}
+
+message CreateUserRequest {
+  User user = 1;
+}
+
+//where instagram_id = ? OR phone = ? OR instagram_username = ?
+message ReadUserRequest {
+  uint64 instagram_id = 1;
+  string phone = 2;
+  string instagram_username = 3;
+  //direct by user.id
+  uint64 id = 4;
+}
+
+message SearchUserReply {
+  repeated User result = 1; 
+}
+
+message ReadUserReply {
+  //todo: remove id
+  int64 id = 1;
+  User user = 2;
+}
+
+// representation of user model
+message User {
+  int64 id = 1;
+
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string website = 5;
+  string caption = 13;
+  string avatar_url = 17;
+  string slogan = 18;
+
+  uint64 instagram_id = 6;
+  string instagram_username = 7;
+  string instagram_fullname = 8;
+  string instagram_avatar_url = 9;
+  string instagram_caption = 10;
+
+  bool opt_out = 11;
+  bool super_seller = 12;
+
+  bool has_email = 14;
+  bool has_phone = 15;
+
+  bool seller = 16;
+}
+
+message UserProfileRequest {
+    oneof search_by {
+        string instagram_name = 1;
+        uint64 id = 2;
+    }
+}
+
+message UserProfileReply {
+    oneof profile {
+        User user = 1;
+        Shop shop = 2;
+    }
+}

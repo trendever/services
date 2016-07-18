@@ -1,0 +1,9 @@
+port: "8433"
+core_server: "core:3005"
+sms_server: "sms:12326"
+key: "asdasdasdasdasdasd"
+password_len: 4
+site_url: "http://localhost:3002/"
+sms_template: "Введите код {{.Password}} или перейдите по ссылке {{.Url}}"
+db:
+  config: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"

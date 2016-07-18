@@ -1,0 +1,23 @@
+debug: true
+
+coreServer: core:3005
+fetcherServer: fetcher:3006
+productUrlFormat: 'https://localhost:8040/product/%d'
+
+db:
+  user: postgres
+  pass: 1234
+  host: db
+  port: 5432
+  name: postgres
+  debug: true
+
+instagram:
+  timeoutMin: 500
+  timeoutMax: 2000
+  reloginTimeout: 10000
+  pollTimeout: 10000
+  users:
+  - username: happierall2
+    password: 555777
+  trend_user: happierall2

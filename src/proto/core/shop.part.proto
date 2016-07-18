@@ -1,0 +1,63 @@
+service ShopService {
+  // creates a shop
+  rpc CreateShop (CreateShopRequest) returns (CreateShopReply) {}
+
+  // returns a shop
+  rpc ReadShop (ReadShopRequest) returns (ReadShopReply) {}
+  // returns a public profile of the shop
+  rpc GetShopProfile (ShopProfileRequest) returns (ShopProfileReply) {}
+}
+
+message ReadShopRequest {
+  oneof search_by {
+    uint64 instagram_id = 1;
+  }
+  bool with_deleted = 2;
+}
+
+message CreateShopRequest {
+  Shop shop = 1;
+}
+
+message ReadShopReply {
+  int64 id = 1;
+  bool is_deleted = 2;
+}
+
+message CreateShopReply {
+  int64 id = 1;
+}
+
+// representation of shop model
+message Shop {
+  int64 id = 1;
+
+  int64 supplier_id = 2;
+  User supplier = 3;
+
+  uint64 instagram_id = 4;
+  string instagram_username = 5;
+  string instagram_fullname = 6;
+  string instagram_avatar_url = 7;
+  string instagram_caption = 8;
+  string instagram_website = 9;
+
+  string payment_rules = 10;
+  string shipping_rules = 11;
+  string caption = 12;
+  repeated User sellers = 13;
+
+  string avatar_url = 14;
+  string slogan = 15;
+}
+
+message ShopProfileRequest {
+    oneof search_by {
+        string instagram_name = 1;
+        uint64 id = 2;
+    }
+}
+
+message ShopProfileReply {
+    Shop shop = 1;
+}

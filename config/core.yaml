@@ -1,0 +1,25 @@
+debug: true
+appHost: :3004
+siteURL: http://localhost
+natsURL: nats://nats:4222
+
+rpc:
+  listen: 0.0.0.0:3005
+  mail: mail:12325
+  sms: sms:12326
+  chat: chat:2010
+  auth: auth:8433
+  telegram: telegram:4040
+
+db:
+  debug:    true
+  user:     postgres
+  password: 1234
+  host:     db
+  port:     5432
+  name:     postgres
+
+bitly:
+  login: o_v1v8rptir
+  apiKey: R_05e4113d379c43d695030ba8fbac6edf
+  accessToken: c8d0210ba7542be997bc36071d966e582ca9890b

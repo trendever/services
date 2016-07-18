@@ -1,0 +1,19 @@
+debug: true
+
+rpc:
+  host: 0.0.0.0
+  port: 12326
+
+db:
+  user: postgres
+  password: 1234
+  host: db
+  port: 5432
+  name: postgres
+  debug: true
+
+atompark:
+  test:        1
+  keypublic:  de0b3db31f6f277d688b097c2e0f6a49
+  keyprivate: e0bcb10cd2bbdb35596de9649feb5a4a
+  sender:      Trendever

@@ -1,0 +1,13 @@
+{{$res := .Meta.Resource}}
+{{$current_values := (raw_value_of .ResourceValue .Meta)}}
+{{$ctx := .Context }}
+
+{{range $value := $current_values}}
+  {{$url := url_for_override $ctx $value}}
+  {{ if $url }}
+    <a data-url="{{$url}}" href="{{$url}}">{{stringify $value}}</a>
+  {{ else }}
+    {{ stringify $value }}
+  {{ end }}
+
+{{end}}

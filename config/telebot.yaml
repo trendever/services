@@ -1,0 +1,10 @@
+debug: true
+token: '202642129:AAEQ2Dg-n_daCiSWqQwtlNjDFfIbAPmDgQU'
+rpc: '0.0.0.0:4040'
+rooms: 
+  - name: 'new_user'
+    room: '@trendever_debug'
+  - name: 'new_lead'
+    room: '@trendever_debug'
+  - name: 'new_product'
+    room: '@trendever_debug'
