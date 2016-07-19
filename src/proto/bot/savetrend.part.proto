@@ -1,0 +1,9 @@
+service SaveTrendService {
+  rpc SaveProduct (Activity) returns (SaveProductResult);
+}
+
+//message Activity from fetcher.part.proto
+
+message SaveProductResult {
+  int64 id = 1;
+}
