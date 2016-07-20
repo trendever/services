@@ -214,7 +214,11 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 	// there is no code at all or it's unregistred
 	if !found || productID <= 0 {
-		productID, err = saveProduct(mention)
+		var retry bool
+		productID, retry, err = saveProduct(mention)
+		if retry {
+			return true, errors.New("Temporarily unable to save product")
+		}
 		if err != nil {
 			return true, err
 		}
@@ -241,16 +245,16 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	return err != nil, err
 }
 
-func saveProduct(mention *bot.Activity) (id int64, err error) {
+func saveProduct(mention *bot.Activity) (id int64, retry bool, err error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	log.Debug("Saving unknown product (activityId=%v)", mention.Id)
 
 	res, err := api.SaveTrendClient.SaveProduct(ctx, mention)
 	if err != nil {
-		return -1, err
+		return -1, true, err
 	}
-	return res.Id, nil
+	return res.Id, res.Retry, nil
 }
 
 func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customerID, productID int64) error {

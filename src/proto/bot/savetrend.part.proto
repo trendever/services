@@ -6,4 +6,5 @@ service SaveTrendService {
 
 message SaveProductResult {
   int64 id = 1;
+  bool retry = 2;
 }
