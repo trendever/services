@@ -1,10 +1,10 @@
 package models
 
 import (
+	"core/api"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/core"
-	"core/api"
 	"time"
 )
 
@@ -19,7 +19,7 @@ type Product struct {
 	IsSale bool
 
 	InstagramImageCaption string `gorm:"type:text"`
-	InstagramImageID      string
+	InstagramImageID      string `gorm:"unique"`
 	InstagramImageHeight  uint
 	InstagramImageWidth   uint
 	InstagramImageURL     string `gorm:"text"`

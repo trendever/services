@@ -45,7 +45,7 @@ services:
     working_dir: /services/
     depends_on:
       - db
-    command: scripts/core.sh
+    command: sh -c './bin/core migrate && exec ./scripts/start-core.sh'
     ports:
       - 3004:3004
       - 6060:6060
