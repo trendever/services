@@ -36,7 +36,7 @@ services:
     working_dir: /services/
     depends_on:
       - db
-    command: bin/auth start
+    command: sh -c './bin/auth migrate && exec ./bin/auth start'
   core:
     image: debian:jessie
     volumes_from:

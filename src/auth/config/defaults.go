@@ -62,6 +62,10 @@ func init() {
 		log.Fatal(errors.New("site_url is empty! Check your config"))
 	}
 
+	if settings.Bitly.Login == "" || settings.Bitly.ApiKey == "" || settings.Bitly.AccessToken == "" {
+		log.Fatal(errors.New("Bitly config is incorrect"))
+	}
+
 }
 
 func Get() Config {
