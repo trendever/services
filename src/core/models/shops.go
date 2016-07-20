@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/core"
-	"utils/log"
 	"core/db"
 	"strings"
 )
@@ -83,7 +82,6 @@ func (s Shop) Encode() *core.Shop {
 func (s Shop) Decode(cs *core.Shop) Shop {
 	// @CHECK: why was that necessary?
 	if cs == nil {
-		log.Error(fmt.Errorf("Got nil ptr in decodeShop()"))
 		return s
 	}
 
