@@ -4,6 +4,7 @@
 media/*
 config.yaml
 vendor/pkg
+*.last
 
 # Temp database and dumps
 dump.sql
