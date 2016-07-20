@@ -13,7 +13,6 @@ var (
 
 // These are settings, but without need to change them in a file
 const (
-	LastCheckedFile  = "last.txt"
 	consulConfigPath = "savetrend"
 	tagName          = "Savetrend"
 )
@@ -39,12 +38,14 @@ func GetSettings() *Settings {
 }
 
 type Settings struct {
-	Debug         bool
-	CoreServer    string
-	FetcherServer string
-	Instagram     Instagram
-	SentryDSN     string
-	MandibleURL   string
+	Debug           bool
+	Rpc             string
+	CoreServer      string
+	FetcherServer   string
+	Instagram       Instagram
+	SentryDSN       string
+	MandibleURL     string
+	LastCheckedFile string
 }
 
 type Instagram struct {

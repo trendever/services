@@ -30,7 +30,7 @@ func generateThumbnails(imageURL string) ([]*core.ImageCandidate, error) {
 	}
 
 	out := []*core.ImageCandidate{
-		&core.ImageCandidate{Name: "Max", Url: url},
+		{Name: "Max", Url: url},
 	}
 
 	for k, v := range thumbs {
@@ -47,7 +47,6 @@ func generateThumbnails(imageURL string) ([]*core.ImageCandidate, error) {
 }
 
 func uploadAvatar(url string) (string, error) {
-
 	url, _, err := avatarUploader.UploadImageByURL(url)
 	return url, err
 }
