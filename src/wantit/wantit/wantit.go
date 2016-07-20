@@ -2,6 +2,7 @@ package wantit
 
 import (
 	"fmt"
+	"errors"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -42,7 +43,7 @@ var (
 
 // ResetLastChecked drops last checked id
 func (svc *ProjectService) ResetLastChecked() error {
-	return os.Remove(conf.LastCheckedFile)
+	return os.Remove(conf.GetSettings().LastCheckedFile)
 }
 
 // Run fetching
@@ -67,20 +68,16 @@ func (svc *ProjectService) Run() error {
 	}
 
 	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			saveLastChecked()
-			log.Warn("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
+	<-interrupt
+	saveLastChecked()
+	log.Warn("Cleanup and terminating...")
+	os.Exit(0)
 
 	return nil
 }
 
 func restoreLastChecked() {
-	bytes, err := ioutil.ReadFile(conf.LastCheckedFile)
+	bytes, err := ioutil.ReadFile(conf.GetSettings().LastCheckedFile)
 	if err != nil {
 		log.Error(err)
 		return
@@ -97,7 +94,7 @@ func restoreLastChecked() {
 }
 
 func saveLastChecked() {
-	ioutil.WriteFile(conf.LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
+	ioutil.WriteFile(conf.GetSettings().LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
 }
 
 func registerApis() error {
@@ -206,18 +203,24 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		return false, nil
 	}
 
-	// get product code
-	code, err := findProductCode(productMedia.Caption.Text)
-	if err != nil {
-		return false, err
+	// get product via code
+	var productID int64
+	code, found := findProductCode(productMedia.Caption.Text)
+	if found {
+		productID, err = productCoreID(code)
+		if err != nil {
+			return true, err
+		}
 	}
-
-	// get core product id
-	productID, err := productCoreID(code)
-	if err != nil {
-		return true, err
-	} else if productID <= 0 { //bad product code
-		return false, fmt.Errorf("Product with mediaId=%v not registered", mediaID)
+	// there is no code at all or it's unregistred
+	if !found || productID <= 0 {
+		productID, err = saveProduct(mention)
+		if err != nil {
+			return true, err
+		}
+		if(productID <= 0) {
+			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
+		}
 	}
 
 	// get customer core id
@@ -238,6 +241,18 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	return err != nil, err
 }
 
+func saveProduct(mention *bot.Activity) (id int64, err error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	log.Debug("Saving unknown product (activityId=%v)", mention.Id)
+
+	res, err := api.SaveTrendClient.SaveProduct(ctx, mention)
+	if err != nil {
+		return -1, err
+	}
+	return res.Id, nil
+}
+
 func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customerID, productID int64) error {
 
 	ctx, cancel := rpc.DefaultContext()
@@ -256,13 +271,12 @@ func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customer
 	return err
 }
 
-func findProductCode(comment string) (string, error) {
-	code := codeRegexp.FindString(comment)
-	if code == "" {
-		return "", fmt.Errorf("Product code not found")
+func findProductCode(comment string) (code string, found bool) {
+	code = codeRegexp.FindString(comment)
+	if code != "" {
+		found = true
 	}
-
-	return code, nil
+	return
 }
 
 // get core productId by mediaId
