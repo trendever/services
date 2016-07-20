@@ -7,8 +7,4 @@ project="$(dirname $(readlink -f $0))/.."
 export WEB_ROOT=$project
 export GOPATH=$project/vendor:$project
 
-if [ -f $project/bin/core ]; then
-  exec $project/bin/core start
-else
-  exec $project/service start
-fi
+exec $project/bin/core start
