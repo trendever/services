@@ -170,7 +170,6 @@ func registerOrders() {
 //   * retry bool. If true, this mention should be processed again lately
 //   * error
 func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) {
-
 	if mention.UserName == mention.MentionedUsername {
 		return false, fmt.Errorf("Skipping self-mentioning activity (pk=%v)", mention.Pk)
 	}
@@ -195,11 +194,10 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	productMedia := medias.Items[0]
-	supplierIgID := productMedia.Caption.UserID
 
 	// check if self-mention
-	if mention.UserId == supplierIgID {
-		log.Debug("Skipping @%v under own post (instagramId=%v)", settings.Instagram.WantitUser, supplierIgID)
+	if mention.UserName == productMedia.User.Username {
+		log.Debug("Skipping @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
 		return false, nil
 	}
 
@@ -313,7 +311,6 @@ func isLeadRegistered(commentPk string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	return res.Id > 0, nil
 }
 
