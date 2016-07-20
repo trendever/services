@@ -4,6 +4,7 @@ services:
     image: busybox
     volumes:
       - ../:/services:rw
+      - /etc/ssl/certs:/etc/ssl/certs:ro
   mail:
     image: debian:jessie
     volumes_from:
@@ -11,7 +12,7 @@ services:
     working_dir: /services/
     depends_on:
       - db
-    command: bin/mail start
+    command: sh -c './bin/mail migrate && exec ./bin/mail start'
   sms:
     image: debian:jessie
     volumes_from:
@@ -19,7 +20,7 @@ services:
     working_dir: /services/
     depends_on:
       - db
-    command: bin/sms start
+    command: sh -c './bin/sms migrate && exec ./bin/sms start'
   chat:
     image: debian:jessie
     volumes_from:
@@ -27,7 +28,7 @@ services:
     working_dir: /services/
     depends_on:
       - db
-    command: bin/chat start
+    command: sh -c './bin/chat migrate && exec ./bin/chat start'
   auth:
     image: debian:jessie
     volumes_from:
@@ -40,8 +41,6 @@ services:
     image: debian:jessie
     volumes_from:
       - data
-    volumes:
-      - /etc/ssl/certs:/etc/ssl/certs:ro
     working_dir: /services/
     depends_on:
       - db
