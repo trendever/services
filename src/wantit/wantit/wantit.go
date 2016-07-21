@@ -137,6 +137,7 @@ func registerOrders() {
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 		log.Debug("... got %v results", len(res.Result))
