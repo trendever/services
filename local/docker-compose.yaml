@@ -5,6 +5,18 @@ services:
     volumes:
       - ../:/services:rw
       - /etc/ssl/certs:/etc/ssl/certs:ro
+
+  core:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+    command: sh -c './bin/core migrate && exec ./scripts/start-core.sh'
+    ports:
+      - 127.0.0.1:3004:3004
+      - 127.0.0.1:6060:6060
   mail:
     image: debian:jessie
     volumes_from:
@@ -37,17 +49,6 @@ services:
     depends_on:
       - db
     command: sh -c './bin/auth migrate && exec ./bin/auth start'
-  core:
-    image: debian:jessie
-    volumes_from:
-      - data
-    working_dir: /services/
-    depends_on:
-      - db
-    command: sh -c './bin/core migrate && exec ./scripts/start-core.sh'
-    ports:
-      - 3004:3004
-      - 6060:6060
   api:
     image: debian:jessie
     volumes_from:
@@ -58,8 +59,8 @@ services:
       - redis
     command: bin/api start
     ports:
-      - 8081:8081
-      - 6061:6060
+      - 127.0.0.1:8081:8081
+      - 127.0.0.1:6061:6060
   db:
     image: "postgres:9.3"
     environment:
@@ -68,68 +69,59 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data/pgdata:rw
     ports:
-      - "5432:5432"
-  nats:
-    image: "nats"
-    ports:
-      - 8222:8222
-  mailcatcher:
-    image: schickling/mailcatcher
-    ports:
-      - 1080:1080
-  images:
-    image: girokon/mandible
-    ports:
-      - 8087:8080
-    volumes:
-      - ./mandible:/etc/mandible
-      - uploads:/data:rw
-  imageshttp:
-    image: nginx
-    volumes:
-      - uploads:/usr/share/nginx/html:ro
-      - ./imageshttp/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 8089:80
+      - "127.0.0.1:5432:5432"
+
   telegram:
     image: debian:jessie
     volumes_from:
       - data
-    volumes:
-      - /etc/ssl/certs:/etc/ssl/certs:ro
     working_dir: /services/
     command: bin/telebot start
+
+  savetrend:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: bin/savetrend start
+
+  wantit:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: bin/wantit start
+
+  nats:
+    image: "nats"
+    ports:
+      - 127.0.0.1:8222:8222
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - 127.0.0.1:1080:1080
+  images:
+    image: girokon/mandible
+    ports:
+      - 127.0.0.1:8087:8080
+    volumes:
+      - ./mandible:/etc/mandible
   redis:
     image: redis
     ports:
-     - 6379:6379
-  sentry:
-    image: sentry:8.4.1
-    links:
-      - redis
-    ports:
-      - 8090:9000
-    environment:
-      SENTRY_SECRET_KEY: "ipmmy4q+0r7rjfvr)@amzon8*=pck7v-va&48_-3i%*&#kd!&("
-      SENTRY_REDIS_HOST: "redis"
-      SENTRY_POSTGRES_HOST: "db"
-      SENTRY_DB_NAME: "sentry"
-      SENTRY_DB_USER: "postgres"
-      SENTRY_DB_PASSWORD: "1234"
-      SENTRY_EMAIL_HOST: "mailcatcher"
-      EMAIL_PORT: "1025"
+      - 127.0.0.1:6379:6379
   influxdb:
     image: influxdb:alpine
     ports:
-      - 8083:8083
-      - 8086:8086
+      - 127.0.0.1:8083:8083
+      - 127.0.0.1:8086:8086
     volumes:
      - influxdata:/var/lib/influxdb:rw
   grafana:
     image: grafana/grafana
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
+
 volumes:
   dbdata: {}
   influxdata: {}
-  uploads: {}
