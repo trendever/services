@@ -1,10 +1,10 @@
 package telegram
 
 import (
-	"fmt"
 	"core/api"
 	"core/conf"
 	"core/models"
+	"fmt"
 )
 
 func init() {
@@ -40,7 +40,7 @@ func NotifyProductCreated(p *models.Product) {
 }
 
 // NotifyLeadCreated notifies about lead creation
-func NotifyLeadCreated(l *models.Lead, p *models.Product) {
+func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string) {
 
 	if p.Shop.ID == 0 && p.ShopID > 0 {
 		if shop, err := models.GetShopByID(p.ShopID); err == nil {
@@ -61,7 +61,7 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product) {
 			l.Source,
 			// the rest
 			fmt.Sprintf("%v/chat/%v", conf.GetSettings().SiteURL, l.ID),
-			l.InstagramLink,
+			p.InstagramLink,
 			fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
 		),
 	)

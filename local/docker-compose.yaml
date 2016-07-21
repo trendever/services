@@ -78,6 +78,13 @@ services:
     working_dir: /services/
     command: bin/telebot start
 
+  fetcher:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: sh -c './bin/fetcher migrate && exec ./bin/fetcher start'
+
   savetrend:
     image: debian:jessie
     volumes_from:

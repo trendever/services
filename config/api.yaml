@@ -11,6 +11,6 @@ redis:
 mail:
   username: 'testo'
   password: 'pass'
-  host: 'smtp.yandex.ru'
+  host: 'mailcatcher'
   sender: 'dev@trendever.com'
   port: 25
