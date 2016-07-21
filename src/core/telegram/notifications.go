@@ -61,7 +61,7 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string) {
 			l.Source,
 			// the rest
 			fmt.Sprintf("%v/chat/%v", conf.GetSettings().SiteURL, l.ID),
-			p.InstagramLink,
+			realInstLink,
 			fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
 		),
 	)
