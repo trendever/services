@@ -1,6 +1,9 @@
 package resources
 
 import (
+	"core/conf"
+	"core/models"
+	"core/qor/filters"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/activity"
@@ -8,9 +11,6 @@ import (
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
 	"utils/log"
-	"core/conf"
-	"core/models"
-	"core/qor/filters"
 )
 
 func init() {

@@ -4,11 +4,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-"utils/log"
+	"utils/log"
 )
 
 //Terminate waits os.Signal and exit
-func Terminate(cb func(os.Signal)){
+func Terminate(cb func(os.Signal)) {
 	// interrupt
 	interrupt := make(chan os.Signal)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -17,7 +17,7 @@ func Terminate(cb func(os.Signal)){
 	for {
 		select {
 		case s := <-interrupt:
-			if cb!=nil {
+			if cb != nil {
 				cb(s)
 			}
 			log.Info("Cleanup and terminating...")

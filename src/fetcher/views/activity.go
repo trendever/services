@@ -1,12 +1,12 @@
 package views
 
 import (
-	"proto/bot"
-	"utils/log"
-	"golang.org/x/net/context"
 	"fetcher/api"
 	"fetcher/db"
 	"fetcher/models"
+	"golang.org/x/net/context"
+	"proto/bot"
+	"utils/log"
 )
 
 func Init() {

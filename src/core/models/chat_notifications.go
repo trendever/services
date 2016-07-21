@@ -1,10 +1,10 @@
 package models
 
 import (
-	"encoding/json"
-	proto_chat "proto/chat"
 	"core/api"
 	"core/chat"
+	"encoding/json"
+	proto_chat "proto/chat"
 )
 
 //SendProductToChat sends the product to the lead chat
@@ -25,7 +25,7 @@ func SendStatusMessage(conversationID uint64, statusType, value string) {
 	m := &proto_chat.Message{
 		ConversationId: conversationID,
 		Parts: []*proto_chat.MessagePart{
-			&proto_chat.MessagePart{
+			{
 				Content:  content.JSON(),
 				MimeType: "json/status",
 			},

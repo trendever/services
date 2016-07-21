@@ -1,12 +1,12 @@
 package messager
 
 import (
-	"fmt"
-	"proto/chat"
-	"utils/log"
 	"core/api"
 	"core/models"
 	"core/notifier"
+	"fmt"
+	"proto/chat"
+	"utils/log"
 )
 
 type chatRequest interface {

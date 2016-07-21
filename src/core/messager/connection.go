@@ -1,10 +1,10 @@
 package messager
 
 import (
-	"github.com/nats-io/nats"
-	"utils/log"
 	"core/api"
 	"core/conf"
+	"github.com/nats-io/nats"
+	"utils/log"
 )
 
 var (

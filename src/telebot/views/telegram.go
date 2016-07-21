@@ -4,10 +4,10 @@ import (
 	"telebot/conf"
 	"telebot/telegram"
 
+	"golang.org/x/net/context"
 	"proto/bot"
 	"utils/log"
 	"utils/rpc"
-	"golang.org/x/net/context"
 )
 
 // Init initializes telegram RPC service

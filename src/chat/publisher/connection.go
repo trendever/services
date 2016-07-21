@@ -1,10 +1,10 @@
 package publisher
 
 import (
-	"github.com/nats-io/nats"
-	"utils/log"
 	"chat/config"
 	"chat/models"
+	"github.com/nats-io/nats"
+	"utils/log"
 )
 
 const (

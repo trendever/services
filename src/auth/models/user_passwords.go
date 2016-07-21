@@ -1,9 +1,9 @@
 package models
 
 import (
+	"auth/config"
 	"github.com/jinzhu/gorm"
 	"math/rand"
-	"auth/config"
 	"strconv"
 	"time"
 )

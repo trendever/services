@@ -1,9 +1,9 @@
 package resources
 
 import (
+	"core/models"
 	"github.com/qor/admin"
 	"github.com/trendever/ajaxor"
-	"core/models"
 )
 
 func init() {

@@ -26,7 +26,7 @@ func TestRunTests(t *testing.T) {
 			return []interface{}{test["a"].(int) + test["b"].(int)}
 		},
 		Rules: []Rule{
-			Rule{RuleDeep, "result"},
+			{RuleDeep, "result"},
 		},
 	}
 	runner.RunTests()
@@ -47,8 +47,8 @@ func TestNil(t *testing.T) {
 			return []interface{}{nil, nil}
 		},
 		Rules: []Rule{
-			Rule{RuleDeep, "result"},
-			Rule{RuleStr, "result"},
+			{RuleDeep, "result"},
+			{RuleStr, "result"},
 		},
 	}
 	runner.RunTests()

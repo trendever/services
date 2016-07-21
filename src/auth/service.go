@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"utils/log"
 	"auth/cmd"
 	_ "auth/config"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"utils/log"
 )
 
 func main() {

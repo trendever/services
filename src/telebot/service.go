@@ -1,13 +1,13 @@
 package main
 
 import (
-	"utils/log"
 	"os"
 	"os/signal"
+	"syscall"
 	"telebot/conf"
 	"telebot/telegram"
 	"telebot/views"
-	"syscall"
+	"utils/log"
 
 	"github.com/codegangsta/cli"
 )
@@ -35,7 +35,7 @@ func main() {
 		},
 	}
 	log.PanicLogger(func() {
-		if err:=app.Run(os.Args); err!=nil {
+		if err := app.Run(os.Args); err != nil {
 			log.Fatal(err)
 		}
 	})

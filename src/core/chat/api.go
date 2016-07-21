@@ -1,11 +1,11 @@
 package chat
 
 import (
+	"core/api"
 	"encoding/json"
 	"proto/chat"
 	"utils/log"
 	"utils/rpc"
-	"core/api"
 )
 
 //StatusContent is a representation of message content for chat status message
@@ -28,10 +28,10 @@ func SendChatMessage(userID, conversationID uint64, content, mimeType string) er
 	_, err := api.ChatServiceClient.SendNewMessage(context, &chat.SendMessageRequest{
 		ConversationId: conversationID,
 		Messages: []*chat.Message{
-			&chat.Message{
+			{
 				UserId: userID,
 				Parts: []*chat.MessagePart{
-					&chat.MessagePart{
+					{
 						Content:  string(content),
 						MimeType: mimeType,
 					},

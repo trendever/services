@@ -1,8 +1,8 @@
 package soso
 
 import (
-	"utils/log"
 	"sync"
+	"utils/log"
 )
 
 var Sessions = NewSessionRepository()

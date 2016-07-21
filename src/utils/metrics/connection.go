@@ -2,25 +2,25 @@ package metrics
 
 import (
 	"github.com/influxdata/influxdb/client/v2"
-	"utils/log"
 	"time"
+	"utils/log"
 )
 
 var c client.Client
 var db string
-var points =  make(chan *client.Point, 100)
+var points = make(chan *client.Point, 100)
 var batches = make(chan client.BatchPoints, 10)
 var wantEat = make(chan bool, 2)
 
 //Init initializes influxdb client
-func Init(addr, username, password, dbname string){
+func Init(addr, username, password, dbname string) {
 	if addr == "" {
 		return
 	}
 	db = dbname
 	var err error
 	c, err = client.NewHTTPClient(client.HTTPConfig{
-		Addr: addr,
+		Addr:     addr,
 		Username: username,
 		Password: password,
 	})
@@ -30,7 +30,7 @@ func Init(addr, username, password, dbname string){
 }
 
 //Add adds metric to influxdb.
-func Add(name string, tags map[string]string, fields map[string]interface{}){
+func Add(name string, tags map[string]string, fields map[string]interface{}) {
 	if c == nil {
 		return
 	}
@@ -43,7 +43,7 @@ func Add(name string, tags map[string]string, fields map[string]interface{}){
 	points <- pt
 
 }
-func newBatch() client.BatchPoints{
+func newBatch() client.BatchPoints {
 	batch, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Database: db,
 	})
@@ -51,7 +51,7 @@ func newBatch() client.BatchPoints{
 	return batch
 }
 
-func fillBatch(){
+func fillBatch() {
 	batch := newBatch()
 	for {
 		select {
@@ -73,9 +73,9 @@ func fillBatch(){
 	}
 }
 
-func batchFlusher(){
+func batchFlusher() {
 	for {
-		select  {
+		select {
 		case batch := <-batches:
 			flushBatch(batch)
 		case <-time.After(time.Second):
@@ -84,6 +84,6 @@ func batchFlusher(){
 	}
 }
 
-func flushBatch(batch client.BatchPoints){
+func flushBatch(batch client.BatchPoints) {
 	log.Error(c.Write(batch))
 }

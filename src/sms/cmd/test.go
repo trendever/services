@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	protocol "proto/sms"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
+	protocol "proto/sms"
 )
 
 var testCmd = &cobra.Command{

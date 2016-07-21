@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	protocol "proto/auth"
-	"utils/rpc"
 	"golang.org/x/net/context"
 	"log"
+	protocol "proto/auth"
+	"utils/rpc"
 )
 
 var cmdTest = &cobra.Command{

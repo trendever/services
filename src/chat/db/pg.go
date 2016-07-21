@@ -1,9 +1,9 @@
 package db
 
 import (
+	"chat/config"
 	"github.com/jinzhu/gorm"
 	"log"
-	"chat/config"
 	"time"
 )
 

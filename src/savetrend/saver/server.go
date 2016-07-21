@@ -13,14 +13,15 @@ func NewSaveServer() *SaveServer {
 	return &SaveServer{}
 }
 
-func (*SaveServer) SaveProduct(cxt context.Context, mention *bot.Activity) (*bot.SaveProductResult, error) {id, retry, err := processProductMedia(mention.MediaId, mention)
+func (*SaveServer) SaveProduct(cxt context.Context, mention *bot.Activity) (*bot.SaveProductResult, error) {
+	id, retry, err := processProductMedia(mention.MediaId, mention)
 	if retry {
 		log.Debug("SaveProduct: temporarily unable to save: %v", err)
-		return &bot.SaveProductResult{ -1, true }, nil
+		return &bot.SaveProductResult{-1, true}, nil
 	}
 	if err != nil && err != errorAlreadyAdded {
 		log.Debug("SaveProduct: unable to save: %v", err)
-		return &bot.SaveProductResult{ -1, false }, nil
+		return &bot.SaveProductResult{-1, false}, nil
 	}
-	return &bot.SaveProductResult{ id, false }, nil
+	return &bot.SaveProductResult{id, false}, nil
 }

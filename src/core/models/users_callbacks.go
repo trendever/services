@@ -1,12 +1,12 @@
 package models
 
 import (
+	"core/db"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
-	"utils/log"
 	"github.com/ttacon/libphonenumber"
-	"core/db"
 	"strings"
+	"utils/log"
 )
 
 //NotifyUserCreated is a notification function

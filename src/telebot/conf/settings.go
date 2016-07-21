@@ -38,10 +38,10 @@ func GetSettings() *Settings {
 
 // Settings defines service configuration
 type Settings struct {
-	Debug bool
-	RPC   string
-	Token string
-	Rooms []Room
+	Debug     bool
+	RPC       string
+	Token     string
+	Rooms     []Room
 	SentryDSN string
 }
 

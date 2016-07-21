@@ -1,9 +1,9 @@
 package mailers
 
 import (
-	"net/smtp"
 	"mail/models"
 	"mail/server"
+	"net/smtp"
 	"strings"
 )
 

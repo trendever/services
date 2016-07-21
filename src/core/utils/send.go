@@ -1,13 +1,13 @@
 package utils
 
 import (
+	"core/api"
 	"errors"
 	"fmt"
 	"proto/mail"
 	"proto/sms"
 	"utils/log"
 	"utils/rpc"
-	"core/api"
 )
 
 //EmailMessage is email message interface

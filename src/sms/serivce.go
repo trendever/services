@@ -2,9 +2,9 @@ package main
 
 import (
 	_ "github.com/lib/pq"
-	"utils/log"
 	"os"
 	"sms/cmd"
+	"utils/log"
 )
 
 func main() {

@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"core/api"
 	"errors"
 	"proto/auth"
 	"utils/rpc"
-	"core/api"
 )
 
 // GetTokenData returns the decoded token

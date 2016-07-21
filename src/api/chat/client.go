@@ -1,10 +1,10 @@
 package chat
 
 import (
-	"proto/chat"
-	"utils/rpc"
 	"api/api"
 	"api/soso"
+	"proto/chat"
+	"utils/rpc"
 )
 
 var Client = chat.NewChatServiceClient(api.ChatConn)

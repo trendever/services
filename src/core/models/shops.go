@@ -1,10 +1,10 @@
 package models
 
 import (
+	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/core"
-	"core/db"
 	"strings"
 )
 

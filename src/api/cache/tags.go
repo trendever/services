@@ -19,7 +19,7 @@ func GetTags(key string) []string {
 	GetV(key, &tags)
 	out := make([]string, len(tags), len(tags))
 	i := 0
-	for k, _ := range tags {
+	for k := range tags {
 		out[i] = k
 		i++
 	}

@@ -1,12 +1,12 @@
 package models
 
 import (
-	"utils/log"
 	"core/api"
+	"utils/log"
 	//"core/db"
-	"proto/core"
 	"core/db"
 	"core/notifier"
+	"proto/core"
 )
 
 //BeforeSave is a gorm callback

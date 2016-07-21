@@ -1,9 +1,9 @@
 package api
 
 import (
-	"utils/rpc"
-	"google.golang.org/grpc"
 	. "fetcher/conf"
+	"google.golang.org/grpc"
+	"utils/rpc"
 )
 
 var GrpcServer *grpc.Server

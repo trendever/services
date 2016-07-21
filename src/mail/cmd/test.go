@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	protocol "proto/mail"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"os"
+	protocol "proto/mail"
 	"strings"
 	"time"
 )

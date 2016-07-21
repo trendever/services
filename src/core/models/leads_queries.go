@@ -1,11 +1,11 @@
 package models
 
 import (
+	"core/db"
 	"database/sql"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"proto/core"
-	"core/db"
 	"strings"
 	"time"
 )

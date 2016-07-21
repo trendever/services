@@ -1,21 +1,21 @@
 package server
 
 import (
+	"auth/bitly"
+	"auth/config"
+	"auth/models"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/dvsekhvalnov/jose2go"
+	"github.com/ttacon/libphonenumber"
+	"golang.org/x/net/context"
 	auth_protocol "proto/auth"
 	core_protocol "proto/core"
 	sms_protocol "proto/sms"
-	"utils/log"
-	"github.com/ttacon/libphonenumber"
-	"golang.org/x/net/context"
-	"auth/bitly"
-	"auth/config"
-	"auth/models"
 	"text/template"
 	"time"
+	"utils/log"
 )
 
 //DefaultTokenExp is a default token ttl

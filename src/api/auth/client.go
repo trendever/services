@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"api/api"
 	"errors"
 	auth_protocol "proto/auth"
 	"utils/rpc"
-	"api/api"
 )
 
 // Client is auth service client

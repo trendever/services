@@ -1,13 +1,13 @@
 package views
 
 import (
-	"proto/core"
-	"utils/log"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"core/api"
 	"core/db"
 	"core/models"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"proto/core"
+	"utils/log"
 )
 
 func init() {

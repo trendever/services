@@ -2,11 +2,11 @@ package server
 
 import (
 	"github.com/spf13/viper"
-	"proto/mail"
-	"utils/log"
 	"golang.org/x/net/context"
 	"mail/models"
+	"proto/mail"
 	"strings"
+	"utils/log"
 )
 
 type Server struct {

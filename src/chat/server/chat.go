@@ -1,12 +1,12 @@
 package server
 
 import (
-	"errors"
-	proto_chat "proto/chat"
-	"golang.org/x/net/context"
 	"chat/models"
 	"chat/publisher"
 	"chat/queue"
+	"errors"
+	"golang.org/x/net/context"
+	proto_chat "proto/chat"
 )
 
 type chatServer struct {

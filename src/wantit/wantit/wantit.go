@@ -1,8 +1,8 @@
 package wantit
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -220,7 +220,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		if err != nil {
 			return true, err
 		}
-		if(productID <= 0) {
+		if productID <= 0 {
 			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
 		}
 	}

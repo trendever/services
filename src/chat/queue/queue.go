@@ -1,14 +1,14 @@
 package queue
 
 import (
-	"fmt"
-	"proto/chat"
-	"utils/log"
 	"chat/common"
 	"chat/models"
 	"chat/publisher"
+	"fmt"
+	"proto/chat"
 	"sync"
 	"time"
+	"utils/log"
 )
 
 type Waiter interface {

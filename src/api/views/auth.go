@@ -1,12 +1,12 @@
 package views
 
 import (
-	"errors"
-	auth_protocol "proto/auth"
-	"utils/rpc"
-	"net/http"
 	"api/auth"
 	"api/soso"
+	"errors"
+	"net/http"
+	auth_protocol "proto/auth"
+	"utils/rpc"
 )
 
 var authClient = auth.Client

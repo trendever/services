@@ -3,14 +3,14 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"proto/mail"
-	"utils/log"
 	"google.golang.org/grpc"
-	"net"
 	"mail/db"
 	"mail/mailers"
 	"mail/models"
 	"mail/server"
+	"net"
+	"proto/mail"
+	"utils/log"
 )
 
 var startCmd = &cobra.Command{

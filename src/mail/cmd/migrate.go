@@ -3,9 +3,9 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"utils/log"
 	"mail/db"
 	"mail/models"
+	"utils/log"
 )
 
 var migrateCmd = &cobra.Command{

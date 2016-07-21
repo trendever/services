@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"utils/log"
 	"os"
 	"os/signal"
 	"payments/config"
 	"syscall"
+	"utils/log"
 )
 
 var cmdRun = &cobra.Command{

@@ -6,8 +6,8 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
-	"utils/log"
 	"reflect"
+	"utils/log"
 
 	"core/models"
 	"core/qor/filters"

@@ -3,8 +3,8 @@ package db
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"utils/log"
 	"time"
+	"utils/log"
 )
 
 func GetPG(config string) (*gorm.DB, error) {

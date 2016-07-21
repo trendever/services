@@ -1,12 +1,12 @@
 package views
 
 import (
-	"errors"
-	"proto/core"
-	"utils/rpc"
-	"net/http"
 	"api/api"
 	"api/soso"
+	"errors"
+	"net/http"
+	"proto/core"
+	"utils/rpc"
 )
 
 type User struct {

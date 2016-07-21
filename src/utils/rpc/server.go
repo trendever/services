@@ -1,9 +1,9 @@
 package rpc
 
 import (
-	"utils/log"
 	"google.golang.org/grpc"
 	"net"
+	"utils/log"
 )
 
 //Serve starts grpc.Server and returns it instance

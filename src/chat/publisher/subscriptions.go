@@ -1,10 +1,10 @@
 package publisher
 
 import (
+	"chat/models"
 	"fmt"
 	"proto/chat"
 	"utils/log"
-	"chat/models"
 )
 
 func addMessageStatus(m *chat.Message) {

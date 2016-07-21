@@ -5,10 +5,10 @@ import (
 	"crypto/md5"
 	"fmt"
 	"proto/core"
-	"utils/log"
 	"strconv"
 	"strings"
 	"time"
+	"utils/log"
 )
 
 //GetSearchProductCacheKey returns a cache key for the search request
