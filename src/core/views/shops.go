@@ -1,15 +1,15 @@
 package views
 
 import (
-	"fmt"
-	"github.com/jinzhu/gorm"
-	"proto/core"
-	"utils/log"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"core/api"
 	"core/db"
 	"core/models"
+	"fmt"
+	"github.com/jinzhu/gorm"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"proto/core"
+	"utils/log"
 )
 
 type shopServer struct {

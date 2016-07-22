@@ -1,16 +1,16 @@
 package views
 
 import (
+	"core/db"
+	"core/models"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
-	"proto/core"
-	"utils/log"
 	"golang.org/x/net/context"
-	"core/db"
-	"core/models"
+	"proto/core"
 	"testing"
 	"time"
+	"utils/log"
 )
 
 func TestMain(t *testing.T) {
@@ -90,8 +90,8 @@ func TestRetrieveProduct(t *testing.T) {
 
 	tst := [][]interface{}{
 		// limit - offset - el.id - el.title
-		[]interface{}{10, 10, 5, "Tst14"},
-		[]interface{}{5, 5, 0, "Tst04"},
+		{10, 10, 5, "Tst14"},
+		{5, 5, 0, "Tst04"},
 	}
 
 	for i, suite := range tst {

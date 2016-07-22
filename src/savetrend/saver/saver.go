@@ -41,7 +41,7 @@ var (
 
 // ResetLastChecked drops last checked id
 func (svc *ProjectService) ResetLastChecked() error {
-	return os.Remove(conf.LastCheckedFile)
+	return os.Remove(conf.GetSettings().LastCheckedFile)
 }
 
 // Run fetching
@@ -49,6 +49,9 @@ func (svc *ProjectService) Run() error {
 
 	rand.Seed(time.Now().Unix())
 	api.Start()
+
+	srv := rpc.Serve(settings.Rpc)
+	bot.RegisterSaveTrendServiceServer(srv, NewSaveServer())
 
 	// interrupt
 	interrupt := make(chan os.Signal)
@@ -66,18 +69,16 @@ func (svc *ProjectService) Run() error {
 	}
 
 	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			saveLastChecked()
-			log.Warn("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
+	<-interrupt
+	saveLastChecked()
+	log.Warn("Cleanup and terminating...")
+	os.Exit(0)
+
+	return nil
 }
 
 func restoreLastChecked() {
-	bytes, err := ioutil.ReadFile(conf.LastCheckedFile)
+	bytes, err := ioutil.ReadFile(conf.GetSettings().LastCheckedFile)
 	if err != nil {
 		log.Error(err)
 		return
@@ -94,7 +95,7 @@ func restoreLastChecked() {
 }
 
 func saveLastChecked() {
-	ioutil.WriteFile(conf.LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
+	ioutil.WriteFile(conf.GetSettings().LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
 }
 
 func registerApis() error {
@@ -139,11 +140,12 @@ func registerProducts() {
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 
 		for _, mention := range res.Result {
-			if retry, err := processProductMedia(mention.MediaId, mention); err != nil {
+			if _, retry, err := processProductMedia(mention.MediaId, mention); err != nil {
 				if err != nil && retry {
 					log.Debug("Retrying (%v)", err)
 					break
@@ -160,17 +162,17 @@ func registerProducts() {
 	}
 }
 
-// processProductMedia returns error and retry flag
-func processProductMedia(mediaID string, mention *bot.Activity) (bool, error) {
+// processProductMedia returns id of product or error and retry flag
+func processProductMedia(mediaID string, mention *bot.Activity) (productID int64, retry bool, err error) {
 
 	mentionerID, err := userID(mention.UserId, mention.UserName)
 	if err != nil {
-		return true, err
+		return -1, true, err
 	}
 
 	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existance
 	if err != nil {
-		return true, err
+		return -1, true, err
 	} else if alreadyExists {
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
@@ -180,21 +182,21 @@ func processProductMedia(mediaID string, mention *bot.Activity) (bool, error) {
 			ProductId: uint64(productID),
 			Like:      true,
 		})
-		return false, errorAlreadyAdded
+		return productID, false, errorAlreadyAdded
 	}
 
 	// read media info
 	medias, err := pool.GetFree().GetMedia(mediaID)
 	if err != nil {
 		if strings.Contains(err.Error(), "Media not found or unavailable") {
-			return false, err
+			return -1, false, err
 		}
-		return true, err
+		return -1, true, err
 	} else if len(medias.Items) != 1 {
 		// this seems not no happen normally; so put Warning here
 		err = fmt.Errorf("Media (%v) not found (got result with %v items)", mediaID, len(medias.Items))
 		log.Warn(err.Error())
-		return false, err
+		return -1, false, err
 	}
 
 	var (
@@ -209,7 +211,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (bool, error) {
 
 		candidats, err := pool.GetFree().SearchUsers(shopInstagramName)
 		if err != nil {
-			return true, err
+			return -1, true, err
 		}
 
 		for _, user := range candidats.Users {
@@ -222,7 +224,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (bool, error) {
 			// something really weird search should (was) be stable. just skip the entry
 			err = fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
 			log.Error(err)
-			return false, err
+			return -1, false, err
 		}
 
 	}
@@ -230,18 +232,19 @@ func processProductMedia(mediaID string, mention *bot.Activity) (bool, error) {
 	supplierID, err := shopID(shopInstagramID)
 	if err == errorShopIsDeleted {
 		// ignore deleted shops
-		return false, err
+		return -1, false, err
 	} else if err != nil {
-		return true, err
+		return -1, true, err
 	}
 
-	return true, createProduct(mediaID, &productMedia, supplierID, mentionerID)
+	productID, err = createProduct(mediaID, &productMedia, supplierID, mentionerID)
+	return productID, false, err
 }
 
-func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, mentionerID int64) error {
+func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
-		return fmt.Errorf("Product media has no images!")
+		return -1, fmt.Errorf("Product media has no images!")
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -252,7 +255,7 @@ func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, m
 
 	candidates, err := generateThumbnails(img.URL)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	request := &core.CreateProductRequest{Product: &core.Product{
@@ -270,9 +273,11 @@ func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, m
 		InstagramImageWidth:  uint32(img.Width),
 	}}
 
-	_, err = api.ProductClient.CreateProduct(ctx, request)
-
-	return err
+	res, err := api.ProductClient.CreateProduct(ctx, request)
+	if err != nil {
+		return -1, err
+	}
+	return res.Id, nil
 }
 
 // check if product with this mediaId present.
@@ -334,7 +339,7 @@ func userID(instagramID int64, instagramUsername string) (int64, error) {
 		}
 
 		// do create
-		_, err = api.UserClient.FindOrCreateUser(ctx, &core.CreateUserRequest{
+		res, err = api.UserClient.FindOrCreateUser(ctx, &core.CreateUserRequest{
 			User: &core.User{
 				InstagramId:        uint64(instagramID),
 				InstagramUsername:  userInfo.User.Username,
@@ -364,6 +369,9 @@ func findUser(instagramUsername string) (*core.User, error) {
 		InstagramUsername: instagramUsername,
 	})
 
+	if res == nil {
+		return nil, err
+	}
 	return res.User, err
 }
 

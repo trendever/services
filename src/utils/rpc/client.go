@@ -1,10 +1,10 @@
 package rpc
 
 import (
-	"utils/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"
+	"utils/log"
 )
 
 //Connect makes new connection to a grpc server
@@ -16,6 +16,7 @@ func Connect(addr string) *grpc.ClientConn {
 
 	return conn
 }
+
 //DefaultContext returns context with default timeout
 func DefaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*5)

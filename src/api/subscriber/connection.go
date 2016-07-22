@@ -1,9 +1,9 @@
 package subscriber
 
 import (
+	"api/conf"
 	"github.com/nats-io/nats"
 	"utils/log"
-	"api/conf"
 )
 
 var (

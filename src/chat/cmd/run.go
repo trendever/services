@@ -1,20 +1,20 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"proto/chat"
-	"utils/log"
-	"utils/rpc"
-	"os"
-	"os/signal"
 	"chat/config"
 	"chat/db"
 	"chat/models"
 	"chat/publisher"
 	"chat/queue"
 	"chat/server"
+	"github.com/spf13/cobra"
+	"os"
+	"os/signal"
+	"proto/chat"
 	"syscall"
 	"time"
+	"utils/log"
+	"utils/rpc"
 )
 
 var cmdRun = &cobra.Command{

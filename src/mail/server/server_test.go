@@ -1,9 +1,9 @@
 package server
 
 import (
-	"proto/mail"
 	"golang.org/x/net/context"
 	"mail/models"
+	"proto/mail"
 	"testing"
 )
 

@@ -7,11 +7,11 @@ import (
 	. "api/conf"
 	"api/views"
 
-	"utils/metrics"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
 	"api/cache"
 	"api/soso"
 	"api/subscriber"
+	"gopkg.in/igm/sockjs-go.v2/sockjs"
+	"utils/metrics"
 )
 
 var SosoObj = soso.Default()

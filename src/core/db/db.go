@@ -1,11 +1,11 @@
 package db
 
 import (
+	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"utils/log"
-	"core/conf"
 	"time"
+	"utils/log"
 
 	// connect to postgres
 	_ "github.com/lib/pq"

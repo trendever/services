@@ -47,8 +47,8 @@ func TestCreateChat(t *testing.T) {
 	runner := &test_tools.Runner{
 		Tests: tests,
 		Rules: []test_tools.Rule{
-			test_tools.Rule{test_tools.RuleStr, "reply"},
-			test_tools.Rule{test_tools.RuleStr, "error"},
+			{test_tools.RuleStr, "reply"},
+			{test_tools.RuleStr, "error"},
 		},
 		Run: func(test test_tools.Test) []interface{} {
 			server := NewChatServer(test["repo"].(models.ConversationRepository), nil)
@@ -105,8 +105,8 @@ func TestJoinChat(t *testing.T) {
 		},
 	}
 	rules := []test_tools.Rule{
-		test_tools.Rule{test_tools.RuleStr, "reply"},
-		test_tools.Rule{test_tools.RuleStr, "error"},
+		{test_tools.RuleStr, "reply"},
+		{test_tools.RuleStr, "error"},
 	}
 
 	runner := test_tools.NewRunner(tests, f, rules)
@@ -137,7 +137,7 @@ func TestSendMessage(t *testing.T) {
 		ConversationId: 1,
 		UserId:         1,
 		Parts: []*chat.MessagePart{
-			&chat.MessagePart{
+			{
 				MimeType: "text/plain",
 				Content:  "test",
 			},
@@ -178,8 +178,8 @@ func TestSendMessage(t *testing.T) {
 		},
 	}
 	rules := []test_tools.Rule{
-		test_tools.Rule{test_tools.RuleStr, "reply"},
-		test_tools.Rule{test_tools.RuleStr, "error"},
+		{test_tools.RuleStr, "reply"},
+		{test_tools.RuleStr, "error"},
 	}
 
 	runner := test_tools.NewRunner(tests, f, rules)
@@ -213,7 +213,7 @@ func TestGetChatHistory(t *testing.T) {
 	}
 
 	messages := []*models.Message{
-		&models.Message{ConversationID: 1, MemberID: 1, Model: gorm.Model{CreatedAt: ct}},
+		{ConversationID: 1, MemberID: 1, Model: gorm.Model{CreatedAt: ct}},
 	}
 
 	repoSuccess := fixtures.NewMockConversationRepository(ctrl)
@@ -237,8 +237,8 @@ func TestGetChatHistory(t *testing.T) {
 	}
 
 	rules := []test_tools.Rule{
-		test_tools.Rule{test_tools.RuleStr, "reply"},
-		test_tools.Rule{test_tools.RuleStr, "error"},
+		{test_tools.RuleStr, "reply"},
+		{test_tools.RuleStr, "error"},
 	}
 
 	runner := test_tools.NewRunner(tests, f, rules)

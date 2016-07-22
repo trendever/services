@@ -2,8 +2,8 @@ package main
 
 import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"utils/log"
 	"payments/cmd"
+	"utils/log"
 )
 
 func main() {

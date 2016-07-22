@@ -2,13 +2,13 @@ package images
 
 import (
 	"bytes"
+	"chat/config"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"chat/config"
 )
 
 type ImageResp struct {

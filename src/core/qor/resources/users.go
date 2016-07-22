@@ -1,12 +1,12 @@
 package resources
 
 import (
-	"github.com/jinzhu/gorm"
-	"github.com/qor/admin"
-	"github.com/qor/qor"
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
+	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
 )
 
 func init() {

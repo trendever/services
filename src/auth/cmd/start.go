@@ -1,20 +1,20 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	protocol "proto/auth"
-	protocol_core "proto/core"
-	protocol_sms "proto/sms"
-	"utils/log"
-	"utils/rpc"
-	"os"
-	"os/signal"
 	"auth/db"
 	"auth/models"
 	"auth/server"
+	"fmt"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"os"
+	"os/signal"
+	protocol "proto/auth"
+	protocol_core "proto/core"
+	protocol_sms "proto/sms"
 	"syscall"
+	"utils/log"
+	"utils/rpc"
 )
 
 var cmdStart = &cobra.Command{

@@ -1,10 +1,10 @@
 package bitly
 
 import (
-	"github.com/timehop/go-bitly"
-	"utils/log"
-	"net/url"
 	"auth/config"
+	"github.com/timehop/go-bitly"
+	"net/url"
+	"utils/log"
 )
 
 // GetBitly returns Bitly client

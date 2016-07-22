@@ -1,11 +1,12 @@
 package api
 
 import (
+	"core/conf"
 	"fmt"
 	"net/url"
-	"core/conf"
 
 	"github.com/timehop/go-bitly"
+	"google.golang.org/grpc"
 	"proto/auth"
 	"proto/bot"
 	"proto/chat"
@@ -13,7 +14,6 @@ import (
 	"proto/sms"
 	"utils/log"
 	"utils/rpc"
-	"google.golang.org/grpc"
 )
 
 type callbackFunc func(*grpc.Server)

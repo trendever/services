@@ -3,7 +3,12 @@ core_server: "core:3005"
 sms_server: "sms:12326"
 key: "asdasdasdasdasdasd"
 password_len: 4
-site_url: "http://localhost:3002/"
+site_url: "http://localdev.trendever.com:3002/"
 sms_template: "Введите код {{.Password}} или перейдите по ссылке {{.Url}}"
+debug: true
 db:
   config: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"
+bitly:
+  login: o_v1v8rptir
+  apiKey: R_05e4113d379c43d695030ba8fbac6edf
+  accessToken: c8d0210ba7542be997bc36071d966e582ca9890b

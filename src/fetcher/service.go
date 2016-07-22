@@ -1,8 +1,8 @@
 package main
 
 import (
-	"utils/log"
 	"os"
+	"utils/log"
 
 	"fetcher/fetcher"
 

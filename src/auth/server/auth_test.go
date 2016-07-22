@@ -1,16 +1,16 @@
 package server
 
 import (
+	"auth/models"
 	"encoding/json"
 	"errors"
 	"github.com/dvsekhvalnov/jose2go"
-	"proto/auth"
-	core_protocol "proto/core"
-	sms_protocol "proto/sms"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
-	"auth/models"
+	"proto/auth"
+	core_protocol "proto/core"
+	sms_protocol "proto/sms"
 	"testing"
 	"time"
 )

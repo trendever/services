@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"log"
 	"chat/db"
 	"chat/models"
+	"github.com/spf13/cobra"
+	"log"
 )
 
 var dbModels = []interface{}{

@@ -1,11 +1,11 @@
 package subscriber
 
 import (
-	"proto/chat"
-	"proto/core"
 	"api/cache"
 	schat "api/chat"
 	"api/soso"
+	"proto/chat"
+	"proto/core"
 )
 
 func init() {

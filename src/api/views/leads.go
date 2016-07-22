@@ -1,19 +1,19 @@
 package views
 
 import (
+	"api/soso"
 	"errors"
 	"net/http"
-	"api/soso"
 
-	"fmt"
-	pchat "proto/chat"
-	"proto/core"
-	"utils/log"
-	"utils/rpc"
 	"api/api"
 	"api/chat"
 	"api/models"
+	"fmt"
+	pchat "proto/chat"
+	"proto/core"
 	"strings"
+	"utils/log"
+	"utils/rpc"
 )
 
 var leadServiceClient = core.NewLeadServiceClient(api.CoreConn)
@@ -125,8 +125,8 @@ func GetUserLeads(c *soso.Context) {
 
 	if len(roles) == 0 {
 		groups := map[string][]core.LeadUserRole{
-			"customer": []core.LeadUserRole{core.LeadUserRole_CUSTOMER},
-			"seller":   []core.LeadUserRole{core.LeadUserRole_SELLER, core.LeadUserRole_SUPPLIER},
+			"customer": {core.LeadUserRole_CUSTOMER},
+			"seller":   {core.LeadUserRole_SELLER, core.LeadUserRole_SUPPLIER},
 		}
 
 		results := map[string]*models.Leads{}

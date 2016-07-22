@@ -1,17 +1,17 @@
 package views
 
 import (
-	"errors"
-	"github.com/jinzhu/gorm"
-	"proto/core"
-	"utils/log"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"core/api"
 	"core/db"
 	"core/models"
 	"core/notifier"
 	"core/telegram"
+	"errors"
+	"github.com/jinzhu/gorm"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"proto/core"
+	"utils/log"
 )
 
 func init() {
@@ -92,7 +92,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}, nil
 	}
 
-	go telegram.NotifyLeadCreated(lead, product)
+	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink)
 
 	//Event CREATE performs chat creation
 	if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {

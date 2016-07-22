@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"utils/log"
 	"payments/db"
 	"payments/models"
+	"utils/log"
 )
 
 var dbModels = []interface{}{}

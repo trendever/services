@@ -3,7 +3,6 @@ package models
 import (
 	"github.com/jinzhu/gorm"
 	"proto/core"
-	"utils/log"
 )
 
 // PrivateEncode encode core user model to protoUser
@@ -61,9 +60,7 @@ func (u Users) PublicEncode() []*core.User {
 
 //Decode converts core.User to User
 func (u User) Decode(cu *core.User) User {
-	// @CHECK: why was that necessary?
 	if cu == nil {
-		log.Debug("Got nil core.User in decodeUser()")
 		return u
 	}
 

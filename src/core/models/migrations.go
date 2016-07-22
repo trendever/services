@@ -1,8 +1,8 @@
 package models
 
 import (
-	"fmt"
 	"core/db"
+	"fmt"
 )
 
 //Migrate runs migrations
@@ -49,6 +49,8 @@ func Migrate() error {
 	db.New().Exec("UPDATE products_leads SET chat_updated_at=updated_at WHERE chat_updated_at IS NULL")
 
 	db.New().Model(&ImageCandidate{}).AddIndex("idx_products_product_images_product_id", "product_id")
+
+	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
 	return nil
 }

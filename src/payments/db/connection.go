@@ -2,9 +2,9 @@ package db
 
 import (
 	"github.com/jinzhu/gorm"
-	"utils/log"
 	"payments/config"
 	"time"
+	"utils/log"
 )
 
 //GetPG returns db instance

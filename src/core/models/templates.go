@@ -1,12 +1,12 @@
 package models
 
 import (
+	"core/conf"
+	"core/db"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"gopkg.in/flosch/pongo2.v3"
 	"regexp"
-	"core/conf"
-	"core/db"
 	"strings"
 )
 

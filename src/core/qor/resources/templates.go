@@ -1,8 +1,8 @@
 package resources
 
 import (
-	"github.com/qor/admin"
 	"core/models"
+	"github.com/qor/admin"
 )
 
 func init() {

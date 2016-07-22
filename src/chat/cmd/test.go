@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"proto/chat"
-	"utils/rpc"
 	"golang.org/x/net/context"
 	"log"
+	"proto/chat"
+	"utils/rpc"
 )
 
 var cmdTest = &cobra.Command{
@@ -61,10 +61,10 @@ func send(c chat.ChatServiceClient) (interface{}, error) {
 	return c.SendNewMessage(context.Background(), &chat.SendMessageRequest{
 		ConversationId: chatID,
 		Messages: []*chat.Message{
-			&chat.Message{
+			{
 				UserId: userID,
 				Parts: []*chat.MessagePart{
-					&chat.MessagePart{
+					{
 						Content:   message,
 						MimeType:  "text/plain",
 						ContentId: "",
@@ -87,7 +87,7 @@ func join(c chat.ChatServiceClient) (interface{}, error) {
 	return c.JoinChat(context.Background(), &chat.JoinChatRequest{
 		ConversationId: chatID,
 		Members: []*chat.Member{
-			&chat.Member{
+			{
 				UserId: userID,
 				Role:   chat.MemberRole_CUSTOMER,
 				Name:   userName,

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
 	"chat/cmd"
+	"os"
 	//_ "chat/common"
+	_ "chat/config"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"utils/log"
-	_ "chat/config"
 )
 
 func main() {

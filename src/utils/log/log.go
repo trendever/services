@@ -2,16 +2,17 @@ package log
 
 import (
 	"fmt"
+	"github.com/getsentry/raven-go"
+	golog "log"
 	"os"
 	"runtime"
 	"strings"
-	golog "log"
-	"github.com/getsentry/raven-go"
 )
 
 //ErrorHandler is a function for handling errors
 //this function will be called after error logging to std error output
 type ErrorHandler func(err error, tags map[string]string)
+
 //MessageHandler is a function for handling messages not errors
 type MessageHandler func(msg string, tags map[string]string)
 
@@ -32,16 +33,16 @@ const (
 )
 
 var (
-	debug        = false
-	tag          = "Trendever"
-	errorHandler ErrorHandler
+	debug          = false
+	tag            = "Trendever"
+	errorHandler   ErrorHandler
 	messageHandler MessageHandler
-	errLogger *golog.Logger
-	infoLogger *golog.Logger
-	ravenClient *raven.Client
+	errLogger      *golog.Logger
+	infoLogger     *golog.Logger
+	ravenClient    *raven.Client
 )
 
-func init(){
+func init() {
 	errLogger = golog.New(os.Stderr, "", golog.LstdFlags)
 	infoLogger = golog.New(os.Stdout, "", golog.LstdFlags)
 }
@@ -53,12 +54,12 @@ func init(){
 func Init(debugMode bool, tagMark string, sentryDSN string) {
 	debug = debugMode
 	tag = tagMark
-	if sentryDSN!="" {
+	if sentryDSN != "" {
 		var err error
 		ravenClient, err = raven.NewClient(sentryDSN, map[string]string{
 			"service": tagMark,
 		})
-		if err!=nil {
+		if err != nil {
 			Error(err)
 		} else {
 			errorHandler = ravenErrorLogger
@@ -84,7 +85,7 @@ func msgToError(msg interface{}) error {
 	return errMsg
 }
 
-func log(level string, msg interface{}){
+func log(level string, msg interface{}) {
 
 	switch {
 	case level == LevelInfo || level == LevelWarn:
@@ -105,7 +106,7 @@ func logMessage(level, msg string) {
 	}
 }
 
-func logError(level string, err error){
+func logError(level string, err error) {
 	f := filenameWithLineNum()
 	errLogger.Printf("[%s] [%s:%s] %v\n", tag, level, f, err)
 	if errorHandler != nil {
@@ -114,8 +115,6 @@ func logError(level string, err error){
 		})
 	}
 }
-
-
 
 //PanicLogger is a safely logging panic for a callback
 func PanicLogger(f func()) {
@@ -128,17 +127,17 @@ func PanicLogger(f func()) {
 }
 
 //Info puts info log
-func Info(format string, values ...interface{}){
+func Info(format string, values ...interface{}) {
 	log(LevelInfo, fmt.Sprintf(format, values...))
 }
 
 //Debug puts debug log
-func Debug(format string, values ...interface{}){
+func Debug(format string, values ...interface{}) {
 	log(LevelDebug, fmt.Sprintf(format, values...))
 }
 
 //Warn puts warn log
-func Warn(format string, values ...interface{}){
+func Warn(format string, values ...interface{}) {
 	log(LevelWarn, fmt.Sprintf(format, values...))
 }
 

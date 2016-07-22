@@ -6,4 +6,5 @@
 project="$(dirname $(readlink -f $0))/.."
 export WEB_ROOT=$project
 export GOPATH=$project/vendor:$project
+
 exec $project/bin/core start

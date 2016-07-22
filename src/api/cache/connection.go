@@ -1,12 +1,12 @@
 package cache
 
 import (
+	"api/conf"
 	"encoding/json"
 	"fmt"
-	"utils/log"
 	"gopkg.in/redis.v3"
-	"api/conf"
 	"time"
+	"utils/log"
 )
 
 var c *redis.Client

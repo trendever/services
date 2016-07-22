@@ -17,8 +17,8 @@ import (
 	"instagram_api"
 	"utils/log"
 
-	_ "github.com/lib/pq"
 	"fetcher/views"
+	_ "github.com/lib/pq"
 )
 
 var (

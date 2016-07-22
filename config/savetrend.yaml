@@ -1,16 +1,12 @@
 debug: true
 
+rpc: :3009
+
 coreServer: core:3005
 fetcherServer: fetcher:3006
 productUrlFormat: 'https://localhost:8040/product/%d'
-
-db:
-  user: postgres
-  pass: 1234
-  host: db
-  port: 5432
-  name: postgres
-  debug: true
+mandibleURL: 'http://images:8080/'
+lastCheckedFile: 'savetrend.last'
 
 instagram:
   timeoutMin: 500
@@ -18,6 +14,6 @@ instagram:
   reloginTimeout: 10000
   pollTimeout: 10000
   users:
-  - username: happierall2
-    password: 555777
-  trend_user: happierall2
+  - username: nmstrs1
+    password: pass4ig
+  trendUser: nmstrs1

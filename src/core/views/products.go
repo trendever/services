@@ -1,17 +1,17 @@
 package views
 
 import (
-	"errors"
-	"github.com/jinzhu/gorm"
-	"proto/core"
-	"utils/product_code"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"core/api"
 	"core/db"
 	"core/messager"
 	"core/models"
 	"core/telegram"
+	"errors"
+	"github.com/jinzhu/gorm"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"proto/core"
+	"utils/product_code"
 )
 
 func init() {
@@ -139,7 +139,7 @@ func (s productServer) CreateProduct(ctx context.Context, request *core.CreatePr
 		// create empty product item. really important, because
 		//  it allows to buy (from instagram) even a product, which was not processed by a manager)
 		product.Items = []models.ProductItem{
-			models.ProductItem{},
+			{},
 		}
 	}
 

@@ -3,10 +3,10 @@ package soso
 import (
 	"errors"
 	"github.com/fatih/color"
-	"utils/log"
-	"utils/metrics"
 	"net/http"
 	"time"
+	"utils/log"
+	"utils/metrics"
 )
 
 type (

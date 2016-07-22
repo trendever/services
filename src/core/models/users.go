@@ -1,9 +1,9 @@
 package models
 
 import (
+	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"core/db"
 )
 
 // User model

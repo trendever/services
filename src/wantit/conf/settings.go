@@ -13,7 +13,6 @@ var (
 
 // These are settings, but without need to change them in a file
 const (
-	LastCheckedFile  = "last.txt"
 	consulConfigPath = "wantit"
 	tagName          = "Wantit"
 )
@@ -41,12 +40,14 @@ func GetSettings() *Settings {
 
 // Settings service configuration
 type Settings struct {
-	Debug         bool
-	CoreServer    string
-	FetcherServer string
-	Instagram     Instagram
-	SentryDSN     string
-	MandibleURL   string
+	Debug           bool
+	CoreServer      string
+	FetcherServer   string
+	Instagram       Instagram
+	SaveTrendServer string
+	SentryDSN       string
+	MandibleURL     string
+	LastCheckedFile string
 }
 
 // Instagram config

@@ -1,15 +1,15 @@
 package views
 
 import (
-	"errors"
-	proto_chat "proto/chat"
-	"proto/core"
-	"utils/rpc"
-	"golang.org/x/net/context"
-	"net/http"
 	"api/chat"
 	"api/soso"
+	"errors"
+	"golang.org/x/net/context"
+	"net/http"
+	proto_chat "proto/chat"
+	"proto/core"
 	"time"
+	"utils/rpc"
 )
 
 var chatClient = chat.Client

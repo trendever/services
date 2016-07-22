@@ -1,8 +1,8 @@
 package server
 
 import (
-	"proto/sms"
 	"golang.org/x/net/context"
+	"proto/sms"
 	"sms/models"
 	"testing"
 )

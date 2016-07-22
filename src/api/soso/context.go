@@ -1,14 +1,14 @@
 package soso
 
 import (
-	"encoding/json"
-	auth_protocol "proto/auth"
-	"utils/log"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
-	"net/http"
 	"api/auth"
 	. "api/debug"
+	"encoding/json"
+	"gopkg.in/igm/sockjs-go.v2/sockjs"
+	"net/http"
+	auth_protocol "proto/auth"
 	"strings"
+	"utils/log"
 )
 
 var (

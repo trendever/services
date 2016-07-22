@@ -1,8 +1,11 @@
 debug: true
 
-coreServer: core:3005
-fetcherServer: fetcher:3006
-orderUrlFormat: 'https://localhost:8040/order/%v'
+coreServer:      core:3005
+fetcherServer:   fetcher:3006
+saveTrendServer: savetrend:3009
+orderUrlFormat:  'https://localhost:8040/order/%v'
+mandibleURL:     'http://images:8080/'
+lastCheckedFile: 'wantit.last'
 
 instagram:
   timeoutMin: 500
@@ -10,6 +13,6 @@ instagram:
   reloginTimeout: 10000
   pollTimeout: 10000
   users:
-    - username: wantit_debug
-      password: cococo
-  wantitUser: happierall2
+    - username: nmstrs2
+      password: pass4ig
+  wantitUser: nmstrs2

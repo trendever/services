@@ -1,9 +1,9 @@
 package core
 
 import (
+	. "api/conf"
 	gomail "gopkg.in/gomail.v2"
 	"math/rand"
-	. "api/conf"
 	"time"
 )
 

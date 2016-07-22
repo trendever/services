@@ -1,11 +1,11 @@
 package views
 
 import (
+	"api/core"
+	"api/soso"
 	"errors"
 	"fmt"
 	"net/http"
-	"api/core"
-	"api/soso"
 )
 
 func init() {

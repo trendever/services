@@ -1,12 +1,12 @@
 package models
 
 import (
+	"chat/images"
 	"database/sql"
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"utils/log"
-	"chat/images"
 )
 
 //Message is model of message

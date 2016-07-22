@@ -9,7 +9,7 @@ import (
 func TestLog(t *testing.T) {
 	call := false
 	Init(false, "TEST", "")
-	errorHandler =  func(msg error, tags map[string]string) {
+	errorHandler = func(msg error, tags map[string]string) {
 		call = true
 		assert.Equal(t, "test error", msg.Error(), "Must be equal")
 		assert.Equal(t, LevelError, tags["level"])

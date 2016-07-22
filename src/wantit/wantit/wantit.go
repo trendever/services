@@ -1,6 +1,7 @@
 package wantit
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -36,13 +37,13 @@ var (
 	lastChecked    = int64(0)
 	pool           *instagram_api.Pool
 	settings       = conf.GetSettings()
-	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}")
+	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
 	avatarUploader = mandible.New(conf.GetSettings().MandibleURL)
 )
 
 // ResetLastChecked drops last checked id
 func (svc *ProjectService) ResetLastChecked() error {
-	return os.Remove(conf.LastCheckedFile)
+	return os.Remove(conf.GetSettings().LastCheckedFile)
 }
 
 // Run fetching
@@ -67,20 +68,16 @@ func (svc *ProjectService) Run() error {
 	}
 
 	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			saveLastChecked()
-			log.Warn("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
+	<-interrupt
+	saveLastChecked()
+	log.Warn("Cleanup and terminating...")
+	os.Exit(0)
 
 	return nil
 }
 
 func restoreLastChecked() {
-	bytes, err := ioutil.ReadFile(conf.LastCheckedFile)
+	bytes, err := ioutil.ReadFile(conf.GetSettings().LastCheckedFile)
 	if err != nil {
 		log.Error(err)
 		return
@@ -97,7 +94,7 @@ func restoreLastChecked() {
 }
 
 func saveLastChecked() {
-	ioutil.WriteFile(conf.LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
+	ioutil.WriteFile(conf.GetSettings().LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
 }
 
 func registerApis() error {
@@ -140,6 +137,7 @@ func registerOrders() {
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 		log.Debug("... got %v results", len(res.Result))
@@ -173,7 +171,6 @@ func registerOrders() {
 //   * retry bool. If true, this mention should be processed again lately
 //   * error
 func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) {
-
 	if mention.UserName == mention.MentionedUsername {
 		return false, fmt.Errorf("Skipping self-mentioning activity (pk=%v)", mention.Pk)
 	}
@@ -198,26 +195,35 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	productMedia := medias.Items[0]
-	supplierIgID := productMedia.Caption.UserID
 
 	// check if self-mention
-	if mention.UserId == supplierIgID {
-		log.Debug("Skipping @%v under own post (instagramId=%v)", settings.Instagram.WantitUser, supplierIgID)
+	if mention.UserName == productMedia.User.Username {
+		log.Debug("Skipping @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
 		return false, nil
 	}
 
-	// get product code
-	code, err := findProductCode(productMedia.Caption.Text)
-	if err != nil {
-		return false, err
+	// get product via code
+	var productID int64
+	code, found := findProductCode(productMedia.Caption.Text)
+	if found {
+		productID, err = productCoreID(code)
+		if err != nil {
+			return true, err
+		}
 	}
-
-	// get core product id
-	productID, err := productCoreID(code)
-	if err != nil {
-		return true, err
-	} else if productID <= 0 { //bad product code
-		return false, fmt.Errorf("Product with mediaId=%v not registered", mediaID)
+	// there is no code at all or it's unregistred
+	if !found || productID <= 0 {
+		var retry bool
+		productID, retry, err = saveProduct(mention)
+		if retry {
+			return true, errors.New("Temporarily unable to save product")
+		}
+		if err != nil {
+			return true, err
+		}
+		if productID <= 0 {
+			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
+		}
 	}
 
 	// get customer core id
@@ -238,6 +244,18 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	return err != nil, err
 }
 
+func saveProduct(mention *bot.Activity) (id int64, retry bool, err error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	log.Debug("Saving unknown product (activityId=%v)", mention.Id)
+
+	res, err := api.SaveTrendClient.SaveProduct(ctx, mention)
+	if err != nil {
+		return -1, true, err
+	}
+	return res.Id, res.Retry, nil
+}
+
 func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customerID, productID int64) error {
 
 	ctx, cancel := rpc.DefaultContext()
@@ -256,13 +274,12 @@ func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customer
 	return err
 }
 
-func findProductCode(comment string) (string, error) {
-	code := codeRegexp.FindString(comment)
-	if code == "" {
-		return "", fmt.Errorf("Product code not found")
+func findProductCode(comment string) (code string, found bool) {
+	code = codeRegexp.FindString(comment)
+	if code != "" {
+		return code[:6], true
 	}
-
-	return code, nil
+	return "", false
 }
 
 // get core productId by mediaId
@@ -295,7 +312,6 @@ func isLeadRegistered(commentPk string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	return res.Id > 0, nil
 }
 

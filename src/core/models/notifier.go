@@ -1,15 +1,15 @@
 package models
 
 import (
+	"core/api"
+	"core/db"
+	"core/notifier"
+	"core/utils"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"proto/mail"
 	"proto/sms"
 	"reflect"
-	"core/api"
-	"core/db"
-	"core/notifier"
-	"core/utils"
 )
 
 type notifierImpl struct {
