@@ -138,9 +138,9 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 		}
 	}
 	if direction {
-		scope = scope.Order("created_at asc")
-	} else {
 		scope = scope.Order("created_at desc")
+	} else {
+		scope = scope.Order("created_at asc")
 	}
 	if limit > 0 {
 		scope = scope.Limit(int(limit))
@@ -148,14 +148,6 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 		scope = scope.Limit(20)
 	}
 	err = scope.Find(&messages).Error
-
-	if !direction {
-		//reverse messages order
-		l := len(messages) - 1
-		for i := 0; i < (l+1)/2; i++ {
-			messages[i], messages[l-i] = messages[l-i], messages[i]
-		}
-	}
 	return
 }
 
