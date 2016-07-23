@@ -140,6 +140,7 @@ func registerProducts() {
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 

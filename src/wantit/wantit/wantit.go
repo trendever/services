@@ -37,7 +37,7 @@ var (
 	lastChecked    = int64(0)
 	pool           *instagram_api.Pool
 	settings       = conf.GetSettings()
-	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}")
+	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
 	avatarUploader = mandible.New(conf.GetSettings().MandibleURL)
 )
 
@@ -137,6 +137,7 @@ func registerOrders() {
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 		log.Debug("... got %v results", len(res.Result))
@@ -276,9 +277,9 @@ func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customer
 func findProductCode(comment string) (code string, found bool) {
 	code = codeRegexp.FindString(comment)
 	if code != "" {
-		found = true
+		return code[:6], true
 	}
-	return
+	return "", false
 }
 
 // get core productId by mediaId
