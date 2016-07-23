@@ -1,6 +1,8 @@
 #!/bin/sh
 
-find vendor -type d -name views | while read dir; do
+find vendor src -type d -name views | while read dir; do
   install -d "$dir" "$1/$dir"
   cp -a "$dir"/* "$1/$dir"
 done
+
+cp -a 'src/core/app' "$1/app"
