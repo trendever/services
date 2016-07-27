@@ -31,6 +31,7 @@ var (
 	Models = []interface{}{
 		&models.User{},
 		&models.Shop{},
+		&models.ShopCard{},
 		&models.Tag{},
 		&models.Product{},
 		&models.ProductItem{},
@@ -47,6 +48,7 @@ var (
 
 // Init starts the qor!
 func Init(engine *gin.Engine) {
+
 	Admin = admin.New(&qor.Config{
 		DB: db.New(),
 	})

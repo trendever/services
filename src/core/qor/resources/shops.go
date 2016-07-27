@@ -151,7 +151,7 @@ func addShopResource(a *admin.Admin) {
 				{"Caption"},
 				{"Slogan"},
 				{"ShippingRules"},
-				{"PaymentRules"},
+				{"PaymentRules", "Cards"},
 				{"NotifySupplier"},
 			},
 		},

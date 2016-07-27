@@ -52,6 +52,8 @@ func Migrate() error {
 
 	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
+	db.New().Model(&ShopCard{}).AddForeignKey("shop_id", "products_shops(id)", "CASCADE", "RESTRICT")
+
 	return nil
 }
 

@@ -1,0 +1,39 @@
+service ShopCardService {
+  // cards api
+  rpc CreateCard(CreateCardRequest) returns (CreateCardReply) {}
+  rpc DeleteCard(DeleteCardRequest) returns (DeleteCardReply) {}
+  rpc GetCards(GetCardsRequest) returns (GetCardsReply) {}
+}
+
+message ShopCard {
+  uint64 id = 1;
+  uint64 shop_id = 2;
+  string name = 3;
+  string number = 4;
+}
+
+message CreateCardRequest {
+  uint64 user_id = 1;
+  ShopCard card = 2;
+}
+
+message CreateCardReply {
+  uint64 id = 1;
+}
+
+message DeleteCardRequest {
+  uint64 id = 1;
+  uint64 user_id = 2;
+}
+
+message DeleteCardReply {
+}
+
+message GetCardsRequest {
+  uint64 user_id = 1;
+  uint64 shop_id = 2;
+}
+
+message GetCardsReply {
+  repeated ShopCard cards = 1;
+}

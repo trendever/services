@@ -18,7 +18,8 @@ const (
 	defaultSiteURL = "https://trendever.com"
 )
 
-func init() {
+// Init loads configuration
+func Init() {
 
 	viper.SetDefault("SiteURL", defaultSiteURL)
 
