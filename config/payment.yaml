@@ -1,0 +1,11 @@
+rpc: :7777
+callbackHttp: :7780
+
+debug: true
+
+db:
+  debug: true
+  conf: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"
+
+payture:
+  sandbox: true

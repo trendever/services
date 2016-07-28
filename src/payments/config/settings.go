@@ -7,31 +7,38 @@ import (
 	"utils/log"
 )
 
-const consulConfigPath = "payment"
+const configName = "payment"
 
 //Settings is a app settings
 type Settings struct {
-	Listen    string
-	Debug     bool
-	SentryDSN string
-	DB        struct {
+	RPC          string
+	CallbackHTTP string
+	Debug        bool
+	SentryDSN    string
+	DB           struct {
 		Conf  string
 		Debug bool
+	}
+	Payture struct {
+		Sandbox bool
+		URL     string
+		Key     string
 	}
 }
 
 var settings = &Settings{}
 
 func init() {
-	viper.SetDefault("listen", ":7777")
+	viper.SetDefault("rpc", ":7777")
 
-	if err := config.Load(consulConfigPath); err != nil {
+	if err := config.Load(configName); err != nil {
 		log.Fatal(fmt.Errorf("Can't load config: %v", err))
 	}
 
 	if err := viper.Unmarshal(settings); err != nil {
 		log.Fatal(err)
 	}
+
 	log.Init(settings.Debug, "PAYMENT", settings.SentryDSN)
 }
 

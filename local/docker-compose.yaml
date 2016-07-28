@@ -98,6 +98,17 @@ services:
       - data
     working_dir: /services/
     command: bin/wantit start
+  payments:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+    command: sh -c './bin/payments migrate && exec ./bin/payments start'
+    ports:
+      - 127.0.0.1:7777:7777
+      - 127.0.0.1:7780:7780
 
   nats:
     image: "nats"

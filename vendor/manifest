@@ -146,6 +146,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/durango/go-credit-card",
+			"repository": "https://github.com/durango/go-credit-card",
+			"revision": "986a3cc0c28230050dfc9008be2b147ebdbd8459",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/dustin/go-broadcast",
 			"repository": "https://github.com/dustin/go-broadcast",
 			"revision": "3bdf6d4a7164a50bc19d5f230e2981d87d2584f1",
