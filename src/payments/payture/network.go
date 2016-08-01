@@ -37,12 +37,18 @@ func encodeData(data map[string]string) string {
 	return strings.Join(dataParams, ";")
 }
 
-func (c *Client) xmlRequest(method string, decodeTo interface{}, data map[string]string) error {
+func (c *Client) xmlRequest(method string, decodeTo interface{}, data, extraParams map[string]string) error {
 
-	body, err := request(fmt.Sprintf("%v/apim/%v", c.URL, method), map[string]string{
+	params := map[string]string{
 		"Key":  c.Key,
 		"Data": encodeData(data),
-	})
+	}
+
+	for k, v := range extraParams {
+		params[k] = v
+	}
+
+	body, err := request(fmt.Sprintf("%v/apim/%v", c.URL, method), params)
 
 	if err != nil {
 		return err

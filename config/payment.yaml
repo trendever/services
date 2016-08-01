@@ -1,7 +1,11 @@
 rpc: :7777
-callbackHttp: :7780
 
 debug: true
+
+http:
+  listen: :7780
+  public: "http://localhost:7780/callback"
+  redirect: "http://localhost:3002/chat/%v/payed/%v"
 
 db:
   debug: true
@@ -9,3 +13,5 @@ db:
 
 payture:
   sandbox: true
+
+

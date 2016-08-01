@@ -46,7 +46,7 @@ type initResponse struct {
 }
 
 type payStatusResponse struct {
-	XMLName xml.Name `xml:"Init"`
+	XMLName xml.Name `xml:"PayStatus"`
 	Success bool     `xml:"Success,attr"`
 	OrderID string   `xml:"OrderId,attr"`
 	Amount  uint64   `xml:"Amount,attr"`
@@ -68,12 +68,12 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		"IP":          ipAddr,
 
 		// callback URL; seems not to work in sandbox mode
-		"Url": config.Get().HTTP.Public + "?uniqueID={orderid}&result={success}",
+		"Url": config.Get().HTTP.Public + "?orderid={orderid}&result={success}",
 
 		// template fields
 		"Product": fmt.Sprintf("#%d", pay.LeadID),
 		"Total":   fmt.Sprintf("%v", pay.Amount),
-	})
+	}, nil)
 
 	if err != nil {
 		return nil, err
@@ -103,8 +103,8 @@ func (c *Client) Redirect(sess *models.Session) string {
 func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 	var res payStatusResponse
 
-	err = c.xmlRequest(initMethod, &res, map[string]string{
-		"OrderID": sess.UniqueID,
+	err = c.xmlRequest(payStatusMethod, &res, nil, map[string]string{
+		"OrderId": sess.UniqueID,
 	})
 
 	if err != nil {

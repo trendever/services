@@ -12,7 +12,6 @@ message CreateOrderRequest {
   uint64 lead_id = 3;
 
   string shop_card_number = 4;
-  string customer_card_number = 5;
 }
 
 message CreateOrderReply {

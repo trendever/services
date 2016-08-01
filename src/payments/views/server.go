@@ -53,7 +53,7 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 	//find session
 	sess, err := ps.repo.GetSessByUID(orderID)
 	if err != nil {
-		c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, false, 0))
+		c.Redirect(http.StatusFound, fmt.Sprintf(config.Get().HTTP.Redirect, 0, false))
 		return
 	}
 
@@ -66,15 +66,16 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 		}
 	}()
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, success, sess.LeadID))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.LeadID, success))
 }
 
 func (ps *paymentServer) PeriodicCheck() {
 	log.Debug("Starting PeriodicCheck")
-	for range time.Tick(time.Second * time.Duration(config.Get().PeriodicCheck)) {
+	defer log.Debug("Finished PeriodicCheck")
+	for {
 		ps.CheckStatuses()
+		<-time.After(time.Second * time.Duration(config.Get().PeriodicCheck))
 	}
-	log.Debug("Finished PeriodicCheck")
 }
 
 func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrderRequest) (*payment.CreateOrderReply, error) {
