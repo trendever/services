@@ -27,6 +27,8 @@ var finishStates = []string{
 	"Charged",
 }
 
+const successState = "Charged"
+
 const gatewayType = "payture"
 
 // GatewayType for this pkg
@@ -109,13 +111,18 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 		return
 	}
 
+	if !res.Success {
+		err = fmt.Errorf("Unsuccessfull PayStatus: errCode=%v", res.ErrCode)
+		return
+	}
+
 	for _, st := range finishStates {
 		if res.State == st {
 			finished = true
 		}
 	}
 
-	sess.Success = res.Success
+	sess.Success = (res.State == successState)
 	sess.Finished = finished
 	sess.State = res.State
 
