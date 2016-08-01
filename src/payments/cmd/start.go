@@ -18,6 +18,7 @@ var cmdRun = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("Starting payment service on %q", config.Get().RPC)
 
+		config.Init()
 		db.Init()
 		views.Init()
 

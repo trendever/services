@@ -14,7 +14,7 @@ type Client struct {
 func GetSandboxClient() *Client {
 
 	return &Client{
-		URL: "https://sandbox.payture.com",
+		URL: "https://sandbox2.payture.com",
 		Key: "Merchant",
 	}
 

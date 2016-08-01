@@ -11,11 +11,10 @@ const configName = "payment"
 
 //Settings is a app settings
 type Settings struct {
-	RPC          string
-	CallbackHTTP string
-	Debug        bool
-	SentryDSN    string
-	DB           struct {
+	RPC       string
+	Debug     bool
+	SentryDSN string
+	DB        struct {
 		Conf  string
 		Debug bool
 	}
@@ -24,12 +23,22 @@ type Settings struct {
 		URL     string
 		Key     string
 	}
+	HTTP struct {
+		Listen   string // http-server bind addr (like :7780)
+		Public   string // public-accessible URL of http-server root (like http://te.com:7780/)
+		Redirect string // success redirect URL. Format string: 1st %v -- success bool; 2nd -- lead id (may be zero)
+	}
+
+	PeriodicCheck int // how often do we check unfinished txs; secs
 }
 
 var settings = &Settings{}
 
-func init() {
+// Init loads config
+func Init() {
 	viper.SetDefault("rpc", ":7777")
+	viper.SetDefault("http.listen", ":7780")
+	viper.SetDefault("periodicCheck", "120")
 
 	if err := config.Load(configName); err != nil {
 		log.Fatal(fmt.Errorf("Can't load config: %v", err))

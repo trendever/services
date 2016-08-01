@@ -16,19 +16,24 @@ type Payment struct {
 	LeadID uint64
 
 	// p2p params
-	ShopCardNumber     string
-	CustomerCardNumber string
-	Amount             uint64
+	ShopCardNumber string
+	Amount         uint64
 }
 
 // Session once-used pay sess
 type Session struct {
 	gorm.Model
 
-	PaymentID uint
-	Amount    uint64
-	IP        string
+	PaymentID   uint
+	Amount      uint64
+	IP          string
+	GatewayType string `gorm:"index"`
 
+	State    string `gorm:"index"`
+	Finished bool   `gorm:"index"` // session can be finished, but unsuccessfully
+	Success  bool   `gorm:"index"` //
+
+	LeadID uint64 // dublicate field to save db calls
 	// I wonder why payture wants 2 unique ids;
 	UniqueID   string `gorm:"index"` // this one is used to check pay status
 	ExternalID string `gorm:"index"` // this one is used by client
@@ -44,11 +49,28 @@ type Repo interface {
 
 	// sess part
 	CreateSess(*Session) error
+	GetSessByUID(string) (*Session, error)
+	SaveSess(*Session) error
+	GetUnfinished(string) ([]Session, error)
 }
 
 // RepoImpl is implementation that uses gorm
 type RepoImpl struct {
 	DB *gorm.DB
+}
+
+// Gateway interface (1-step payment)
+type Gateway interface {
+
+	// create buying session
+	Buy(sess *Payment, ipAddr string) (*Session, error)
+
+	// get redirect URL for this session
+	Redirect(*Session) string
+
+	CheckStatus(*Session) (finished bool, err error)
+
+	GatewayType() string
 }
 
 // CreateSess to DB
@@ -61,6 +83,30 @@ func (r *RepoImpl) GetPayByID(id uint) (*Payment, error) {
 	var result Payment
 	err := r.DB.Where("id = ?", id).Find(&result).Error
 	return &result, err
+}
+
+// GetSessByUID returns payment by ID
+func (r *RepoImpl) GetSessByUID(uid string) (*Session, error) {
+	var result Session
+	err := r.DB.Where("unique_id = ?", uid).Find(&result).Error
+	return &result, err
+}
+
+// GetUnfinished returns payment by ID
+func (r *RepoImpl) GetUnfinished(gatewayType string) ([]Session, error) {
+	var result []Session
+
+	err := r.DB.
+		Where("gateway_type = ?", gatewayType).
+		Where("finished != TRUE").
+		Find(&result).Error
+
+	return result, err
+}
+
+// SaveSess saves payment
+func (r *RepoImpl) SaveSess(p *Session) error {
+	return r.DB.Save(p).Error
 }
 
 // CreatePay creates payment
@@ -77,7 +123,7 @@ func (r *RepoImpl) SavePay(p *Payment) error {
 func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 
 	// Check credit cards first
-	if !validate(r.ShopCardNumber) || !validate(r.CustomerCardNumber) {
+	if !validate(r.ShopCardNumber) {
 		return nil, fmt.Errorf("Invalid credit card (Luhn failed)")
 	}
 
@@ -87,8 +133,7 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 
 	pay := &Payment{
 		// Bank cards
-		ShopCardNumber:     r.ShopCardNumber,
-		CustomerCardNumber: r.CustomerCardNumber,
+		ShopCardNumber: r.ShopCardNumber,
 
 		// Core LeadID
 		LeadID: r.LeadId,

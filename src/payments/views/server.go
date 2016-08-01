@@ -1,36 +1,80 @@
 package views
 
 import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+	"utils/log"
+	"utils/rpc"
+
 	"payments/config"
 	"payments/db"
 	"payments/models"
 	"payments/payture"
 	"proto/payment"
-	"utils/rpc"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 )
 
 type paymentServer struct {
-	payture *payture.Client
+	gateway models.Gateway
 	repo    models.Repo
 }
 
 // Init starts serving
 func Init() {
 
+	server := &paymentServer{
+		gateway: payture.GetSandboxClient(),
+		repo:    &models.RepoImpl{DB: db.New()},
+	}
+
 	// register API calls
 	payment.RegisterPaymentServiceServer(
 		rpc.Serve(config.Get().RPC),
-		&paymentServer{
-			payture.GetSandboxClient(),
-			&models.RepoImpl{DB: db.New()},
-		},
+		server,
 	)
 
-	// register HTTP calls
-	// @TODO
+	// register HTTP calls; for notifications
+	router := gin.Default()
 
+	router.GET("/callback", server.HandleCallback)
+
+	go router.Run(config.Get().HTTP.Listen)
+	go server.PeriodicCheck()
+}
+
+func (ps *paymentServer) HandleCallback(c *gin.Context) {
+	orderID := c.Param("orderid")
+	success, _ := strconv.ParseBool(c.Param("success"))
+
+	//find session
+	sess, err := ps.repo.GetSessByUID(orderID)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, false, 0))
+		return
+	}
+
+	// we want to redirect client NOW
+	// status will be reported afterwards by chat message
+	go func() {
+		err := ps.CheckStatus(sess)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, success, sess.LeadID))
+}
+
+func (ps *paymentServer) PeriodicCheck() {
+	log.Debug("Starting PeriodicCheck")
+	for range time.Tick(time.Second * time.Duration(config.Get().PeriodicCheck)) {
+		ps.CheckStatuses()
+	}
+	log.Debug("Finished PeriodicCheck")
 }
 
 func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrderRequest) (*payment.CreateOrderReply, error) {
@@ -65,7 +109,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	}
 
 	// Step1: init TX
-	sess, err := ps.payture.Buy(pay, req.Ip)
+	sess, err := ps.gateway.Buy(pay, req.Ip)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED}, err
 	}
@@ -77,6 +121,51 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	}
 
 	// Step3: redirect client
-	return &payment.BuyOrderReply{RedirectUrl: ps.payture.Redirect(sess)}, nil
+	return &payment.BuyOrderReply{RedirectUrl: ps.gateway.Redirect(sess)}, nil
 
+}
+
+func (ps *paymentServer) CheckStatus(session *models.Session) error {
+
+	// Step1: check if it's finished
+	finished, err := ps.gateway.CheckStatus(session)
+	if err != nil {
+		return err
+	}
+
+	// Step2: save it -- for status updates
+	err = ps.repo.SaveSess(session)
+	if err != nil {
+		return err
+	}
+
+	// Step3: check if it's finished
+	if !finished {
+		return nil
+	}
+
+	// Step4: notify chat
+	// @TODO
+
+	return nil
+}
+
+func (ps *paymentServer) CheckStatuses() error {
+
+	// Get session with unfinished state
+	toCheck, err := ps.repo.GetUnfinished(ps.gateway.GatewayType())
+	if err != nil {
+		return err
+	}
+
+	// check them
+	for _, sess := range toCheck {
+		err := ps.CheckStatus(&sess)
+		if err != nil {
+			// this errors are not fatal; let's just log them
+			log.Error(err)
+		}
+	}
+
+	return nil
 }

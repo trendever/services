@@ -24,11 +24,10 @@ var cmdTest = &cobra.Command{
 		case "create":
 
 			res, err := client.CreateOrder(context.Background(), &payment.CreateOrderRequest{
-				Amount:             amount,
-				Currency:           payment.Currency(payment.Currency_value[currency]),
-				LeadId:             leadID,
-				ShopCardNumber:     shopCard,
-				CustomerCardNumber: customerCard,
+				Amount:         amount,
+				Currency:       payment.Currency(payment.Currency_value[currency]),
+				LeadId:         leadID,
+				ShopCardNumber: shopCard,
 			})
 
 			fmt.Printf("Result: %#v\nError: %v\n", res, err)
@@ -52,10 +51,10 @@ var (
 	conn   string
 
 	// create
-	amount                 uint64
-	currency               string
-	leadID                 uint64
-	shopCard, customerCard string
+	amount   uint64
+	currency string
+	leadID   uint64
+	shopCard string
 
 	// buy
 	payID uint64
@@ -71,7 +70,6 @@ func init() {
 	cmdTest.Flags().StringVarP(&currency, "currency", "c", "RUB", "Currency")
 	cmdTest.Flags().Uint64VarP(&leadID, "lead", "l", 0, "Connected leadID")
 	cmdTest.Flags().StringVarP(&shopCard, "shopCard", "t", "", "Shop card ID")
-	cmdTest.Flags().StringVarP(&customerCard, "customerCard", "f", "", "Customer card ID")
 
 	cmdTest.Flags().Uint64VarP(&payID, "pay", "p", 0, "Previously generated pay ID")
 	cmdTest.Flags().StringVarP(&ip, "ip", "i", "127.0.0.1", "Customer IP addr")
