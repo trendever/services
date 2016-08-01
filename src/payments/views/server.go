@@ -70,10 +70,11 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 }
 
 func (ps *paymentServer) PeriodicCheck() {
-	log.Debug("Starting PeriodicCheck")
-	defer log.Debug("Finished PeriodicCheck")
 	for {
+		log.Debug("Starting PeriodicCheck")
 		ps.CheckStatuses()
+		log.Debug("Finished PeriodicCheck")
+
 		<-time.After(time.Second * time.Duration(config.Get().PeriodicCheck))
 	}
 }

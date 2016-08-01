@@ -27,8 +27,6 @@ var finishStates = []string{
 	"Charged",
 }
 
-const successState = "Charged"
-
 const gatewayType = "payture"
 
 // GatewayType for this pkg
@@ -68,7 +66,7 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		"IP":          ipAddr,
 
 		// callback URL; seems not to work in sandbox mode
-		"Url": config.Get().HTTP.Public + "?orderid={orderid}&result={success}",
+		"Url": config.Get().HTTP.Public + "?orderid={orderid}&success={success}",
 
 		// template fields
 		"Product": fmt.Sprintf("#%d", pay.LeadID),
@@ -111,18 +109,13 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 		return
 	}
 
-	if !res.Success {
-		err = fmt.Errorf("Unsuccessfull PayStatus: errCode=%v", res.ErrCode)
-		return
-	}
-
 	for _, st := range finishStates {
 		if res.State == st {
 			finished = true
 		}
 	}
 
-	sess.Success = (res.State == successState)
+	sess.Success = res.Success
 	sess.Finished = finished
 	sess.State = res.State
 
