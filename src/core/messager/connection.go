@@ -7,10 +7,15 @@ import (
 	"utils/log"
 )
 
+type subscription struct {
+	subject string
+	group   string
+}
+
 var (
 	cn       *nats.Conn
 	c        *nats.EncodedConn
-	handlers = map[string]nats.Handler{}
+	handlers = map[subscription]nats.Handler{}
 )
 
 //Init initializes nats connection
@@ -25,8 +30,12 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	for subj, h := range handlers {
-		c.Subscribe(subj, h)
+	for sub, h := range handlers {
+		if sub.group == "" {
+			c.Subscribe(sub.subject, h)
+		} else {
+			c.QueueSubscribe(sub.subject, sub.group, h)
+		}
 	}
 
 	go messageLoop()
