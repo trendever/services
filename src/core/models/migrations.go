@@ -52,6 +52,12 @@ func Migrate() error {
 
 	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
+	// i'm somewhat unsure if drop something here is good idea
+	db.New().Model(&EmailTemplate{}).
+		DropColumn("model_name").DropColumn("preloads").DropColumn("to")
+	db.New().Model(&SMSTemplate{}).
+		DropColumn("model_name").DropColumn("preloads").DropColumn("to")
+
 	return nil
 }
 

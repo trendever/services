@@ -215,7 +215,11 @@ func (s productServer) LikeProduct(_ context.Context, req *core.LikeProductReque
 
 func (s productServer) GetSpecialProducts(_ context.Context, _ *core.GetSpecialProductsRequest) (*core.GetSpecialProductsReply, error) {
 	var list []*core.SpecialProductInfo
-	res := db.New().Raw("SELECT DISTINCT p.id, p.title FROM settings_templates_chat t INNER JOIN products_product p ON t.product_id = p.id").Scan(&list)
+	res := db.New().
+		Select("DISTINCT p.id, p.title").
+		Table("settings_templates_chat t").
+		Joins("INNER JOIN products_product p ON t.product_id = p.id").
+		Scan(&list)
 	if res.RecordNotFound() {
 		return &core.GetSpecialProductsReply{}, nil
 	}

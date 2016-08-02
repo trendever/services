@@ -20,22 +20,21 @@ var templatesMap = map[proto_core.LeadAction]string{
 func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction) error {
 	log.Debug("SendProductToChat(%v, %v, %v)", lead.ID, product.ID, action)
 	var templates []ChatTemplate
-	res := db.New().Where(
-		"group = ? AND (product_id = ? OR is_default = ?) AND for_suppliers_with_notices = ?",
-		templatesMap[action],
-		product.ID,
-		true,
-		product.Shop.NotifySupplier,
-	).Order("product_id desc, \"order\"").Find(&templates)
-	if res.RecordNotFound() {
+	res := db.New().
+		Where("\"group\" = ?", templatesMap[action]).
+		Where("product_id = ? OR is_default", product.ID).
+		Where("for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
+		Order("product_id desc, \"order\"").
+		Find(&templates)
+	if res.Error != nil {
+		return fmt.Errorf("failed to load templates: %v", res.Error)
+	}
+	if len(templates) == 0 {
 		return fmt.Errorf(
 			"suitable tamplates not found for productID = %v with action %v",
 			product.ID,
 			proto_core.LeadAction_name[int32(action)],
 		)
-	}
-	if res.Error != nil {
-		return fmt.Errorf("failed to load templates: %v", res.Error)
 	}
 
 	err := joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
