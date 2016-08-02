@@ -14,19 +14,6 @@ const (
 	payStatusMethod = "PayStatus"
 )
 
-var finishStates = []string{
-	// is not used, but let it be there
-	"Voided",
-	"Refunded",
-
-	// error states
-	"Error",
-	"Rejected",
-
-	// success state
-	"Charged",
-}
-
 const successState = "Charged"
 
 const gatewayType = "payture"
@@ -111,19 +98,14 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 		return
 	}
 
-	if !res.Success {
+	if !res.Success && res.OrderID == "" {
 		err = fmt.Errorf("Unsuccessfull PayStatus: errCode=%v", res.ErrCode)
 		return
 	}
 
-	for _, st := range finishStates {
-		if res.State == st {
-			finished = true
-		}
-	}
-
 	sess.Success = (res.State == successState)
-	sess.Finished = finished
+	sess.Finished = (res.OrderID != "") && (res.Success || res.ErrCode != "NONE")
+
 	sess.State = res.State
 
 	return

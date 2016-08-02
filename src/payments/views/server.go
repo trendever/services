@@ -47,8 +47,8 @@ func Init() {
 }
 
 func (ps *paymentServer) HandleCallback(c *gin.Context) {
-	orderID := c.Param("orderid")
-	success, _ := strconv.ParseBool(c.Param("success"))
+	orderID := c.Query("orderid")
+	success, _ := strconv.ParseBool(c.Query("success"))
 
 	//find session
 	sess, err := ps.repo.GetSessByUID(orderID)

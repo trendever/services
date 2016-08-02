@@ -12,6 +12,7 @@ db:
   conf: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"
 
 payture:
-  sandbox: true
+  key: "MerchantTrendeverp2p"
+  url: "https://sandbox2.payture.com"
 
 
