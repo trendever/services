@@ -26,6 +26,13 @@ message ReadLeadResult {
   int64 id = 1;
 }
 
+enum LeadAction {
+    BUY = 0;
+    // we don't want add item to lead for now
+    // just send info to conversation instead
+    INFO = 1;
+}
+
 // representation of lead model
 message Lead {
     int64 id = 1;
@@ -38,6 +45,8 @@ message Lead {
     string instagram_link = 7;
 
     int64 product_id = 6;
+
+    LeadAction action = 8;
 }
 
 

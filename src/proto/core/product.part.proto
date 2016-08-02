@@ -14,6 +14,8 @@ service ProductService {
   rpc CreateProduct(CreateProductRequest) returns (CreateProductResult) {}
 
   rpc LikeProduct(LikeProductRequest) returns (LikeProductReply) {}
+  // Method returns list of product with non-default chat templates
+  rpc GetSpecialProducts(GetSpecialProductsRequest) returns (GetSpecialProductsReply) {}
 }
 
 message GetProductRequest {
@@ -118,6 +120,16 @@ message LikeProductRequest {
     bool like = 3;
 }
 
-message LikeProductReply {
+message LikeProductReply {}
 
+message GetSpecialProductsRequest {}
+
+message SpecialProductInfo {
+    uint64 id = 1;
+    string title = 2;
+}
+
+message GetSpecialProductsReply {
+    repeated SpecialProductInfo list = 1;
+    string err = 2;
 }
