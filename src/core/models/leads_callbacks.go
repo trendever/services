@@ -1,12 +1,9 @@
 package models
 
 import (
-	"core/api"
-	"utils/log"
-	//"core/db"
 	"core/db"
-	"core/notifier"
 	"proto/core"
+	"utils/log"
 )
 
 //BeforeSave is a gorm callback
@@ -49,16 +46,7 @@ func notifyCustomerAboutLead(l *Lead) (err error) {
 	if l.Customer.Phone == "" {
 		return
 	}
-	url, err := api.GetChatURLWithToken(l.ID, l.Customer.ID)
-	if err != nil {
-		return
-	}
-	short, err := api.GetShortURL(url)
-	if err != nil {
-		return
-	}
-
-	err = notifier.NotifyCustomerAboutLead(l.Customer, short.URL, l, GetNotifier().NotifyBySms)
+	err = GetNotifier().NotifyCustomerAboutLead(&l.Customer, l)
 	if err != nil {
 		return
 	}

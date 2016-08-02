@@ -6,7 +6,6 @@ import (
 	"core/qor/filters"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/qor/activity"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
@@ -107,21 +106,7 @@ func addLeadResource(a *admin.Admin) {
 		})
 	}
 
-	activity.Register(res) // register order activity
 	addTransitionActions(a, res)
-
-	// add various send actions
-	addSendActions("Lead", a, res, func(object interface{}, ctx *admin.Context, actionName string) bool {
-
-		switch actionName {
-		case ActionSendEmail:
-			return false
-		case ActionSendSMS:
-			return true
-		default:
-			return false
-		}
-	})
 }
 
 // and typical actions for changing order state

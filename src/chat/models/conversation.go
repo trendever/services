@@ -77,6 +77,7 @@ func (c *conversationRepositoryImpl) GetByID(id uint) (model *Conversation, err 
 	err = scope.Error
 	return
 }
+
 func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*Member) error {
 
 	for _, member := range members {
@@ -92,8 +93,8 @@ func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*
 		}
 	}
 	return nil
-
 }
+
 func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs ...uint64) error {
 	for _, userID := range userIDs {
 		member, err := c.GetMember(chat, userID)
@@ -109,9 +110,11 @@ func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs .
 	}
 	return nil
 }
+
 func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ...*Message) error {
 	return c.db.Model(chat).Association("Messages").Append(messages).Error
 }
+
 func (c *conversationRepositoryImpl) GetMember(model *Conversation, userID uint64) (member *Member, err error) {
 	member = &Member{}
 	scope := c.db.Where("user_id = ? AND conversation_id = ?", userID, model.ID).Find(member)
@@ -138,9 +141,9 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 		}
 	}
 	if direction {
-		scope = scope.Order("created_at asc")
-	} else {
 		scope = scope.Order("created_at desc")
+	} else {
+		scope = scope.Order("created_at asc")
 	}
 	if limit > 0 {
 		scope = scope.Limit(int(limit))
@@ -148,14 +151,6 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 		scope = scope.Limit(20)
 	}
 	err = scope.Find(&messages).Error
-
-	if !direction {
-		//reverse messages order
-		l := len(messages) - 1
-		for i := 0; i < (l+1)/2; i++ {
-			messages[i], messages[l-i] = messages[l-i], messages[i]
-		}
-	}
 	return
 }
 
@@ -235,8 +230,17 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 
 func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, error) {
 	var total []uint64
-	db := c.db.Raw(`SELECT COALESCE(sum(count),0) as total FROM (SELECT count(messages.id) as count FROM "messages" LEFT JOIN members ON (members.conversation_id = messages.conversation_id AND members.user_id = ?) WHERE "messages".deleted_at IS NULL AND (messages.id > members.last_message_id OR members.last_message_id IS NULL) AND messages.conversation_id IN (SELECT conversations.id FROM conversations INNER JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?) GROUP BY messages.conversation_id
-) as unread_messages`, userID, userID).Pluck("count", &total)
+	db := c.db.Raw(`
+	SELECT COALESCE(sum(count),0) as total FROM (
+		SELECT count(messages.id) as count
+		FROM "messages" LEFT JOIN members
+		ON (members.conversation_id = messages.conversation_id AND members.user_id = ?)
+		WHERE "messages".deleted_at IS NULL AND (messages.id > members.last_message_id OR members.last_message_id IS NULL) AND messages.conversation_id IN (
+			SELECT conversations.id
+			FROM conversations INNER JOIN members
+			ON members.conversation_id = conversations.id AND members.user_id = ?
+		) GROUP BY messages.conversation_id
+	) as unread_messages`, userID, userID).Pluck("total", &total)
 	return total[0], db.Error
 }
 

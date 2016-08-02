@@ -7,6 +7,7 @@ import (
 
 	"api/cache"
 	"errors"
+	"fmt"
 	"proto/core"
 	"utils/log"
 	"utils/rpc"
@@ -21,6 +22,7 @@ func init() {
 		soso.Route{"retrieve", "product", RetrieveProduct},
 		soso.Route{"search", "product", SearchProduct},
 		soso.Route{"like", "product", LikeProduct},
+		soso.Route{"get_specials", "product", GetSpecialProducts},
 	)
 }
 
@@ -199,5 +201,23 @@ func LikeProduct(c *soso.Context) {
 
 	c.SuccessResponse(map[string]interface{}{
 		"status": "ok",
+	})
+}
+
+func GetSpecialProducts(c *soso.Context) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := productServiceClient.GetSpecialProducts(ctx, &core.GetSpecialProductsRequest{})
+	if err == nil && res.Err != "" {
+		err = errors.New(res.Err)
+	}
+	if err != nil {
+		log.Error(fmt.Errorf("Failed to get special products list: %v", err))
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"special_products": res.List,
 	})
 }

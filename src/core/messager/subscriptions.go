@@ -1,10 +1,7 @@
 package messager
 
 import (
-	"core/api"
 	"core/models"
-	"core/notifier"
-	"fmt"
 	"proto/chat"
 	"utils/log"
 )
@@ -14,8 +11,14 @@ type chatRequest interface {
 }
 
 func init() {
-	handlers["chat.message.new"] = newMessage
-	handlers["core.notify.message"] = notifySellerAboutUnreadedMessage
+	handlers[subscription{
+		subject: "chat.message.new",
+		group:   "core",
+	}] = newMessage
+	handlers[subscription{
+		subject: "core.notify.message",
+		group:   "core",
+	}] = notifySellerAboutUnreadedMessage
 }
 
 func touchLead(req chatRequest) error {
@@ -37,8 +40,9 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 		return
 	}
 
+	n := models.GetNotifier()
 	for _, seller := range lead.Shop.Sellers {
-		notifySellerBySms(lead, seller)
+		log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead))
 	}
 
 	if lead.Shop.NotifySupplier {
@@ -47,26 +51,6 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 			log.Error(err)
 			return
 		}
-
-		notifySellerBySms(lead, *supplier)
+		log.Error(n.NotifySellerAboutUnreadMessage(supplier, lead))
 	}
-}
-
-func notifySellerBySms(lead *models.Lead, user models.User) {
-	if user.Phone == "" {
-		log.Error(fmt.Errorf("Seller or supplier without phone! [%v]%v", user.ID, user.GetName()))
-		return
-	}
-	url, err := api.GetChatURLWithToken(lead.ID, user.ID)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	r, err := api.GetShortURL(url)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	err = notifier.NotifySellerAboutUnreadMessage(user, r.URL, lead, models.GetNotifier().NotifyBySms)
-	log.Error(err)
 }

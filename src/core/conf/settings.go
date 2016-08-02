@@ -13,9 +13,10 @@ var (
 
 // These are settings, but without need to change them in a file
 const (
-	AdminName      = "Trendever"
-	configName     = "core"
-	defaultSiteURL = "https://trendever.com"
+	AdminName         = "Trendever"
+	configName        = "core"
+	defaultSiteURL    = "https://trendever.com"
+	defaultSystemUser = "trendever"
 )
 
 func init() {
@@ -34,6 +35,9 @@ func init() {
 	}
 
 	log.Init(settings.Debug, "CORE", settings.SentryDSN)
+	if settings.SystemUser == "" {
+		settings.SystemUser = defaultSystemUser
+	}
 }
 
 // GetSettings returns current settings instance
@@ -43,11 +47,12 @@ func GetSettings() *Settings {
 
 // Settings container
 type Settings struct {
-	Debug     bool
-	AppHost   string
-	SiteURL   string
-	SentryDSN string
-	NatsURL   string
+	Debug      bool
+	AppHost    string
+	SiteURL    string
+	SentryDSN  string
+	NatsURL    string
+	SystemUser string
 
 	RPC struct {
 		Listen         string
