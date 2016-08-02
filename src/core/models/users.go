@@ -1,15 +1,16 @@
 package models
 
 import (
+	"core/conf"
 	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"utils/log"
 )
 
 // User model
 type User struct {
 	gorm.Model
-	UserName string
 
 	Name      string
 	Email     string
@@ -43,6 +44,20 @@ type User struct {
 	SuperSeller bool `sql:"default:false"`
 
 	previousPhone string
+}
+
+// This user is used if we need to send a message from system
+var SystemUser User
+
+func LoadOrCreateSystemUser() error {
+	name := conf.GetSettings().SystemUser
+	res := db.New().Find(&SystemUser, "name = ?", name)
+	if res.RecordNotFound() {
+		log.Warn("System user with name %v not found, creating new one", name)
+		SystemUser.Name = name
+		return db.New().Create(&SystemUser).Error
+	}
+	return res.Error
 }
 
 //Users is an array of users
