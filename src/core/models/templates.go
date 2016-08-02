@@ -8,7 +8,6 @@ import (
 	"github.com/qor/validations"
 	"gopkg.in/flosch/pongo2.v3"
 	"regexp"
-	"utils/log"
 )
 
 // TemplateModels contains all other models that can be passed to a template

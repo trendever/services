@@ -102,8 +102,8 @@ func addTemplateResource(a *admin.Admin) {
 	})
 
 	chat.IndexAttrs(
-		"Group", "Order", "TemplateName",
-		"OnAction", "IsDefault", "Product",
+		"TemplateName", "Group", "Order",
+		"IsDefault", "Product", "ForSuppliersWithNotices",
 	)
 	chat.SearchAttrs(
 		"TemplateName", "Group", "IsDefault", "ProductID", "Message",
@@ -116,6 +116,7 @@ func addTemplateResource(a *admin.Admin) {
 				{"TemplateName"},
 				{"Group", "Order"},
 				{"IsDefault", "Product"},
+				{"ForSuppliersWithNotices"},
 			},
 		},
 		{
