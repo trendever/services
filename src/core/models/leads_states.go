@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/db"
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"proto/chat"
@@ -232,14 +233,38 @@ func init() {
 		if err != nil {
 			log.Error(err)
 		}
-		products, err := GetLeadProducts(lead)
-		log.Error(err) // @CHECK this error was not originally checked; should we return non-nill err here?
-		for _, p := range products {
-			err := SendProductToChat(lead, p)
-			log.Error(err)
-		}
 		return nil
 	})
+
+	LeadState.State(leadStateInProgress).Enter(
+		func(model interface{}, tx *gorm.DB) error {
+			lead, ok := model.(*Lead)
+			if !ok {
+				return errors.New("Unsuported type for lead")
+			}
+			go func() {
+				shop := &lead.Shop
+				n := GetNotifier()
+				// @CHECK We cann't handle errors here for real...
+				if shop.NotifySupplier {
+					if err := n.NotifySellerAboutLead(&shop.Supplier, lead); err != nil {
+						log.Error(fmt.Errorf(
+							"failed to send notify for supplier: %v", err,
+						))
+					}
+				}
+
+				for _, seller := range shop.Sellers {
+					if err := n.NotifySellerAboutLead(&seller, lead); err != nil {
+						log.Error(fmt.Errorf(
+							"failed to send notify for supplier: %v", err,
+						))
+					}
+				}
+			}()
+			return nil
+		},
+	)
 
 	for _, event := range leadEvents {
 		LeadState.Event(event.Name).To(event.To).From(event.From...)

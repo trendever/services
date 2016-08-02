@@ -39,6 +39,7 @@ var (
 		&models.TagGroup{},
 		&models.Lead{},
 		&models.SMSTemplate{},
+		&models.ChatTemplate{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},
 		&activity.QorActivity{},

@@ -31,6 +31,9 @@ func TestMessages(t *testing.T) {
 					Message: "Hello, you made a lead {{ object.Source }}",
 				},
 			},
+			&ChatTemplate{
+				Message: "Awesome tests, {{ object.Name }}",
+			},
 		}
 
 		inputContexts = []interface{}{

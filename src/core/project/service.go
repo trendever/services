@@ -7,6 +7,7 @@ import (
 	"core/messager"
 	"core/models"
 	"core/qor"
+	"fmt"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -66,6 +67,9 @@ func (s *Service) Run(cli *cli.Context) {
 		// connect to database
 		db.Init()
 		messager.Init()
+		if err := models.LoadOrCreateSystemUser(); err != nil {
+			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))
+		}
 
 		// Initial web server
 		r := gin.Default()

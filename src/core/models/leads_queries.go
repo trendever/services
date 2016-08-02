@@ -22,6 +22,7 @@ func FindLeadByID(id uint) (Lead, error) {
 }
 
 //GetUserLeads returns user leads
+// @REFACTOR Code of this func looks non-nice. May be we should rewrite it
 func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
 	var relatedSellerShops []uint
 	var relatedSupplierShops []uint
@@ -40,16 +41,20 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	}
 	//First, we must find leads with passed parameters
 	userID := user.ID
-	sel := []string{
-		"pl.id, pl.customer_id, pl.shop_id",
-	}
+
 	scope := db.New().
 		Table("products_leads as pl").
 		Where("pl.deleted_at IS NULL").
-		Select(strings.Join(sel, ","))
+		Select("pl.id, pl.customer_id, pl.shop_id")
 
 	or := []string{}
 	orArgs := []interface{}{}
+
+	// we don't want show leads for sellers before first customer message
+	ignoreForSeller := []string{
+		core.LeadStatus_EMPTY.String(),
+		core.LeadStatus_NEW.String(),
+	}
 
 	//we don't want to filter leads for super seller, he can see all
 	if hasLeadRole(core.LeadUserRole_CUSTOMER, roles) && !user.SuperSeller {
@@ -57,12 +62,12 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		orArgs = append(orArgs, userID)
 	}
 	if hasLeadRole(core.LeadUserRole_SUPPLIER, roles) && !user.SuperSeller && len(relatedSupplierShops) > 0 {
-		or = append(or, "pl.shop_id IN (?)")
-		orArgs = append(orArgs, relatedSupplierShops)
+		or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
+		orArgs = append(orArgs, ignoreForSeller, relatedSupplierShops)
 	}
 	if hasLeadRole(core.LeadUserRole_SELLER, roles) && !user.SuperSeller && len(relatedSellerShops) > 0 {
-		or = append(or, "pl.shop_id IN (?)")
-		orArgs = append(orArgs, relatedSellerShops)
+		or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
+		orArgs = append(orArgs, ignoreForSeller, relatedSellerShops)
 	}
 
 	//this mean we want get leads where super seller is customer

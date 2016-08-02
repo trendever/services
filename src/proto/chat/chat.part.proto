@@ -91,7 +91,7 @@ enum MemberRole {
     SUPPLIER = 2;
     SELLER = 3;
     SUPER_SELLER = 4;
-
+	SYSTEM = 5;
 }
 
 message Error {
