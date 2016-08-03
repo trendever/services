@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	pb_chat "proto/chat"
-	"utils/log"
 )
 
 //Conversation is representation of conversation model
