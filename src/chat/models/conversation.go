@@ -1,8 +1,10 @@
 package models
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
 	pb_chat "proto/chat"
+	"utils/log"
 )
 
 //Conversation is representation of conversation model
@@ -11,7 +13,7 @@ type Conversation struct {
 	Name        string
 	Members     []*Member
 	Messages    []*Message
-	Status      string `gorm:"index"`
+	Status      string `gorm:"index;default:'new'"`
 	UnreadCount uint64 `sql:"-"`
 }
 
@@ -112,6 +114,17 @@ func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs .
 }
 
 func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ...*Message) error {
+	if chat.Status == "new" {
+		for _, m := range messages {
+			if m.Member != nil && m.Member.Role != pb_chat.MemberRole_name[int32(pb_chat.MemberRole_SYSTEM)] {
+				chat.Status = "active"
+				err := c.db.Save(chat).Error
+				if err != nil {
+					return fmt.Errorf("failed to update chat status: %v", err)
+				}
+			}
+		}
+	}
 	return c.db.Model(chat).Association("Messages").Append(messages).Error
 }
 
@@ -229,19 +242,18 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 }
 
 func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, error) {
-	var total []uint64
-	db := c.db.Raw(`
-	SELECT COALESCE(sum(count),0) as total FROM (
-		SELECT count(messages.id) as count
-		FROM "messages" LEFT JOIN members
-		ON (members.conversation_id = messages.conversation_id AND members.user_id = ?)
-		WHERE "messages".deleted_at IS NULL AND (messages.id > members.last_message_id OR members.last_message_id IS NULL) AND messages.conversation_id IN (
-			SELECT conversations.id
-			FROM conversations INNER JOIN members
-			ON members.conversation_id = conversations.id AND members.user_id = ?
-		) GROUP BY messages.conversation_id
-	) as unread_messages`, userID, userID).Pluck("total", &total)
-	return total[0], db.Error
+	var missed uint64
+	err := c.db.
+		Select("COUNT(DISTINCT c.id)").
+		Table("members u").
+		Joins("JOIN conversations c ON u.conversation_id = c.id").
+		Joins("JOIN messages m ON m.conversation_id = c.id").
+		Where("u.user_id = ?", userID).
+		Where("u.last_message_id < m.id").
+		Where("u.role = 'CUSTOMER' OR (u.role != 'CUSTOMER' AND c.status != 'new')").
+		Row().
+		Scan(&missed)
+	return missed, err
 }
 
 //Encode converts to protobuf model

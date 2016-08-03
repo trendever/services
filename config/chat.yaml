@@ -5,4 +5,4 @@ db:
 
 upload_service: http://images:8080
 natsURL: "nats://nats:4222"
-
+debug: true

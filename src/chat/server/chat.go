@@ -147,7 +147,6 @@ func (cs *chatServer) sendMessage(chat *models.Conversation, newMessages ...*pro
 		if err != nil {
 			return
 		}
-		msg.Member = member
 		cs.queue.Push(msg)
 		messages = append(messages, msg.Encode())
 	}
