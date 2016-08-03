@@ -18,6 +18,11 @@ func addTemplateResource(a *admin.Admin) {
 		Menu: []string{"Settings"},
 	})
 	sms.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["sms"],
+	})
+	sms.Meta(&admin.Meta{
 		Name: "Message",
 		Type: "text",
 	})
@@ -53,6 +58,11 @@ func addTemplateResource(a *admin.Admin) {
 		Name: "Body",
 		Type: "rich_editor",
 	})
+	email.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["email"],
+	})
 	email.IndexAttrs(
 		"TemplateID", "TemplateName", "Subject",
 	)
@@ -80,6 +90,11 @@ func addTemplateResource(a *admin.Admin) {
 	chat := a.AddResource(&models.ChatTemplate{}, &admin.Config{
 		Name: "Chat templates",
 		Menu: []string{"Settings"},
+	})
+	chat.Meta(&admin.Meta{
+		Name:       "Group",
+		Type:       "select_one",
+		Collection: models.TemplatesList["chat"],
 	})
 	chat.Meta(&admin.Meta{
 		Name: "Message",

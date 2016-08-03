@@ -3,6 +3,7 @@ package models
 import (
 	"core/conf"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
@@ -10,16 +11,25 @@ import (
 	"regexp"
 )
 
-// TemplateModels contains all other models that can be passed to a template
-var TemplateModels = []string{
-	"Lead",
-}
+// domain -> []group/id
+var TemplatesList = map[string][]string{}
 
-// TemplateTypes contains types that correspond to send action types
-var TemplateTypes = []string{
-	"SMS",
-	"Email",
-	"Chat",
+func RegisterTemplate(domain, name string) error {
+	if domain == "" || name == "" {
+		return errors.New("domain and name of template should not be empty")
+	}
+	sub, ok := TemplatesList[domain]
+	if !ok {
+		TemplatesList[domain] = []string{name}
+		return nil
+	}
+	for _, t := range sub {
+		if name == t {
+			return fmt.Errorf("template %v:%v alteady registred", domain, name)
+		}
+	}
+	TemplatesList[domain] = append(sub, name)
+	return nil
 }
 
 // TemplateTypes contains types that correspond to available send actions

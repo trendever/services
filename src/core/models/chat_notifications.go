@@ -11,6 +11,11 @@ import (
 	"utils/rpc"
 )
 
+func init() {
+	RegisterTemplate("chat", "product_buy")
+	RegisterTemplate("chat", "product_info")
+}
+
 var templatesMap = map[proto_core.LeadAction]string{
 	proto_core.LeadAction_BUY:  "product_buy",
 	proto_core.LeadAction_INFO: "product_info",
