@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"os/signal"
+	"payments/api"
 	"payments/config"
 	"payments/db"
 	"payments/views"
@@ -19,6 +20,8 @@ var cmdRun = &cobra.Command{
 		log.Info("Starting payment service on %q", config.Get().RPC)
 
 		config.Init()
+
+		api.Init()
 		db.Init()
 		views.Init()
 

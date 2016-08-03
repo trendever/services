@@ -71,7 +71,6 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 	}
 
 	return &models.Session{
-		LeadID:      pay.LeadID,
 		PaymentID:   pay.ID,
 		ExternalID:  res.SessionID,
 		UniqueID:    uniqueID,

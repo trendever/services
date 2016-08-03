@@ -1,4 +1,5 @@
 rpc: :7777
+chatServer: "chat:2010"
 
 debug: true
 

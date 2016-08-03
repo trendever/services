@@ -10,8 +10,10 @@ message CreateOrderRequest {
   Currency currency = 2;
 
   uint64 lead_id = 3;
+  uint64 user_id = 4;
+  uint64 conversation_id = 5;
 
-  string shop_card_number = 4;
+  string shop_card_number = 6;
 }
 
 message CreateOrderReply {
@@ -23,12 +25,20 @@ message CreateOrderReply {
 message BuyOrderRequest {
   uint64 pay_id = 1;
   string ip = 2;
-
 }
 
 message BuyOrderReply {
   string redirect_url = 1;
   Errors error = 2;
+}
+
+// chat messages
+message PaymentButton {
+  uint64 pay_id = 1;
+}
+
+message PaymentNotificationMessage {
+  uint64 pay_id = 1;
 }
 
 enum Currency {

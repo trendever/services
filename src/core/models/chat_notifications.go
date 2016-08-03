@@ -21,10 +21,10 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 	log.Debug("SendProductToChat(%v, %v, %v)", lead.ID, product.ID, action)
 	var templates []ChatTemplate
 	res := db.New().
-		Where("\"group\" = ?", templatesMap[action]).
+		Where(`"group" = ?`, templatesMap[action]).
 		Where("product_id = ? OR is_default", product.ID).
 		Where("for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
-		Order("product_id desc, \"order\"").
+		Order(`product_id desc, "order"`).
 		Find(&templates)
 	if res.Error != nil {
 		return fmt.Errorf("failed to load templates: %v", res.Error)

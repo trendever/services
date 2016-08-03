@@ -66,7 +66,7 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 		}
 	}()
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.LeadID, success))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.Payment.LeadID, success))
 }
 
 func (ps *paymentServer) PeriodicCheck() {

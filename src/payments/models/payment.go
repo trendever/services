@@ -13,7 +13,9 @@ import (
 type Payment struct {
 	gorm.Model
 
-	LeadID uint64
+	LeadID         uint64
+	ConversationID uint64
+	UserID         uint64 // that's client id
 
 	// p2p params
 	ShopCardNumber string
@@ -24,16 +26,18 @@ type Payment struct {
 type Session struct {
 	gorm.Model
 
-	PaymentID   uint
+	PaymentID uint
+	Payment   *Payment
+
 	Amount      uint64
 	IP          string
 	GatewayType string `gorm:"index"`
 
-	State    string `gorm:"index"`
-	Finished bool   `gorm:"index"` // session can be finished, but unsuccessfully
-	Success  bool   `gorm:"index"` //
+	State        string `gorm:"index"`
+	Finished     bool   `gorm:"index" sql:"default:false"` // session can be finished, but unsuccessfully
+	Success      bool   `gorm:"index" sql:"default:false"`
+	ChatNotified bool   `gorm:"index" sql:"default:false"`
 
-	LeadID uint64 // dublicate field to save db calls
 	// I wonder why payture wants 2 unique ids;
 	UniqueID   string `gorm:"index"` // this one is used to check pay status
 	ExternalID string `gorm:"index"` // this one is used by client
@@ -88,7 +92,12 @@ func (r *RepoImpl) GetPayByID(id uint) (*Payment, error) {
 // GetSessByUID returns payment by ID
 func (r *RepoImpl) GetSessByUID(uid string) (*Session, error) {
 	var result Session
-	err := r.DB.Where("unique_id = ?", uid).Find(&result).Error
+	err := r.DB.
+		Where("unique_id = ?", uid).
+		Preload("Payment").
+		Find(&result).
+		Error
+
 	return &result, err
 }
 
@@ -99,7 +108,9 @@ func (r *RepoImpl) GetUnfinished(gatewayType string) ([]Session, error) {
 	err := r.DB.
 		Where("gateway_type = ?", gatewayType).
 		Where("finished != TRUE").
-		Find(&result).Error
+		Preload("Payment").
+		Find(&result).
+		Error
 
 	return result, err
 }
@@ -136,7 +147,9 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 		ShopCardNumber: r.ShopCardNumber,
 
 		// Core LeadID
-		LeadID: r.LeadId,
+		LeadID:         r.LeadId,
+		ConversationID: r.ConversationId,
+		UserID:         r.UserId,
 	}
 
 	switch r.Currency {

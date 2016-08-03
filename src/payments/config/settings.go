@@ -11,7 +11,9 @@ const configName = "payment"
 
 //Settings is a app settings
 type Settings struct {
-	RPC       string
+	RPC        string
+	ChatServer string
+
 	Debug     bool
 	SentryDSN string
 	DB        struct {
@@ -39,6 +41,7 @@ func Init() {
 	viper.SetDefault("rpc", ":7777")
 	viper.SetDefault("http.listen", ":7780")
 	viper.SetDefault("periodicCheck", "120")
+	viper.SetDefault("chatServer", "chat:2010")
 
 	if err := config.Load(configName); err != nil {
 		log.Fatal(fmt.Errorf("Can't load config: %v", err))
