@@ -1,7 +1,6 @@
 package models
 
 import (
-	"core/conf"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"github.com/qor/validations"
 	"gopkg.in/flosch/pongo2.v3"
 	"regexp"
+	"strings"
 )
 
 // domain -> []group/id
@@ -226,13 +226,13 @@ func applyTemplate(template string, ctx interface{}) (string, error) {
 		return "", err
 	}
 
-	out, err := tmpl.Execute(pongo2.Context{
-		"object":   ctx,
-		"settings": conf.GetSettings(),
-	})
+	arg, ok := ctx.(map[string]interface{})
+	if !ok {
+		arg = map[string]interface{}{"object": ctx}
+	}
+	out, err := tmpl.Execute(pongo2.Context(arg))
 	if err != nil {
 		return "", err
 	}
-
-	return out, nil
+	return strings.Trim(out, " \t\n"), nil
 }

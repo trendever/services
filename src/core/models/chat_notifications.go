@@ -67,6 +67,17 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 			))
 			continue
 		}
+
+		str, ok := content.(string)
+		if !ok {
+			log.Error(fmt.Errorf("template '%v' returned unexpected type", tmpl.TemplateName))
+			continue
+		}
+		if str == "" {
+			log.Warn("template '%v' returned empty string", tmpl.TemplateName)
+			continue
+		}
+
 		err = chat.SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, content.(string), "text/html")
 		if err != nil {
 			return fmt.Errorf("failed to send message to chat: %v", err)

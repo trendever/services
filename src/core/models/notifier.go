@@ -163,14 +163,10 @@ func (n *Notifier) NotifySellerAboutLead(seller *User, lead *Lead) error {
 	return n.NotifyUserAbout(
 		seller,
 		"notify_seller_about_lead",
-		struct {
-			Seller interface{}
-			URL    interface{}
-			Lead   interface{}
-		}{
-			Seller: seller,
-			URL:    url,
-			Lead:   lead,
+		map[string]interface{}{
+			"Seller": seller,
+			"URL":    url,
+			"Lead":   lead,
 		},
 	)
 }
@@ -183,14 +179,10 @@ func (n *Notifier) NotifyCustomerAboutLead(customer *User, lead *Lead) error {
 	return n.NotifyUserAbout(
 		customer,
 		"notify_customer_about_lead",
-		struct {
-			Customer interface{}
-			URL      interface{}
-			Lead     interface{}
-		}{
-			Customer: customer,
-			URL:      url,
-			Lead:     lead,
+		map[string]interface{}{
+			"Customer": customer,
+			"URL":      url,
+			"Lead":     lead,
 		},
 	)
 }
@@ -203,14 +195,10 @@ func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead) erro
 	return n.NotifyUserAbout(
 		seller,
 		"notify_seller_about_unread_message",
-		struct {
-			Seller interface{}
-			URL    interface{}
-			Lead   interface{}
-		}{
-			Seller: seller,
-			URL:    url,
-			Lead:   lead,
+		map[string]interface{}{
+			"Seller": seller,
+			"URL":    url,
+			"Lead":   lead,
 		},
 	)
 }
@@ -223,14 +211,10 @@ func (n *Notifier) CallSupplierToChat(supplier *User, lead *Lead) error {
 	return n.NotifyUserAbout(
 		supplier,
 		"call_supplier_to_chat",
-		struct {
-			Supplier interface{}
-			URL      interface{}
-			Lead     interface{}
-		}{
-			Supplier: supplier,
-			URL:      url,
-			Lead:     lead,
+		map[string]interface{}{
+			"Supplier": supplier,
+			"URL":      url,
+			"Lead":     lead,
 		},
 	)
 }
@@ -243,14 +227,10 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	return n.NotifyUserAbout(
 		customer,
 		"call_customer_to_chat",
-		struct {
-			Customer interface{}
-			URL      interface{}
-			Lead     interface{}
-		}{
-			Customer: customer,
-			URL:      url,
-			Lead:     lead,
+		map[string]interface{}{
+			"Customer": customer,
+			"URL":      url,
+			"Lead":     lead,
 		},
 	)
 }
