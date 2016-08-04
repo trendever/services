@@ -18,13 +18,13 @@ message CreateOrderRequest {
 
 message CreateOrderReply {
   uint64 id = 1;
-  string redirect_url = 2;
   Errors error = 3;
 }
 
 message BuyOrderRequest {
   uint64 pay_id = 1;
-  string ip = 2;
+  uint64 user_id = 2;
+  string ip = 3;
 }
 
 message BuyOrderReply {

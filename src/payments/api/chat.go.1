@@ -43,7 +43,7 @@ func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
 // SendPaymentToChat notifies chat about new payment order
 func (cn *chatNotifierImpl) SendPaymentToChat(pay *models.Payment) error {
 
-	message, err := json.Marshal(
+	message, err := json.Marshal()
 
 	sendStatusMessage(
 		sess.UserID,

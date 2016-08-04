@@ -324,3 +324,25 @@ func getUserLeads(uid uint64, roles []core.LeadUserRole, limit uint64, direction
 
 	return leads, nil
 }
+
+func getLeadInfo(userID, leadID uint64) (*core.LeadInfo, error) {
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := leadServiceClient.GetLead(ctx, &core.GetLeadRequest{
+		UserId:   userID,
+		SearchBy: &core.GetLeadRequest_Id{Id: leadID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// now checks
+	if resp.Lead == nil {
+		return nil, errors.New("Lead not found")
+	}
+
+	return resp.Lead, nil
+
+}
