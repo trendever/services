@@ -13,6 +13,20 @@ import (
 	"utils/rpc"
 )
 
+func init() {
+	topics := []string{
+		"notify_seller_about_lead",
+		"notify_customer_about_lead",
+		"notify_seller_about_unread_message",
+		"call_supplier_to_chat",
+		"call_customer_to_chat",
+	}
+	for _, t := range topics {
+		RegisterTemplate("sms", t)
+		RegisterTemplate("email", t)
+	}
+}
+
 type Notifier struct {
 	mailClient mail.MailServiceClient
 	smsClient  sms.SmsServiceClient
@@ -228,7 +242,8 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	}
 	return n.NotifyUserAbout(
 		customer,
-		"call_customer_to_chat", struct {
+		"call_customer_to_chat",
+		struct {
 			Customer interface{}
 			URL      interface{}
 			Lead     interface{}

@@ -48,7 +48,12 @@ func CreateLead(c *soso.Context) {
 	// Step #1: convert input from interface{} and check it
 
 	id, idPresent := req["id"].(float64)
-	action := req["action"].(int)
+	action_f, _ := req["action"].(float64)
+	action := core.LeadAction(action_f)
+	if _, ok := core.LeadAction_name[int32(action)]; !ok {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown action"))
+		return
+	}
 
 	var (
 		userID int64
@@ -74,7 +79,7 @@ func CreateLead(c *soso.Context) {
 		Source:     "website",
 		CustomerId: userID,
 		ProductId:  int64(id),
-		Action:     core.LeadAction(action),
+		Action:     action,
 	})
 
 	if err != nil {

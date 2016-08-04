@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
+	"strconv"
 )
 
 func init() {
@@ -16,6 +17,11 @@ func addTemplateResource(a *admin.Admin) {
 	sms := a.AddResource(&models.SMSTemplate{}, &admin.Config{
 		Name: "SMS Templates",
 		Menu: []string{"Settings"},
+	})
+	sms.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["sms"],
 	})
 	sms.Meta(&admin.Meta{
 		Name: "Message",
@@ -53,6 +59,11 @@ func addTemplateResource(a *admin.Admin) {
 		Name: "Body",
 		Type: "rich_editor",
 	})
+	email.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["email"],
+	})
 	email.IndexAttrs(
 		"TemplateID", "TemplateName", "Subject",
 	)
@@ -82,8 +93,31 @@ func addTemplateResource(a *admin.Admin) {
 		Menu: []string{"Settings"},
 	})
 	chat.Meta(&admin.Meta{
+		Name:       "Group",
+		Type:       "select_one",
+		Collection: models.TemplatesList["chat"],
+	})
+	chat.Meta(&admin.Meta{
 		Name: "Message",
 		Type: "text",
+	})
+	chat.Meta(&admin.Meta{
+		Name: "Product",
+		Type: "select_one",
+		Collection: func(this interface{}, ctx *qor.Context) (results [][]string) {
+			var res []models.Product
+			ctx.GetDB().
+				Joins("LEFT JOIN products_shops ON products_product.shop_id = products_shops.id").
+				Where("products_shops.supplier_id = ?", models.SystemUser.ID).
+				Find(&res)
+			for _, p := range res {
+				results = append(
+					results,
+					[]string{strconv.FormatUint(uint64(p.ID), 10), p.Stringify()},
+				)
+			}
+			return
+		},
 	})
 
 	chat.Scope(&admin.Scope{
