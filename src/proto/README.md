@@ -1,7 +1,7 @@
 # proto
 Proto files for protobuf
 
-After any changes you shoud regenerate all the .pb.go files with ``bash regenerate.sh``
+After any changes you shoud regenerate all the .pb.go files with ``gb generate``
 
 # Style Guide
 

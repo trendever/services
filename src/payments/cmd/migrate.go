@@ -2,19 +2,25 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"payments/config"
 	"payments/db"
 	"payments/models"
 	"utils/log"
 )
 
-var dbModels = []interface{}{}
+var dbModels = []interface{}{
+	&models.Payment{},
+	&models.Session{},
+}
 
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Runs database migration",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Warn("Starting database migration for payment service")
-		db := db.GetPG()
+		config.Init()
+		db.Init()
+		db := db.New()
 
 		if drop {
 			log.Warn("Droping tables")

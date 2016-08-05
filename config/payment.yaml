@@ -1,0 +1,19 @@
+rpc: :7777
+chatServer: "chat:2010"
+
+debug: true
+
+http:
+  listen: :7780
+  public: "http://localhost:7780/callback"
+  redirect: "http://localhost:3002/chat/%v/payed/%v"
+
+db:
+  debug: true
+  conf: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"
+
+payture:
+  key: "MerchantTrendeverp2p"
+  url: "https://sandbox2.payture.com"
+
+

@@ -36,6 +36,9 @@ type Shop struct {
 	// Sell managers, assigned to this shop
 	Sellers []User `gorm:"many2many:products_shops_sellers;"`
 
+	// Shop's payment cards
+	Cards []ShopCard
+
 	// Shop private tags; internal use only
 	Tags           []Tag `gorm:"many2many:products_shops_tags;"`
 	NotifySupplier bool
