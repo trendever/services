@@ -1,3 +1,3 @@
-package auth
+package bot
 
 //go:generate ../regenerate.sh

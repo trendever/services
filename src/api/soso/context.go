@@ -4,7 +4,7 @@ import (
 	"api/auth"
 	. "api/debug"
 	"encoding/json"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
+	"github.com/igm/sockjs-go/sockjs"
 	"net/http"
 	auth_protocol "proto/auth"
 	"strings"

@@ -1,3 +1,3 @@
-package auth
+package sms
 
 //go:generate ../regenerate.sh

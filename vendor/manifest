@@ -258,6 +258,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/igm/sockjs-go/sockjs",
+			"repository": "https://github.com/igm/sockjs-go",
+			"revision": "250738e8a5273b7b366ea6356f9a7209c01f7ea1",
+			"branch": "master",
+			"path": "/sockjs"
+		},
+		{
 			"importpath": "github.com/influxdata/influxdb/client/v2",
 			"repository": "https://github.com/influxdata/influxdb",
 			"revision": "27650da7b9562de722ed6cd2c873a6c04a243283",
@@ -874,13 +881,6 @@
 			"repository": "https://gopkg.in/gomail.v2",
 			"revision": "81ebce5c23dfd25c6c67194b37d3dd3f338c98b1",
 			"branch": "v2"
-		},
-		{
-			"importpath": "gopkg.in/igm/sockjs-go.v2/sockjs",
-			"repository": "https://gopkg.in/igm/sockjs-go.v2",
-			"revision": "05b5e3121f692bea77aeb1160e4e7881017dc093",
-			"branch": "v2",
-			"path": "/sockjs"
 		},
 		{
 			"importpath": "gopkg.in/redis.v3",

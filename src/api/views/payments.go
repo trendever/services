@@ -45,9 +45,18 @@ func CreateOrder(c *soso.Context) {
 		return
 	}
 
-	conversationID, err := getAdminnedConversationID(c.Token.UID, uint64(leadID))
+	conversationID, role, err := getConversationID(c.Token.UID, uint64(leadID))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+	}
+
+	// must be owner in his chat
+	switch role {
+	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
+		// ok
+	default:
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
 	}
 
 	// now -- create the order
@@ -76,28 +85,87 @@ func CreateOrder(c *soso.Context) {
 		return
 	}
 
-	c.SuccessResponse(map[string]interface{}{})
+	c.SuccessResponse(map[string]interface{}{
+		"id": resp.Id,
+	})
 }
 
 func CreatePayment(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	req := c.RequestMap
 
-}
+	// We have to transfer lead ID to make sure only associated user can create payment
+	// Malicious request can be sent and the following check will succeed
+	// However, payments service must check if reqeusted leadID is equal to the CreateOrder one
+	// This scheme help both avoid calling core from payments and guarantee security
 
-func getAdminnedConversationID(userID, leadID uint64) (uint64, error) {
+	// In other words
+	//  api checks if user is customer in lead(LeadID)
+	//  payments checks if leadID is connected to pay(payID)
+	//  -> user is checked to have access to pay
 
-	info, err := getLeadInfo(userID, leadID)
+	payID, _ := req["id"].(float64)
+	leadID, _ := req["lead"].(float64)
+
+	if leadID <= 0 || payID <= 0 {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
+		return
+	}
+
+	_, role, err := getConversationID(c.Token.UID, uint64(leadID))
 	if err != nil {
-		return 0, err
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
 	}
 
 	// must be owner in his chat
-	switch info.UserRole {
-	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
+	switch role {
+	case core.LeadUserRole_CUSTOMER:
 		// ok
 	default:
-
-		return 0, errors.New("Access denied; should be admin of this chat")
+		c.ErrorResponse(403, soso.LevelError, errors.New("Only customer can pay stuff"))
+		return
 	}
 
-	return info.ConversationId, nil
+	ip, err := getIP(c.Session)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	// now -- create the order
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := paymentServiceClient.BuyOrder(ctx, &payment.BuyOrderRequest{
+		PayId:  uint64(payID),
+		LeadId: uint64(leadID),
+		Ip:     ip,
+	})
+
+	if err != nil {
+		if resp.Error > 0 { // ignore RPC errors
+			c.Response.ResponseMap = map[string]interface{}{
+				"ErrorCode":    resp.Error,
+				"ErrorMessage": err,
+			}
+		}
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{})
+
+}
+
+func getConversationID(userID, leadID uint64) (uint64, core.LeadUserRole, error) {
+
+	info, err := getLeadInfo(userID, leadID)
+	if err != nil {
+		return 0, core.LeadUserRole_UNKNOWN, err
+	}
+
+	return info.ConversationId, info.UserRole, nil
 }

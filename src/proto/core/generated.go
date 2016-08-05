@@ -1,3 +1,3 @@
-package auth
+package core
 
 //go:generate ../regenerate.sh

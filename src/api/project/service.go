@@ -10,7 +10,7 @@ import (
 	"api/cache"
 	"api/soso"
 	"api/subscriber"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
+	"github.com/igm/sockjs-go/sockjs"
 	"utils/metrics"
 )
 

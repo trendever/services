@@ -1,3 +1,3 @@
-package auth
+package chat
 
 //go:generate ../regenerate.sh
