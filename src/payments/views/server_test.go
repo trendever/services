@@ -92,17 +92,20 @@ func TestCreateOrder(t *testing.T) {
 		{
 			desc: "Simple successfull order", wantSucc: true,
 			request: payment.BuyOrderRequest{
-				PayId: 1,
+				PayId:  1,
+				LeadId: 42,
 			},
 			pay: models.Payment{
-				Model: gorm.Model{ID: 1},
+				Model:  gorm.Model{ID: 1},
+				LeadID: 42,
 			},
 		},
 		// =======================/
 		{
 			desc: "Unknown pay err", wantSucc: false,
 			request: payment.BuyOrderRequest{
-				PayId: 4222,
+				PayId:  4222,
+				LeadId: 534234,
 			},
 			payErr: errors.New("wut"),
 		},
@@ -110,12 +113,26 @@ func TestCreateOrder(t *testing.T) {
 		{
 			desc: "Gateway processing err", wantSucc: false,
 			request: payment.BuyOrderRequest{
-				PayId: 4322,
+				PayId:  4322,
+				LeadId: 5,
 			},
 			pay: models.Payment{
-				Model: gorm.Model{ID: 4322},
+				Model:  gorm.Model{ID: 4322},
+				LeadID: 5,
 			},
 			sessErr: errors.New("no sess such wow"),
+		},
+		// =======================/
+		{
+			desc: "Incorrect leadID", wantSucc: false,
+			request: payment.BuyOrderRequest{
+				PayId:  1,
+				LeadId: 42,
+			},
+			pay: models.Payment{
+				Model:  gorm.Model{ID: 1},
+				LeadID: 43,
+			},
 		},
 		// =======================/
 

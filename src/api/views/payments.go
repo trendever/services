@@ -2,6 +2,7 @@ package views
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"api/api"
@@ -17,7 +18,7 @@ func init() {
 	SocketRoutes = append(
 		SocketRoutes,
 		soso.Route{"create", "order", CreateOrder},
-		soso.Route{"create", "payment", CreateOrder},
+		soso.Route{"create", "payment", CreatePayment},
 	)
 }
 
@@ -32,7 +33,7 @@ func CreateOrder(c *soso.Context) {
 	req := c.RequestMap
 
 	amount, _ := req["amount"].(float64)
-	leadID, _ := req["lead"].(float64)
+	leadID, _ := req["lead_id"].(float64)
 
 	currency, _ := req["currency"].(float64)
 	_, currencyOK := payment.Currency_name[int32(currency)]
@@ -40,7 +41,7 @@ func CreateOrder(c *soso.Context) {
 	// validated in payments service
 	shopCardNumber, _ := req["card"].(string)
 
-	if amount <= 0 || leadID <= 0 || !currencyOK {
+	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
 		return
 	}
@@ -55,7 +56,7 @@ func CreateOrder(c *soso.Context) {
 	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
 		// ok
 	default:
-		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		c.ErrorResponse(403, soso.LevelError, fmt.Errorf("User (role=%v) not allowed to do this", role))
 		return
 	}
 
@@ -75,7 +76,7 @@ func CreateOrder(c *soso.Context) {
 	})
 
 	if err != nil {
-		if resp.Error > 0 { // ignore RPC errors
+		if resp != nil && resp.Error > 0 { // ignore RPC errors
 			c.Response.ResponseMap = map[string]interface{}{
 				"ErrorCode":    resp.Error,
 				"ErrorMessage": err,
@@ -108,7 +109,7 @@ func CreatePayment(c *soso.Context) {
 	//  -> user is checked to have access to pay
 
 	payID, _ := req["id"].(float64)
-	leadID, _ := req["lead"].(float64)
+	leadID, _ := req["lead_id"].(float64)
 
 	if leadID <= 0 || payID <= 0 {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
@@ -146,7 +147,7 @@ func CreatePayment(c *soso.Context) {
 	})
 
 	if err != nil {
-		if resp.Error > 0 { // ignore RPC errors
+		if resp != nil && resp.Error > 0 { // ignore RPC errors
 			c.Response.ResponseMap = map[string]interface{}{
 				"ErrorCode":    resp.Error,
 				"ErrorMessage": err,
@@ -156,7 +157,9 @@ func CreatePayment(c *soso.Context) {
 		return
 	}
 
-	c.SuccessResponse(map[string]interface{}{})
+	c.SuccessResponse(map[string]interface{}{
+		"redirect_url": resp.RedirectUrl,
+	})
 
 }
 

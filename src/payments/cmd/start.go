@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 	"os/signal"
-	"payments/api"
+	//"payments/api"
 	"payments/config"
 	"payments/db"
 	"payments/views"
@@ -21,7 +21,7 @@ var cmdRun = &cobra.Command{
 
 		config.Init()
 
-		api.Init()
+		//	api.Init()
 		db.Init()
 		views.Init()
 

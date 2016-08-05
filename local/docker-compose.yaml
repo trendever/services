@@ -5,7 +5,7 @@ services:
     volumes:
       - ../:/services:rw
       - /etc/ssl/certs:/etc/ssl/certs:ro
-
+      - /etc/localtime:/etc/localtime:ro
   core:
     image: debian:jessie
     volumes_from:
