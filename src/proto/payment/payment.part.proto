@@ -23,7 +23,7 @@ message CreateOrderReply {
 
 message BuyOrderRequest {
   uint64 pay_id = 1;
-  uint64 user_id = 2;
+  uint64 lead_id = 2;
   string ip = 3;
 }
 
