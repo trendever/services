@@ -50,7 +50,7 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string) {
 
 	api.NotifyByTelegram(api.TelegramChannelNewLead,
 		fmt.Sprintf(
-			"%v ordered %v by %v from %v\n, comment: '%v'"+ // [client] ordered [product_code] in [shop] from [wantit or website] comment: '[comment]'
+			"%v ordered %v by %v from %v\n, comment: '%v'\n"+ // [client] ordered [product_code] in [shop] from [wantit or website] comment: '[comment]'
 				"%v\n"+ // [website_link]
 				"%v\n"+ // [instgram_repost_link]
 				"%v", // [qor_link]

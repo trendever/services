@@ -255,8 +255,7 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 	})
 
 	// Source scopes
-	sources := []string{"website", "wantit"}
-	for _, s := range sources {
+	for _, s := range models.LeadSources {
 		res.Scope(&admin.Scope{
 			Name:  "From " + s,
 			Group: "Source",

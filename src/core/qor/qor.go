@@ -40,6 +40,8 @@ var (
 		&models.Lead{},
 		&models.SMSTemplate{},
 		&models.ChatTemplate{},
+		&models.ChatTemplateCase{},
+		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},
 		&activity.QorActivity{},

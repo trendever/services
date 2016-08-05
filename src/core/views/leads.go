@@ -94,7 +94,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// @CHECK Why may lead.ConversationID == 0 happend?
 	// Doesn't this mean that everything went really bad?
 	if lead.ConversationID != 0 {
-		go log.Error(models.SendProductToChat(lead, prod, protoLead.Action))
+		go func() {
+			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source))
+		}()
 	} else {
 		log.Error(errors.New("lead.ConversationID == 0"))
 	}

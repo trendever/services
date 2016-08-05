@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -10,6 +9,11 @@ import (
 	"regexp"
 	"strings"
 )
+
+// Template is a common interface for all the models
+type Template interface {
+	Execute(interface{}) (interface{}, error)
+}
 
 // domain -> []group/id
 var TemplatesList = map[string][]string{}
@@ -65,30 +69,6 @@ type SMSTemplate struct {
 	Message string `gorm:"type:text"`
 }
 
-type ChatTemplate struct {
-	gorm.Model
-
-	// Template fields
-	TemplateName string
-	// We want to send more then one message per action
-	// so chat templates have group instead of TemplateID
-	Group string
-	// Order of sending if there is more then one template with same id
-	Order   int64
-	Message string `gorm:"type:text"`
-	// Specific product(if any)
-	ProductID sql.NullInt64
-	Product   Product
-	// When true this template will be used if there is no specific templates
-	IsDefault               bool
-	ForSuppliersWithNotices bool
-}
-
-// Template is a common interface for all the models
-type Template interface {
-	Execute(interface{}) (interface{}, error)
-}
-
 //GetFrom returns from
 func (em *EmailMessage) GetFrom() string {
 	return em.From
@@ -112,11 +92,6 @@ func (t EmailTemplate) TableName() string {
 // TableName for gorm
 func (t SMSTemplate) TableName() string {
 	return "settings_templates_sms"
-}
-
-// TableName for gorm
-func (t ChatTemplate) TableName() string {
-	return "settings_templates_chat"
 }
 
 // Validate fields
@@ -163,27 +138,6 @@ func (t SMSTemplate) Validate(db *gorm.DB) {
 	}
 }
 
-// Validate fields
-func (t ChatTemplate) Validate(db *gorm.DB) {
-	if t.TemplateName == "" {
-		db.AddError(validations.NewError(t, "TemplateName", "Template name can not be empty"))
-	}
-	if !templateIDRegexp.MatchString(t.Group) {
-		db.AddError(validations.NewError(t, "Group", "Incorrect template group"))
-	}
-
-	if t.IsDefault && t.Product.ID != 0 {
-		db.AddError(validations.NewError(
-			t, "ProductID", "Default templates should not be product-specific",
-		))
-	}
-	if !t.IsDefault && t.Product.ID == 0 {
-		db.AddError(validations.NewError(
-			t, "ProductID", "Non-default templates should be specific for product",
-		))
-	}
-}
-
 // Execute returns MessageFields object with ready-to-use fields
 func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
@@ -211,11 +165,6 @@ func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
 // Execute returns ready-to-use message text
 func (t *SMSTemplate) Execute(ctx interface{}) (interface{}, error) {
-	return applyTemplate(t.Message, ctx)
-}
-
-// Execute returns ready-to-use message text
-func (t *ChatTemplate) Execute(ctx interface{}) (interface{}, error) {
 	return applyTemplate(t.Message, ctx)
 }
 

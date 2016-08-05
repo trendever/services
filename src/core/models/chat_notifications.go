@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/chat"
 	"core/db"
+	"errors"
 	"fmt"
 	proto_chat "proto/chat"
 	proto_core "proto/core"
@@ -22,15 +23,66 @@ var templatesMap = map[proto_core.LeadAction]string{
 }
 
 //SendProductToChat sends the product to the lead chat
-func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction) error {
+func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction, source string) error {
 	log.Debug("SendProductToChat(%v, %v, %v)", lead.ID, product.ID, action)
-	var templates []ChatTemplate
+
+	// determine whether product is special
+	var specials []uint
 	res := db.New().
-		Where(`"group" = ?`, templatesMap[action]).
-		Where("product_id = ? OR is_default", product.ID).
-		Where("for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
-		Order(`product_id desc, "order"`).
-		Find(&templates)
+		Select("DISTINCT product_id").
+		Table("chat_templates").
+		Where("product_id IS NOT NULL").
+		Pluck("product_id", &specials)
+	if res.Error != nil {
+		return errors.New("failed to load special products list")
+	}
+	isSpecial := false
+	for _, s := range specials {
+		if s == product.ID {
+			isSpecial = true
+			break
+		}
+	}
+
+	// test for repetitive actions
+	var count uint
+	res = db.New().
+		Select("COUNT(1)").
+		Table("products_leads lead").
+		Joins("JOIN products_leads_items l_item ON l_item.lead_id = lead.id").
+		Joins("JOIN products_product_item p_item ON l_item.product_item_id = p_item.id").
+		Where("lead.customer_id = ?", lead.Customer.ID).
+		Where("lead.id <> ?", lead.ID)
+	if isSpecial {
+		res = res.Where("p_item.product_id = ?", product.ID)
+	} else {
+		if len(specials) > 0 {
+			res = res.Where("p_item.product_id NOT IN (?)", specials)
+		}
+	}
+	err := res.Row().Scan(&count)
+	log.Debug("count = %v; %v", count, err)
+	if err != nil {
+		return fmt.Errorf("failed to determine whether user is new: %v", err)
+	}
+	// load templates
+	var templates []struct {
+		ChatTemplateMessage
+		TemplateName string
+		ProductID    uint
+	}
+	res = db.New().
+		Select("msg.text, msg.position, tmpl.template_name, tmpl.product_id").
+		Table("chat_template_messages msg").
+		Joins("JOIN chat_template_cases c ON c.id = msg.case_id").
+		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
+		Where("tmpl.group = ?", templatesMap[action]).
+		Where("tmpl.product_id = ? OR tmpl.is_default", product.ID).
+		Where("c.for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
+		Where("c.for_new_users = ? ", count == 0).
+		Where("c.source = ?", source).
+		Order("tmpl.product_id IS NULL, msg.position").
+		Scan(&templates)
 	if res.Error != nil {
 		return fmt.Errorf("failed to load templates: %v", res.Error)
 	}
@@ -42,7 +94,7 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 		)
 	}
 
-	err := joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	err = joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
 	if err != nil {
 		return fmt.Errorf("failed to join chat: %v", err)
 	}

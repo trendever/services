@@ -98,10 +98,6 @@ func addTemplateResource(a *admin.Admin) {
 		Collection: models.TemplatesList["chat"],
 	})
 	chat.Meta(&admin.Meta{
-		Name: "Message",
-		Type: "text",
-	})
-	chat.Meta(&admin.Meta{
 		Name: "Product",
 		Type: "select_one",
 		Collection: func(this interface{}, ctx *qor.Context) (results [][]string) {
@@ -135,31 +131,39 @@ func addTemplateResource(a *admin.Admin) {
 		},
 	})
 
-	chat.IndexAttrs(
-		"TemplateName", "Group", "Order",
-		"IsDefault", "Product", "ForSuppliersWithNotices",
-	)
-	chat.SearchAttrs(
-		"TemplateName", "Group", "IsDefault", "ProductID", "Message",
-	)
+	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product")
+	chat.SearchAttrs("TemplateName", "Group", "IsDefault", "ProductID")
 
 	attrs = []*admin.Section{
 		{
-			Title: "Template settings",
 			Rows: [][]string{
-				{"TemplateName"},
-				{"Group", "Order"},
+				{"TemplateName", "Group"},
 				{"IsDefault", "Product"},
-				{"ForSuppliersWithNotices"},
-			},
-		},
-		{
-			Title: "Message",
-			Rows: [][]string{
-				{"Message"},
+				{"Cases"},
 			},
 		},
 	}
 	chat.NewAttrs(attrs)
 	chat.EditAttrs(attrs)
+
+	caseRes := chat.Meta(&admin.Meta{Name: "Cases"}).Resource
+	caseRes.Meta(&admin.Meta{
+		Name:       "Source",
+		Type:       "select_one",
+		Collection: models.LeadSources,
+	})
+	attrs = []*admin.Section{
+		{
+			Rows: [][]string{
+				{"Source"},
+				{"ForNewUsers", "ForSuppliersWithNotices"},
+				{"Messages"},
+			},
+		},
+	}
+	caseRes.NewAttrs(attrs)
+	caseRes.EditAttrs(attrs)
+
+	msgRes := caseRes.Meta(&admin.Meta{Name: "Messages"}).Resource
+	msgRes.Meta(&admin.Meta{Name: "Text", Type: "text"})
 }
