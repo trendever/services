@@ -255,20 +255,16 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 	})
 
 	// Source scopes
-	res.Scope(&admin.Scope{
-		Name:  "From website",
-		Group: "Source",
-		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("products_leads.source = ?", "website")
-		},
-	})
-	res.Scope(&admin.Scope{
-		Name:  "From instagram",
-		Group: "Source",
-		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("products_leads.source like ?", "@%")
-		},
-	})
+	sources := []string{"website", "wantit"}
+	for _, s := range sources {
+		res.Scope(&admin.Scope{
+			Name:  "From " + s,
+			Group: "Source",
+			Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+				return db.Where("products_leads.source = ?", s)
+			},
+		})
+	}
 
 	ajaxor.Meta(res, &admin.Meta{
 		Name:      "ShopSearch",

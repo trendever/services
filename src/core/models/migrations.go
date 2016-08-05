@@ -62,6 +62,8 @@ func Migrate() error {
 			DropColumn("model_name").DropColumn("preloads").DropColumn("to")
 	}
 
+	db.New().Model(&Lead{}).Where("source LIKE '@%'").Update("source", "wantit")
+
 	return nil
 }
 

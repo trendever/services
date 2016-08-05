@@ -263,7 +263,7 @@ func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customer
 	log.Debug("Creating new order (productId=%v)", productID)
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
-		Source:        fmt.Sprintf("@%s", settings.Instagram.WantitUser),
+		Source:        "wantit",
 		CustomerId:    customerID,
 		ProductId:     int64(productID),
 		Comment:       mention.Comment,
