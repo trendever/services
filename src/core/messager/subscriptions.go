@@ -3,6 +3,7 @@ package messager
 import (
 	"core/models"
 	"proto/chat"
+	"proto/core"
 	"utils/log"
 )
 
@@ -37,6 +38,10 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Shop.Sellers", "Customer")
 	if err != nil {
 		log.Error(err)
+		return
+	}
+
+	if lead.State == core.LeadStatus_NEW.String() {
 		return
 	}
 
