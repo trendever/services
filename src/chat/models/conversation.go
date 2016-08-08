@@ -249,7 +249,7 @@ func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, erro
 		Joins("JOIN messages m ON m.conversation_id = c.id").
 		Where("u.user_id = ?", userID).
 		Where("u.last_message_id < m.id").
-		Where("u.role = 'CUSTOMER' OR (u.role != 'CUSTOMER' AND c.status != 'new')").
+		Where("u.role = 'CUSTOMER' OR c.status != 'new'").
 		Row().
 		Scan(&missed)
 	return missed, err
