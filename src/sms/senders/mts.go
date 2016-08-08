@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sms/conf"
 	"sms/models"
 	"sms/server"
 	"strconv"
@@ -21,6 +22,10 @@ const (
 	mtsSOAPActionGetMessageStatus = "/m2m/m2m_api.asmx/GetMessageStatus"
 )
 
+func init() {
+	server.RegisterSender("mts", NewMTSClient)
+}
+
 type MTS struct {
 	login    string
 	password string
@@ -32,13 +37,14 @@ type soapMessageStatus struct {
 	Status string `xml:"Body>GetMessageStatusResponse>GetMessageStatusResult>DeliveryInfo>DeliveryStatus"`
 }
 
-func NewMTSClient(login, password, naming string, rate int) server.Sender {
+func NewMTSClient() (server.Sender, error) {
+	s := conf.GetSettings().MTS
 	return &MTS{
-		login:    login,
-		password: fmt.Sprintf("%x", md5.Sum([]byte(password))),
-		naming:   naming,
-		rates:    ratelimit.New(rate, time.Second),
-	}
+		login:    s.Login,
+		password: fmt.Sprintf("%x", md5.Sum([]byte(s.Password))),
+		naming:   s.Naming,
+		rates:    ratelimit.New(s.Rates, time.Second),
+	}, nil
 }
 
 func (s *MTS) SendSMS(sms *models.SmsDB) (err error) {

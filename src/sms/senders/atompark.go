@@ -13,6 +13,7 @@ import (
 
 	"sms/conf"
 	"sms/models"
+	"sms/server"
 )
 
 const (
@@ -23,6 +24,10 @@ const (
 	smsType     = "2" // 2 - отправка смс через прямые подклюения к операторам (разрешены только альфа имена)
 )
 
+func init() {
+	server.RegisterSender("atompark", NewAtompark)
+}
+
 //Atompark is Sender interface implementation for Atompark service
 type Atompark struct {
 	test       string
@@ -32,7 +37,7 @@ type Atompark struct {
 }
 
 //NewAtompark returns NewAtompark instance
-func NewAtompark() *Atompark {
+func NewAtompark() (server.Sender, error) {
 
 	settings := conf.GetSettings()
 
@@ -43,7 +48,7 @@ func NewAtompark() *Atompark {
 		sender:     settings.Atompark.Sender,
 	}
 
-	return a
+	return a, nil
 }
 
 //SendSMS sends sms

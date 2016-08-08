@@ -1,17 +1,17 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"proto/sms"
 	"sms/conf"
 	"sms/db"
 	"sms/models"
-	"sms/senders"
 	"sms/server"
 	"utils/cli"
 	"utils/log"
 	"utils/rpc"
+
+	_ "sms/senders"
 )
 
 var startCmd = &cobra.Command{
@@ -26,20 +26,25 @@ var startCmd = &cobra.Command{
 
 		db.DB.LogMode(settings.Debug)
 
+		sender, err := server.GetSender(settings.Sender)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		// start rpc server
 		log.Info("Starting rpc server...")
-		addr := fmt.Sprintf("%v:%v", settings.RPC.Host, settings.RPC.Port)
-		log.Info("Listen %s \n", addr)
-		grpcServer := rpc.Serve(addr)
+		log.Info("Listen %s \n", settings.Rpc)
+		grpcServer := rpc.Serve(settings.Rpc)
 
 		// register SmsServer
 		log.Info("Registering sms server...")
 		sms.RegisterSmsServiceServer(
 			grpcServer,
 			server.NewSmsServer(
-				senders.NewMTSClient(settings.MTS.Login, settings.MTS.Password, settings.MTS.Naming, settings.MTS.Rates),
-				models.MakeNewSmsRepository(db.DB)))
-
+				sender,
+				models.MakeNewSmsRepository(db.DB),
+			),
+		)
 		cli.Terminate(nil)
 	},
 }

@@ -1,8 +1,8 @@
-debug: true
+rpc: :12326
+# telegram | mts | atompark
+sender: telegram
 
-rpc:
-  host: 0.0.0.0
-  port: 12326
+debug: true
 
 db:
   user: postgres
@@ -17,3 +17,7 @@ atompark:
   keypublic:  de0b3db31f6f277d688b097c2e0f6a49
   keyprivate: e0bcb10cd2bbdb35596de9649feb5a4a
   sender:      Trendever
+
+telegram:
+  rpc: telegram:4040
+  channel: new_sms
