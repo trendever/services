@@ -49,7 +49,7 @@ message Shop {
   string avatar_url = 14;
   string slogan = 15;
 
-  bool supplier_available = 16;
+  bool available = 16;
 }
 
 message ShopProfileRequest {
