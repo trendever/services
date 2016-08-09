@@ -46,6 +46,7 @@ var (
 		&transition.StateChangeLog{},
 		&activity.QorActivity{},
 		&models.UsersProducts{},
+		&models.PushToken{},
 	}
 )
 

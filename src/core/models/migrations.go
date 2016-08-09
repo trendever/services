@@ -57,6 +57,8 @@ func Migrate() error {
 	db.New().Model(&ChatTemplateCase{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
 	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("case_id", "chat_template_cases(id)", "CASCADE", "RESTRICT")
 
+	db.New().Model(&PushToken{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
+
 	if false {
 		// i'm somewhat unsure if drop something here is good idea
 		db.New().Model(&EmailTemplate{}).
