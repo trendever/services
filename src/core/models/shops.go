@@ -76,8 +76,9 @@ func (s Shop) Encode() *core.Shop {
 		Sellers:            Users(s.Sellers).PublicEncode(),
 		Supplier:           s.Supplier.PublicEncode(),
 		//don't remove, useful when not fully preloaded
-		SupplierId: int64(s.SupplierID),
-		AvatarUrl:  s.AvatarURL,
+		SupplierId:        int64(s.SupplierID),
+		AvatarUrl:         s.AvatarURL,
+		SupplierAvailable: s.NotifySupplier,
 	}
 }
 
@@ -105,6 +106,7 @@ func (s Shop) Decode(cs *core.Shop) Shop {
 		PaymentRules:       cs.PaymentRules,
 		Caption:            cs.Caption,
 		Slogan:             cs.Slogan,
+		NotifySupplier:     cs.SupplierAvailable,
 	}
 }
 
