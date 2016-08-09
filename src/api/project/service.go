@@ -33,8 +33,9 @@ func (s *ProjectService) Run() error {
 	cache.Init()
 	SosoObj.HandleList(views.SocketRoutes)
 	subscriber.Init()
+	http.Handle("/channel/", GetMainHandler())
 	return http.ListenAndServe(
 		fmt.Sprintf(":%s", settings.ChannelPort),
-		GetMainHandler(),
+		nil,
 	)
 }

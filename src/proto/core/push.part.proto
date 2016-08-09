@@ -23,7 +23,7 @@ message AddTokenRequest{
 
 message DelTokenRequest {
   uint64 token_id = 1;
-  // user_id should be same as in tocken. Error will be returned otherwise
+  // user_id should be same as in token. Error will be returned otherwise
   uint64 user_id = 2;
 }
 
