@@ -76,27 +76,32 @@ func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
 				// table names (%s)
 				usersProductsTable, productTable),
 				// "?" expr
-				filter.UserID).
-				Where("up.user_id = ?", filter.UserID),
+				filter.UserID),
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		ids = idsLiked
+		ids = append(ids, idsLiked...)
 	}
 
 	if filter.ShopID > 0 {
 		query = query.Where(productTable+".shop_id = ?", filter.ShopID)
 	}
 
-	// second select -- get everything else (owned products, normal search, etc)
-	idsFin, err := selectRows(query)
-	if err != nil {
-		return nil, err
+	if filter.UserID > 0 && filter.ShopID == 0 {
+		// do nothing
+		// @TODO make it beautiful
+	} else {
+		// second select -- get everything else (owned products, normal search, etc)
+		idsFin, err := selectRows(query)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, idsFin...)
 	}
 
-	return append(ids, idsFin...), err
+	return ids, nil
 }
 
 // scan for id -- createdAt tuple; for use in previous func
