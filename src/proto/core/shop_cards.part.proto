@@ -10,10 +10,10 @@ message ShopCard {
   uint64 shop_id = 2;
   string name = 3;
   string number = 4;
+  uint64 user_id = 5;
 }
 
 message CreateCardRequest {
-  uint64 user_id = 1;
   ShopCard card = 2;
 }
 

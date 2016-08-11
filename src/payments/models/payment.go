@@ -13,7 +13,8 @@ import (
 type Payment struct {
 	gorm.Model
 
-	LeadID         uint64
+	LeadID         uint64 `gorm:"index"`
+	Direction      int32
 	ConversationID uint64
 	UserID         uint64 // that's client id
 
@@ -148,6 +149,7 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 
 		// Core LeadID
 		LeadID:         r.LeadId,
+		Direction:      int32(r.Direction),
 		ConversationID: r.ConversationId,
 		UserID:         r.UserId,
 	}

@@ -11,6 +11,7 @@ type ShopCard struct {
 	gorm.Model
 
 	ShopID uint `gorm:"index"`
+	UserID uint `gorm:"index"`
 
 	Name   string `gorm:"not null"`
 	Number string `gorm:"not null"`
@@ -26,13 +27,17 @@ func (c ShopCard) TableName() string {
 
 // CardRepository is access layer for cards (used for mocks)
 type CardRepository interface {
+	CreateCard(card *ShopCard) error
+
 	GetShopSupplierID(shopID uint) (uint, error)
 	GetShopSellers(shopID uint) ([]uint, error)
-	CreateCard(card *ShopCard) error
 	GetCardByID(id uint) (*ShopCard, error)
-	DeleteCardByID(id uint) error
-	GetCardsForShop(shopID uint) ([]ShopCard, error)
 	GetUserByID(id uint) (*User, error)
+
+	GetCardsForShop(shopID uint) ([]ShopCard, error)
+	GetCardsForUser(userID uint) ([]ShopCard, error)
+
+	DeleteCardByID(id uint) error
 }
 
 // CardRepositoryImpl is database access to cards
@@ -42,6 +47,7 @@ type CardRepositoryImpl struct {
 
 var (
 	errHasNoPerm = errors.New("Has no permissions to get this shop cards")
+	errWrongUser = errors.New("Has no permissions to modify other user cards")
 )
 
 // =*=
@@ -82,11 +88,22 @@ func (r CardRepositoryImpl) DeleteCardByID(id uint) error {
 		Error
 }
 
-// GetCardsForShop deletes a card
+// GetCardsForShop returns cards for given shop
 func (r CardRepositoryImpl) GetCardsForShop(shopID uint) (res []ShopCard, err error) {
 
 	err = r.DB.
 		Where("shop_id = ?", shopID).
+		Find(&res).
+		Error
+
+	return
+}
+
+// GetCardsForUser returns cards for given user
+func (r CardRepositoryImpl) GetCardsForUser(userID uint) (res []ShopCard, err error) {
+
+	err = r.DB.
+		Where("user_id = ?", userID).
 		Find(&res).
 		Error
 
@@ -123,6 +140,11 @@ func (r CardRepositoryImpl) GetShopSellers(shopID uint) ([]uint, error) {
 
 // HasShopPermission checks if user can access shop cards
 func HasShopPermission(r CardRepository, userID, shopID uint) error {
+
+	// user mode -- skip checks
+	if shopID == 0 {
+		return nil
+	}
 
 	// check if user is superseller
 	{
@@ -170,9 +192,9 @@ func HasShopPermission(r CardRepository, userID, shopID uint) error {
 }
 
 // CreateCard creates a card for the shop
-func CreateCard(r CardRepository, userID uint, card ShopCard) (uint, error) {
+func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 
-	err := HasShopPermission(r, userID, card.ShopID)
+	err := HasShopPermission(r, card.UserID, card.ShopID)
 	if err != nil {
 		return 0, err
 	}
@@ -195,6 +217,10 @@ func DeleteCard(r CardRepository, userID, cardID uint) error {
 		return err
 	}
 
+	if card.ShopID == 0 && card.UserID != userID {
+		return errWrongUser
+	}
+
 	return r.DeleteCardByID(cardID)
 }
 
@@ -206,8 +232,11 @@ func GetCardsFor(r CardRepository, userID, shopID uint) ([]ShopCard, error) {
 		return nil, err
 	}
 
-	return r.GetCardsForShop(shopID)
+	if shopID > 0 {
+		return r.GetCardsForShop(shopID)
+	}
 
+	return r.GetCardsForUser(userID)
 }
 
 // =*=
@@ -243,6 +272,7 @@ func (c ShopCard) Decode(p *core.ShopCard) ShopCard {
 			ID: uint(p.Id),
 		},
 		ShopID: uint(p.ShopId),
+		UserID: uint(p.UserId),
 		Name:   p.Name,
 		Number: p.Number,
 	}

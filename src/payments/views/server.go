@@ -110,8 +110,8 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED}, err
 	}
 
-	// Step0.5: check if supplier pay id is equal to supplied
-	if req.LeadId != pay.LeadID || pay.LeadID == 0 {
+	// Step0.5: check if saved pay parameters are equal to supplied
+	if req.LeadId != pay.LeadID || pay.LeadID == 0 || int32(req.Direction) != pay.Direction {
 		return &payment.BuyOrderReply{Error: payment.Errors_INVALID_DATA}, fmt.Errorf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)
 	}
 

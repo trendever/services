@@ -4,7 +4,7 @@ import (
 	"api/conf"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/redis.v3"
+	"gopkg.in/redis.v4"
 	"time"
 	"utils/log"
 )
@@ -30,8 +30,8 @@ func Init() {
 	c = cc
 }
 
-//Put puts the value to the key in the cache
-func Put(key string, value interface{}, ttl time.Duration) error {
+//PutV puts the object to the key in the cache (encoding via json)
+func PutV(key string, value interface{}, ttl time.Duration) error {
 	if c == nil {
 		return nil
 	}
@@ -43,28 +43,29 @@ func Put(key string, value interface{}, ttl time.Duration) error {
 }
 
 //Get gets a value by the key
-func Get(key string) (interface{}, error) {
+func Get(key string) (string, error) {
 	if c == nil {
-		return nil, nil
+		return "", nil
 	}
 	val, err := c.Get(key).Result()
 	if err == redis.Nil {
-		return nil, nil
+		return "", nil
 	}
 	return val, err
 }
 
+// GetV gets key from redis and decodes it using JSON
 func GetV(key string, v interface{}) error {
 	ret, err := Get(key)
 	if err != nil {
 		return err
 	}
 
-	if ret == nil {
+	if ret == "" {
 		return nil
 	}
 
-	return json.Unmarshal([]byte(ret.(string)), v)
+	return json.Unmarshal([]byte(ret), v)
 }
 
 //Flush deletes all data from db

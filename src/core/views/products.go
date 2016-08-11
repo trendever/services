@@ -48,7 +48,7 @@ func applyIDSearch(db *gorm.DB, request *core.GetProductRequest) (*gorm.DB, erro
 	}
 }
 
-// get only one product by id/code
+// GetProduct fetches whole product by id/code
 func (s productServer) GetProduct(ctx context.Context, request *core.GetProductRequest) (*core.ProductSearchResult, error) {
 
 	query, err := applyIDSearch(models.DefaultProductQuery(), request)
@@ -70,7 +70,7 @@ func (s productServer) GetProduct(ctx context.Context, request *core.GetProductR
 	}, nil
 }
 
-// get only one product by id/code
+// ReadProduct checks product existense by id/code
 func (s productServer) ReadProduct(ctx context.Context, request *core.GetProductRequest) (*core.ProductReadResult, error) {
 	query, err := applyIDSearch(db.New(), request)
 	if err != nil {

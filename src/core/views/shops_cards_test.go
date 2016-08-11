@@ -2,6 +2,7 @@ package views
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -156,9 +157,9 @@ func TestCards(t *testing.T) {
 			{
 				shopID: 1, wantSucc: true,
 				req: core.CreateCardRequest{
-					UserId: 1,
 					Card: &core.ShopCard{
 						ShopId: 1,
+						UserId: 1,
 						Name:   "ehoho",
 						Number: "ecoco",
 					},
@@ -169,8 +170,8 @@ func TestCards(t *testing.T) {
 			{
 				shopID: 2, wantSucc: true,
 				req: core.CreateCardRequest{
-					UserId: 6,
 					Card: &core.ShopCard{
+						UserId: 6,
 						ShopId: 2,
 						Name:   "ehoho",
 						Number: "ecoco",
@@ -182,8 +183,8 @@ func TestCards(t *testing.T) {
 			{
 				shopID: 2, wantSucc: true,
 				req: core.CreateCardRequest{
-					UserId: 5,
 					Card: &core.ShopCard{
+						UserId: 5,
 						ShopId: 2,
 						Name:   "ehoho",
 						Number: "ecoco",
@@ -195,8 +196,8 @@ func TestCards(t *testing.T) {
 			{
 				shopID: 2, wantSucc: false,
 				req: core.CreateCardRequest{
-					UserId: 1,
 					Card: &core.ShopCard{
+						UserId: 1,
 						ShopId: 2,
 						Name:   "ehoho",
 						Number: "ecoco",
@@ -292,7 +293,7 @@ func TestCards(t *testing.T) {
 			wantSucc bool
 		}
 
-		for _, test := range []deleteTest{
+		for i, test := range []deleteTest{
 			{
 				req: core.DeleteCardRequest{
 					//ShopId: 1,
@@ -324,7 +325,7 @@ func TestCards(t *testing.T) {
 
 			_, err := server.DeleteCard(context.Background(), &test.req)
 
-			assert.True(t, (err == nil) == test.wantSucc)
+			assert.True(t, (err == nil) == test.wantSucc, fmt.Sprintf("Test #%v", i))
 			assert.EqualValues(t, test.wantSucc, deleted)
 
 		}

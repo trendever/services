@@ -37,7 +37,6 @@ func (s shopCardServer) CreateCard(_ context.Context, req *core.CreateCardReques
 
 	id, err := models.CreateCard(
 		s.repo,
-		uint(req.UserId),
 		models.ShopCard{}.Decode(req.Card),
 	)
 

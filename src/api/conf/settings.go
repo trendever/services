@@ -86,6 +86,6 @@ type Settings struct {
 	Redis struct {
 		Addr     string
 		Password string
-		DB       int64
+		DB       int
 	}
 }

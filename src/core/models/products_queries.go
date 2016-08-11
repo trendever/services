@@ -32,6 +32,8 @@ func GetProductsByIDs(ids []uint, direction bool) (Products, error) {
 }
 
 func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
+	ids := []uint{}
+
 	query := p.db.Model(Product{}).
 		Limit(filter.Limit)
 
@@ -53,15 +55,6 @@ func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
 		query = query.Offset(filter.Offset)
 	}
 
-	if filter.UserID > 0 {
-		query = query.Joins(fmt.Sprintf("LEFT JOIN %s AS up ON up.product_id = %s.id AND up.user_id = ? AND up.deleted_at IS NULL", usersProductsTable, productTable), filter.UserID).
-			Where("up.user_id = ?", filter.UserID)
-	}
-
-	if filter.ShopID > 0 {
-		query = query.Where(productTable+".shop_id = ?", filter.ShopID)
-	}
-
 	if len(filter.Tags) > 0 {
 		query = applyTags(query, filter.Tags)
 	}
@@ -76,8 +69,41 @@ func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
 		query = query.Order(productTable + ".created_at desc")
 	}
 
+	// first select -- get user likes
+	if filter.UserID > 0 {
+		idsLiked, err := selectRows(
+			query.Joins(fmt.Sprintf(`LEFT JOIN %s AS up ON up.product_id = %s.id AND up.user_id = ? AND up.deleted_at IS NULL`,
+				// table names (%s)
+				usersProductsTable, productTable),
+				// "?" expr
+				filter.UserID),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = idsLiked
+	}
+
+	if filter.ShopID > 0 {
+		query = query.Where(productTable+".shop_id = ?", filter.ShopID)
+	}
+
+	// second select -- get everything else (owned products, normal search, etc)
+	idsFin, err := selectRows(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(ids, idsFin...), err
+}
+
+// scan for id -- createdAt tuple; for use in previous func
+func selectRows(db *gorm.DB) ([]uint, error) {
+
 	ids := []uint{}
-	rows, err := query.Select("DISTINCT products_product.id,products_product.created_at").Rows()
+
+	rows, err := db.Select("DISTINCT products_product.id,products_product.created_at").Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +122,8 @@ func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
 		ids = append(ids, id)
 	}
 
-	return ids, err
+	return ids, nil
+
 }
 
 // query modifier that filters products only to ones that own every tag in tag_ids

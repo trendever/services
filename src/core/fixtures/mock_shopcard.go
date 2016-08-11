@@ -71,6 +71,17 @@ func (_mr *_MockCardRepositoryRecorder) GetCardsForShop(arg0 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCardsForShop", arg0)
 }
 
+func (_m *MockCardRepository) GetCardsForUser(_param0 uint) ([]models.ShopCard, error) {
+	ret := _m.ctrl.Call(_m, "GetCardsForUser", _param0)
+	ret0, _ := ret[0].([]models.ShopCard)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockCardRepositoryRecorder) GetCardsForUser(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCardsForUser", arg0)
+}
+
 func (_m *MockCardRepository) GetShopSellers(_param0 uint) ([]uint, error) {
 	ret := _m.ctrl.Call(_m, "GetShopSellers", _param0)
 	ret0, _ := ret[0].([]uint)

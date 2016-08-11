@@ -41,12 +41,12 @@ message SearchProductRequest {
   bool is_sale_only = 6;
   //false - desc, true - asc
   bool offset_direction = 7;
-  oneof feed_by {
-    uint64 user_id = 8;
-    uint64 shop_id = 9;
-    //user or shop instagram_name
-    string instagram_name = 10;
-  }
+
+  // that was one-of once
+  uint64 user_id = 8;
+  uint64 shop_id = 9;
+  //user or shop instagram_name
+  string instagram_name = 10;
 }
 
 message ProductSearchResult {

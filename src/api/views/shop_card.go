@@ -115,11 +115,11 @@ func CreateCard(c *soso.Context) {
 	defer cancel()
 
 	_, err := shopCardServiceClient.CreateCard(ctx, &core.CreateCardRequest{
-		UserId: c.Token.UID,
 		Card: &core.ShopCard{
 			Name:   cardName,
 			Number: cardNumber,
 			ShopId: uint64(shopID),
+			UserId: c.Token.UID,
 		},
 	})
 

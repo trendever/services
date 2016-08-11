@@ -15,16 +15,16 @@ func (f *ProductFilter) Decode(req *core.SearchProductRequest) error {
 	f.FromID = req.GetFromId()
 	f.IsSaleOnly = req.IsSaleOnly
 	f.Direction = req.OffsetDirection
-	f.UserID = req.GetUserId()
-	f.ShopID = req.GetShopId()
+	f.UserID = req.UserId
+	f.ShopID = req.ShopId
 
 	//We don't want execute  queries for users or shops which are not exist
 	switch {
-	case req.GetInstagramName() != "":
+	case req.InstagramName != "":
 		//Shop has priority
-		id, err := FindShopIDByInstagramName(req.GetInstagramName())
+		id, err := FindShopIDByInstagramName(req.InstagramName)
 		if err != nil {
-			id, err := FindUserIDByInstagramName(req.GetInstagramName())
+			id, err := FindUserIDByInstagramName(req.InstagramName)
 			if err != nil {
 				return err
 			}

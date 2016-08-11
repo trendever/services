@@ -12,19 +12,23 @@ message CreateOrderRequest {
   uint64 lead_id = 3;
   uint64 user_id = 4;
   uint64 conversation_id = 5;
+  Direction direction = 6;
 
-  string shop_card_number = 6;
+  string shop_card_number = 7;
 }
 
 message CreateOrderReply {
   uint64 id = 1;
-  Errors error = 3;
+  Errors error = 2;
 }
 
 message BuyOrderRequest {
   uint64 pay_id = 1;
-  uint64 lead_id = 2;
-  string ip = 3;
+  string ip = 2;
+
+  // parameters to check correctness
+  uint64 lead_id = 3;
+  Direction direction = 4;
 }
 
 message BuyOrderReply {
@@ -58,4 +62,8 @@ enum Errors {
   PAY_FAILED = 128;
 }
 
+enum Direction {
+  TO_CLIENT = 0;
+  FROM_CLIENT = 1;
+}
 
