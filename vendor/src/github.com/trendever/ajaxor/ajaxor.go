@@ -1,6 +1,7 @@
 package ajaxor
 
 import (
+	"errors"
 	"fmt"
 	"github.com/qor/admin"
 	"github.com/qor/qor/utils"
@@ -63,23 +64,44 @@ func register(res *admin.Resource) {
 }
 
 // restore base context (of base resource we are selecting in)
-func resourceContext(context *admin.Context) {
+// if local is true it probably means that we handle temporary recourse(e.g. actions arguments)
+func resourceContext(context *admin.Context) (local bool, err error) {
 
 	var (
 		resourceName = context.Request.URL.Query().Get(":base")
 		resource     = context.Admin.GetResource(resourceName)
 		resourceID   = context.Request.URL.Query().Get(":base_id")
 	)
+	// base resource wasn't registered
+	if resource == nil {
+		// look to our local collection
+		for _, r := range resources {
+			if r.ToParam() == resourceName {
+				resource = r
+				local = true
+				break
+			}
+		}
+	}
+	if resource == nil {
+		err = errors.New("unknown base resource")
+		return
+	}
 
 	context.Resource = resource
 	context.ResourceID = resourceID
+	return
 }
 
 // getVariantsHandler returns possible variants for custom select_one, select_many fields
 // @TODO: check permissions
 func getVariantsHandler(context *admin.Context) {
 
-	resourceContext(context)
+	local, err := resourceContext(context)
+	if err != nil {
+		addError(context, err)
+		return
+	}
 
 	// Ctx resource is what we are selecting in (for example, Order)
 	// This handler is run from some specific order (for example, order{id:1})
@@ -107,7 +129,7 @@ func getVariantsHandler(context *admin.Context) {
 	}
 
 	if !meta.HasPermission(roles.Read, context.Context) {
-		addError(context, fmt.Errorf("No permissions for meta %v"))
+		addError(context, fmt.Errorf("No permissions for meta %v", metaName))
 	}
 
 	if resource == nil {
@@ -119,9 +141,12 @@ func getVariantsHandler(context *admin.Context) {
 		addError(context, fmt.Errorf("Resource %v has no search handler; did you forget to make res.SearchAttrs()?", resource.Name))
 	}
 
-	// find selected record (we work in it's context)
-	// error is ignored -- for create mode
-	record, _ := context.FindOne()
+	var record interface{}
+	if !local {
+		// find selected record (we work in it's context)
+		// error is ignored -- for create mode
+		record, _ = context.FindOne()
+	}
 
 	// context we will search entries in
 	searchCtx := context.Clone()
