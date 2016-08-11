@@ -48,6 +48,12 @@ func CreateLead(c *soso.Context) {
 	// Step #1: convert input from interface{} and check it
 
 	id, idPresent := req["id"].(float64)
+	action_f, _ := req["action"].(float64)
+	action := core.LeadAction(action_f)
+	if _, ok := core.LeadAction_name[int32(action)]; !ok {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown action"))
+		return
+	}
 
 	var (
 		userID int64
@@ -73,6 +79,7 @@ func CreateLead(c *soso.Context) {
 		Source:     "website",
 		CustomerId: userID,
 		ProductId:  int64(id),
+		Action:     action,
 	})
 
 	if err != nil {
@@ -316,4 +323,26 @@ func getUserLeads(uid uint64, roles []core.LeadUserRole, limit uint64, direction
 	}
 
 	return leads, nil
+}
+
+func getLeadInfo(userID, leadID uint64) (*core.LeadInfo, error) {
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := leadServiceClient.GetLead(ctx, &core.GetLeadRequest{
+		UserId:   userID,
+		SearchBy: &core.GetLeadRequest_Id{Id: leadID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// now checks
+	if resp.Lead == nil {
+		return nil, errors.New("Lead not found")
+	}
+
+	return resp.Lead, nil
+
 }

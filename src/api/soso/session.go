@@ -1,22 +1,14 @@
 package soso
 
 import (
+	"github.com/igm/sockjs-go/sockjs"
 	"sync"
 	"utils/log"
 )
 
 var Sessions = NewSessionRepository()
 
-type Session interface {
-	// Id returns a session id
-	ID() string
-	// Recv reads one text frame from session
-	Recv() (string, error)
-	// Send sends one text frame to session
-	Send(string) error
-	// Close closes the session with provided code and reason.
-	Close(status uint32, reason string) error
-}
+type Session sockjs.Session
 
 type SessionRepository interface {
 	//Push adds session to collection

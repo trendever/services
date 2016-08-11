@@ -42,8 +42,9 @@ func GetSettings() *Settings {
 //Settings is program settings
 type Settings struct {
 	Debug     bool
-	RPC       RPC
+	Rpc       string
 	DB        DB
+	Sender    string
 	Atompark  Atompark
 	SentryDSN string
 	MTS       struct {
@@ -52,12 +53,10 @@ type Settings struct {
 		Naming   string
 		Rates    int
 	}
-}
-
-//RPC is rpc settings
-type RPC struct {
-	Host string
-	Port int
+	Telegram struct {
+		Rpc     string
+		Channel string
+	}
 }
 
 //DB is database settings

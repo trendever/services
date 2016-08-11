@@ -7,6 +7,7 @@ import (
 	"core/messager"
 	"core/models"
 	"core/qor"
+	"fmt"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -22,6 +23,9 @@ type Service struct{}
 // AutoMigrate adds new columns to database
 func (s *Service) AutoMigrate(cli *cli.Context) {
 	log.Info("Start migration")
+
+	// init config
+	conf.Init()
 	// connect to database
 	db.Init()
 
@@ -50,6 +54,7 @@ func (s *Service) AutoMigrate(cli *cli.Context) {
 
 // Run starts it all
 func (s *Service) Run(cli *cli.Context) {
+	conf.Init()
 	settings := conf.GetSettings()
 	if settings.Profiler.Web {
 		go func() {
@@ -62,6 +67,9 @@ func (s *Service) Run(cli *cli.Context) {
 		// connect to database
 		db.Init()
 		messager.Init()
+		if err := models.LoadOrCreateSystemUser(); err != nil {
+			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))
+		}
 
 		// Initial web server
 		r := gin.Default()

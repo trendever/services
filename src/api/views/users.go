@@ -4,6 +4,7 @@ import (
 	"api/api"
 	"api/soso"
 	"errors"
+	"github.com/asaskevich/govalidator"
 	"net/http"
 	"proto/core"
 	"utils/rpc"
@@ -19,6 +20,7 @@ func init() {
 	SocketRoutes = append(
 		SocketRoutes,
 		soso.Route{"retrieve", "user", GetUserProfile},
+		soso.Route{"set_email", "user", SetEmail},
 	)
 }
 
@@ -74,4 +76,35 @@ func (u *User) GetName() string {
 		return u.Name
 	}
 	return "User"
+}
+
+func SetEmail(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	email, _ := c.RequestMap["email"].(string)
+	if !govalidator.IsEmail(email) {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid email"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := userServiceClient.SetEmail(ctx, &core.SetEmailRequest{
+		UserId: c.Token.UID,
+		Email:  email,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if res.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
 }

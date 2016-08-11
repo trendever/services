@@ -10,7 +10,7 @@ import (
 	"api/conf"
 	"api/project"
 	"net/http"
-	_ "net/http/pprof"
+	//_ "net/http/pprof" // wuut the; could it really slow down?
 )
 
 func main() {

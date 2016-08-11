@@ -146,6 +146,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/durango/go-credit-card",
+			"repository": "https://github.com/durango/go-credit-card",
+			"revision": "986a3cc0c28230050dfc9008be2b147ebdbd8459",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/dustin/go-broadcast",
 			"repository": "https://github.com/dustin/go-broadcast",
 			"revision": "3bdf6d4a7164a50bc19d5f230e2981d87d2584f1",
@@ -250,6 +256,13 @@
 			"repository": "https://github.com/hashicorp/hcl",
 			"revision": "d8c773c4cba11b11539e3d45f93daeaa5dcf1fa1",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/igm/sockjs-go/sockjs",
+			"repository": "https://github.com/igm/sockjs-go",
+			"revision": "250738e8a5273b7b366ea6356f9a7209c01f7ea1",
+			"branch": "master",
+			"path": "/sockjs"
 		},
 		{
 			"importpath": "github.com/influxdata/influxdb/client/v2",
@@ -870,16 +883,15 @@
 			"branch": "v2"
 		},
 		{
-			"importpath": "gopkg.in/igm/sockjs-go.v2/sockjs",
-			"repository": "https://gopkg.in/igm/sockjs-go.v2",
-			"revision": "05b5e3121f692bea77aeb1160e4e7881017dc093",
-			"branch": "v2",
-			"path": "/sockjs"
-		},
-		{
 			"importpath": "gopkg.in/redis.v3",
 			"repository": "https://gopkg.in/redis.v3",
 			"revision": "b5e368500d0a508ef8f16e9c2d4025a8a46bcc29",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/redis.v4",
+			"repository": "https://gopkg.in/redis.v4",
+			"revision": "0b8675fa4582105c8f54e08d3e0e6ad8f7df0546",
 			"branch": "master"
 		},
 		{

@@ -1,9 +1,9 @@
 package server
 
 import (
-	"sms/models"
-
+	"fmt"
 	"proto/sms"
+	"sms/models"
 	"utils/log"
 
 	"golang.org/x/net/context"
@@ -17,6 +17,28 @@ type smsServer struct {
 //Sender is interface for external service for sending sms
 type Sender interface {
 	SendSMS(*models.SmsDB) error
+}
+
+var senderFactories = map[string]func() (Sender, error){}
+
+func RegisterSender(name string, factory func() (Sender, error)) {
+	_, ok := senderFactories[name]
+	if ok {
+		log.Warn("Sender '%s' already registred", name)
+	}
+	senderFactories[name] = factory
+}
+
+func GetSender(name string) (Sender, error) {
+	factory, ok := senderFactories[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown sender '%v'", name)
+	}
+	sender, err := factory()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create sender '%v': %v", name, err)
+	}
+	return sender, nil
 }
 
 //NewSmsServer returns new instance of *sms.SmsServiceServer

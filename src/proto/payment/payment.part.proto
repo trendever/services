@@ -1,0 +1,69 @@
+service PaymentService {
+
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderReply) {}
+
+  rpc BuyOrder(BuyOrderRequest) returns (BuyOrderReply) {}
+}
+
+message CreateOrderRequest {
+  uint64 amount = 1;
+  Currency currency = 2;
+
+  uint64 lead_id = 3;
+  uint64 user_id = 4;
+  uint64 conversation_id = 5;
+  Direction direction = 6;
+
+  string shop_card_number = 7;
+}
+
+message CreateOrderReply {
+  uint64 id = 1;
+  Errors error = 2;
+}
+
+message BuyOrderRequest {
+  uint64 pay_id = 1;
+  string ip = 2;
+
+  // parameters to check correctness
+  uint64 lead_id = 3;
+  Direction direction = 4;
+}
+
+message BuyOrderReply {
+  string redirect_url = 1;
+  Errors error = 2;
+}
+
+// chat messages
+message PaymentButton {
+  uint64 pay_id = 1;
+}
+
+message PaymentNotificationMessage {
+  uint64 pay_id = 1;
+}
+
+enum Currency {
+  RUB = 0;
+  USD = 1;
+}
+
+enum Errors {
+  OK = 0;
+  
+  // internal errors
+  INVALID_DATA = 1;
+  DB_FAILED = 2;
+
+  // external errors
+  INIT_FAILED = 127;
+  PAY_FAILED = 128;
+}
+
+enum Direction {
+  TO_CLIENT = 0;
+  FROM_CLIENT = 1;
+}
+

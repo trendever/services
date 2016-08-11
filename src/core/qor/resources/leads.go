@@ -6,7 +6,6 @@ import (
 	"core/qor/filters"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/qor/activity"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
@@ -107,21 +106,7 @@ func addLeadResource(a *admin.Admin) {
 		})
 	}
 
-	activity.Register(res) // register order activity
 	addTransitionActions(a, res)
-
-	// add various send actions
-	addSendActions("Lead", a, res, func(object interface{}, ctx *admin.Context, actionName string) bool {
-
-		switch actionName {
-		case ActionSendEmail:
-			return false
-		case ActionSendSMS:
-			return true
-		default:
-			return false
-		}
-	})
 }
 
 // and typical actions for changing order state
@@ -270,20 +255,15 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 	})
 
 	// Source scopes
-	res.Scope(&admin.Scope{
-		Name:  "From website",
-		Group: "Source",
-		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("products_leads.source = ?", "website")
-		},
-	})
-	res.Scope(&admin.Scope{
-		Name:  "From instagram",
-		Group: "Source",
-		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("products_leads.source like ?", "@%")
-		},
-	})
+	for _, s := range models.LeadSources {
+		res.Scope(&admin.Scope{
+			Name:  "From " + s,
+			Group: "Source",
+			Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+				return db.Where("products_leads.source = ?", s)
+			},
+		})
+	}
 
 	ajaxor.Meta(res, &admin.Meta{
 		Name:      "ShopSearch",

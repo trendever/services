@@ -8,13 +8,17 @@ import (
 	"time"
 )
 
+// Possible lead sources
+var LeadSources = []string{
+	"website",
+	"wantit",
+}
+
 // Lead model
 type Lead struct {
 	gorm.Model
 
-	// Lead source. Possible values:
-	//  * "website" if lead created from website
-	//  * "@instaUsername" if lead created by mentioning wantit-user `instaUsername`
+	// One of LeadSources
 	Source string
 
 	CustomerID uint

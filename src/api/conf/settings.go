@@ -21,9 +21,11 @@ func init() {
 
 	viper.SetDefault("Debug", true)
 	viper.SetDefault("ChannelPort", 8081)
-	viper.SetDefault("CoreAddr", "localhost:3005")
-	viper.SetDefault("AuthAddr", "localhost:8433")
-	viper.SetDefault("ChatAddr", "localhost:2010")
+
+	viper.SetDefault("CoreAddr", "core:3005")
+	viper.SetDefault("AuthAddr", "auth:8433")
+	viper.SetDefault("ChatAddr", "chat:2010")
+	viper.SetDefault("PaymentsAddr", "payments:7777")
 
 	if err != nil {
 		panic(fmt.Errorf("Config not loaded: %v", err))
@@ -42,13 +44,16 @@ func GetSettings() *Settings {
 }
 
 type Settings struct {
-	Debug       bool   `default:"true"`
-	ChannelPort string `default:"8081"`
-	CoreAddr    string `default:"localhost:3005"`
-	AuthAddr    string `default:"localhost:8433"`
-	ChatAddr    string
-	SentryDSN   string
-	NatsURL     string
+	Debug       bool
+	ChannelPort string
+
+	SentryDSN string
+	NatsURL   string
+
+	CoreAddr     string
+	AuthAddr     string
+	ChatAddr     string
+	PaymentsAddr string
 
 	Mail struct {
 		Username string
@@ -81,6 +86,6 @@ type Settings struct {
 	Redis struct {
 		Addr     string
 		Password string
-		DB       int64
+		DB       int
 	}
 }

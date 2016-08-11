@@ -4,7 +4,6 @@ import (
 	"core/api"
 	"core/db"
 	"core/models"
-	"core/notifier"
 	"core/telegram"
 	"errors"
 	"github.com/jinzhu/gorm"
@@ -23,29 +22,13 @@ func init() {
 }
 
 type leadServer struct {
-	notifier notifier.Notifier
-}
-
-// Decodes protobuf model to core model
-//  product items are not fully loaded
-func decodeLead(l *core.Lead) *models.Lead {
-	lead := &models.Lead{
-		Source: l.Source,
-
-		CustomerID: uint(l.CustomerId),
-
-		InstagramPk: l.InstagramPk,
-		Comment:     l.Comment,
-	}
-
-	return lead
+	notifier *models.Notifier
 }
 
 func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core.CreateLeadResult, error) {
 
 	var err error
 	if protoLead.ProductId == 0 {
-		log.Warn("Can't cread lead without product id")
 		return nil, errors.New("ProductID is required")
 	}
 
@@ -74,25 +57,27 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		lead = existsLead
 	}
 
-	if count, err := models.AppendLeadItems(lead, prod.Items); err != nil {
-		log.Error(err)
-		return nil, err
-	} else if count == 0 {
-		// This mean the product already in the lead, or product without items,
-		// anyway we don't want to do anything more with this lead
-		leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
-		if err != nil {
+	if protoLead.Action == core.LeadAction_BUY {
+		if count, err := models.AppendLeadItems(lead, prod.Items); err != nil {
 			log.Error(err)
 			return nil, err
-		}
+		} else if count == 0 {
+			// This mean the product already in the lead, or product without items,
+			// anyway we don't want to do anything more with this lead
+			leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
+			if err != nil {
+				log.Error(err)
+				return nil, err
+			}
 
-		return &core.CreateLeadResult{
-			Id:   int64(lead.ID),
-			Lead: leadInfo.Encode(),
-		}, nil
+			return &core.CreateLeadResult{
+				Id:   int64(lead.ID),
+				Lead: leadInfo.Encode(),
+			}, nil
+		}
 	}
 
-	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink)
+	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
 
 	//Event CREATE performs chat creation
 	if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {
@@ -106,29 +91,14 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(err)
 	}
 
+	// @CHECK Why may lead.ConversationID == 0 happend?
+	// Doesn't this mean that everything went really bad?
 	if lead.ConversationID != 0 {
-		//send only if lead already existed. Because if this is a new lead, we already send product to chat
-		//in CREATE event handler
-		if existsLead != nil {
-			go log.Error(models.SendProductToChat(lead, prod))
-		}
-		//notify sellers
 		go func() {
-			shop := &models.Shop{}
-			err := db.New().Model(&models.Shop{}).Preload("Sellers").Preload("Supplier").Find(shop, prod.ShopID).Error
-			if err != nil {
-				log.Error(err)
-				return
-			}
-
-			if shop.NotifySupplier {
-				s.notifySellerAboutLead(lead, shop.Supplier)
-			}
-
-			for _, seller := range shop.Sellers {
-				s.notifySellerAboutLead(lead, seller)
-			}
+			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source))
 		}()
+	} else {
+		log.Error(errors.New("lead.ConversationID == 0"))
 	}
 
 	leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
@@ -143,7 +113,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	}, nil
 }
 
-// ReadLead checks lead existance by id
+// ReadLead checks lead existence by id
 func (s leadServer) ReadLead(ctx context.Context, req *core.ReadLeadRequest) (*core.ReadLeadResult, error) {
 
 	searchLead := models.Lead{
@@ -240,35 +210,7 @@ func (s leadServer) CallSupplier(ctx context.Context, req *core.CallSupplierRequ
 		return nil, errors.New("Supplier doesn't have phone number")
 	}
 
-	token, err := api.GetNewAPIToken(supplier.ID)
-	if err != nil {
-		log.Warn("Can't get token for supplier: %v %v: %v", supplier.ID, supplier.Phone, err)
-		return nil, errors.New("Can't get token for supplier")
-	}
-	url := api.GetChatURL(lead.ID, token)
-	result, err := api.GetShortURL(url)
-	if err != nil {
-		log.Error(err)
-	} else {
-		url = result.URL
-		//sends only short url
-		go func() {
-			err := notifier.CallSupplierToChat(supplier, url, lead, s.notifier.NotifyBySms)
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
-	if supplier.Email != "" {
-		go func() {
-			err := notifier.CallSupplierToChat(supplier, url, lead, s.notifier.NotifyByEmail)
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
+	go s.notifier.CallSupplierToChat(&supplier, lead)
 	go models.SendStatusMessage(lead.ConversationID, "suplier.called", "")
 
 	return &core.CallSupplierReply{}, nil
@@ -328,64 +270,7 @@ func (s leadServer) CallCustomer(_ context.Context, req *core.CallCustomerReques
 		return nil, errors.New("Customer doesn't have phone number")
 	}
 
-	token, err := api.GetNewAPIToken(customer.ID)
-	if err != nil {
-		log.Error(err)
-		return nil, errors.New("Can't get token for customer")
-	}
-	url := api.GetChatURL(lead.ID, token)
-	result, err := api.GetShortURL(url)
-	if err != nil {
-		log.Error(err)
-	} else {
-		url = result.URL
-		//sends only short url
-		go func() {
-			err := notifier.CallCustomerToChat(customer, url, lead, s.notifier.NotifyBySms)
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
-	if customer.Email != "" {
-		go func() {
-			err := notifier.CallCustomerToChat(customer, url, lead, s.notifier.NotifyByEmail)
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
+	go s.notifier.CallCustomerToChat(&customer, lead)
 	go models.SendStatusMessage(lead.ConversationID, "customer.called", "")
 	return &core.CallCustomerReply{}, nil
-}
-
-func (s leadServer) notifySellerAboutLead(lead *models.Lead, seller models.User) {
-	if seller.Phone == "" {
-		return
-	}
-
-	url, err := api.GetChatURLWithToken(lead.ID, seller.ID)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	short, err := api.GetShortURL(url)
-	if err == nil {
-		err := notifier.NotifySellerAboutLead(seller, short.URL, lead, s.notifier.NotifyBySms)
-		if err != nil {
-			log.Error(err)
-		}
-	} else {
-		log.Error(err)
-	}
-
-	if seller.Email != "" {
-		err := notifier.NotifySellerAboutLead(seller, url, lead, s.notifier.NotifyByEmail)
-		if err != nil {
-			log.Error(err)
-		}
-	}
 }

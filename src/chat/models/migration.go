@@ -13,5 +13,8 @@ func Migrate(db *gorm.DB) error {
 
 	db.Model(&MessagePart{}).
 		AddForeignKey("message_id", "messages(id)", "CASCADE", "RESTRICT")
+
+	db.Exec("ALTER TABLE conversations ALTER COLUMN status SET DEFAULT 'new'")
+	db.Model(&Conversation{}).Where("status IS NULL or status = ''").Update("status", "active")
 	return nil
 }

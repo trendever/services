@@ -8,6 +8,8 @@ service UserService {
 
   // returns user's public profile
   rpc GetUserProfile (UserProfileRequest) returns (UserProfileReply) {}
+
+  rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
 }
 
 message CreateUserRequest {
@@ -72,4 +74,13 @@ message UserProfileReply {
         User user = 1;
         Shop shop = 2;
     }
+}
+
+message SetEmailRequest {
+    uint64 user_id = 1;
+    string email = 2;
+}
+
+message SetEmailReply {
+    string error = 1;
 }

@@ -4,7 +4,7 @@ siteURL: http://localhost
 natsURL: nats://nats:4222
 
 rpc:
-  listen: 0.0.0.0:3005
+  listen: :3005
   mail: mail:12325
   sms: sms:12326
   chat: chat:2010

@@ -131,7 +131,8 @@ func getActivity(api *instagram_api.Instagram, rndTimeout int) {
 		ract, err := api.GetRecentActivity()
 		if err != nil {
 			log.Warn("Got error %v while fetching recent activitity with user %v", err, api.GetUserName())
-			log.Fatal(err)
+			time.Sleep(time.Second)
+			continue
 		}
 
 		// fetch old stories

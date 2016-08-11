@@ -39,7 +39,7 @@ func Init(token string, rooms []conf.Room) (*Telegram, error) {
 func (t *Telegram) Notify(dst, msg string) error {
 	chat, ok := t.chats[dst]
 	if !ok {
-		return fmt.Errorf("Chat %v not defined in config")
+		return fmt.Errorf("Chat %v not defined in config", dst)
 	}
 
 	var (

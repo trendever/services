@@ -5,7 +5,6 @@ import (
 	schat "api/chat"
 	"api/soso"
 	"proto/chat"
-	"proto/core"
 )
 
 func init() {
@@ -13,8 +12,8 @@ func init() {
 	handlers["chat.message.new"] = newMessage
 	handlers["chat.message.readed"] = messageReaded
 	handlers["chat.member.join"] = newChatMember
-	handlers["core.product.new"] = newProduct
-	handlers["core.product.update"] = updateProduct
+
+	handlers["core.product.flush"] = cache.FlushProduct
 }
 
 func newMessage(req *chat.NewMessageRequest) {
@@ -23,9 +22,9 @@ func newMessage(req *chat.NewMessageRequest) {
 		"messages": req.Messages,
 		"chat":     req.Chat,
 	}
-	remote_ctx := soso.NewRemoteContext("message", "retrieve", r)
+	remoteCtx := soso.NewRemoteContext("message", "retrieve", r)
 
-	schat.BroadcastMessage(req.Chat.Members, nil, remote_ctx)
+	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
 }
 
 func messageReaded(req *chat.MessageReadedRequest) {
@@ -35,9 +34,9 @@ func messageReaded(req *chat.MessageReadedRequest) {
 		"user_id":    req.UserId,
 		"chat":       req.Chat,
 	}
-	remote_ctx := soso.NewRemoteContext("message", "readed", r)
+	remoteCtx := soso.NewRemoteContext("message", "readed", r)
 
-	schat.BroadcastMessage(req.Chat.Members, nil, remote_ctx)
+	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
 }
 
 func newChatMember(req *chat.NewChatMemberRequest) {
@@ -45,40 +44,7 @@ func newChatMember(req *chat.NewChatMemberRequest) {
 		"member": req.User,
 		"chat":   req.Chat,
 	}
-	remote_ctx := soso.NewRemoteContext("member", "joined", r)
+	remoteCtx := soso.NewRemoteContext("member", "joined", r)
 
-	schat.BroadcastMessage(req.Chat.Members, nil, remote_ctx)
-}
-
-func updateProduct(product *core.Product) {
-	cache.FlushProductCache(product.Id)
-	for _, u := range product.LikedBy {
-		switch {
-		case u.InstagramUsername != "":
-			cache.FlushUserCache(u.InstagramUsername)
-		case u.Name != "":
-			cache.FlushUserCache(u.Name)
-		}
-	}
-}
-
-func newProduct(product *core.Product) {
-
-	cache.FlushProductCache(product.Id)
-
-	resp := map[string]interface{}{
-		"object_list": []interface{}{product},
-		"count":       1,
-	}
-
-	remote_ctx := soso.NewRemoteContext("product", "new", resp)
-
-	uSess := soso.Sessions.Get(uint64(product.MentionedId))
-	sSess := soso.Sessions.Get(uint64(product.Supplier.SupplierId))
-
-	for _, ses := range append(uSess, sSess...) {
-		remote_ctx.Session = ses
-		remote_ctx.SendResponse()
-	}
-
+	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
 }

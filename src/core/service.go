@@ -147,7 +147,7 @@ func main() {
 					resp, err = p.SearchProducts(context.Background(), &core.SearchProductRequest{
 						Limit:      10,
 						IsSaleOnly: true,
-						FeedBy:     &core.SearchProductRequest_UserId{UserId: uint64(cli.Int("user_id"))},
+						UserId:     uint64(cli.Int("user_id")),
 					})
 				default:
 					log.Fatal(errors.New("unknown method for test"))

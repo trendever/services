@@ -10,7 +10,7 @@ import (
 	"api/cache"
 	"api/soso"
 	"api/subscriber"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
+	"github.com/igm/sockjs-go/sockjs"
 	"utils/metrics"
 )
 
@@ -33,8 +33,9 @@ func (s *ProjectService) Run() error {
 	cache.Init()
 	SosoObj.HandleList(views.SocketRoutes)
 	subscriber.Init()
+	http.Handle("/channel/", GetMainHandler())
 	return http.ListenAndServe(
 		fmt.Sprintf(":%s", settings.ChannelPort),
-		GetMainHandler(),
+		nil,
 	)
 }

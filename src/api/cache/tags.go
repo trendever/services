@@ -1,27 +1,31 @@
 package cache
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
-type Tags map[string]string
+const keyPrefix = "tags#"
 
+// AddTags add tags for this key
 func AddTags(key string, ttl time.Duration, tags ...string) {
-	tt := make(Tags)
-	GetV(key, &tt)
-	tm := time.Now()
 	for _, t := range tags {
-		tt[t] = tm.String()
+		c.HSet(keyPrefix+t, key, "")
 	}
-	Put(key, tt, ttl)
+
+	c.Expire(key, ttl)
 }
 
+// GetTags returns previously added keys
 func GetTags(key string) []string {
-	tags := make(Tags)
-	GetV(key, &tags)
-	out := make([]string, len(tags), len(tags))
-	i := 0
-	for k := range tags {
-		out[i] = k
-		i++
+	res, err := c.HKeys(keyPrefix + key).Result()
+	if err != nil {
+		return nil
 	}
-	return out
+
+	return res
+}
+
+func idKey(name string, id int64) string {
+	return fmt.Sprintf("%v.%v", name, id)
 }

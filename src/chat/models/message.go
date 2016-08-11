@@ -65,6 +65,7 @@ func (m *Message) encodeParts() []*chat.MessagePart {
 func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
 		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
+		Member:   member,
 		Parts:    []*MessagePart{},
 	}
 	for _, pbPart := range pbMessage.Parts {

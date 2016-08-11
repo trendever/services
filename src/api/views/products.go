@@ -7,6 +7,7 @@ import (
 
 	"api/cache"
 	"errors"
+	"fmt"
 	"proto/core"
 	"utils/log"
 	"utils/rpc"
@@ -21,6 +22,7 @@ func init() {
 		soso.Route{"retrieve", "product", RetrieveProduct},
 		soso.Route{"search", "product", SearchProduct},
 		soso.Route{"like", "product", LikeProduct},
+		soso.Route{"get_specials", "product", GetSpecialProducts},
 	)
 }
 
@@ -43,7 +45,7 @@ func RetrieveProduct(c *soso.Context) {
 		err      error
 	)
 
-	if response = cache.GetCachedProduct(int64(id)); response == nil {
+	if response = cache.GetProduct(int64(id)); response == nil {
 		// Context is responsible for timeouts
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
@@ -57,7 +59,7 @@ func RetrieveProduct(c *soso.Context) {
 			return
 		}
 
-		cache.CacheProduct(int64(id), response)
+		cache.Product(int64(id), response)
 	}
 
 	resp := map[string]interface{}{
@@ -105,18 +107,18 @@ func SearchProduct(c *soso.Context) {
 	}
 
 	if value, ok := req["user_id"].(float64); ok {
-		request.FeedBy = &core.SearchProductRequest_UserId{UserId: uint64(value)}
+		request.UserId = uint64(value)
 	}
 
 	if value, ok := req["instagram_name"].(string); ok {
-		request.FeedBy = &core.SearchProductRequest_InstagramName{InstagramName: value}
+		request.InstagramName = value
 	}
 
 	if value, ok := req["shop_id"].(float64); ok {
-		request.FeedBy = &core.SearchProductRequest_ShopId{ShopId: uint64(value)}
+		request.ShopId = uint64(value)
 	}
 
-	if request.FeedBy != nil {
+	if request.UserId > 0 || request.InstagramName != "" || request.ShopId > 0 {
 		request.IsSaleOnly = false
 	}
 
@@ -142,7 +144,7 @@ func SearchProduct(c *soso.Context) {
 		err      error
 	)
 
-	if response = cache.GetCachedSearch(request); response == nil {
+	if response = cache.GetSearch(request); response == nil {
 		// Context is responsible for timeouts
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
@@ -155,7 +157,7 @@ func SearchProduct(c *soso.Context) {
 		}
 
 		if len(response.Result) > 0 {
-			cache.CacheSearchResults(request, response)
+			cache.SearchResults(request, response)
 		}
 	}
 
@@ -199,5 +201,23 @@ func LikeProduct(c *soso.Context) {
 
 	c.SuccessResponse(map[string]interface{}{
 		"status": "ok",
+	})
+}
+
+func GetSpecialProducts(c *soso.Context) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := productServiceClient.GetSpecialProducts(ctx, &core.GetSpecialProductsRequest{})
+	if err == nil && res.Err != "" {
+		err = errors.New(res.Err)
+	}
+	if err != nil {
+		log.Error(fmt.Errorf("Failed to get special products list: %v", err))
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"special_products": res.List,
 	})
 }

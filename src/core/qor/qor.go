@@ -31,6 +31,7 @@ var (
 	Models = []interface{}{
 		&models.User{},
 		&models.Shop{},
+		&models.ShopCard{},
 		&models.Tag{},
 		&models.Product{},
 		&models.ProductItem{},
@@ -38,15 +39,20 @@ var (
 		&models.TagGroup{},
 		&models.Lead{},
 		&models.SMSTemplate{},
+		&models.ChatTemplate{},
+		&models.ChatTemplateCase{},
+		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},
 		&activity.QorActivity{},
 		&models.UsersProducts{},
+		&models.PushToken{},
 	}
 )
 
 // Init starts the qor!
 func Init(engine *gin.Engine) {
+
 	Admin = admin.New(&qor.Config{
 		DB: db.New(),
 	})

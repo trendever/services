@@ -1,7 +1,6 @@
 service ShopService {
   // creates a shop
   rpc CreateShop (CreateShopRequest) returns (CreateShopReply) {}
-
   // returns a shop
   rpc ReadShop (ReadShopRequest) returns (ReadShopReply) {}
   // returns a public profile of the shop
@@ -49,6 +48,8 @@ message Shop {
 
   string avatar_url = 14;
   string slogan = 15;
+
+  bool available = 16;
 }
 
 message ShopProfileRequest {
@@ -61,3 +62,4 @@ message ShopProfileRequest {
 message ShopProfileReply {
     Shop shop = 1;
 }
+
