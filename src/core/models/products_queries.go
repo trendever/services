@@ -76,7 +76,8 @@ func (p productSearcher) Search(filter ProductFilter) ([]uint, error) {
 				// table names (%s)
 				usersProductsTable, productTable),
 				// "?" expr
-				filter.UserID),
+				filter.UserID).
+				Where("up.user_id = ?", filter.UserID),
 		)
 		if err != nil {
 			return nil, err
