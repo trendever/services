@@ -73,23 +73,23 @@ func TestCards(t *testing.T) {
 	}
 
 	users := []*models.User{
-		&models.User{
+		{
 			Model: gorm.Model{ID: 1},
 		},
-		&models.User{
+		{
 			Model: gorm.Model{ID: 2},
 		},
-		&models.User{
+		{
 			Model: gorm.Model{ID: 4},
 		},
-		&models.User{
+		{
 			Model:       gorm.Model{ID: 5},
 			SuperSeller: true,
 		},
-		&models.User{
+		{
 			Model: gorm.Model{ID: 6},
 		},
-		&models.User{
+		{
 			Model: gorm.Model{ID: 15},
 		},
 	}

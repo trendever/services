@@ -5,6 +5,7 @@ import (
 	"core/db"
 	"core/models"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
@@ -135,4 +136,18 @@ func (s userServer) GetUserProfile(_ context.Context, req *core.UserProfileReque
 	}
 
 	return
+}
+
+func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*core.SetEmailReply, error) {
+	if !govalidator.IsEmail(req.Email) {
+		return &core.SetEmailReply{Error: "invalid email"}, nil
+	}
+	res := db.New().Model(&models.User{}).Where("id = ?", req.UserId).Update("email", req.Email)
+	if res.Error != nil {
+		return &core.SetEmailReply{Error: fmt.Sprintf("failed to set email: %v", res.Error)}, nil
+	}
+	if res.RowsAffected == 0 {
+		return &core.SetEmailReply{Error: "unknown UserId"}, nil
+	}
+	return &core.SetEmailReply{}, nil
 }
