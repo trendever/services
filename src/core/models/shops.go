@@ -1,6 +1,7 @@
 package models
 
 import (
+	"core/api"
 	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -113,6 +114,11 @@ func (s Shop) Decode(cs *core.Shop) Shop {
 //BeforeSave gorm callback
 func (s *Shop) BeforeSave(db *gorm.DB) {
 	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
+}
+
+//AfterUpdate is a gorm callback
+func (s *Shop) AfterUpdate() {
+	go api.Publish("core.shop.flush", s.ID)
 }
 
 //CreateNewShop creates a new shop, and if needed a new supplier

@@ -59,7 +59,7 @@ func RetrieveProduct(c *soso.Context) {
 			return
 		}
 
-		cache.Product(int64(id), response)
+		cache.SaveGetProduct(response)
 	}
 
 	resp := map[string]interface{}{
@@ -70,7 +70,7 @@ func RetrieveProduct(c *soso.Context) {
 	c.SuccessResponse(resp)
 }
 
-// Parameters:
+// SearchProduct Parameters:
 //
 //   * limit (optional uint; default is 10) limits number of entries
 //   * offset (optional uint; default is 0) returns them with an offset

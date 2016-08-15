@@ -83,7 +83,7 @@ func (p Product) TableName() string {
 
 //AfterUpdate is a gorm callback
 func (p Product) AfterUpdate() {
-	go api.Publish("core.product.update", p.Encode())
+	go api.Publish("core.product.flush", p.ID)
 }
 
 // Validate fields

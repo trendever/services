@@ -1,6 +1,7 @@
 package models
 
 import (
+	"core/api"
 	"core/conf"
 	"core/db"
 	"fmt"
@@ -46,9 +47,10 @@ type User struct {
 	previousPhone string
 }
 
-// This user is used if we need to send a message from system
+// SystemUser is used if we need to send a message from system
 var SystemUser User
 
+// LoadOrCreateSystemUser func
 func LoadOrCreateSystemUser() error {
 	name := conf.GetSettings().SystemUser
 	res := db.New().Find(&SystemUser, "name = ?", name)
@@ -150,4 +152,9 @@ func (u *User) GetName() string {
 		return u.Name
 	}
 	return "User"
+}
+
+//AfterUpdate is a gorm callback
+func (u *User) AfterUpdate() {
+	go api.Publish("core.user.flush", u.ID)
 }

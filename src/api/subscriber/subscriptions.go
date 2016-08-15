@@ -14,6 +14,8 @@ func init() {
 	handlers["chat.member.join"] = newChatMember
 
 	handlers["core.product.flush"] = cache.FlushProduct
+	handlers["core.user.flush"] = cache.FlushUser
+	handlers["core.shop.flush"] = cache.FlushShop
 }
 
 func newMessage(req *chat.NewMessageRequest) {
