@@ -138,7 +138,7 @@ func addUserResource(a *admin.Admin) {
 		Name:  "Suppliers",
 		Group: "Role",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Joins("JOIN products_shops shop ON users_user.id = shop.supplier_id")
+			return db.Joins("JOIN products_shops shop ON users_user.id = shop.supplier_id AND shop.deleted_at IS NULL")
 		},
 	})
 
@@ -147,7 +147,7 @@ func addUserResource(a *admin.Admin) {
 		Group: "Role",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
 			return db.
-				Joins("LEFT JOIN products_shops shop ON users_user.id = shop.supplier_id").
+				Joins("LEFT JOIN products_shops shop ON users_user.id = shop.supplier_id AND shop.deleted_at IS NULL").
 				Where("shop.id IS NULL")
 		},
 	})
