@@ -883,6 +883,12 @@
 			"branch": "v2"
 		},
 		{
+			"importpath": "gopkg.in/olivere/elastic.v3",
+			"repository": "https://gopkg.in/olivere/elastic.v3",
+			"revision": "787ebbb5a7600662bca364e4e8ca959f315e442f",
+			"branch": "master"
+		},
+		{
 			"importpath": "gopkg.in/redis.v3",
 			"repository": "https://gopkg.in/redis.v3",
 			"revision": "b5e368500d0a508ef8f16e9c2d4025a8a46bcc29",

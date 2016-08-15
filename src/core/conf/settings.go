@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/elastic"
 	"utils/log"
 )
 
@@ -73,6 +74,8 @@ type Settings struct {
 		Name     string
 		Debug    bool
 	}
+
+	Elastic elastic.Settings
 
 	Bitly struct {
 		APIKey      string

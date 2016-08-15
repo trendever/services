@@ -71,6 +71,15 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
 
+  elastic:
+    image: elasticsearch:latest
+    volumes:
+      - elasticdata:/usr/share/elasticsearch:rw
+    ports:
+      - 127.0.0.1:9200:9200
+      - 127.0.0.1:9300:9300
+    command: elasticsearch
+
   telegram:
     image: debian:jessie
     volumes_from:
@@ -143,3 +152,4 @@ services:
 volumes:
   dbdata: {}
   influxdata: {}
+  elasticdata: {}

@@ -19,6 +19,10 @@ db:
   port:     5432
   name:     postgres
 
+elastic:
+  addr: elastic:9200
+  debug: true
+
 bitly:
   login: o_v1v8rptir
   apiKey: R_05e4113d379c43d695030ba8fbac6edf
