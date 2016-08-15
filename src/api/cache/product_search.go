@@ -45,7 +45,7 @@ func SearchResults(req *core.SearchProductRequest, results *core.ProductSearchRe
 	)
 
 	for _, p := range results.Result {
-		AddTags(getProductTagKey(p.Id), time.Minute*60, getProductTags(p)...)
+		AddTags(key, time.Minute*60, getProductTags(p)...)
 	}
 }
 
