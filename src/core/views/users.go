@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/db"
 	"core/models"
+	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/net/context"
@@ -49,7 +50,7 @@ func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUs
 	}
 
 	if !ok {
-		errorf := fmt.Errorf("Incorrect request")
+		errorf := errors.New("Incorrect request")
 		log.Error(errorf)
 		return nil, errorf
 	}
@@ -81,18 +82,26 @@ func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest)
 	user := models.User{}
 	scope := db.New()
 
+	ok := false
 	if request.Id > 0 {
-		scope = scope.Or("id = ?", request.Id)
+		scope = scope.Where("id = ?", request.Id)
+		ok = true
+	} else {
+		if request.InstagramId > 0 {
+			scope = scope.Or("instagram_id = ?", request.InstagramId)
+			ok = true
+		}
+		if request.Phone != "" {
+			scope = scope.Or("phone = ?", request.Phone)
+			ok = true
+		}
+		if request.InstagramUsername != "" {
+			scope = scope.Or("instagram_username = ?", strings.ToLower(request.InstagramUsername))
+			ok = true
+		}
 	}
-
-	if request.InstagramId > 0 {
-		scope = scope.Or("instagram_id = ?", request.InstagramId)
-	}
-	if request.Phone != "" {
-		scope = scope.Or("phone = ?", request.Phone)
-	}
-	if request.InstagramUsername != "" {
-		scope = scope.Or("instagram_username = ?", strings.ToLower(request.InstagramUsername))
+	if !ok {
+		return nil, errors.New("empty conditions")
 	}
 
 	query := scope.Find(&user)
@@ -101,45 +110,20 @@ func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest)
 		return nil, query.Error
 	}
 
+	var cUser *core.User
+	if request.Public {
+		cUser = user.PublicEncode()
+	} else {
+		cUser = user.PrivateEncode()
+	}
+	var err error
+	if request.GetShops {
+		cUser.RelatedShops, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
+	}
 	return &core.ReadUserReply{
 		Id:   int64(user.ID),
-		User: user.PrivateEncode(),
-	}, nil
-}
-
-//GetUserProfile returns user's public profile
-func (s userServer) GetUserProfile(_ context.Context, req *core.UserProfileRequest) (reply *core.UserProfileReply, err error) {
-	reply = &core.UserProfileReply{}
-	var user *models.User
-	var shop *models.Shop
-
-	switch {
-	case req.GetId() > 0:
-		user, err = models.GetUserByID(uint(req.GetId()))
-	case req.GetInstagramName() != "":
-		// @CHECK why?.. Is there any sense in getting shop via user view?
-		shop, err = models.GetShopByInstagramName(req.GetInstagramName())
-		if err != nil || shop == nil {
-			user, err = models.GetUserByInstagramName(req.GetInstagramName())
-		}
-	}
-
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	switch {
-	case user != nil:
-		encoded := user.PublicEncode()
-		encoded.RelatedShops, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
-		reply.Profile = &core.UserProfileReply_User{User: encoded}
-
-	case shop != nil:
-		reply.Profile = &core.UserProfileReply_Shop{Shop: shop.Encode()}
-	}
-
-	return
+		User: cUser,
+	}, err
 }
 
 func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*core.SetEmailReply, error) {

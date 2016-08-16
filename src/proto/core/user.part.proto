@@ -3,11 +3,8 @@ service UserService {
   // returns a user with a specific email. If not exists, creates it
   rpc FindOrCreateUser (CreateUserRequest) returns (ReadUserReply) {}
 
-  // returns a user with a specific email.
+  // returns a user that mathes request options
   rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
-
-  // returns user's public profile
-  rpc GetUserProfile (UserProfileRequest) returns (UserProfileReply) {}
 
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
 }
@@ -23,6 +20,10 @@ message ReadUserRequest {
   string instagram_username = 3;
   //direct by user.id
   uint64 id = 4;
+  //if true PuclicEncode will be used(phone/mail will be empty)
+  bool public = 5;
+  //if true list of relared shops will be provided
+  bool get_shops = 6;
 }
 
 message SearchUserReply {
@@ -62,20 +63,6 @@ message User {
   bool seller = 16;
 
   repeated uint64 related_shops = 19;
-}
-
-message UserProfileRequest {
-    oneof search_by {
-        string instagram_name = 1;
-        uint64 id = 2;
-    }
-}
-
-message UserProfileReply {
-    oneof profile {
-        User user = 1;
-        Shop shop = 2;
-    }
 }
 
 message SetEmailRequest {
