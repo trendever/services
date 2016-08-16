@@ -24,8 +24,8 @@ func FindLeadByID(id uint) (Lead, error) {
 //GetUserLeads returns user leads
 // @REFACTOR Code of this func looks non-nice. May be we should rewrite it
 func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
-	var relatedSellerShops []uint
-	var relatedSupplierShops []uint
+	var relatedSellerShops []uint64
+	var relatedSupplierShops []uint64
 	if hasLeadRole(core.LeadUserRole_SELLER, roles) && !user.SuperSeller {
 		relatedSellerShops, err = GetShopsIDWhereUserIsSeller(user.ID)
 		if err != nil {
@@ -118,12 +118,12 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		return
 	}
 	defer rows.Close()
-	var ids []uint
-	rolesMap := make(map[uint]core.LeadUserRole)
+	var ids []uint64
+	rolesMap := make(map[uint64]core.LeadUserRole)
 	sellerShopMap := makeUintMap(relatedSellerShops)
 	supplierShopMap := makeUintMap(relatedSupplierShops)
 	for rows.Next() {
-		var id, customerID, shopID uint
+		var id, customerID, shopID uint64
 		err = rows.Scan(&id, &customerID, &shopID)
 		if err != nil {
 			return
@@ -196,7 +196,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 			lead.Products = leadProducts
 		}
 
-		role, ok := rolesMap[lead.ID]
+		role, ok := rolesMap[uint64(lead.ID)]
 		if ok {
 			lead.UserRole = role
 		}
@@ -205,8 +205,8 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	return
 }
 
-func toRole(customerID, shopID uint, sellersSh map[uint]int, suppliersSh map[uint]int, user *User) core.LeadUserRole {
-	if customerID == user.ID {
+func toRole(customerID, shopID uint64, sellersSh map[uint64]int, suppliersSh map[uint64]int, user *User) core.LeadUserRole {
+	if customerID == uint64(user.ID) {
 		return core.LeadUserRole_CUSTOMER
 	}
 	if _, ok := suppliersSh[shopID]; ok {

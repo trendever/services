@@ -117,6 +117,7 @@ func (s userServer) GetUserProfile(_ context.Context, req *core.UserProfileReque
 	case req.GetId() > 0:
 		user, err = models.GetUserByID(uint(req.GetId()))
 	case req.GetInstagramName() != "":
+		// @CHECK why?.. Is there any sense in getting shop via user view?
 		shop, err = models.GetShopByInstagramName(req.GetInstagramName())
 		if err != nil || shop == nil {
 			user, err = models.GetUserByInstagramName(req.GetInstagramName())
@@ -130,7 +131,10 @@ func (s userServer) GetUserProfile(_ context.Context, req *core.UserProfileReque
 
 	switch {
 	case user != nil:
-		reply.Profile = &core.UserProfileReply_User{User: user.PublicEncode()}
+		encoded := user.PublicEncode()
+		encoded.RelatedShops, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
+		reply.Profile = &core.UserProfileReply_User{User: encoded}
+
 	case shop != nil:
 		reply.Profile = &core.UserProfileReply_Shop{Shop: shop.Encode()}
 	}

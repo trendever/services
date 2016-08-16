@@ -203,13 +203,13 @@ func CheckShopByID(id uint) (bool, error) {
 }
 
 //GetShopsIDWhereUserIsSeller returns shops ids where user is a seller
-func GetShopsIDWhereUserIsSeller(userID uint) (out []uint, err error) {
+func GetShopsIDWhereUserIsSeller(userID uint) (out []uint64, err error) {
 	err = db.New().Table("products_shops_sellers").Where("user_id = ?", userID).Pluck("shop_id", &out).Error
 	return
 }
 
 //GetShopsIDWhereUserIsSupplier returns shops ids where user is a supplier
-func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint, err error) {
+func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint64, err error) {
 	err = db.New().Table("products_shops").Where("supplier_id = ?", userID).Select("id").Pluck("id", &out).Error
 	return
 }

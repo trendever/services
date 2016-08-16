@@ -60,6 +60,8 @@ message User {
   bool has_phone = 15;
 
   bool seller = 16;
+
+  repeated uint64 related_shops = 19;
 }
 
 message UserProfileRequest {
