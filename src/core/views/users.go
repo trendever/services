@@ -118,7 +118,15 @@ func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest)
 	}
 	var err error
 	if request.GetShops {
-		cUser.RelatedShops, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
+		cUser.SupplierOf, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
+		if err != nil {
+			return nil, err
+		}
+		cUser.SellerOf, err = models.GetShopsIDWhereUserIsSeller(user.ID)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 	return &core.ReadUserReply{
 		Id:   int64(user.ID),

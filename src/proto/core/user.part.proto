@@ -61,8 +61,10 @@ message User {
   bool has_phone = 15;
 
   bool seller = 16;
-
-  repeated uint64 related_shops = 19;
+  //list of shops where user is a supplier
+  repeated uint64 supplier_of = 19;
+  //list of shops where user is a seller
+  repeated uint64 seller_of = 20;
 }
 
 message SetEmailRequest {
