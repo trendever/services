@@ -85,20 +85,12 @@ func Migrate() error {
 
 func migrateTagrel() {
 
-	err := db.New().Exec("ALTER TABLE products_product_item_tags ADD COLUMN product_id integer").Error
+	err := db.New().Exec("ALTER TABLE products_product_item_tags ADD COLUMN product_item_id integer").Error
 
 	if err == nil {
-		db.New().Table("products_product_item_tags").AddForeignKey("product_id", "products_product(id)", "CASCADE", "RESTRICT")
-		db.New().Exec(
-			`
-			UPDATE products_product_item_tags as tagrel
-				SET product_id = p.product_id 
-				FROM products_product_item as p 
-				WHERE p.id = tagrel.product_item_id
-				`,
-		)
-		db.New().Exec(
-			`
+		db.New().Table("products_product_item_tags").AddForeignKey("product_item_id", "products_product_item(id)", "CASCADE", "RESTRICT")
+
+		db.New().Exec(`
 CREATE OR REPLACE FUNCTION products_product_tagrel_product_id_set () RETURNS trigger 
 LANGUAGE  plpgsql AS '
 BEGIN
@@ -110,8 +102,7 @@ END;
 CREATE TRIGGER products_product_tagrel_trigger
 BEFORE INSERT ON products_product_item_tags FOR EACH ROW
 EXECUTE PROCEDURE products_product_tagrel_product_id_set();
-`,
-		)
+		`)
 	}
 }
 
