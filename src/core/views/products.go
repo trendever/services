@@ -207,7 +207,7 @@ func (s productServer) LikeProduct(_ context.Context, req *core.LikeProductReque
 		Find(product, product.ID)
 
 	if err == nil {
-		go api.Publish("core.product.update", product.Encode())
+		go api.Publish("core.product.flush", product.ID)
 	}
 
 	return

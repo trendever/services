@@ -3,6 +3,7 @@ package cache
 import (
 	"fmt"
 	"time"
+	"utils/log"
 )
 
 const keyPrefix = "tags#"
@@ -28,4 +29,14 @@ func GetTags(key string) []string {
 
 func idKey(name string, id int64) string {
 	return fmt.Sprintf("%v.%v", name, id)
+}
+
+func flush(keyname string) {
+	keys := GetTags(keyname)
+	if len(keys) > 0 {
+		Delete(keys...)
+	}
+	Delete(keyname)
+
+	log.Debug("Flushed: %v", append(keys, keyname))
 }

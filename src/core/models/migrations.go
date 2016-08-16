@@ -65,25 +65,32 @@ func Migrate() error {
 
 	db.New().Model(&Lead{}).Where("source LIKE '@%'").Update("source", "wantit")
 
+	db.New().Exec(`
+	UPDATE products_leads
+	SET state = 'CANCELLED' WHERE id IN (
+		SELECT id FROM (
+			SELECT id, row_number() OVER(
+				PARTITION BY customer_id, shop_id ORDER BY updated_at
+			) AS row
+			FROM products_leads
+			WHERE deleted_at IS NULL
+			AND state in ('EMPTY','NEW','IN_PROGRESS')
+		) as dups WHERE dups.row > 1
+	)
+	`)
+	db.New().Exec("CREATE UNIQUE INDEX unique_active_lead ON products_leads(shop_id, customer_id) WHERE state IN ('EMPTY','NEW','IN_PROGRESS') AND deleted_at IS NULL")
+
 	return nil
 }
 
 func migrateTagrel() {
 
-	err := db.New().Exec("ALTER TABLE products_product_item_tags ADD COLUMN product_id integer").Error
+	err := db.New().Exec("ALTER TABLE products_product_item_tags ADD COLUMN product_item_id integer").Error
 
 	if err == nil {
-		db.New().Table("products_product_item_tags").AddForeignKey("product_id", "products_product(id)", "CASCADE", "RESTRICT")
-		db.New().Exec(
-			`
-			UPDATE products_product_item_tags as tagrel
-				SET product_id = p.product_id 
-				FROM products_product_item as p 
-				WHERE p.id = tagrel.product_item_id
-				`,
-		)
-		db.New().Exec(
-			`
+		db.New().Table("products_product_item_tags").AddForeignKey("product_item_id", "products_product_item(id)", "CASCADE", "RESTRICT")
+
+		db.New().Exec(`
 CREATE OR REPLACE FUNCTION products_product_tagrel_product_id_set () RETURNS trigger 
 LANGUAGE  plpgsql AS '
 BEGIN
@@ -95,8 +102,7 @@ END;
 CREATE TRIGGER products_product_tagrel_trigger
 BEFORE INSERT ON products_product_item_tags FOR EACH ROW
 EXECUTE PROCEDURE products_product_tagrel_product_id_set();
-`,
-		)
+		`)
 	}
 }
 

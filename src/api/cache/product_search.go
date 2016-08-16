@@ -45,11 +45,7 @@ func SearchResults(req *core.SearchProductRequest, results *core.ProductSearchRe
 	)
 
 	for _, p := range results.Result {
-		AddTags(fmt.Sprintf("product.%v", p.Id), time.Minute*60, key)
-	}
-
-	if req.InstagramName != "" {
-		AddTags(getUsernameTagKey(req.InstagramName), time.Minute*60, key)
+		AddTags(key, time.Minute*60, getProductTags(p)...)
 	}
 }
 

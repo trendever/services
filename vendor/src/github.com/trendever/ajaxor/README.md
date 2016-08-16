@@ -29,7 +29,7 @@ type Child struct {
 
 In order to make Ajaxor work we have to:
 
-1) Register both resources for Parent and Child in qor.
+1) Register Child resource in qor.
 
 2) Child model _must_ implement qor.admin.ResourceNamer interface. 
 

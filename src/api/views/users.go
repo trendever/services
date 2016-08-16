@@ -26,32 +26,37 @@ func init() {
 
 func GetUserProfile(c *soso.Context) {
 	req := c.RequestMap
-	request := &core.UserProfileRequest{}
+	request := &core.ReadUserRequest{
+		Public:   true,
+		GetShops: true,
+	}
+	valid := false
 
 	if value, ok := req["instagram_name"].(string); ok {
-		request.SearchBy = &core.UserProfileRequest_InstagramName{InstagramName: value}
+		request.InstagramUsername = value
+		valid = true
 	}
 
 	if value, ok := req["user_id"].(float64); ok {
-		request.SearchBy = &core.UserProfileRequest_Id{Id: uint64(value)}
+		request.Id = uint64(value)
+		valid = true
 	}
 
-	if request.SearchBy == nil {
+	if !valid {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("instagram_name or user_id are required"))
 		return
 	}
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	resp, err := userServiceClient.GetUserProfile(ctx, request)
+	resp, err := userServiceClient.ReadUser(ctx, request)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
 	}
-
 	c.SuccessResponse(map[string]interface{}{
-		"profile": resp.Profile,
+		"profile": resp.User,
 	})
 }
 

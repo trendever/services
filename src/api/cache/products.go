@@ -6,13 +6,29 @@ import (
 	"utils/log"
 )
 
-//Product puts to cache product
-func Product(id int64, result *core.ProductSearchResult) {
+// SaveGetProduct puts to cache product
+func SaveGetProduct(response *core.ProductSearchResult) {
+
+	if len(response.Result) != 1 {
+		return
+	}
+
+	product := response.Result[0]
+	id := product.Id
+
 	key := getProductTagKey(id)
 	log.Error(
-		PutV(key, result, time.Minute*30),
+		PutV(key, response, time.Minute*30),
 	)
-	AddTags(getProductTagKey(id), time.Minute*60, key)
+
+	tags := getProductTags(product)
+	log.Debug("Tags for this product: %v", tags)
+	AddTags(key, time.Minute*60, tags...)
+}
+
+//GetProduct gets a product from the cache
+func GetProduct(id int64) *core.ProductSearchResult {
+	return getCachedProducts(getProductTagKey(id))
 }
 
 func getProductTagKey(id int64) string {
@@ -24,24 +40,15 @@ func getProductTags(product *core.Product) (out []string) {
 		out = append(out, idKey("shop", product.Supplier.Id))
 	}
 
-	if product.Supplier.Id > 0 {
-		out = append(out, idKey("shop", product.Supplier.Id))
+	if product.Mentioned.Id > 0 {
+		out = append(out, idKey("user", product.Mentioned.Id))
 	}
 
 	return
 }
 
-//GetProduct gets a product from the cache
-func GetProduct(id int64) *core.ProductSearchResult {
-	return getCachedProducts(getProductTagKey(id))
-}
-
 //FlushProduct removes all cached results related with this product id
 func FlushProduct(id int64) {
-	key := getProductTagKey(id)
-	keys := GetTags(key)
-	if len(keys) > 0 {
-		Delete(keys...)
-	}
-	Delete(key)
+	log.Debug("Flushing product %v", id)
+	flush(getProductTagKey(id))
 }

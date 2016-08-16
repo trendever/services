@@ -46,6 +46,7 @@ func addUserResource(a *admin.Admin) {
 			Title: "Instagram",
 			Rows: [][]string{
 				{"InstagramUsername", "InstagramFullname"},
+				{"InstagramCaption"},
 				{"InstagramAvatarURL"},
 			},
 		},
@@ -81,6 +82,14 @@ func addUserResource(a *admin.Admin) {
 		Group: "Type",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
 			return db.Where("char_length(name) > 0")
+		},
+	})
+
+	res.Scope(&admin.Scope{
+		Name:  "With email",
+		Group: "Type",
+		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+			return db.Where("char_length(email) > 0")
 		},
 	})
 
@@ -126,14 +135,20 @@ func addUserResource(a *admin.Admin) {
 	})
 
 	res.Scope(&admin.Scope{
+		Name:  "Suppliers",
+		Group: "Role",
+		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+			return db.Joins("JOIN products_shops shop ON users_user.id = shop.supplier_id AND shop.deleted_at IS NULL")
+		},
+	})
+
+	res.Scope(&admin.Scope{
 		Name:  "Customers",
 		Group: "Role",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
 			return db.
-				Where("is_seller = false").
-				Where("is_admin = false").
-				Where("is_scout = false").
-				Where("super_seller = false")
+				Joins("LEFT JOIN products_shops shop ON users_user.id = shop.supplier_id AND shop.deleted_at IS NULL").
+				Where("shop.id IS NULL")
 		},
 	})
 }

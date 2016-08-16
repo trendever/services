@@ -320,8 +320,8 @@ func GetLeadStates() []string {
 	return leadStates
 }
 
-func makeUintMap(arr []uint) map[uint]int {
-	m := make(map[uint]int)
+func makeUintMap(arr []uint64) map[uint64]int {
+	m := make(map[uint64]int)
 	for i, id := range arr {
 		m[id] = i
 	}

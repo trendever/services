@@ -1,19 +1,17 @@
 package cache
 
 import (
-	"fmt"
+	"utils/log"
 )
 
-// FlushUser flushes username cache
-func FlushUser(instagramname string) {
-	key := getUsernameTagKey(instagramname)
-	keys := GetTags(key)
-	if len(keys) > 0 {
-		Delete(keys...)
-	}
-	Delete(key)
+// FlushUser flushes user cache
+func FlushUser(id int64) {
+	log.Debug("Flushing user %v", id)
+	flush(idKey("user", id))
 }
 
-func getUsernameTagKey(username string) string {
-	return fmt.Sprintf("instagramname.%v", username)
+// FlushShop flushes shop cache
+func FlushShop(id int64) {
+	log.Debug("Flushing shop %v", id)
+	flush(idKey("shop", id))
 }

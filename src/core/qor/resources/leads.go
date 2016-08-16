@@ -2,8 +2,10 @@ package resources
 
 import (
 	"core/conf"
+	"core/db"
 	"core/models"
 	"core/qor/filters"
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -19,6 +21,11 @@ func init() {
 type leadEvent struct {
 	Resource *admin.Resource
 	Handler  func(*admin.ActionArgument, *gorm.DB, interface{}) error
+}
+
+type AddProductActionArg struct {
+	ProductID uint64
+	Product   models.Product
 }
 
 func addLeadResource(a *admin.Admin) {
@@ -107,6 +114,39 @@ func addLeadResource(a *admin.Admin) {
 	}
 
 	addTransitionActions(a, res)
+
+	argRes := a.NewResource(&AddProductActionArg{})
+	ajaxor.Meta(argRes, &admin.Meta{
+		Name: "Product",
+		Type: "select_one",
+	})
+
+	res.Action(&admin.Action{
+		Name: "Add product",
+		Handle: func(argument *admin.ActionArgument) error {
+			arg, ok := argument.Argument.(*AddProductActionArg)
+			if !ok {
+				return errors.New("unxepected argument type")
+			}
+			err := db.New().Model(&arg.Product).Related(&arg.Product.Items).Error
+			if err != nil {
+				return err
+			}
+			for _, record := range argument.FindSelectedRecords() {
+				lead, ok := record.(*models.Lead)
+				if !ok {
+					return errors.New("unxepected record type")
+				}
+				_, err := models.AppendLeadItems(lead, arg.Product.Items)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Resource: argRes,
+		Modes:    []string{"show", "menu_item"},
+	})
 }
 
 // and typical actions for changing order state
