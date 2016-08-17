@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/chat"
 	"core/db"
+	"encoding/json"
 	"errors"
 	"fmt"
 	proto_chat "proto/chat"
@@ -101,6 +102,11 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 
 	specific := templates[0].ProductID
 
+	content, _ := json.Marshal(product.Encode())
+	err = chat.SendChatMessage(uint64(lead.CustomerID), lead.ConversationID, string(content), "text/json")
+	if err != nil {
+		return fmt.Errorf("failed to send product json to chat: %v", err)
+	}
 	for _, tmpl := range templates {
 		// we are at end of specific templates(if any)
 		if tmpl.ProductID != specific {
