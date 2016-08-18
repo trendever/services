@@ -11,7 +11,7 @@ func init() {
 	//chat subscriptions
 	handlers["chat.message.new"] = newMessage
 	handlers["chat.message.readed"] = messageReaded
-	handlers["chat.message.appended"] = messageAppended
+	//	handlers["chat.message.appended"] = messageAppended
 	handlers["chat.member.join"] = newChatMember
 
 	handlers["core.product.flush"] = cache.FlushProduct
@@ -42,17 +42,17 @@ func messageReaded(req *chat.MessageReadedRequest) {
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
 }
 
-func messageAppended(req *chat.MessageAppendedRequest) {
-
-	r := map[string]interface{}{
-		"message_id": req.MessageId,
-		"user_id":    req.UserId,
-		"chat":       req.Chat,
-	}
-	remoteCtx := soso.NewRemoteContext("message", "readed", r)
-
-	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
-}
+//func messageAppended(req *chat.MessageAppendedRequest) {
+//
+//	r := map[string]interface{}{
+//		"message_id": req.MessageId,
+//		"user_id":    req.UserId,
+//		"chat":       req.Chat,
+//	}
+//	remoteCtx := soso.NewRemoteContext("message", "readed", r)
+//
+//	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
+//}
 
 func newChatMember(req *chat.NewChatMemberRequest) {
 	r := map[string]interface{}{
