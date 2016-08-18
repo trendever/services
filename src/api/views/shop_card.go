@@ -109,7 +109,7 @@ func CreateCard(c *soso.Context) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	_, err := shopCardServiceClient.CreateCard(ctx, &core.CreateCardRequest{
+	res, err := shopCardServiceClient.CreateCard(ctx, &core.CreateCardRequest{
 		Card: &core.ShopCard{
 			Name:   cardName,
 			Number: cardNumber,
@@ -125,5 +125,6 @@ func CreateCard(c *soso.Context) {
 
 	c.SuccessResponse(map[string]interface{}{
 		"success": true,
+		"id":      res.Id,
 	})
 }
