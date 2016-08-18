@@ -44,7 +44,7 @@ type ConversationRepository interface {
 	MarkAsReaded(member *Member, messageID uint64) error
 	GetUnread(ids []uint64, userID uint64) (map[uint]uint64, error)
 	GetTotalUnread(userID uint64) (uint64, error)
-	UpdateMessage(messageID uint64, msg *Message) error
+	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
 }
 
 //Encode converts to protobuf model
@@ -197,9 +197,32 @@ func (c *conversationRepositoryImpl) MarkAsReaded(member *Member, messageID uint
 	return c.members.UpdateLastMessageID(member.ID, messageID)
 }
 
-func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, msg *Message) error {
+// UpdateMessage appends new message part to given message; returns it
+func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, parts []*MessagePart) (*Message, error) {
 
-	return fmt.Errorf("@TODO: not implemented")
+	var message Message
+
+	// find message
+	err := c.db.
+		Preload("Parts").
+		Preload("Member").
+		Model(&Message{}).
+		Where("id = ?", messageID).
+		Find(&message).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	message.Parts = append(message.Parts, parts...)
+
+	err = c.db.Save(message).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &message, nil
 }
 
 //GetByIDs returns conversations with members and last messages

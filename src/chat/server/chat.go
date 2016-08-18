@@ -233,19 +233,34 @@ func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsRe
 	return
 }
 
+func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendMessageRequest) (reply *proto_chat.AppendMessageReply, err error) {
+
+	message, err := cs.chats.UpdateMessage(req.MessageId, models.DecodeParts(req.Parts))
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &proto_chat.AppendMessageReply{
+		Message: message.Encode(),
+	}
+
+	go publisher.Publish(publisher.EventMessageAppended, resp)
+
+	return resp, nil
+}
+
 func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
 	publisher.Publish(publisher.EventMessage, &proto_chat.NewMessageRequest{
 		Chat:     chat,
 		Messages: messages,
 	})
-
 }
 
-func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, message_id, user_id uint64) {
+func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messageID, userID uint64) {
 	publisher.Publish(publisher.EventMessageReaded, &proto_chat.MessageReadedRequest{
 		Chat:      chat,
-		MessageId: message_id,
-		UserId:    user_id,
+		MessageId: messageID,
+		UserId:    userID,
 	})
 
 }

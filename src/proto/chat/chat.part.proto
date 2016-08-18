@@ -18,6 +18,8 @@ service ChatService {
     rpc MarkAsReaded(MarkAsReadedRequest) returns (MarkAsReadedReply){}
     //returns total count of unread messages
     rpc GetTotalCountUnread(TotalCountUnreadRequest) returns (TotalCountUnreadReply){}
+    //append message part
+    rpc AppendMessage(AppendMessageRequest) returns (AppendMessageReply){}
 }
 
 service Notifier {
@@ -156,6 +158,16 @@ message MarkAsReadedRequest {
 
 message MarkAsReadedReply {
     Error error = 1;
+}
+
+message AppendMessageRequest {
+    uint64 message_id = 1;
+    repeated MessagePart parts = 2;
+}
+
+message AppendMessageReply {
+    Error error = 1;
+    Message message = 2;
 }
 
 message NewMessageRequest {

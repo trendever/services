@@ -29,11 +29,7 @@ func GetShopCards(c *soso.Context) {
 	req := c.RequestMap
 
 	// Check ShopId correctness
-	shopID, ok := req["shop_id"].(float64)
-	if !ok || shopID <= 0 {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Incorrect shop id"))
-		return
-	}
+	shopID, _ := req["shop_id"].(float64)
 
 	// Launch RPC req
 	ctx, cancel := rpc.DefaultContext()
