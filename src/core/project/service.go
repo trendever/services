@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"utils/elastic"
 	"utils/log"
 )
 
@@ -67,7 +66,6 @@ func (s *Service) Run(cli *cli.Context) {
 	go log.PanicLogger(func() {
 		// connect to database
 		db.Init()
-		elastic.Init(&settings.Elastic)
 		messager.Init()
 		if err := models.LoadOrCreateSystemUser(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))

@@ -17,6 +17,16 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+  elasticsync:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+      - nats
+      - elastic
+    command: sh -c './bin/elasticsync migrate && exec ./bin/elasticsync start'
   mail:
     image: debian:jessie
     volumes_from:

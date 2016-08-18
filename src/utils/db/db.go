@@ -46,7 +46,7 @@ func Init(s *Settings) {
 				return
 			}
 		}
-		log.Warn("DB error: %v \n try reconnect after 1 second")
+		log.Warn("DB error: %v \n try reconnect after 1 second", err)
 		time.Sleep(time.Second)
 	}
 }

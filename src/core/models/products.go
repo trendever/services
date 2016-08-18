@@ -105,10 +105,12 @@ func (p Product) Stringify() string {
 
 // ImageCandidate contains instagram image info
 type ImageCandidate struct {
-	ID        uint   `gorm:"primary_key"`
-	ProductID uint   `gorm:"primary_key"`
-	URL       string `gorm:"text"`
-	Name      string // small string; no need of text type
+	ID        uint       `gorm:"primary_key"`
+	ProductID uint       `gorm:"primary_key"`
+	UpdatedAt time.Time  `gorm:"index"`
+	DeletedAt *time.Time `gorm:"index"`
+	URL       string     `gorm:"text"`
+	Name      string     // small string; no need of text type
 }
 
 //ImageCandidates array of ProductItems

@@ -3,11 +3,8 @@ package main
 import (
 	"elasticsync/config"
 	"elasticsync/models"
+	"elasticsync/sync"
 	"github.com/spf13/cobra"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 	"utils/db"
 	"utils/elastic"
 	"utils/log"
@@ -30,7 +27,7 @@ func main() {
 			db.Init(&c.DB)
 			elastic.Init(&c.Elastic)
 
-			syncLoop()
+			log.PanicLogger(sync.Loop)
 		},
 	})
 
@@ -53,25 +50,12 @@ func main() {
 	migrateCmd.Flags().BoolVarP(&drop, "drop", "d", false, "Drops tables and elastic search index before migration")
 	cmd.AddCommand(migrateCmd)
 
+	// @TODO command to compare sync table in db with actual index
+	// may be helpful in case of problems with es cluster
+
 	log.PanicLogger(func() {
 		if err := cmd.Execute(); err != nil {
 			log.Fatal(err)
 		}
 	})
-}
-
-func syncLoop() {
-	interrupt := make(chan os.Signal)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
-	conf := config.Get()
-	for {
-
-		select {
-		case <-interrupt:
-			log.Info("elasticsync service stopped")
-			os.Exit(0)
-		default:
-			time.Sleep(time.Second * conf.Delay)
-		}
-	}
 }

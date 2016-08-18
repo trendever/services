@@ -119,7 +119,7 @@ const ProductIndex = `{
 }
 }`
 
-type ElasticProduct struct {
+type ElasticProductData struct {
 	Code    string `json:"code"`
 	Title   string `json:"title,omitempty"`
 	Caption string `json:"caption,omitempty"`
@@ -128,11 +128,11 @@ type ElasticProduct struct {
 		ID   uint64 `json:"id"`
 		Name string `json:"name,omitempty"`
 	} `json:"shop,omitempty"`
-	Mentoiner struct {
+	Mentioner struct {
 		ID   uint64 `json:"id"`
 		Name string `json:"name,omitempty"`
-	} `json:"mentoiner,omitempty"`
-	// tags from shop and all items
+	} `json:"mentioner,omitempty"`
+	// tags from all items
 	Tags []struct {
 		ID   uint64 `json:"id"`
 		Name string `json:"name,omitempty"`
@@ -145,14 +145,19 @@ type ElasticProduct struct {
 	Images []struct {
 		URL  string `json:"url,omitempty"`
 		Name string `json:"name,omitempty"`
-	} `images:"images,omitempty"`
+	} `json:"images,omitempty"`
 }
 
 // represent relation table in db
-type ElasticProductIndexed struct {
-	ProductID uint64 `gorm:"primary_key"`
+type ElasticProductIndex struct {
+	ID uint64 `gorm:"primary_key"`
 	// current elastic version of document
 	// -1 if product was deleted
-	Version   int64
-	UpdatedAt time.Time
+	Version         int
+	SourceUpdatedAt time.Time `gorm:"index"`
+}
+
+type ElasticProduct struct {
+	ElasticProductData
+	ElasticProductIndex
 }

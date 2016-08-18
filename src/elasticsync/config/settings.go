@@ -20,7 +20,9 @@ type Settings struct {
 	NatsURL   string
 	// delay between sync steps (sec)
 	Delay int
-	Debug bool
+	// maximum amount of documents that should be indexed on every step
+	ChunkSize int
+	Debug     bool
 
 	DB      db.Settings
 	Elastic elastic.Settings
@@ -42,6 +44,6 @@ func Init() {
 }
 
 //Get returns an app settings
-func Get() Settings {
-	return *settings
+func Get() *Settings {
+	return settings
 }

@@ -1,28 +1,29 @@
 package models
 
 import (
+	"gopkg.in/olivere/elastic.v3"
 	"utils/db"
-	"utils/elastic"
+	ewrapper "utils/elastic"
 	"utils/log"
 )
 
 var dbModels = []interface{}{
-	&ElasticProductIndexed{},
+	&ElasticProductIndex{},
 }
 
 var elasticIndexes = []struct {
 	name string
-	json string
+	body string
 }{
 	{
 		name: "products",
-		json: ProductIndex,
+		body: ProductIndex,
 	},
 }
 
 func Migrate(drop bool) {
 	db := db.New()
-	el := elastic.Cli()
+	el := ewrapper.Cli()
 	if drop {
 		log.Warn("Droping tables")
 		db.DropTableIfExists(dbModels)
@@ -36,9 +37,12 @@ func Migrate(drop bool) {
 		log.Fatal(err)
 	}
 	for _, index := range elasticIndexes {
-		_, err := el.CreateIndex(index.name).BodyString(index.json).Do()
+		_, err := el.CreateIndex(index.name).BodyString(index.body).Do()
 		if err != nil {
-			log.Fatal(err)
+			e, ok := err.(*elastic.Error)
+			if !ok || e.Details.Type != "index_already_exists_exception" {
+				log.Fatal(err)
+			}
 		}
 	}
 }
