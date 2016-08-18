@@ -115,6 +115,15 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 		return &payment.BuyOrderReply{Error: payment.Errors_INVALID_DATA}, fmt.Errorf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)
 	}
 
+	// Step0.6: check if TX is already finished
+	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
+	if err != nil {
+		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED}, err
+	}
+	if finished > 0 {
+		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED}, fmt.Errorf("payments: This pay is already payed")
+	}
+
 	// Step1: init TX
 	sess, err := ps.gateway.Buy(pay, req.Ip)
 	if err != nil {

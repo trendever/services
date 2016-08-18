@@ -27,11 +27,6 @@ type MessagePart struct {
 	MessageID uint
 }
 
-//MessageRepository is messages repository interface
-type MessageRepository interface {
-	Create(*Message) error
-}
-
 //Encode converts message to protobuf model
 func (m *Message) Encode() *chat.Message {
 

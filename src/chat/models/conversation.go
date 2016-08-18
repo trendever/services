@@ -17,9 +17,8 @@ type Conversation struct {
 }
 
 type conversationRepositoryImpl struct {
-	db       *gorm.DB
-	members  *memberRepository
-	messages MessageRepository
+	db      *gorm.DB
+	members *memberRepository
 }
 
 //Conversations is collection of conversation models
@@ -45,6 +44,7 @@ type ConversationRepository interface {
 	MarkAsReaded(member *Member, messageID uint64) error
 	GetUnread(ids []uint64, userID uint64) (map[uint]uint64, error)
 	GetTotalUnread(userID uint64) (uint64, error)
+	UpdateMessage(messageID uint64, msg *Message) error
 }
 
 //Encode converts to protobuf model
@@ -146,10 +146,10 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 		Where("conversation_id = ?", chat.ID)
 		//Order("created_at desc")
 	if fromMessageID > 0 {
-		if direction {
-			scope = scope.Where("id > ?", fromMessageID)
-		} else {
+		if direction { // if true -- from new to old
 			scope = scope.Where("id < ?", fromMessageID)
+		} else {
+			scope = scope.Where("id > ?", fromMessageID)
 		}
 	}
 	if direction {
@@ -195,6 +195,11 @@ func (c *conversationRepositoryImpl) GetByUserID(userID uint) ([]*Conversation, 
 
 func (c *conversationRepositoryImpl) MarkAsReaded(member *Member, messageID uint64) error {
 	return c.members.UpdateLastMessageID(member.ID, messageID)
+}
+
+func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, msg *Message) error {
+
+	return fmt.Errorf("@TODO: not implemented")
 }
 
 //GetByIDs returns conversations with members and last messages

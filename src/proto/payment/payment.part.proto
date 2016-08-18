@@ -56,6 +56,7 @@ enum Errors {
   // internal errors
   INVALID_DATA = 1;
   DB_FAILED = 2;
+  ALREADY_PAYED = 3;
 
   // external errors
   INIT_FAILED = 127;
@@ -63,7 +64,7 @@ enum Errors {
 }
 
 enum Direction {
-  TO_CLIENT = 0;
-  FROM_CLIENT = 1;
+  CLIENT_PAYS = 0;
+  CLIENT_RECV = 1;
 }
 

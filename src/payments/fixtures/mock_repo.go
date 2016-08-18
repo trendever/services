@@ -49,6 +49,17 @@ func (_mr *_MockRepoRecorder) CreateSess(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateSess", arg0)
 }
 
+func (_m *MockRepo) FinishedSessionsForPayID(_param0 uint) (int, error) {
+	ret := _m.ctrl.Call(_m, "FinishedSessionsForPayID", _param0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockRepoRecorder) FinishedSessionsForPayID(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "FinishedSessionsForPayID", arg0)
+}
+
 func (_m *MockRepo) GetPayByID(_param0 uint) (*models.Payment, error) {
 	ret := _m.ctrl.Call(_m, "GetPayByID", _param0)
 	ret0, _ := ret[0].(*models.Payment)

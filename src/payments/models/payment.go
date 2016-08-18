@@ -55,6 +55,7 @@ type Repo interface {
 	// sess part
 	CreateSess(*Session) error
 	GetSessByUID(string) (*Session, error)
+	FinishedSessionsForPayID(pay uint) (int, error)
 	SaveSess(*Session) error
 	GetUnfinished(string) ([]Session, error)
 }
@@ -100,6 +101,18 @@ func (r *RepoImpl) GetSessByUID(uid string) (*Session, error) {
 		Error
 
 	return &result, err
+}
+
+// FinishedSessionsForPayID returns num of successfull payments with given pay ID
+func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
+
+	var count int
+	err := r.DB.
+		Where("payment_id = ?", payID).
+		Count(&count).
+		Error
+
+	return count, err
 }
 
 // GetUnfinished returns payment by ID
