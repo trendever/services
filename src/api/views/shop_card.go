@@ -93,14 +93,13 @@ func CreateCard(c *soso.Context) {
 	req := c.RequestMap
 
 	// int params
-	shopID, okShopID := req["shop_id"].(float64)
+	shopID, _ := req["shop_id"].(float64)
 
 	// string params
 	cardName, okCardName := req["card_name"].(string)
 	cardNumber, okCardNumber := req["card_number"].(string)
 
-	if !okCardName || !okCardNumber || !okShopID ||
-		cardName == "" || cardNumber == "" || shopID <= 0 {
+	if !okCardName || !okCardNumber || cardName == "" || cardNumber == "" {
 
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Bad parameters"))
 		return
