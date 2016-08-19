@@ -37,12 +37,15 @@ message BuyOrderReply {
 }
 
 // chat messages
-message PaymentButton {
+message ChatMessageNewOrder {
   uint64 pay_id = 1;
 }
 
-message PaymentNotificationMessage {
+message ChatMessagePaymentFinished {
   uint64 pay_id = 1;
+  bool success = 3;
+  uint64 amount = 4;
+  Direction direction = 6;
 }
 
 enum Currency {
