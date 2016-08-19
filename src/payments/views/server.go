@@ -8,6 +8,7 @@ import (
 	"utils/log"
 	"utils/rpc"
 
+	"payments/api"
 	"payments/config"
 	"payments/db"
 	"payments/models"
@@ -21,14 +22,20 @@ import (
 type paymentServer struct {
 	gateway models.Gateway
 	repo    models.Repo
+	chat    api.ChatNotifier
 }
 
 // Init starts serving
 func Init() {
 
+	api.Init()
+
+	var repo = &models.RepoImpl{DB: db.New()}
+
 	server := &paymentServer{
-		gateway: payture.GetSandboxClient(),
-		repo:    &models.RepoImpl{DB: db.New()},
+		gateway: payture.GetClient(),
+		repo:    repo,
+		chat:    api.GetChatNotifier(repo),
 	}
 
 	// register API calls
@@ -94,7 +101,12 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	}
 
 	// Step3: Send to chat
-	// @TODO
+	go func() {
+		err := ps.chat.SendPaymentToChat(pay)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 
 	return &payment.CreateOrderReply{
 		Id: uint64(pay.ID),
@@ -161,7 +173,11 @@ func (ps *paymentServer) CheckStatus(session *models.Session) error {
 	}
 
 	// Step4: notify chat
-	// @TODO
+	err = ps.chat.SendSessionToChat(session)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	return nil
 }

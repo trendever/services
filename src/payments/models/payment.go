@@ -17,6 +17,7 @@ type Payment struct {
 	Direction      int32
 	ConversationID uint64
 	UserID         uint64 // that's client id
+	MessageID      uint64 // message id (in chat service) that contains payment button
 
 	// p2p params
 	ShopCardNumber string
