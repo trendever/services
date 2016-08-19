@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	pb_chat "proto/chat"
+	"utils/log"
 )
 
 //Conversation is representation of conversation model
@@ -216,6 +217,8 @@ func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, parts []*Me
 	}
 
 	message.Parts = append(message.Parts, parts...)
+
+	log.Debug("ehohoh %#v", message)
 
 	err = c.db.Save(&message).Error
 	if err != nil {
