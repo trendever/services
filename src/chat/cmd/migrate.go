@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"chat/config"
 	"chat/db"
 	"chat/models"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Runs database migration",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.Init()
 		log.Println("Start database migration")
 		db := db.GetPG()
 

@@ -195,8 +195,12 @@ message NewChatMemberRequest {
 
 }
 
-message NewChatMemberReply {
+message MessageAppendedRequest{
+  Chat chat = 1;
+  Message message =2;
+}
 
+message NewChatMemberReply {
 }
 
 message TotalCountUnreadRequest {

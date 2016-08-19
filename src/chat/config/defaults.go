@@ -22,7 +22,8 @@ type Settings struct {
 
 var settings = &Settings{}
 
-func init() {
+// Init loads && setups config
+func Init() {
 	if err := config.Load(consulConfigPath); err != nil {
 		log.Error(err)
 	}

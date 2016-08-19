@@ -21,6 +21,7 @@ var cmdRun = &cobra.Command{
 	Use:   "start",
 	Short: "Starts service",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.Init()
 		conf := config.Get()
 
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)

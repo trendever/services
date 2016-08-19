@@ -240,13 +240,27 @@ func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendM
 		return nil, err
 	}
 
-	resp := &proto_chat.AppendMessageReply{
-		Message: message.Encode(),
+	var encMsg = message.Encode()
+
+	go cs.notifyChatAboutAppendedMessage(encMsg)
+
+	return &proto_chat.AppendMessageReply{
+		Message: encMsg,
+	}, nil
+}
+
+func (cs *chatServer) notifyChatAboutAppendedMessage(msg *proto_chat.Message) {
+
+	// api needs chat because it contains users who needs notification about an event
+	chat, err := cs.chats.GetByID(uint(msg.ConversationId))
+	if err != nil {
+		return
 	}
 
-	go publisher.Publish(publisher.EventMessageAppended, resp)
-
-	return resp, nil
+	publisher.Publish(publisher.EventMessageAppended, &proto_chat.MessageAppendedRequest{
+		Message: msg,
+		Chat:    chat.Encode(),
+	})
 }
 
 func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
