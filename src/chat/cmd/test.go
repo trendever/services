@@ -33,6 +33,8 @@ var cmdTest = &cobra.Command{
 			resp, err = chats(c)
 		case "readed":
 			resp, err = readed(c)
+		case "append":
+			resp, err = msgAppend(c)
 		default:
 			log.Fatal("Unknown method")
 		}
@@ -42,8 +44,8 @@ var cmdTest = &cobra.Command{
 }
 
 var (
-	method, message, userName     string
-	userID, chatID, fromID, limit uint64
+	method, message, messageMime, userName   string
+	userID, chatID, fromID, limit, messageID uint64
 )
 
 func init() {
@@ -55,6 +57,8 @@ func init() {
 	cmdTest.Flags().Uint64VarP(&chatID, "chat", "c", 0, "chat")
 	cmdTest.Flags().Uint64VarP(&fromID, "from_id", "f", 0, "from id")
 	cmdTest.Flags().Uint64VarP(&limit, "limit", "l", 0, "limit")
+	cmdTest.Flags().Uint64VarP(&messageID, "msgid", "i", 0, "messageID")
+	cmdTest.Flags().StringVarP(&messageMime, "mime", "M", "text/plain", "message mimetype")
 }
 
 func send(c chat.ChatServiceClient) (interface{}, error) {
@@ -65,11 +69,22 @@ func send(c chat.ChatServiceClient) (interface{}, error) {
 				UserId: userID,
 				Parts: []*chat.MessagePart{
 					{
-						Content:   message,
-						MimeType:  "text/plain",
-						ContentId: "",
+						Content:  message,
+						MimeType: messageMime,
 					},
 				},
+			},
+		},
+	})
+}
+
+func msgAppend(c chat.ChatServiceClient) (interface{}, error) {
+	return c.AppendMessage(context.Background(), &chat.AppendMessageRequest{
+		MessageId: messageID,
+		Parts: []*chat.MessagePart{
+			{
+				Content:  message,
+				MimeType: messageMime,
 			},
 		},
 	})

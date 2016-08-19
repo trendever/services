@@ -217,7 +217,7 @@ func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, parts []*Me
 
 	message.Parts = append(message.Parts, parts...)
 
-	err = c.db.Save(message).Error
+	err = c.db.Save(&message).Error
 	if err != nil {
 		return nil, err
 	}
