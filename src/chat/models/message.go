@@ -71,12 +71,12 @@ func DecodeParts(parts []*chat.MessagePart) []*MessagePart {
 
 	out := make([]*MessagePart, len(parts))
 
-	for _, pbPart := range parts {
-		out = append(out, &MessagePart{
+	for i, pbPart := range parts {
+		out[i] = &MessagePart{
 			Content:   pbPart.Content,
 			ContentID: pbPart.ContentId,
 			MimeType:  pbPart.MimeType,
-		})
+		}
 	}
 
 	return out
