@@ -109,6 +109,7 @@ func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
 
 	var count int
 	err := r.DB.
+		Model(&Session{}).
 		Where("payment_id = ?", payID).
 		Count(&count).
 		Error
