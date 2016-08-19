@@ -71,7 +71,20 @@ func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
 		return err
 	}
 
-	// STEP2: update old message
+	// STEP2: update old message with the same payment info
+	if sess.Payment.MessageID == 0 {
+		return fmt.Errorf("Zero message ID in payment(sess=%v,pay=%v); should not normally happen", sess.ID, sess.Payment.ID)
+	}
+
+	err = cn.appendStatusMessage(
+		sess.Payment.MessageID,
+		string(message),
+		"json/payment",
+	)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
