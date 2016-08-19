@@ -8,7 +8,7 @@ import (
 )
 
 var dbModels = []interface{}{
-	&ElasticProductIndex{},
+	&ElasticProductMeta{},
 }
 
 var elasticIndexes = []struct {

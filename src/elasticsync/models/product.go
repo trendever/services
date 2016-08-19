@@ -53,6 +53,10 @@ const ProductIndex = `{
 					"name": {
 						"type": "string",
 						"index": "not_analyzed"
+					},
+					"full_name": {
+						"type": "string",
+						"index": "not_analyzed"
 					}
 				}
 			},
@@ -63,6 +67,10 @@ const ProductIndex = `{
 						"include_in_all": false
 					},
 					"name": {
+						"type": "string",
+						"index": "not_analyzed"
+					},
+					"full_name": {
 						"type": "string",
 						"index": "not_analyzed"
 					}
@@ -119,45 +127,53 @@ const ProductIndex = `{
 }
 }`
 
+type ElasticTag struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name,omitempty"`
+}
+type ElasticProductItem struct {
+	Name          string `json:"name,omitempty"`
+	Price         uint64 `json:"price"`
+	DiscountPrice uint64 `json:"discount_price"`
+}
+type ElasticProductImage struct {
+	URL  string `json:"url,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 type ElasticProductData struct {
 	Code    string `json:"code"`
 	Title   string `json:"title,omitempty"`
 	Caption string `json:"caption,omitempty"`
 	Sale    bool   `json:"sale,omitempty"`
 	Shop    struct {
-		ID   uint64 `json:"id"`
-		Name string `json:"name,omitempty"`
+		ID       uint64 `json:"id"`
+		Name     string `json:"name,omitempty"`
+		FullName string `json:"full_name,omitempty"`
 	} `json:"shop,omitempty"`
 	Mentioner struct {
-		ID   uint64 `json:"id"`
-		Name string `json:"name,omitempty"`
+		ID       uint64 `json:"id"`
+		Name     string `json:"name,omitempty"`
+		FullName string `json:"full_name,omitempty"`
 	} `json:"mentioner,omitempty"`
 	// tags from all items
-	Tags []struct {
-		ID   uint64 `json:"id"`
-		Name string `json:"name,omitempty"`
-	} `json:"tags,omitempty"`
-	Items []struct {
-		Name          string `json:"name,omitempty"`
-		Price         uint64 `json:"price"`
-		DiscountPrice uint64 `json:"discount_price"`
-	} `json:"items,omitempty"`
-	Images []struct {
-		URL  string `json:"url,omitempty"`
-		Name string `json:"name,omitempty"`
-	} `json:"images,omitempty"`
+	Tags   []ElasticTag          `json:"tags,omitempty"`
+	Items  []ElasticProductItem  `json:"items,omitempty"`
+	Images []ElasticProductImage `json:"images,omitempty"`
 }
 
 // represent relation table in db
-type ElasticProductIndex struct {
+type ElasticProductMeta struct {
+	// product id
 	ID uint64 `gorm:"primary_key"`
 	// current elastic version of document
 	// -1 if product was deleted
-	Version         int
-	SourceUpdatedAt time.Time `gorm:"index"`
+	Version         int       `gorm:"not null"`
+	SourceUpdatedAt time.Time `gorm:"index;not null"`
 }
 
 type ElasticProduct struct {
-	ElasticProductData
-	ElasticProductIndex
+	Meta    ElasticProductMeta
+	Data    ElasticProductData
+	Deleted bool
 }
