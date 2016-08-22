@@ -157,20 +157,17 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 
 //SendStatusMessage sends status message
 func SendStatusMessage(conversationID uint64, statusType, value string) {
+	err := joinChat(conversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	if err != nil {
+		log.Error(fmt.Errorf("failed to join chat: %v", err))
+		return
+	}
 	content := &chat.StatusContent{
 		Type:  statusType,
 		Value: value,
 	}
-	m := &proto_chat.Message{
-		ConversationId: conversationID,
-		Parts: []*proto_chat.MessagePart{
-			{
-				Content:  content.JSON(),
-				MimeType: "json/status",
-			},
-		},
-	}
-	api.Publish("chat.status", m)
+	err = chat.SendChatMessage(uint64(SystemUser.ID), conversationID, content.JSON(), "json/status")
+	log.Error(fmt.Errorf("failed to send message: %v", err))
 }
 
 func joinChat(conversationID uint64, user *User, role proto_chat.MemberRole) error {
