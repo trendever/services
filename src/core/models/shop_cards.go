@@ -207,21 +207,32 @@ func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 // DeleteCard deletes card with ID
 func DeleteCard(r CardRepository, userID, cardID uint) error {
 
-	card, err := r.GetCardByID(cardID)
+	card, err := GetCardByID(r, userID, cardID)
 	if err != nil {
 		return err
+	}
+
+	return r.DeleteCardByID(card.ID)
+}
+
+// GetCardByID returns card with ID
+func GetCardByID(r CardRepository, userID, cardID uint) (*ShopCard, error) {
+
+	card, err := r.GetCardByID(cardID)
+	if err != nil {
+		return nil, err
 	}
 
 	err = HasShopPermission(r, userID, card.ShopID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if card.ShopID == 0 && card.UserID != userID {
-		return errWrongUser
+		return nil, errWrongUser
 	}
 
-	return r.DeleteCardByID(cardID)
+	return card, nil
 }
 
 // GetCardsFor gets cards for given shops
@@ -237,6 +248,18 @@ func GetCardsFor(r CardRepository, userID, shopID uint) ([]ShopCard, error) {
 	}
 
 	return r.GetCardsForUser(userID)
+}
+
+//Hide leaves only 4 less significant card numbers
+func (c ShopCards) Hide() ShopCards {
+	for i := range c {
+		num := c[i].Number
+		if len(num) > 4 {
+			c[i].Number = num[len(c[i].Number)-4:]
+		}
+	}
+
+	return c
 }
 
 // =*=
