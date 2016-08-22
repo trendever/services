@@ -99,7 +99,7 @@ func CreateCard(c *soso.Context) {
 	cardName, okCardName := req["card_name"].(string)
 	cardNumber, okCardNumber := req["card_number"].(string)
 
-	if !okCardName || !okCardNumber || cardName == "" || cardNumber == "" {
+	if !okCardName || !okCardNumber || cardNumber == "" {
 
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Bad parameters"))
 		return
@@ -127,4 +127,21 @@ func CreateCard(c *soso.Context) {
 		"success": true,
 		"id":      res.Id,
 	})
+}
+
+func getCardNumber(userID, cardID uint64) (string, error) {
+	// Launch RPC req
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := shopCardServiceClient.GetCardByID(ctx, &core.GetCardByIDRequest{
+		Id:     cardID,
+		UserId: userID,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return res.Card.Number, nil
 }

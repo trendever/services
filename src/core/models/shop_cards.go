@@ -14,7 +14,7 @@ type ShopCard struct {
 	UserID uint `gorm:"index"`
 
 	Name   string `gorm:"not null"`
-	Number string `gorm:"not null"`
+	Number string
 }
 
 // ShopCards is a collection of ShopCard

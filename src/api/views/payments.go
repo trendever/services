@@ -37,8 +37,13 @@ func CreateOrder(c *soso.Context) {
 	currency, _ := req["currency"].(float64)
 	_, currencyOK := payment.Currency_name[int32(currency)]
 
-	// validated in payments service
-	shopCardNumber, _ := req["card"].(string)
+	// retrieve card number from payments service
+	shopCardID, _ := req["card"].(float64)
+	shopCardNumber, err := getCardNumber(c.Token.UID, uint64(shopCardID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
