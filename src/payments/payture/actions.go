@@ -55,7 +55,7 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		"IP":          ipAddr,
 
 		// callback URL; seems not to work in sandbox mode
-		"Url": config.Get().HTTP.Public + "?orderid={orderid}&success={success}",
+		"url": config.Get().HTTP.Public + "?orderid={orderid}&success={success}",
 
 		// template fields
 		"Product": fmt.Sprintf("#%d", pay.LeadID),

@@ -40,6 +40,7 @@ func CreateOrder(c *soso.Context) {
 	// retrieve card number from payments service
 	shopCardID, _ := req["card"].(float64)
 	shopCardNumber, err := getCardNumber(c.Token.UID, uint64(shopCardID))
+
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
