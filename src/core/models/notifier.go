@@ -119,6 +119,9 @@ func (n *Notifier) NotifyBySms(phone, about string, model interface{}) error {
 		Phone: phone,
 		Msg:   msg,
 	})
+	if err != nil {
+		return err
+	}
 
 	if res.SmsError != "" {
 		return errors.New(res.SmsError)
