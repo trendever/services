@@ -18,6 +18,16 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+  elasticsync:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+      - nats
+      - elastic
+    command: sh -c './bin/elasticsync migrate && exec ./bin/elasticsync start'
   mail:
     image: debian:jessie
     volumes_from:
@@ -71,6 +81,15 @@ services:
       - dbdata:/var/lib/postgresql/data/pgdata:rw
     ports:
       - "127.0.0.1:5432:5432"
+
+  elastic:
+    image: elasticsearch:latest
+    volumes:
+      - elasticdata:/usr/share/elasticsearch:rw
+    ports:
+      - 127.0.0.1:9200:9200
+      - 127.0.0.1:9300:9300
+    command: elasticsearch
 
   telegram:
     image: debian:jessie
@@ -129,3 +148,4 @@ services:
 volumes:
   dbdata: {}
   influxdata: {}
+  elasticdata: {}

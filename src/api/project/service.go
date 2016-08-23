@@ -11,6 +11,7 @@ import (
 	"api/soso"
 	"api/subscriber"
 	"github.com/igm/sockjs-go/sockjs"
+	"utils/elastic"
 	"utils/metrics"
 )
 
@@ -33,6 +34,7 @@ func (s *ProjectService) Run() error {
 	cache.Init()
 	SosoObj.HandleList(views.SocketRoutes)
 	subscriber.Init()
+	elastic.Init(&settings.Elastic)
 	http.Handle("/channel/", GetMainHandler())
 	return http.ListenAndServe(
 		fmt.Sprintf(":%s", settings.ChannelPort),
