@@ -48,11 +48,10 @@ func Loop() {
 		}
 
 		select {
+		case <-time.Tick(time.Millisecond * time.Duration(conf.Delay)):
 		case <-interrupt:
 			log.Info("elasticsync service stopped")
 			os.Exit(0)
-		default:
-			time.Sleep(time.Second * time.Duration(conf.Delay))
 		}
 	}
 }
@@ -233,18 +232,21 @@ func LoadProductsTags(product_ids []uint64, products map[uint64]*models.ElasticP
 
 	var cur *models.ElasticProduct = products[product_ids[0]]
 	for rows.Next() {
-		rows.Scan(
+		err := rows.Scan(
 			&tag.ID, &tag.Name,
 			&tag.UpdatedAt, &tag.DeletedAt,
 			&tag.Hidden, &tag.ProductID,
 		)
+		if err != nil {
+			return err
+		}
 		if tag.ProductID != cur.Meta.ID {
 			cur = products[tag.ProductID]
 		}
-		switch {
-		case cur.Meta.SourceUpdatedAt.Before(tag.DeletedAt.Time):
+		if cur.Meta.SourceUpdatedAt.Before(tag.DeletedAt.Time) {
 			cur.Meta.SourceUpdatedAt = tag.DeletedAt.Time
-		case cur.Meta.SourceUpdatedAt.Before(tag.UpdatedAt.Time):
+		}
+		if cur.Meta.SourceUpdatedAt.Before(tag.UpdatedAt.Time) {
 			cur.Meta.SourceUpdatedAt = tag.UpdatedAt.Time
 		}
 		if !tag.Hidden {
@@ -285,10 +287,10 @@ func LoadProductsItems(product_ids []uint64, products map[uint64]*models.Elastic
 		if item.ProductID != cur.Meta.ID {
 			cur = products[item.ProductID]
 		}
-		switch {
-		case cur.Meta.SourceUpdatedAt.Before(item.DeletedAt.Time):
+		if cur.Meta.SourceUpdatedAt.Before(item.DeletedAt.Time) {
 			cur.Meta.SourceUpdatedAt = item.DeletedAt.Time
-		case cur.Meta.SourceUpdatedAt.Before(item.UpdatedAt.Time):
+		}
+		if cur.Meta.SourceUpdatedAt.Before(item.UpdatedAt.Time) {
 			cur.Meta.SourceUpdatedAt = item.UpdatedAt.Time
 		}
 		cur.Data.Items = append(cur.Data.Items, item.ElasticProductItem)
@@ -327,10 +329,10 @@ func LoadProductsImages(product_ids []uint64, products map[uint64]*models.Elasti
 		if image.ProductID != cur.Meta.ID {
 			cur = products[image.ProductID]
 		}
-		switch {
-		case cur.Meta.SourceUpdatedAt.Before(image.DeletedAt.Time):
+		if cur.Meta.SourceUpdatedAt.Before(image.DeletedAt.Time) {
 			cur.Meta.SourceUpdatedAt = image.DeletedAt.Time
-		case cur.Meta.SourceUpdatedAt.Before(image.UpdatedAt.Time):
+		}
+		if cur.Meta.SourceUpdatedAt.Before(image.UpdatedAt.Time) {
 			cur.Meta.SourceUpdatedAt = image.UpdatedAt.Time
 		}
 		cur.Data.Images = append(cur.Data.Images, image.ElasticProductImage)

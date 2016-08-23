@@ -2,13 +2,15 @@ package views
 
 import (
 	"api/api"
-	"api/soso"
-	"net/http"
-
 	"api/cache"
+	"api/soso"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/olivere/elastic.v3"
+	"net/http"
 	"proto/core"
+	ewrapper "utils/elastic"
 	"utils/log"
 	"utils/rpc"
 )
@@ -23,6 +25,7 @@ func init() {
 		soso.Route{"search", "product", SearchProduct},
 		soso.Route{"like", "product", LikeProduct},
 		soso.Route{"get_specials", "product", GetSpecialProducts},
+		soso.Route{"elastic_search", "product", ElasticSearch},
 	)
 }
 
@@ -220,4 +223,92 @@ func GetSpecialProducts(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"special_products": res.List,
 	})
+}
+
+//  Parameters:
+//
+//   * limit (optional uint; default is 9) limits number of entries
+//   * offset (optional uint; default is 0) returns them with an offset
+//   * q (optional string) full-text search query
+//   * tags (optional uint array) list of tags ID to find associated
+//
+//   any of options below will disable isSale filter
+//   * shop_id (optional uint) if presented search only in specified shop
+//   * mentioner_id (optional uint) if presented search only products with this mentioner
+func ElasticSearch(c *soso.Context) {
+	req := c.RequestMap
+	// Search parameters
+	limit_f, _ := req["limit"].(float64)
+	limit := int(limit_f)
+	switch {
+	case limit <= 0:
+		limit = SearchDefaultLimit
+	case limit_f > 30:
+		limit = 30
+	}
+
+	offset_f, _ := req["offset"].(float64)
+	offset := int(offset_f)
+	switch {
+	case offset < 0:
+		offset = 0
+	// default index.max_result_window = 10000. Nobody will scroll so deep i guess
+	case offset+limit > 10000:
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("too large offset"))
+		return
+	}
+
+	query := elastic.NewBoolQuery()
+
+	byOwner := false
+	if value, _ := req["mentioner_id"].(float64); value > 0 {
+		query.Filter(elastic.NewTermQuery("mentioner.id", uint64(value)))
+		byOwner = true
+	}
+	if value, _ := req["shop_id"].(float64); value > 0 {
+		query.Filter(elastic.NewTermQuery("shop.id", uint64(value)))
+		byOwner = true
+	}
+	if !byOwner {
+		query.Filter(elastic.NewTermQuery("sale", true))
+	}
+
+	var tags []int64
+	if tags_in, ok := req["tags"].([]interface{}); ok {
+		tags = getIntArr(tags_in)
+	}
+	if tags != nil {
+		for _, tag := range tags {
+			query.Filter(elastic.NewTermQuery("tags.id", uint64(tag)))
+		}
+	}
+
+	eCli := ewrapper.Cli()
+	search := eCli.Search().Index("products").Type("product").From(offset).Size(limit)
+
+	text, _ := req["query"].(string)
+	if text != "" {
+		query.Must(elastic.NewMatchQuery("_all", text))
+	} else {
+		search = search.Sort("_uid", true)
+	}
+
+	res, err := search.Query(query).Do()
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	type product struct {
+		ID   string           `json:"id"`
+		Data *json.RawMessage `json:"data"`
+	}
+	hits := []product{}
+	for _, hit := range res.Hits.Hits {
+		hits = append(hits, product{
+			ID:   hit.Id,
+			Data: hit.Source,
+		})
+	}
+	c.SuccessResponse(hits)
 }

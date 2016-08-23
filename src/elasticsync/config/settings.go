@@ -18,7 +18,7 @@ const (
 type Settings struct {
 	SentryDSN string
 	NatsURL   string
-	// delay between sync steps (sec)
+	// delay between sync steps (msec)
 	Delay int
 	// maximum amount of documents that should be indexed on every step
 	ChunkSize int

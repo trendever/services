@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/elastic"
 	"utils/log"
 )
 
@@ -54,6 +55,8 @@ type Settings struct {
 	AuthAddr     string
 	ChatAddr     string
 	PaymentsAddr string
+
+	Elastic elastic.Settings
 
 	Mail struct {
 		Username string

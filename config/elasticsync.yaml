@@ -1,5 +1,5 @@
 natsURL: nats://nats:4222
-delay: 3
+delay: 3000
 debug: true
 chunkSize: 2000
 

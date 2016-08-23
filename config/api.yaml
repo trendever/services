@@ -14,3 +14,8 @@ mail:
   host: 'mailcatcher'
   sender: 'dev@trendever.com'
   port: 25
+
+elastic:
+  debug: true
+  trace: true
+  addr: http://elastic:9200
