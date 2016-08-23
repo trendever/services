@@ -45,4 +45,6 @@ func Migrate(drop bool) {
 			}
 		}
 	}
+
+	db.New().Model(&ElasticProductMeta{}).AddForeignKey("id", "products_product(id)", "CASCADE", "RESTRICT")
 }

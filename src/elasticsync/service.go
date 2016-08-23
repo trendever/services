@@ -27,6 +27,10 @@ func main() {
 			db.Init(&c.DB)
 			elastic.Init(&c.Elastic)
 
+			// @TODO compare sync table in db with actual index
+			// in case of "hard" delete products from db we will end up with inconsistent date otherwise
+			// it may be helpful in case of problems with es cluster as well
+
 			log.PanicLogger(sync.Loop)
 		},
 	})
@@ -49,9 +53,6 @@ func main() {
 	}
 	migrateCmd.Flags().BoolVarP(&drop, "drop", "d", false, "Drops tables and elastic search index before migration")
 	cmd.AddCommand(migrateCmd)
-
-	// @TODO command to compare sync table in db with actual index
-	// may be helpful in case of problems with es cluster
 
 	log.PanicLogger(func() {
 		if err := cmd.Execute(); err != nil {

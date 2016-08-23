@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"elasticsync/config"
 	"elasticsync/models"
+	"fmt"
 	"github.com/lib/pq"
 	"gopkg.in/olivere/elastic.v3"
 	"os"
@@ -342,41 +343,73 @@ func LoadProductsImages(product_ids []uint64, products map[uint64]*models.Elasti
 
 func IndexProducts(products map[uint64]*models.ElasticProduct) error {
 	el := ewrapper.Cli()
-	// @TODO version control, deletions
+	// @TODO version control
 	bulk := el.Bulk().Index("products").Type("product")
 	for id, p := range products {
-		bulk.Add(elastic.NewBulkIndexRequest().Id(strconv.FormatUint(id, 10)).Doc(&p.Data))
+		if p.Deleted {
+			bulk.Add(elastic.NewBulkDeleteRequest().Id(strconv.FormatUint(id, 10)))
+		} else {
+			bulk.Add(elastic.NewBulkIndexRequest().Id(strconv.FormatUint(id, 10)).Doc(&p.Data))
+		}
 	}
-	res, bulkErr := bulk.Do()
+	res, err := bulk.Do()
+	if err != nil {
+		return err
+	}
+	successCount, err := saveMeta(products, res)
+	log.Debug("%v documents were indexed/deleted successefuly", successCount)
+	return err
+}
+
+func saveMeta(products map[uint64]*models.ElasticProduct, res *elastic.BulkResponse) (successCount uint64, err error) {
 	var placeholders string
-	var arguments []interface{}
-	for _, item := range res.Succeeded() {
-		id, _ := strconv.ParseUint(item.Id, 10, 64)
-		meta := &products[id].Meta
-		meta.Version = item.Version
-		placeholders += "(?, ?, ?),\n"
-		arguments = append(arguments, meta.ID, meta.Version, meta.SourceUpdatedAt)
+	arguments := []interface{}{}
+	for _, chunk := range res.Items {
+		for action, item := range chunk {
+			if item.Status < 200 || item.Status >= 300 {
+				err = &elastic.Error{Status: item.Status, Details: item.Error}
+				continue
+			}
+			id, _ := strconv.ParseUint(item.Id, 10, 64)
+			meta := &products[id].Meta
+			if action == "delete" {
+				meta.Version = -1
+			} else {
+				meta.Version = item.Version
+			}
+			placeholders += "(?, ?, ?),\n"
+			arguments = append(arguments, meta.ID, meta.Version, meta.SourceUpdatedAt)
+			successCount++
+		}
 	}
+	if err != nil {
+		log.Error(fmt.Errorf("at last one action failed, last error: %v", err))
+	}
+	if len(arguments) == 0 {
+		return
+	}
+
+	// @TODO replace all this with one upsert after upgrade to postgres 9.5+
 	tx := db.New().Begin()
 	defer tx.Commit()
-	err := tx.Exec(`
+	err = tx.Exec(`
 CREATE TEMPORARY TABLE IF NOT EXISTS new_meta
 (id bigint, version integer, source_updated_at timestamp with time zone)
 ON COMMIT DELETE ROWS;
 	`).Error
 	if err != nil {
-		return err
+		return
 	}
 	err = tx.Exec("LOCK TABLE elastic_product_meta IN EXCLUSIVE MODE").Error
 	if err != nil {
-		return err
+		return
 	}
 	err = tx.Exec(
 		"INSERT INTO new_meta(id, version, source_updated_at) VALUES"+placeholders[:len(placeholders)-2]+";",
 		arguments...,
 	).Error
 	if err != nil {
-		return err
+		return
 	}
 	err = tx.Exec(`
 UPDATE elastic_product_meta
@@ -385,7 +418,7 @@ FROM new_meta
 WHERE new_meta.id = elastic_product_meta.id
 	`).Error
 	if err != nil {
-		return err
+		return
 	}
 	err = tx.Exec(`
 INSERT INTO elastic_product_meta
@@ -394,9 +427,5 @@ FROM new_meta
 LEFT OUTER JOIN elastic_product_meta ON (elastic_product_meta.id = new_meta.id)
 WHERE elastic_product_meta.id IS NULL;
 	`).Error
-	if err != nil {
-		return err
-	}
-	log.Debug("%v documents were indexed successefuly", len(arguments)/3)
-	return bulkErr
+	return
 }
