@@ -29,11 +29,11 @@ type Product struct {
 	InstagramImages       []ImageCandidate
 
 	// Product shop
-	ShopID uint
+	ShopID uint `gorm:"index:shops_index"`
 	Shop   Shop
 
 	// Product mentioner
-	MentionedByID uint
+	MentionedByID uint `gorm:"index:mentioners_index"`
 	MentionedBy   User
 
 	LikedBy []User `gorm:"many2many:users_products"`
@@ -104,9 +104,10 @@ func (p Product) Stringify() string {
 }
 
 // ImageCandidate contains instagram image info
+// @CHECK any seance in this compose key?
 type ImageCandidate struct {
 	ID        uint       `gorm:"primary_key"`
-	ProductID uint       `gorm:"primary_key"`
+	ProductID uint       `gorm:"primary_key;index:products_index"`
 	UpdatedAt time.Time  `gorm:"index"`
 	DeletedAt *time.Time `gorm:"index"`
 	URL       string     `gorm:"text"`

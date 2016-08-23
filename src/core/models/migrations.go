@@ -80,7 +80,18 @@ func Migrate() error {
 	`)
 	db.New().Exec("CREATE UNIQUE INDEX unique_active_lead ON products_leads(shop_id, customer_id) WHERE state IN ('EMPTY','NEW','IN_PROGRESS') AND deleted_at IS NULL")
 
+	relationsIndices()
+
 	return nil
+}
+
+func relationsIndices() {
+	db.New().Model(&Product{}).AddIndex("shops_index", "shop_id")
+	db.New().Model(&Product{}).AddIndex("mentioners_index", "mentioner_id")
+	// already exist with another name
+	//db.New().Model(&ProductItem{}).AddIndex("products_index", "product_id")
+	db.New().Model(&ImageCandidate{}).AddIndex("products_index", "product_id")
+
 }
 
 func migrateTagrel() {
