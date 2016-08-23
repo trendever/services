@@ -366,7 +366,9 @@ func saveMeta(products map[uint64]*models.ElasticProduct, res *elastic.BulkRespo
 	arguments := []interface{}{}
 	for _, chunk := range res.Items {
 		for action, item := range chunk {
-			if item.Status < 200 || item.Status >= 300 {
+			if (item.Status < 200 || item.Status >= 300) &&
+				!(item.Status == 404 && action == "delete") {
+
 				err = &elastic.Error{Status: item.Status, Details: item.Error}
 				continue
 			}
