@@ -2,6 +2,7 @@ package elastic
 
 import (
 	"errors"
+	"fmt"
 	"gopkg.in/olivere/elastic.v3"
 	"time"
 	"utils/log"
@@ -10,14 +11,23 @@ import (
 var cli *elastic.Client
 
 type Settings struct {
-	Addr  string
+	Addr string
+	// basic request and es cluster status log
 	Debug bool
+	// full http request/answer log
+	Trace bool
 }
 
-type eLogger struct{}
+type eDebugLogger struct{}
 
-func (*eLogger) Printf(format string, values ...interface{}) {
+func (*eDebugLogger) Printf(format string, values ...interface{}) {
 	log.Debug(format, values...)
+}
+
+type eErrorLogger struct{}
+
+func (*eErrorLogger) Printf(format string, values ...interface{}) {
+	log.Error(fmt.Errorf(format, values...))
 }
 
 func Init(settings *Settings) {
@@ -26,12 +36,17 @@ func Init(settings *Settings) {
 		return
 
 	}
-	opts := []elastic.ClientOptionFunc{}
+	opts := []elastic.ClientOptionFunc{
+		elastic.SetErrorLog(&eErrorLogger{}),
+	}
 	if settings.Addr != "" {
 		opts = append(opts, elastic.SetURL(settings.Addr))
 	}
 	if settings.Debug {
-		opts = append(opts, elastic.SetInfoLog(&eLogger{}))
+		opts = append(opts, elastic.SetInfoLog(&eDebugLogger{}))
+	}
+	if settings.Trace {
+		opts = append(opts, elastic.SetTraceLog(&eDebugLogger{}))
 	}
 
 	var err error
