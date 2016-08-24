@@ -79,12 +79,26 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 
 func (ps *paymentServer) HandleNotification(c *gin.Context) {
 
-	log.Debug("Notification!")
-	log.Debug("POST form: %v!", c.PostForm("OrderId"))
-	log.Debug("Everything else: %#v!", c)
+	orderID := c.PostForm("OrderId")
 
-	// got notification; log request && run CheckStatuses (@TODO: parse request)
-	ps.CheckStatuses()
+	// avoid time attacks
+	go func() {
+
+		log.Debug("Got notification event for order=%v; checking", orderID)
+		defer log.Debug("Finished notification checking for order=%v;", orderID)
+
+		//find session
+		sess, err := ps.repo.GetSessByUID(orderID)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		err = ps.CheckStatus(sess)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
 
 func (ps *paymentServer) PeriodicCheck() {
