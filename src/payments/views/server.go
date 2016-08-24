@@ -179,6 +179,13 @@ func (ps *paymentServer) CheckStatus(session *models.Session) error {
 		return err
 	}
 
+	// Step5: remember about it
+	session.ChatNotified = true
+	err = ps.repo.SaveSess(session)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -123,7 +123,7 @@ func (r *RepoImpl) GetUnfinished(gatewayType string) ([]Session, error) {
 
 	err := r.DB.
 		Where("gateway_type = ?", gatewayType).
-		Where("finished != TRUE").
+		Where("finished != TRUE or chat_notified != TRUE").
 		Preload("Payment").
 		Find(&result).
 		Error
