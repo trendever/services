@@ -181,7 +181,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 func (ps *paymentServer) CheckStatus(session *models.Session) error {
 
 	// Step0: skip already finished sessions
-	if session.Finished {
+	if session.Finished && session.ChatNotified {
 		return nil
 	}
 
