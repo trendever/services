@@ -180,6 +180,11 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 
 func (ps *paymentServer) CheckStatus(session *models.Session) error {
 
+	// Step0: skip already finished sessions
+	if session.Finished {
+		return nil
+	}
+
 	// Step1: check if it's finished
 	finished, err := ps.gateway.CheckStatus(session)
 	if err != nil {
