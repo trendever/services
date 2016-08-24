@@ -2,8 +2,10 @@ package models
 
 import (
 	"errors"
-	"github.com/jinzhu/gorm"
 	"proto/core"
+
+	"github.com/durango/go-credit-card"
+	"github.com/jinzhu/gorm"
 )
 
 // ShopCard contains payment card info
@@ -46,8 +48,9 @@ type CardRepositoryImpl struct {
 }
 
 var (
-	errHasNoPerm = errors.New("Has no permissions to get this shop cards")
-	errWrongUser = errors.New("Has no permissions to modify other user cards")
+	errHasNoPerm   = errors.New("Has no permissions to get this shop cards")
+	errWrongUser   = errors.New("Has no permissions to modify other user cards")
+	errInvalidCard = errors.New("Invalid card CRC: Luhn failed")
 )
 
 // =*=
@@ -199,6 +202,17 @@ func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 		return 0, err
 	}
 
+	cc := creditcard.Card{Number: card.Number}
+	if !cc.ValidateNumber() {
+		return 0, errInvalidCard
+	}
+
+	// fill name if it's empty
+	if card.Name == "" {
+		company, _ := cc.MethodValidate()
+		card.Name = company.Long
+	}
+
 	err = r.CreateCard(&card)
 
 	return card.ID, err
@@ -253,10 +267,10 @@ func GetCardsFor(r CardRepository, userID, shopID uint) ([]ShopCard, error) {
 //Hide leaves only 4 less significant card numbers
 func (c ShopCards) Hide() ShopCards {
 	for i := range c {
-		num := c[i].Number
-		if len(num) > 4 {
-			c[i].Number = num[len(c[i].Number)-4:]
-		}
+		// shorten card number
+		card := creditcard.Card{Number: c[i].Number}
+		c[i].Number, _ = card.LastFour()
+
 	}
 
 	return c
