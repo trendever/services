@@ -80,6 +80,10 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 func (ps *paymentServer) HandleNotification(c *gin.Context) {
 
 	orderID := c.PostForm("OrderId")
+	if orderID == "" {
+		log.Debug("Skipping notification event without OrderId")
+		return
+	}
 
 	// avoid time attacks
 	go func() {
