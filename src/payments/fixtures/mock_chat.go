@@ -29,11 +29,10 @@ func (_m *MockChatNotifier) EXPECT() *_MockChatNotifierRecorder {
 	return _m.recorder
 }
 
-func (_m *MockChatNotifier) SendPaymentToChat(_param0 *models.Payment) (uint64, error) {
+func (_m *MockChatNotifier) SendPaymentToChat(_param0 *models.Payment) error {
 	ret := _m.ctrl.Call(_m, "SendPaymentToChat", _param0)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 func (_mr *_MockChatNotifierRecorder) SendPaymentToChat(arg0 interface{}) *gomock.Call {

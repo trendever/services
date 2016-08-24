@@ -127,7 +127,7 @@ func CreatePayment(c *soso.Context) {
 	}
 
 	// must be owner in his chat
-	direction, err := paymentDirection(role, true)
+	direction, err := paymentDirection(role, false)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
@@ -176,6 +176,8 @@ func getConversationID(userID, leadID uint64) (uint64, core.LeadUserRole, error)
 	return info.ConversationId, info.UserRole, nil
 }
 
+// get payment direction
+// create == if we want to create order, or use it
 func paymentDirection(role core.LeadUserRole, create bool) (payment.Direction, error) {
 
 	var isModerator = role == core.LeadUserRole_SELLER || role == core.LeadUserRole_SUPER_SELLER || role == core.LeadUserRole_SUPPLIER
