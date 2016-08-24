@@ -40,6 +40,7 @@ type buyTest struct {
 var (
 	repoMock *fixtures.MockRepo
 	gwMock   *fixtures.MockGateway
+	chatMock *fixtures.MockChatNotifier
 )
 
 func TestCreateOrder(t *testing.T) {
@@ -49,10 +50,12 @@ func TestCreateOrder(t *testing.T) {
 
 	repoMock = fixtures.NewMockRepo(mock)
 	gwMock = fixtures.NewMockGateway(mock)
+	chatMock = fixtures.NewMockChatNotifier(mock)
 
 	server := &paymentServer{
 		gateway: gwMock,
 		repo:    repoMock,
+		chat:    chatMock,
 	}
 
 	for _, test := range []createTest{

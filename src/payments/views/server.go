@@ -48,6 +48,7 @@ func Init() {
 	router := gin.Default()
 
 	router.GET("/callback", server.HandleCallback)
+	router.POST("/pay/notify", server.HandleNotification)
 
 	go router.Run(config.Get().HTTP.Listen)
 	go server.PeriodicCheck()
@@ -74,6 +75,16 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 	}()
 
 	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.Payment.LeadID, success))
+}
+
+func (ps *paymentServer) HandleNotification(c *gin.Context) {
+
+	log.Debug("Notification!")
+	log.Debug("POST form: %v!", c.PostForm("OrderId"))
+	log.Debug("Everything else: %#v!", c)
+
+	// got notification; log request && run CheckStatuses (@TODO: parse request)
+	ps.CheckStatuses()
 }
 
 func (ps *paymentServer) PeriodicCheck() {
