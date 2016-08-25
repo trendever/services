@@ -1,0 +1,35 @@
+service PushService {
+  rpc Push (PushRequest) returns (PushResult) {}
+}
+
+enum ServiceType {
+    // Apple Push Notifications
+    APN = 0;
+    // Firebase Cloud Messaging
+    FCM = 1;
+}
+
+message Receiver {
+    ServiceType service = 1;
+    string token = 2;
+}
+
+enum Priority {
+    NORMAL = 0;
+    HING = 1;
+}
+
+message PushMessage {
+    // should be valid json
+    string body = 1;
+    Priority prority = 2;
+    // seconds
+    uint64 time_to_live = 3;
+}
+
+message PushRequest {
+    repeated Receiver receivers = 1;
+    PushMessage message = 2;
+}
+
+message PushResult {}
