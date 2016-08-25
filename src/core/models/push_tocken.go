@@ -34,6 +34,8 @@ type PushTokensRepository interface {
 	AddToken(token *PushToken) error
 	DelToken(id, user_id uint) error
 	GetTokens(user_id uint) ([]PushToken, error)
+	InvalidateTokens(t proto.TokenType, tokens []string)
+	UpdateToken(t proto.TokenType, oldToken, newToken string)
 }
 
 type pushTokensRepositoryImpl struct{}
@@ -67,6 +69,17 @@ func (*pushTokensRepositoryImpl) DelToken(id, userId uint) error {
 		return fmt.Errorf("failed to delete token: %v", res.Error)
 	}
 	return nil
+}
+
+func (*pushTokensRepositoryImpl) InvalidateTokens(t proto.TokenType, tokens []string) {
+	if tokens == nil || len(tokens) == 0 {
+		return
+	}
+	db.New().Where("type = ?", t).Where("token IN (?)", tokens).Delete(PushToken{})
+}
+
+func (*pushTokensRepositoryImpl) UpdateToken(t proto.TokenType, oldToken, newToken string) {
+	db.New().Model(&PushToken{}).Where("type = ?", t).Where("token = ?", oldToken).Update("token", newToken)
 }
 
 func (*pushTokensRepositoryImpl) GetTokens(userId uint) ([]PushToken, error) {
