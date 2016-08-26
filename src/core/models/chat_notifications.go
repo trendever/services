@@ -104,11 +104,12 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		return fmt.Errorf("failed to load templates: %v", res.Error)
 	}
 	if len(templates) == 0 {
-		return fmt.Errorf(
+		log.Error(fmt.Errorf(
 			"suitable tamplates not found for productID = %v with group %v",
 			product.ID,
 			group,
-		)
+		))
+		return nil
 	}
 
 	err := joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
