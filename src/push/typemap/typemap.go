@@ -16,6 +16,7 @@ func init() {
 		push.ServiceType_APN: core.TokenType_Iphone,
 		push.ServiceType_FCM: core.TokenType_Android,
 	}
+	TokenTypeToService = make(map[core.TokenType]push.ServiceType)
 	for k, v := range ServiceToTokenType {
 		TokenTypeToService[v] = k
 	}

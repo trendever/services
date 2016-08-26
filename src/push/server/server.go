@@ -41,6 +41,9 @@ func (s *PushServer) Push(_ context.Context, in *push.PushRequest) (*push.PushRe
 		if res.Invalids != nil {
 			go invalidateTokens(service, res.Invalids)
 		}
+		if res.Updates != nil {
+			go updateTokens(service, res.Updates)
+		}
 	}
 	return &push.PushResult{}, nil
 }
@@ -53,7 +56,20 @@ func invalidateTokens(service push.ServiceType, tokens []string) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	exteral.PushTokensServiceClient.InvalidateTokens(ctx, &core.InvalidateTokensRequest{
-		Type:  typemap.ServiceToTokenType[service],
+		Type:   typemap.ServiceToTokenType[service],
 		Tokens: tokens,
 	})
+}
+
+func updateTokens(service push.ServiceType, updates []pushers.Update) {
+	tokenType := typemap.ServiceToTokenType[service]
+	for _, up := range updates {
+		ctx, cancel := rpc.DefaultContext()
+		exteral.PushTokensServiceClient.UpdateToken(ctx, &core.UpdateTokenRequest{
+			Type:     tokenType,
+			OldToken: up.Old,
+			NewToken: up.New,
+		})
+		cancel()
+	}
 }

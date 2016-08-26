@@ -20,11 +20,16 @@ enum Priority {
 }
 
 message PushMessage {
-    // should be valid json
-    string body = 1;
-    Priority prority = 2;
+    Priority priority = 1;
     // seconds
-    uint64 time_to_live = 3;
+    uint64 time_to_live = 2;
+    // at last one of two fields below should be non-empty
+    // valid json data
+    string data = 3;
+    // notification body
+    string body = 4;
+    // will be ignored if body field is empty
+    string title = 5;
 }
 
 message PushRequest {

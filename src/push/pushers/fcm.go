@@ -5,16 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/betrok/go-fcm"
-	"proto/core"
 	"proto/push"
 	"push/config"
-	"push/exteral"
 	"utils/log"
-	"utils/rpc"
 )
 
 func init() {
-	registerPusher(push.ServiceType_FCM, NewFCMPusher(config.Get().FMCServerKey))
+	registerPusher(push.ServiceType_FCM, &FCMPusher{})
 }
 
 const (
@@ -35,20 +32,32 @@ type FCMPusher struct {
 	serverKey string
 }
 
-func NewFCMPusher(serverKey string) *FCMPusher {
-	return &FCMPusher{serverKey: serverKey}
-}
-
 var priorityMapFCM = map[push.Priority]string{
 	push.Priority_NORMAL: fcm.Priority_NORMAL,
 	push.Priority_HING:   fcm.Priority_HIGH,
 }
 
+func (p *FCMPusher) Init() {
+	p.serverKey = config.Get().FCMServerKey
+}
+
 func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, error) {
 	cli := fcm.NewFcmClient(s.serverKey)
-	cli.NewFcmRegIdsMsg(tokens, json.RawMessage(msg.Body))
+	cli.AppendDevices(tokens)
+	if msg.Data != "" {
+		raw := json.RawMessage(msg.Data)
+		cli.SetMsgData(&raw)
+	}
+	if msg.Body != "" {
+		cli.SetNotificationPayload(
+			&fcm.NotificationPayload{
+				Title: msg.Title,
+				Body:  msg.Body,
+			},
+		)
+	}
 	cli.SetTimeToLive(int(msg.TimeToLive))
-	priority, ok := priorityMapFCM[msg.Prority]
+	priority, ok := priorityMapFCM[msg.Priority]
 	if !ok {
 		return nil, errors.New("unknown priority")
 	}
@@ -57,6 +66,7 @@ func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 	res, err := cli.Send()
 	// connection  error
 	if err != nil {
+		log.Debug("FCMPusher: connection error: %v, %+v", err, res)
 		ret.NeedRetry = tokens
 		return &ret, nil
 	}
@@ -71,6 +81,7 @@ func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 		log.Error(errors.New("FCMPusher: authentication error"))
 		fallthrough
 	default: // Unavailable
+		log.Debug("service unaviable: %v", res.StatusCode)
 		ret.NeedRetry = tokens
 		return &ret, nil
 	}
@@ -78,7 +89,7 @@ func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 		if err, ok := item["error"]; ok {
 			switch err {
 			case FCMMissingRegistration:
-				// empty token?..
+				log.Error(errors.New("FCMPusher: empty token provided"))
 				continue
 
 			case FCMInvalidRegistration, FCMNotRegistered, FCMInvalidPackageName, FCMMismatchSenderId:
@@ -92,21 +103,13 @@ func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 				log.Warn("FCMPusher: temporarily failed to send message for '%v': %v", tokens[k], err)
 				ret.NeedRetry = append(ret.NeedRetry, tokens[k])
 
+			default:
+				log.Error(fmt.Errorf("FCMPusher: unknown error while sending to '%v': %v", tokens[k], err))
 			}
 		}
 		if newToken, ok := item["registration_id"]; ok {
-			go updateToken(tokens[k], newToken)
+			ret.Updates = append(ret.Updates, Update{tokens[k], newToken})
 		}
 	}
 	return &ret, nil
-}
-
-func updateToken(oldToken, newToken string) {
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	exteral.PushTokensServiceClient.UpdateToken(ctx, &core.UpdateTokenRequest{
-		Type:     core.TokenType_Android,
-		OldToken: oldToken,
-		NewToken: newToken,
-	})
 }

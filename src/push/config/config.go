@@ -17,7 +17,7 @@ const (
 type Settings struct {
 	RPC              string
 	PushTokensServer string
-	FMCServerKey     string
+	FCMServerKey     string
 	APNPemFile       string
 	APNPemPass       string
 	APNTopic         string

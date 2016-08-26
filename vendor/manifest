@@ -90,7 +90,7 @@
 		{
 			"importpath": "github.com/betrok/go-fcm",
 			"repository": "https://github.com/betrok/go-fcm",
-			"revision": "2fe514a20e459cab81287cf5a1a12283576a3377",
+			"revision": "081d1973de16d8fc9ce8d995b8389d9d4be86c5a",
 			"branch": "master"
 		},
 		{

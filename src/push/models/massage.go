@@ -10,18 +10,11 @@ type Message struct {
 	Expiration time.Time `gorm:"index"`
 	// last send try time
 	LastTry   time.Time
-	Body      string
+	Data      string `gorm:"text"`
+	Body      string `gorm:"text"`
+	Title     string `gorm:"text"`
 	Priority  push.Priority
 	Receivers []Receiver `gorm:"many2many:messages_receivers"`
-}
-
-// this func do NOT copy receivers from source
-func DecodeMessage(in *push.PushMessage) *Message {
-	return &Message{
-		Body:       in.Body,
-		Priority:   in.Prority,
-		Expiration: time.Now().Add(time.Second * time.Duration(in.TimeToLive)),
-	}
 }
 
 type Receiver struct {

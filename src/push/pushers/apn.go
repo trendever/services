@@ -12,11 +12,7 @@ import (
 )
 
 func init() {
-	config := config.Get()
-	registerPusher(
-		push.ServiceType_APN,
-		NewAPNPusher(config.APNPemFile, config.APNPemPass, config.APNTopic),
-	)
+	registerPusher(push.ServiceType_APN, &APNPusher{})
 }
 
 type APNPusher struct {
@@ -29,16 +25,19 @@ var priorityMapAPN = map[push.Priority]int{
 	push.Priority_HING:   apns2.PriorityHigh,
 }
 
-func NewAPNPusher(pemFile, pemPass, topic string) *APNPusher {
-	cert, err := certificate.FromPemFile(pemFile, pemPass)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to load APN certificate: %v", err))
-	}
-	return &APNPusher{cli: apns2.NewClient(cert).Production(), topic: topic}
+func (p *APNPusher) Init() {
+	config := config.Get()
+	cert, err := certificate.FromPemFile(config.APNPemFile, config.APNPemPass)
+	_ = err
+	//if err != nil {
+	//	log.Fatal(fmt.Errorf("failed to load APN certificate: %v", err))
+	//}
+	p.cli = apns2.NewClient(cert).Production()
+	p.topic = config.APNTopic
 }
 
 func (s *APNPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, error) {
-	priority, ok := priorityMapAPN[msg.Prority]
+	priority, ok := priorityMapAPN[msg.Priority]
 	if !ok {
 		return nil, errors.New("unknown priority")
 	}
