@@ -18,6 +18,8 @@ func request(endpoint string, params map[string]string) ([]byte, error) {
 		urlValues.Add(k, v)
 	}
 
+	log.Debug("Req parameters: %#v", urlValues)
+
 	response, err := http.PostForm(endpoint, urlValues)
 	if err != nil {
 		return nil, err

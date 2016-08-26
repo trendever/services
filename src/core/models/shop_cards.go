@@ -2,8 +2,10 @@ package models
 
 import (
 	"errors"
-	"github.com/jinzhu/gorm"
 	"proto/core"
+
+	"github.com/durango/go-credit-card"
+	"github.com/jinzhu/gorm"
 )
 
 // ShopCard contains payment card info
@@ -14,7 +16,7 @@ type ShopCard struct {
 	UserID uint `gorm:"index"`
 
 	Name   string `gorm:"not null"`
-	Number string `gorm:"not null"`
+	Number string
 }
 
 // ShopCards is a collection of ShopCard
@@ -46,8 +48,9 @@ type CardRepositoryImpl struct {
 }
 
 var (
-	errHasNoPerm = errors.New("Has no permissions to get this shop cards")
-	errWrongUser = errors.New("Has no permissions to modify other user cards")
+	errHasNoPerm   = errors.New("Has no permissions to get this shop cards")
+	errWrongUser   = errors.New("Has no permissions to modify other user cards")
+	errInvalidCard = errors.New("Invalid card CRC: Luhn failed")
 )
 
 // =*=
@@ -199,6 +202,17 @@ func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 		return 0, err
 	}
 
+	cc := creditcard.Card{Number: card.Number}
+	if !cc.ValidateNumber() {
+		return 0, errInvalidCard
+	}
+
+	// fill name if it's empty
+	if card.Name == "" {
+		company, _ := cc.MethodValidate()
+		card.Name = company.Long
+	}
+
 	err = r.CreateCard(&card)
 
 	return card.ID, err
@@ -207,21 +221,32 @@ func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 // DeleteCard deletes card with ID
 func DeleteCard(r CardRepository, userID, cardID uint) error {
 
-	card, err := r.GetCardByID(cardID)
+	card, err := GetCardByID(r, userID, cardID)
 	if err != nil {
 		return err
+	}
+
+	return r.DeleteCardByID(card.ID)
+}
+
+// GetCardByID returns card with ID
+func GetCardByID(r CardRepository, userID, cardID uint) (*ShopCard, error) {
+
+	card, err := r.GetCardByID(cardID)
+	if err != nil {
+		return nil, err
 	}
 
 	err = HasShopPermission(r, userID, card.ShopID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if card.ShopID == 0 && card.UserID != userID {
-		return errWrongUser
+		return nil, errWrongUser
 	}
 
-	return r.DeleteCardByID(cardID)
+	return card, nil
 }
 
 // GetCardsFor gets cards for given shops
@@ -237,6 +262,18 @@ func GetCardsFor(r CardRepository, userID, shopID uint) ([]ShopCard, error) {
 	}
 
 	return r.GetCardsForUser(userID)
+}
+
+//Hide leaves only 4 less significant card numbers
+func (c ShopCards) Hide() ShopCards {
+	for i := range c {
+		// shorten card number
+		card := creditcard.Card{Number: c[i].Number}
+		c[i].Number, _ = card.LastFour()
+
+	}
+
+	return c
 }
 
 // =*=

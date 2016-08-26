@@ -16,6 +16,7 @@ import (
 func init() {
 	RegisterTemplate("chat", "product_buy")
 	RegisterTemplate("chat", "product_info")
+	RegisterTemplate("chat", "product_chat_init")
 }
 
 var templatesMap = map[proto_core.LeadAction]string{
@@ -24,9 +25,7 @@ var templatesMap = map[proto_core.LeadAction]string{
 }
 
 //SendProductToChat sends the product to the lead chat
-func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction, source string) error {
-	log.Debug("SendProductToChat(%v, %v, %v)", lead.ID, product.ID, action)
-
+func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction, source string, chat_init bool) error {
 	// determine whether product is special
 	var specials []uint
 	res := db.New().
@@ -66,21 +65,38 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 	if err != nil {
 		return fmt.Errorf("failed to determine whether user is new: %v", err)
 	}
+
+	if chat_init {
+		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source)
+		if err != nil {
+			return err
+		}
+	}
+
+	content, _ := json.Marshal(product.Encode())
+	err = chat.SendChatMessage(uint64(lead.CustomerID), lead.ConversationID, string(content), "text/json")
+	if err != nil {
+		return fmt.Errorf("failed to send product json to chat: %v", err)
+	}
+	return SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+}
+
+func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string) error {
 	// load templates
 	var templates []struct {
 		ChatTemplateMessage
 		TemplateName string
 		ProductID    uint
 	}
-	res = db.New().
+	res := db.New().
 		Select("msg.text, msg.position, tmpl.template_name, tmpl.product_id").
 		Table("chat_template_messages msg").
 		Joins("JOIN chat_template_cases c ON c.id = msg.case_id").
 		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
-		Where("tmpl.group = ?", templatesMap[action]).
+		Where("tmpl.group = ?", group).
 		Where("tmpl.product_id = ? OR tmpl.is_default", product.ID).
 		Where("c.for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
-		Where("c.for_new_users = ? ", count == 0).
+		Where("c.for_new_users = ? ", isNewUser).
 		Where("c.source = ?", source).
 		Order("tmpl.product_id IS NULL, msg.position").
 		Scan(&templates)
@@ -89,24 +105,19 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 	}
 	if len(templates) == 0 {
 		return fmt.Errorf(
-			"suitable tamplates not found for productID = %v with action %v",
+			"suitable tamplates not found for productID = %v with group %v",
 			product.ID,
-			proto_core.LeadAction_name[int32(action)],
+			group,
 		)
 	}
 
-	err = joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	err := joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
 	if err != nil {
 		return fmt.Errorf("failed to join chat: %v", err)
 	}
 
 	specific := templates[0].ProductID
 
-	content, _ := json.Marshal(product.Encode())
-	err = chat.SendChatMessage(uint64(lead.CustomerID), lead.ConversationID, string(content), "text/json")
-	if err != nil {
-		return fmt.Errorf("failed to send product json to chat: %v", err)
-	}
 	for _, tmpl := range templates {
 		// we are at end of specific templates(if any)
 		if tmpl.ProductID != specific {
@@ -146,20 +157,17 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 
 //SendStatusMessage sends status message
 func SendStatusMessage(conversationID uint64, statusType, value string) {
+	err := joinChat(conversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	if err != nil {
+		log.Error(fmt.Errorf("failed to join chat: %v", err))
+		return
+	}
 	content := &chat.StatusContent{
 		Type:  statusType,
 		Value: value,
 	}
-	m := &proto_chat.Message{
-		ConversationId: conversationID,
-		Parts: []*proto_chat.MessagePart{
-			{
-				Content:  content.JSON(),
-				MimeType: "json/status",
-			},
-		},
-	}
-	api.Publish("chat.status", m)
+	err = chat.SendChatMessage(uint64(SystemUser.ID), conversationID, content.JSON(), "json/status")
+	log.Error(fmt.Errorf("failed to send message: %v", err))
 }
 
 func joinChat(conversationID uint64, user *User, role proto_chat.MemberRole) error {

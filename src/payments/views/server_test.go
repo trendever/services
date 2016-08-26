@@ -32,11 +32,15 @@ type buyTest struct {
 	pay     models.Payment
 	payErr  error
 	sessErr error
+
+	finishedSess    int
+	finishedSessErr error
 }
 
 var (
 	repoMock *fixtures.MockRepo
 	gwMock   *fixtures.MockGateway
+	chatMock *fixtures.MockChatNotifier
 )
 
 func TestCreateOrder(t *testing.T) {
@@ -46,10 +50,12 @@ func TestCreateOrder(t *testing.T) {
 
 	repoMock = fixtures.NewMockRepo(mock)
 	gwMock = fixtures.NewMockGateway(mock)
+	chatMock = fixtures.NewMockChatNotifier(mock)
 
 	server := &paymentServer{
 		gateway: gwMock,
 		repo:    repoMock,
+		chat:    chatMock,
 	}
 
 	for _, test := range []createTest{
@@ -135,9 +141,23 @@ func TestCreateOrder(t *testing.T) {
 			},
 		},
 		// =======================/
+		{
+			desc: "Already payed", wantSucc: false,
+			request: payment.BuyOrderRequest{
+				PayId:  112,
+				LeadId: 421,
+			},
+			pay: models.Payment{
+				Model:  gorm.Model{ID: 112},
+				LeadID: 421,
+			},
+			finishedSess: 1,
+		},
+		// =======================/
 
 	} {
-		doBuy(t, server, &test)
+		var copy = test
+		doBuy(t, server, &copy)
 	}
 }
 
@@ -184,6 +204,9 @@ func doBuy(t *testing.T, s *paymentServer, test *buyTest) {
 		Amount:     test.pay.Amount,
 		IP:         test.ip,
 	}
+
+	repoMock.EXPECT().
+		FinishedSessionsForPayID(test.pay.ID).Return(test.finishedSess, test.finishedSessErr).MaxTimes(1)
 
 	if test.payErr == nil {
 

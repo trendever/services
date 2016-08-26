@@ -233,19 +233,48 @@ func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsRe
 	return
 }
 
+func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendMessageRequest) (reply *proto_chat.AppendMessageReply, err error) {
+
+	message, err := cs.chats.UpdateMessage(req.MessageId, models.DecodeParts(req.Parts))
+	if err != nil {
+		return nil, err
+	}
+
+	var encMsg = message.Encode()
+
+	go cs.notifyChatAboutAppendedMessage(encMsg)
+
+	return &proto_chat.AppendMessageReply{
+		Message: encMsg,
+	}, nil
+}
+
+func (cs *chatServer) notifyChatAboutAppendedMessage(msg *proto_chat.Message) {
+
+	// api needs chat because it contains users who needs notification about an event
+	chat, err := cs.chats.GetByID(uint(msg.ConversationId))
+	if err != nil {
+		return
+	}
+
+	publisher.Publish(publisher.EventMessageAppended, &proto_chat.MessageAppendedRequest{
+		Message: msg,
+		Chat:    chat.Encode(),
+	})
+}
+
 func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
 	publisher.Publish(publisher.EventMessage, &proto_chat.NewMessageRequest{
 		Chat:     chat,
 		Messages: messages,
 	})
-
 }
 
-func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, message_id, user_id uint64) {
+func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messageID, userID uint64) {
 	publisher.Publish(publisher.EventMessageReaded, &proto_chat.MessageReadedRequest{
 		Chat:      chat,
-		MessageId: message_id,
-		UserId:    user_id,
+		MessageId: messageID,
+		UserId:    userID,
 	})
 
 }

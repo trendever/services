@@ -16,8 +16,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var _ = assert.EqualValues
-
 func TestCards(t *testing.T) {
 
 	mock := gomock.NewController(t)

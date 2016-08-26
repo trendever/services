@@ -27,11 +27,6 @@ type MessagePart struct {
 	MessageID uint
 }
 
-//MessageRepository is messages repository interface
-type MessageRepository interface {
-	Create(*Message) error
-}
-
 //Encode converts message to protobuf model
 func (m *Message) Encode() *chat.Message {
 
@@ -39,7 +34,7 @@ func (m *Message) Encode() *chat.Message {
 		Id:             uint64(m.ID),
 		ConversationId: uint64(m.ConversationID),
 		UserId:         uint64(m.MemberID.Int64),
-		Parts:          m.encodeParts(),
+		Parts:          m.EncodeParts(),
 		CreatedAt:      m.CreatedAt.Unix(),
 	}
 	if m.Member != nil {
@@ -48,8 +43,8 @@ func (m *Message) Encode() *chat.Message {
 	return message
 }
 
-//encodeParts converts MessageParts to protobuf model
-func (m *Message) encodeParts() []*chat.MessagePart {
+//EncodeParts converts MessageParts to protobuf model
+func (m *Message) EncodeParts() []*chat.MessagePart {
 	parts := []*chat.MessagePart{}
 	for _, part := range m.Parts {
 		parts = append(parts, &chat.MessagePart{
@@ -66,23 +61,28 @@ func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
 		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
 		Member:   member,
-		Parts:    []*MessagePart{},
-	}
-	for _, pbPart := range pbMessage.Parts {
-		message.Parts = append(message.Parts, decodeParts(pbPart))
+		Parts:    DecodeParts(pbMessage.Parts),
 	}
 	return message
 }
 
-//NewPartFromPB creates message part from protobuf model
-func decodeParts(pbPart *chat.MessagePart) *MessagePart {
-	return &MessagePart{
-		Content:   pbPart.Content,
-		ContentID: pbPart.ContentId,
-		MimeType:  pbPart.MimeType,
+//DecodeParts decodes parts slice from protobuf model
+func DecodeParts(parts []*chat.MessagePart) []*MessagePart {
+
+	out := make([]*MessagePart, len(parts))
+
+	for i, pbPart := range parts {
+		out[i] = &MessagePart{
+			Content:   pbPart.Content,
+			ContentID: pbPart.ContentId,
+			MimeType:  pbPart.MimeType,
+		}
 	}
+
+	return out
 }
 
+// BeforeSave hook
 func (mp *MessagePart) BeforeSave() error {
 	switch mp.MimeType {
 	case "image/base64":
@@ -100,6 +100,7 @@ func (mp *MessagePart) BeforeSave() error {
 	return nil
 }
 
+// IsStatusMessage check is this message is status
 func (m *Message) IsStatusMessage() bool {
 	for _, p := range m.Parts {
 		if p.MimeType == "json/status" {

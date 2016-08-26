@@ -29,7 +29,7 @@ func (s shopCardServer) GetCards(_ context.Context, req *core.GetCardsRequest) (
 	}
 
 	return &core.GetCardsReply{
-		Cards: models.ShopCards(cards).Encode(),
+		Cards: models.ShopCards(cards).Hide().Encode(),
 	}, nil
 }
 
@@ -54,4 +54,21 @@ func (s shopCardServer) DeleteCard(_ context.Context, req *core.DeleteCardReques
 	)
 
 	return &core.DeleteCardReply{}, err
+}
+
+func (s shopCardServer) GetCardByID(_ context.Context, req *core.GetCardByIDRequest) (*core.GetCardReply, error) {
+
+	card, err := models.GetCardByID(
+		s.repo,
+		uint(req.UserId),
+		uint(req.Id),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.GetCardReply{
+		Card: card.Encode(),
+	}, nil
 }

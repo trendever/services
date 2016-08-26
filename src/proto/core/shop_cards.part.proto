@@ -3,6 +3,7 @@ service ShopCardService {
   rpc CreateCard(CreateCardRequest) returns (CreateCardReply) {}
   rpc DeleteCard(DeleteCardRequest) returns (DeleteCardReply) {}
   rpc GetCards(GetCardsRequest) returns (GetCardsReply) {}
+  rpc GetCardByID(GetCardByIDRequest) returns (GetCardReply) {}
 }
 
 message ShopCard {
@@ -36,4 +37,13 @@ message GetCardsRequest {
 
 message GetCardsReply {
   repeated ShopCard cards = 1;
+}
+
+message GetCardByIDRequest {
+  uint64 id = 1;
+  uint64 user_id = 2;
+}
+
+message GetCardReply {
+  ShopCard card = 1;
 }

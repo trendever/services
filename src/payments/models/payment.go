@@ -17,6 +17,7 @@ type Payment struct {
 	Direction      int32
 	ConversationID uint64
 	UserID         uint64 // that's client id
+	MessageID      uint64 // message id (in chat service) that contains payment button
 
 	// p2p params
 	ShopCardNumber string
@@ -55,6 +56,7 @@ type Repo interface {
 	// sess part
 	CreateSess(*Session) error
 	GetSessByUID(string) (*Session, error)
+	FinishedSessionsForPayID(pay uint) (int, error)
 	SaveSess(*Session) error
 	GetUnfinished(string) ([]Session, error)
 }
@@ -102,13 +104,26 @@ func (r *RepoImpl) GetSessByUID(uid string) (*Session, error) {
 	return &result, err
 }
 
+// FinishedSessionsForPayID returns num of successfull payments with given pay ID
+func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
+
+	var count int
+	err := r.DB.
+		Model(&Session{}).
+		Where("payment_id = ?", payID).
+		Count(&count).
+		Error
+
+	return count, err
+}
+
 // GetUnfinished returns payment by ID
 func (r *RepoImpl) GetUnfinished(gatewayType string) ([]Session, error) {
 	var result []Session
 
 	err := r.DB.
 		Where("gateway_type = ?", gatewayType).
-		Where("finished != TRUE").
+		Where("finished != TRUE or chat_notified != TRUE").
 		Preload("Payment").
 		Find(&result).
 		Error

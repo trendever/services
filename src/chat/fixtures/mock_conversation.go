@@ -180,3 +180,14 @@ func (_m *MockConversationRepository) TotalMessages(_param0 *models.Conversation
 func (_mr *_MockConversationRepositoryRecorder) TotalMessages(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TotalMessages", arg0)
 }
+
+func (_m *MockConversationRepository) UpdateMessage(_param0 uint64, _param1 []*models.MessagePart) (*models.Message, error) {
+	ret := _m.ctrl.Call(_m, "UpdateMessage", _param0, _param1)
+	ret0, _ := ret[0].(*models.Message)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConversationRepositoryRecorder) UpdateMessage(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateMessage", arg0, arg1)
+}

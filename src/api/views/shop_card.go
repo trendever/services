@@ -29,11 +29,7 @@ func GetShopCards(c *soso.Context) {
 	req := c.RequestMap
 
 	// Check ShopId correctness
-	shopID, ok := req["shop_id"].(float64)
-	if !ok || shopID <= 0 {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Incorrect shop id"))
-		return
-	}
+	shopID, _ := req["shop_id"].(float64)
 
 	// Launch RPC req
 	ctx, cancel := rpc.DefaultContext()
@@ -97,14 +93,13 @@ func CreateCard(c *soso.Context) {
 	req := c.RequestMap
 
 	// int params
-	shopID, okShopID := req["shop_id"].(float64)
+	shopID, _ := req["shop_id"].(float64)
 
 	// string params
-	cardName, okCardName := req["card_name"].(string)
+	cardName, _ := req["card_name"].(string)
 	cardNumber, okCardNumber := req["card_number"].(string)
 
-	if !okCardName || !okCardNumber || !okShopID ||
-		cardName == "" || cardNumber == "" || shopID <= 0 {
+	if !okCardNumber || cardNumber == "" {
 
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Bad parameters"))
 		return
@@ -114,7 +109,7 @@ func CreateCard(c *soso.Context) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	_, err := shopCardServiceClient.CreateCard(ctx, &core.CreateCardRequest{
+	res, err := shopCardServiceClient.CreateCard(ctx, &core.CreateCardRequest{
 		Card: &core.ShopCard{
 			Name:   cardName,
 			Number: cardNumber,
@@ -130,5 +125,23 @@ func CreateCard(c *soso.Context) {
 
 	c.SuccessResponse(map[string]interface{}{
 		"success": true,
+		"id":      res.Id,
 	})
+}
+
+func getCardNumber(userID, cardID uint64) (string, error) {
+	// Launch RPC req
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := shopCardServiceClient.GetCardByID(ctx, &core.GetCardByIDRequest{
+		Id:     cardID,
+		UserId: userID,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return res.Card.Number, nil
 }

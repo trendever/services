@@ -2,7 +2,6 @@ package views
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"api/api"
@@ -24,7 +23,7 @@ func init() {
 
 var _ = rpc.DefaultContext
 
-// GetShopCards returns cards for given shop
+// CreateOrder for given summ, card number and leadID
 func CreateOrder(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
@@ -38,8 +37,14 @@ func CreateOrder(c *soso.Context) {
 	currency, _ := req["currency"].(float64)
 	_, currencyOK := payment.Currency_name[int32(currency)]
 
-	// validated in payments service
-	shopCardNumber, _ := req["card"].(string)
+	// retrieve card number from payments service
+	shopCardID, _ := req["card"].(float64)
+	shopCardNumber, err := getCardNumber(c.Token.UID, uint64(shopCardID))
+
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
@@ -49,14 +54,12 @@ func CreateOrder(c *soso.Context) {
 	conversationID, role, err := getConversationID(c.Token.UID, uint64(leadID))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
 	}
 
-	// must be owner in his chat
-	switch role {
-	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
-		// ok
-	default:
-		c.ErrorResponse(403, soso.LevelError, fmt.Errorf("User (role=%v) not allowed to do this", role))
+	direction, err := paymentDirection(role, true)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
 
@@ -69,9 +72,9 @@ func CreateOrder(c *soso.Context) {
 		Currency: payment.Currency(currency),
 
 		LeadId:         uint64(leadID),
+		Direction:      direction,
 		UserId:         c.Token.UID,
 		ConversationId: conversationID,
-
 		ShopCardNumber: shopCardNumber,
 	})
 
@@ -91,6 +94,7 @@ func CreateOrder(c *soso.Context) {
 	})
 }
 
+// CreatePayment for given order
 func CreatePayment(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
@@ -123,11 +127,9 @@ func CreatePayment(c *soso.Context) {
 	}
 
 	// must be owner in his chat
-	switch role {
-	case core.LeadUserRole_CUSTOMER:
-		// ok
-	default:
-		c.ErrorResponse(403, soso.LevelError, errors.New("Only customer can pay stuff"))
+	direction, err := paymentDirection(role, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
 
@@ -141,9 +143,10 @@ func CreatePayment(c *soso.Context) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := paymentServiceClient.BuyOrder(ctx, &payment.BuyOrderRequest{
-		PayId:  uint64(payID),
-		LeadId: uint64(leadID),
-		Ip:     ip,
+		PayId:     uint64(payID),
+		LeadId:    uint64(leadID),
+		Direction: direction,
+		Ip:        ip,
 	})
 
 	if err != nil {
@@ -171,4 +174,21 @@ func getConversationID(userID, leadID uint64) (uint64, core.LeadUserRole, error)
 	}
 
 	return info.ConversationId, info.UserRole, nil
+}
+
+// get payment direction
+// create == if we want to create order, or use it
+func paymentDirection(role core.LeadUserRole, create bool) (payment.Direction, error) {
+
+	var isModerator = role == core.LeadUserRole_SELLER || role == core.LeadUserRole_SUPER_SELLER || role == core.LeadUserRole_SUPPLIER
+	var isClient = role == core.LeadUserRole_CUSTOMER
+
+	switch {
+	case create && isModerator, !create && isClient:
+		return payment.Direction_CLIENT_PAYS, nil
+	case create && isClient, !create && isModerator:
+		return payment.Direction_CLIENT_RECV, nil
+	}
+
+	return payment.Direction(0), errors.New("payments.view: Bad user role in the chat")
 }

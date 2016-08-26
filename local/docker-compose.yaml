@@ -6,6 +6,7 @@ services:
       - ../:/services:rw
       - /etc/ssl/certs:/etc/ssl/certs:ro
       - /etc/localtime:/etc/localtime:ro
+      - /etc/ca-certificates/:/etc/ca-certificates/:ro
   core:
     image: debian:jessie
     volumes_from:
@@ -17,6 +18,16 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+  elasticsync:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+      - nats
+      - elastic
+    command: sh -c './bin/elasticsync migrate && exec ./bin/elasticsync start'
   mail:
     image: debian:jessie
     volumes_from:
@@ -71,6 +82,15 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
 
+  elastic:
+    image: elasticsearch:latest
+    volumes:
+      - elasticdata:/usr/share/elasticsearch:rw
+    ports:
+      - 127.0.0.1:9200:9200
+      - 127.0.0.1:9300:9300
+    command: elasticsearch
+
   telegram:
     image: debian:jessie
     volumes_from:
@@ -114,10 +134,6 @@ services:
     image: "nats"
     ports:
       - 127.0.0.1:8222:8222
-  mailcatcher:
-    image: schickling/mailcatcher
-    ports:
-      - 127.0.0.1:1080:1080
   images:
     image: girokon/mandible
     ports:
@@ -128,18 +144,8 @@ services:
     image: redis
     ports:
       - 127.0.0.1:6379:6379
-  influxdb:
-    image: influxdb:alpine
-    ports:
-      - 127.0.0.1:8083:8083
-      - 127.0.0.1:8086:8086
-    volumes:
-     - influxdata:/var/lib/influxdb:rw
-  grafana:
-    image: grafana/grafana
-    ports:
-      - 127.0.0.1:3000:3000
 
 volumes:
   dbdata: {}
   influxdata: {}
+  elasticdata: {}
