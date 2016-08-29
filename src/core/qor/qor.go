@@ -39,6 +39,7 @@ var (
 		&models.TagGroup{},
 		&models.Lead{},
 		&models.SMSTemplate{},
+		&models.PushTemplate{},
 		&models.ChatTemplate{},
 		&models.ChatTemplateCase{},
 		&models.ChatTemplateMessage{},

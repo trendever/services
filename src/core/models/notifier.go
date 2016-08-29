@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/mail"
+	"proto/push"
 	"proto/sms"
+	"push/typemap"
 	"reflect"
 	"utils/log"
 	"utils/rpc"
@@ -23,9 +25,13 @@ func init() {
 	}
 	for _, t := range topics {
 		RegisterTemplate("sms", t)
+		RegisterTemplate("push", t)
 		RegisterTemplate("email", t)
 	}
 }
+
+// push notifications ttl in seconds
+var PushTTL uint64 = 60 * 3
 
 type Notifier struct {
 	mailClient mail.MailServiceClient
@@ -65,7 +71,7 @@ func (n *Notifier) NotifyByEmail(dest, about string, model interface{}) error {
 	if err != nil {
 		return err
 	}
-	msg, ok := result.(EmailMessage)
+	msg, ok := result.(*EmailMessage)
 	if !ok {
 		return errors.New("expected EmailMessage, but got " + reflect.TypeOf(msg).Name())
 	}
@@ -130,6 +136,50 @@ func (n *Notifier) NotifyBySms(phone, about string, model interface{}) error {
 	return err
 }
 
+func (n *Notifier) NotifyByPush(receivers []*push.Receiver, about string, model interface{}) error {
+	if receivers == nil || len(receivers) == 0 {
+		return errors.New("nil or empty receivers slice")
+	}
+	template := &PushTemplate{}
+	ret := n.db.Find(template, "template_id = ?", about)
+	if ret.RecordNotFound() {
+		log.Warn("push template with ID '%v' not found", about)
+		return nil
+	}
+	if ret.Error != nil {
+		return ret.Error
+	}
+	result, err := template.Execute(model)
+	if err != nil {
+		return err
+	}
+
+	msg, ok := result.(*PushMessage)
+	if !ok {
+		return errors.New("expected PushMessage, but got " + reflect.TypeOf(msg).Name())
+	}
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	if msg.Data == "" && msg.Body == "" {
+		return errors.New("empty message")
+	}
+
+	request := &push.PushRequest{
+		Receivers: receivers,
+		Message: &push.PushMessage{
+			Priority:   push.Priority_HING,
+			TimeToLive: PushTTL,
+			Title:      msg.Title,
+			Body:       msg.Body,
+			Data:       msg.Data,
+		},
+	}
+	_, err = api.PushServiceClient.Push(ctx, request)
+
+	return err
+}
+
 // NotifyByTelegram sends string message to a channel
 func (n *Notifier) NotifyByTelegram(channel string, message interface{}) error {
 	return api.NotifyByTelegram(channel, message.(string))
@@ -146,15 +196,34 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 	if user.Email != "" {
 		emailError = n.NotifyByEmail(user.Email, about, context)
 	}
-	if smsError == nil && emailError == nil {
+
+	var pushError error
+	rep := GetPushTokensRepository()
+	tokens, err := rep.GetTokens(user.ID)
+	switch {
+	case err != nil:
+		pushError = err
+	case tokens != nil && len(tokens) != 0:
+		receivers := make([]*push.Receiver, 0, len(tokens))
+		for _, token := range tokens {
+			receivers = append(receivers, &push.Receiver{
+				Service: typemap.TokenTypeToService[token.Type],
+				Token:   token.Token,
+			})
+		}
+		pushError = n.NotifyByPush(receivers, about, context)
+	}
+
+	if smsError == nil && emailError == nil && pushError == nil {
 		return nil
 	}
 	return fmt.Errorf(
-		"following errors happened while trying to notify user '%v' about %v: sms: %v; email: %v",
+		"following errors happened while trying to notify user '%v' about %v:\n\tsms: %v\n\temail: %v\n\tpush: %v",
 		user.Stringify(),
 		about,
 		smsError,
 		emailError,
+		pushError,
 	)
 }
 

@@ -210,7 +210,9 @@ func (s leadServer) CallSupplier(ctx context.Context, req *core.CallSupplierRequ
 		return nil, errors.New("Supplier doesn't have phone number")
 	}
 
-	go s.notifier.CallSupplierToChat(&supplier, lead)
+	go func() {
+		log.Error(s.notifier.CallSupplierToChat(&supplier, lead))
+	}()
 	go models.SendStatusMessage(lead.ConversationID, "suplier.called", "")
 
 	return &core.CallSupplierReply{}, nil
@@ -270,7 +272,9 @@ func (s leadServer) CallCustomer(_ context.Context, req *core.CallCustomerReques
 		return nil, errors.New("Customer doesn't have phone number")
 	}
 
-	go s.notifier.CallCustomerToChat(&customer, lead)
+	go func() {
+		log.Error(s.notifier.CallCustomerToChat(&customer, lead))
+	}()
 	go models.SendStatusMessage(lead.ConversationID, "customer.called", "")
 	return &core.CallCustomerReply{}, nil
 }

@@ -149,7 +149,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 
 		err = chat.SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, content.(string), "text/html")
 		if err != nil {
-			return fmt.Errorf("failed to send message to chat: %v", err)
+			return fmt.Errorf("failed to send status message to chat: %v", err)
 		}
 	}
 	return nil
@@ -167,7 +167,9 @@ func SendStatusMessage(conversationID uint64, statusType, value string) {
 		Value: value,
 	}
 	err = chat.SendChatMessage(uint64(SystemUser.ID), conversationID, content.JSON(), "json/status")
-	log.Error(fmt.Errorf("failed to send message: %v", err))
+	if err != nil {
+		log.Error(fmt.Errorf("failed to send message: %v", err))
+	}
 }
 
 func joinChat(conversationID uint64, user *User, role proto_chat.MemberRole) error {

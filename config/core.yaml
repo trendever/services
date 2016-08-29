@@ -9,6 +9,7 @@ rpc:
   sms: sms:12326
   chat: chat:2010
   auth: auth:8433
+  push: push:2011
   telegram: telegram:4040
 
 db:
