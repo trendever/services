@@ -62,6 +62,7 @@ type Settings struct {
 		SMS            string
 		Chat           string
 		Auth           string
+		Push           string
 		Telegram       string
 	}
 

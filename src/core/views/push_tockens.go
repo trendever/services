@@ -55,3 +55,13 @@ func (s *pushTokensServer) GetTokens(ctx context.Context, in *proto.GetTokensReq
 	}
 	return &ret, nil
 }
+
+func (s *pushTokensServer) InvalidateTokens(_ context.Context, in *proto.InvalidateTokensRequest) (*proto.InvalidateTokensResult, error) {
+	s.repo.InvalidateTokens(in.Type, in.Tokens)
+	return &proto.InvalidateTokensResult{}, nil
+}
+
+func (s *pushTokensServer) UpdateToken(_ context.Context, in *proto.UpdateTokenRequest) (*proto.UpdateTokenResult, error) {
+	s.repo.UpdateToken(in.Type, in.OldToken, in.NewToken)
+	return &proto.UpdateTokenResult{}, nil
+}

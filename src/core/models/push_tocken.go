@@ -10,7 +10,7 @@ import (
 )
 
 type PushToken struct {
-	gorm.Model
+	ID     uint64          `gorm:"primaty_key"`
 	UserId uint            `gorm:"index;unique_index:compose_unique"`
 	Type   proto.TokenType `gorm:"unique_index:compose_unique"`
 	Token  string          `gorm:"type:text;not null;unique_index:compose_unique"`
@@ -34,6 +34,8 @@ type PushTokensRepository interface {
 	AddToken(token *PushToken) error
 	DelToken(id, user_id uint) error
 	GetTokens(user_id uint) ([]PushToken, error)
+	InvalidateTokens(t proto.TokenType, tokens []string)
+	UpdateToken(t proto.TokenType, oldToken, newToken string)
 }
 
 type pushTokensRepositoryImpl struct{}
@@ -69,6 +71,17 @@ func (*pushTokensRepositoryImpl) DelToken(id, userId uint) error {
 	return nil
 }
 
+func (*pushTokensRepositoryImpl) InvalidateTokens(t proto.TokenType, tokens []string) {
+	if tokens == nil || len(tokens) == 0 {
+		return
+	}
+	db.New().Where("type = ?", t).Where("token IN (?)", tokens).Delete(PushToken{})
+}
+
+func (*pushTokensRepositoryImpl) UpdateToken(t proto.TokenType, oldToken, newToken string) {
+	db.New().Model(&PushToken{}).Where("type = ?", t).Where("token = ?", oldToken).Update("token", newToken)
+}
+
 func (*pushTokensRepositoryImpl) GetTokens(userId uint) ([]PushToken, error) {
 	var tokens []PushToken
 	res := db.New().Find(&tokens, "user_id = ?", userId)
@@ -94,7 +107,7 @@ func (t *PushToken) Encode() *proto.TokenInfo {
 
 func (t PushToken) Decode(tp *proto.TokenInfo) *PushToken {
 	return &PushToken{
-		Model:  gorm.Model{ID: uint(tp.Id)},
+		ID:     tp.Id,
 		UserId: uint(tp.UserId),
 		Type:   tp.Type,
 		Token:  tp.Token,

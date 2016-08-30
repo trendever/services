@@ -88,6 +88,43 @@ func addTemplateResource(a *admin.Admin) {
 	email.NewAttrs(attrs)
 	email.EditAttrs(attrs)
 
+	push := a.AddResource(&models.PushTemplate{}, &admin.Config{
+		Name: "Push Templates",
+		Menu: []string{"Settings"},
+	})
+	push.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["push"],
+	})
+	push.Meta(&admin.Meta{
+		Name: "Body",
+		Type: "text",
+	})
+	push.IndexAttrs(
+		"TemplateID", "TemplateName", "Title",
+	)
+	push.SearchAttrs(
+		"TemplateName", "TemplateID",
+	)
+	attrs = []*admin.Section{
+		{
+			Title: "Template settings",
+			Rows: [][]string{
+				{"TemplateID", "TemplateName"},
+			},
+		},
+		{
+			Title: "Payload",
+			Rows: [][]string{
+				{"Title"},
+				{"Body"},
+			},
+		},
+	}
+	push.NewAttrs(attrs)
+	push.EditAttrs(attrs)
+
 	chat := a.AddResource(&models.ChatTemplate{}, &admin.Config{
 		Name: "Chat templates",
 		Menu: []string{"Settings"},
