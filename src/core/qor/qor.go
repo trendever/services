@@ -38,6 +38,7 @@ var (
 		&models.ImageCandidate{},
 		&models.TagGroup{},
 		&models.Lead{},
+		&models.LeadCancelReason{},
 		&models.SMSTemplate{},
 		&models.PushTemplate{},
 		&models.ChatTemplate{},

@@ -180,7 +180,14 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	if models.CanUserChangeLeadState(lead.UserRole.String(), req.Event.String()) {
 		err = models.LeadState.Trigger(req.Event.String(), lead, db.New())
 		if err == nil {
-			if err := db.New().Model(lead).UpdateColumn("state", lead.State).Error; err != nil {
+			upd := map[string]interface{}{"state": lead.State}
+			if req.CancelReason != 0 {
+				upd["cancel_reason_id"] = req.CancelReason
+			}
+			if req.StatusComment != "" {
+				upd["status_comment"] = req.StatusComment
+			}
+			if err := db.New().Model(lead).UpdateColumns(upd).Error; err != nil {
 				log.Error(err)
 			} else {
 				go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
@@ -277,4 +284,20 @@ func (s leadServer) CallCustomer(_ context.Context, req *core.CallCustomerReques
 	}()
 	go models.SendStatusMessage(lead.ConversationID, "customer.called", "")
 	return &core.CallCustomerReply{}, nil
+}
+
+func (s leadServer) GetCancelReasons(_ context.Context, in *core.GetCancelReasonsRequest) (*core.GetCancelReasonsReply, error) {
+	var reasons []models.LeadCancelReason
+	err := db.New().Find(&reasons).Error
+	if err != nil {
+		return nil, err
+	}
+	ret := &core.GetCancelReasonsReply{Reasons: make([]*core.CancelReason, 0, len(reasons))}
+	for _, reason := range reasons {
+		ret.Reasons = append(ret.Reasons, &core.CancelReason{
+			Id:   reason.ID,
+			Name: reason.Name,
+		})
+	}
+	return ret, nil
 }
