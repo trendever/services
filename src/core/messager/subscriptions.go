@@ -46,8 +46,15 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 	}
 
 	n := models.GetNotifier()
+
+	if msg.UserId != lead.Customer.ID {
+		log.Error(n.NotifyCustomerAboutUnreadMessage(&lead.Customer, lead))
+	}
+
 	for _, seller := range lead.Shop.Sellers {
-		log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead))
+		if msg.UserId != seller.ID {
+			log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead))
+		}
 	}
 
 	if lead.Shop.NotifySupplier {
@@ -56,6 +63,8 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 			log.Error(err)
 			return
 		}
-		log.Error(n.NotifySellerAboutUnreadMessage(supplier, lead))
+		if msg.UserId != supplier.ID {
+			log.Error(n.NotifySellerAboutUnreadMessage(supplier, lead))
+		}
 	}
 }
