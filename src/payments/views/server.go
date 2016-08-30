@@ -102,6 +102,7 @@ func (ps *paymentServer) HandleNotification(c *gin.Context) {
 		if err != nil {
 			log.Error(err)
 		}
+
 	}()
 }
 

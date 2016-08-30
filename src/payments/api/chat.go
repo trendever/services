@@ -94,7 +94,8 @@ func (cn *chatNotifierImpl) SendPaymentToChat(pay *models.Payment) error {
 
 	// Step1: notify chat about message
 	message, err := json.Marshal(&payment.ChatMessageNewOrder{
-		PayId: uint64(pay.ID),
+		PayId:  uint64(pay.ID),
+		Amount: pay.Amount,
 	})
 
 	if err != nil {
