@@ -17,11 +17,15 @@ const (
 type Settings struct {
 	RPC              string
 	PushTokensServer string
-	FCMServerKey     string
-	APNPemFile       string
-	APNPemPass       string
-	APNTopic         string
-	DB               db.Settings
+	// minimal timeout between attempts to send message to receiver
+	RetryTimeout uint64
+
+	FCMServerKey string
+	APNPemFile   string
+	APNPemPass   string
+	APNSandbox   bool
+	APNTopic     string
+	DB           db.Settings
 
 	Debug     bool
 	SentryDSN string

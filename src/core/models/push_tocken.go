@@ -10,7 +10,7 @@ import (
 )
 
 type PushToken struct {
-	gorm.Model
+	ID     uint64          `gorm:"primaty_key"`
 	UserId uint            `gorm:"index;unique_index:compose_unique"`
 	Type   proto.TokenType `gorm:"unique_index:compose_unique"`
 	Token  string          `gorm:"type:text;not null;unique_index:compose_unique"`
@@ -107,7 +107,7 @@ func (t *PushToken) Encode() *proto.TokenInfo {
 
 func (t PushToken) Decode(tp *proto.TokenInfo) *PushToken {
 	return &PushToken{
-		Model:  gorm.Model{ID: uint(tp.Id)},
+		ID:     tp.Id,
 		UserId: uint(tp.UserId),
 		Type:   tp.Type,
 		Token:  tp.Token,

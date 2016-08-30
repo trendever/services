@@ -6,8 +6,8 @@ import (
 )
 
 var dbModels = []interface{}{
-	&Message{},
-	&Receiver{},
+	&PushNotify{},
+	&PushReceiver{},
 }
 
 func Migrate(drop bool) {
@@ -20,4 +20,6 @@ func Migrate(drop bool) {
 	if err := db.AutoMigrate(dbModels...).Error; err != nil {
 		log.Fatal(err)
 	}
+	db.Table("push_notifies_receivers").AddForeignKey("push_notify_id", "push_notifies(id)", "CASCADE", "RESTRICT")
+	db.Table("push_notifies_receivers").AddForeignKey("push_receiver_id", "push_receivers(id)", "CASCADE", "RESTRICT")
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/betrok/go-fcm"
 	"proto/push"
 	"push/config"
+	"push/models"
+	"time"
 	"utils/log"
 )
 
@@ -41,23 +43,27 @@ func (p *FCMPusher) Init() {
 	p.serverKey = config.Get().FCMServerKey
 }
 
-func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, error) {
+func (s *FCMPusher) Push(notify *models.PushNotify, tokens []string) (*PushResult, error) {
 	cli := fcm.NewFcmClient(s.serverKey)
 	cli.AppendDevices(tokens)
-	if msg.Data != "" {
-		raw := json.RawMessage(msg.Data)
+	if notify.Data != "" {
+		raw := json.RawMessage(notify.Data)
 		cli.SetMsgData(&raw)
 	}
-	if msg.Body != "" {
+	if notify.Body != "" {
 		cli.SetNotificationPayload(
 			&fcm.NotificationPayload{
-				Title: msg.Title,
-				Body:  msg.Body,
+				Title: notify.Title,
+				Body:  notify.Body,
 			},
 		)
 	}
-	cli.SetTimeToLive(int(msg.TimeToLive))
-	priority, ok := priorityMapFCM[msg.Priority]
+	ttl := int(notify.Expiration.Sub(time.Now()) / time.Second)
+	if ttl < 0 {
+		ttl = 0
+	}
+	cli.SetTimeToLive(ttl)
+	priority, ok := priorityMapFCM[notify.Priority]
 	if !ok {
 		return nil, errors.New("unknown priority")
 	}
@@ -66,7 +72,7 @@ func (s *FCMPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 	res, err := cli.Send()
 	// connection  error
 	if err != nil {
-		log.Debug("FCMPusher: connection error: %v, %+v", err, res)
+		log.Error(fmt.Errorf("FCMPusher: connection error: %v, %+v", err, res))
 		ret.NeedRetry = tokens
 		return &ret, nil
 	}

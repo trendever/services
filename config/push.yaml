@@ -3,11 +3,14 @@ debug: true
 rpc: :2011
 pushTokensServer: core:3005
 
+retryTimeout: 60
+
 FCMServerKey: AIzaSyBk8p7ZfqMmLay2Ma5ATD9nImyhfkQepu4
 
 APNPemFile: pushcert.pem
 #APNPemPass:
-APNTopic: com.trendever.main
+APNTopic:   com.trendever.main
+APNSandbox: true
 
 db:
     debug:    true

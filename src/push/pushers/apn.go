@@ -8,7 +8,7 @@ import (
 	"github.com/sideshow/apns2/certificate"
 	"proto/push"
 	"push/config"
-	"time"
+	"push/models"
 	"utils/log"
 )
 
@@ -42,36 +42,42 @@ func (p *APNPusher) Init() {
 	config := config.Get()
 	cert, err := certificate.FromPemFile(config.APNPemFile, config.APNPemPass)
 	_ = err
-	//if err != nil {
-	//	log.Fatal(fmt.Errorf("failed to load APN certificate: %v", err))
-	//}
-	p.cli = apns2.NewClient(cert).Production()
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to load APN certificate: %v", err))
+	}
+	p.cli = apns2.NewClient(cert)
+	if config.APNSandbox {
+		p.cli = p.cli.Development()
+	} else {
+		p.cli = p.cli.Production()
+	}
 	p.topic = config.APNTopic
 }
 
-func (s *APNPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, error) {
-	priority, ok := priorityMapAPN[msg.Priority]
+func (s *APNPusher) Push(notify *models.PushNotify, tokens []string) (*PushResult, error) {
+	priority, ok := priorityMapAPN[notify.Priority]
 	if !ok {
 		return nil, errors.New("unknown priority")
 	}
 	var ret PushResult
 	var payload APNPayload
-	if msg.Data != "" {
-		raw := json.RawMessage(msg.Data)
+	if notify.Data != "" {
+		raw := json.RawMessage(notify.Data)
 		payload.Data = &raw
 	}
-	if msg.Body != "" {
+	if notify.Body != "" {
 		payload.Aps.Alert = APNAlert{
-			Title: msg.Title,
-			Body:  msg.Body,
+			Title: notify.Title,
+			Body:  notify.Body,
 		}
 	}
 	for _, token := range tokens {
 		res, err := s.cli.Push(&apns2.Notification{
 			DeviceToken: token,
-			Expiration:  time.Now().Add(time.Duration(msg.TimeToLive) * time.Second),
+			Expiration:  notify.Expiration,
 			Payload:     payload,
 			Priority:    priority,
+			Topic:       s.topic,
 		})
 		// connection error
 		if err != nil {
@@ -82,15 +88,21 @@ func (s *APNPusher) Push(msg *push.PushMessage, tokens []string) (*PushResult, e
 		// success
 		case 200:
 
-		// 400: Bad request
 		// 405: The request used a bad :method value. Only POST requests are supported
 		// 413:	The notification payload was too large.
-		case 400, 405, 413:
+		case 405, 413:
 			return nil, fmt.Errorf("failed to send message: %v(%v)", res.Reason, res.StatusCode)
+
+		// 400: Bad request
+		case 400:
+			if res.Reason != "BadDeviceToken" {
+				return nil, fmt.Errorf("failed to send message: %v(%v)", res.Reason, res.StatusCode)
+			}
+			fallthrough
 
 		// 410: The device token is no longer active for the topic
 		case 410:
-			log.Error(fmt.Errorf("APNPusher: token '%v' is invalid: %v", token, err))
+			log.Error(fmt.Errorf("APNPusher: token '%v' is invalid: %v(%v)", token, res.Reason, res.StatusCode))
 			ret.Invalids = append(ret.Invalids, token)
 
 		// 429: The server received too many requests for the same device token.

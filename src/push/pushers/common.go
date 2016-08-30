@@ -3,6 +3,7 @@ package pushers
 import (
 	"errors"
 	"proto/push"
+	"push/models"
 )
 
 var registeredPushers = map[push.ServiceType]Pusher{}
@@ -23,7 +24,7 @@ type PushResult struct {
 
 type Pusher interface {
 	Init()
-	Push(msg *push.PushMessage, tokens []string) (*PushResult, error)
+	Push(notify *models.PushNotify, tokens []string) (*PushResult, error)
 }
 
 func registerPusher(service push.ServiceType, pusher Pusher) {

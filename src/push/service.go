@@ -13,6 +13,7 @@ import (
 	"push/pushers"
 	"push/server"
 	"syscall"
+	"time"
 	"utils/db"
 	"utils/log"
 	"utils/rpc"
@@ -88,12 +89,12 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			res, err := pusher.Push(&push.PushMessage{
+			res, err := pusher.Push(&models.PushNotify{
 				Data:       data,
 				Body:       body,
 				Title:      title,
 				Priority:   push.Priority_HING,
-				TimeToLive: 0,
+				Expiration: time.Now().Add(time.Second * 10),
 			}, []string{token})
 			if err != nil {
 				log.Fatal(fmt.Errorf("failed to push msg: %v", err))
