@@ -44,12 +44,10 @@ func NewPushServer() *PushServer {
 }
 
 func (s *PushServer) Push(_ context.Context, in *push.PushRequest) (*push.PushResult, error) {
-	json, _ := json.Marshal(struct{ URL string }{URL: "https://www.trendever.com/profile"})
-	in.Message.Data = string(json)
 	notify := models.DecodeNotify(in)
 	retries := s.pushInternal(notify)
 	// there is no need to save short-lived messages
-	if in.Message.TimeToLive > config.Get().RetryTimeout/2 {
+	if in.Message.TimeToLive > config.Get().RetryTimeout/2 || len(retries) == 0 {
 		go s.saveRetries(notify, retries)
 	}
 	return &push.PushResult{}, nil
@@ -59,6 +57,7 @@ func (s *PushServer) Stop() {
 	close(s.stop)
 }
 
+// returns service -> []tokens map of receivers for which push failed temporarily
 func (s *PushServer) pushInternal(notify *models.PushNotify) map[push.ServiceType][]string {
 	tokens := notify.MapReceivers()
 	retries := make(map[push.ServiceType][]string)
