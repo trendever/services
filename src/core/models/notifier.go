@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"proto/chat"
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
@@ -260,7 +261,7 @@ func (n *Notifier) NotifyCustomerAboutLead(customer *User, lead *Lead) error {
 	)
 }
 
-func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead) error {
+func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead, msg *chat.Message) error {
 	url, err := mkShortChatUrl(seller.ID, lead.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get lead url: %v", err)
@@ -269,14 +270,15 @@ func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead) erro
 		seller,
 		"notify_seller_about_unread_message",
 		map[string]interface{}{
-			"Seller": seller,
-			"URL":    url,
-			"Lead":   lead,
+			"Seller":  seller,
+			"URL":     url,
+			"Lead":    lead,
+			"Message": msg,
 		},
 	)
 }
 
-func (n *Notifier) NotifyCustomerAboutUnreadMessage(customer *User, lead *Lead) error {
+func (n *Notifier) NotifyCustomerAboutUnreadMessage(customer *User, lead *Lead, msg *chat.Message) error {
 	url, err := mkShortChatUrl(customer.ID, lead.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get lead url: %v", err)
@@ -288,6 +290,7 @@ func (n *Notifier) NotifyCustomerAboutUnreadMessage(customer *User, lead *Lead) 
 			"Customer": customer,
 			"URL":      url,
 			"Lead":     lead,
+			"Message":  msg,
 		},
 	)
 }

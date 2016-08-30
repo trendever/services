@@ -46,7 +46,7 @@ func (s *PushServer) Push(_ context.Context, in *push.PushRequest) (*push.PushRe
 	notify := models.DecodeNotify(in)
 	retries := s.pushInternal(notify)
 	// there is no need to save short-lived messages
-	if in.Message.TimeToLive > config.Get().RetryTimeout/2 || len(retries) == 0 {
+	if in.Message.TimeToLive > config.Get().RetryTimeout/2 && len(retries) != 0 {
 		go s.saveRetries(notify, retries)
 	}
 	return &push.PushResult{}, nil
