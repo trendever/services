@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"golang.org/x/net/context"
 	"proto/core"
