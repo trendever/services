@@ -99,7 +99,7 @@ func Login(c *soso.Context) {
 		return
 	}
 
-	user, err := GetUser(tokenData.UID)
+	user, err := GetUser(tokenData.UID, true)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
