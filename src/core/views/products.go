@@ -2,7 +2,6 @@ package views
 
 import (
 	"core/api"
-	"core/db"
 	"core/messager"
 	"core/models"
 	"core/telegram"
@@ -11,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
+	"utils/db"
 	"utils/product_code"
 )
 

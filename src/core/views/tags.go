@@ -2,11 +2,11 @@ package views
 
 import (
 	"core/api"
-	"core/db"
 	"core/models"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 )
 

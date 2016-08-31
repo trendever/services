@@ -1,7 +1,7 @@
 package models
 
 import (
-	"core/db"
+	"utils/db"
 )
 
 //GetUserByID returns user by ID

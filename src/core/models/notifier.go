@@ -2,7 +2,6 @@ package models
 
 import (
 	"core/api"
-	"core/db"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -12,6 +11,7 @@ import (
 	"proto/sms"
 	"push/typemap"
 	"reflect"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 )

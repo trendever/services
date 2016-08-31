@@ -2,11 +2,11 @@ package qor
 
 import (
 	"core/conf"
-	"core/db"
 	"core/models"
 	"core/qor/filters"
 	"core/qor/resources"
 	"net/http"
+	"utils/db"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qor/activity"

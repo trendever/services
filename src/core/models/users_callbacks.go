@@ -1,11 +1,11 @@
 package models
 
 import (
-	"core/db"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"github.com/ttacon/libphonenumber"
 	"strings"
+	"utils/db"
 	"utils/log"
 )
 

@@ -3,7 +3,6 @@ package main
 import (
 	"core/api"
 	"core/conf"
-	"core/db"
 	"core/models"
 	"core/project"
 	"encoding/json"
@@ -11,9 +10,9 @@ import (
 	"fmt"
 	"github.com/codegangsta/cli"
 	"golang.org/x/net/context"
-	_ "net/http/pprof"
 	"os"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 )
@@ -74,7 +73,8 @@ func main() {
 			Usage: "Cli client local tests",
 			Flags: testFlags,
 			Action: func(cli *cli.Context) {
-				db.Init()
+				conf.Init()
+				db.Init(&conf.GetSettings().DB)
 				switch cli.String("method") {
 				case "json_product":
 					var product models.Product

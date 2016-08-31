@@ -2,11 +2,11 @@ package models
 
 import (
 	"core/api"
-	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/core"
 	"strings"
+	"utils/db"
 )
 
 // Shop model defines virtual "Shop"

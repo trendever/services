@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"mail/db"
+	"mail/config"
 	"mail/models"
+	"utils/db"
 	"utils/log"
 )
 
@@ -13,10 +13,8 @@ var migrateCmd = &cobra.Command{
 	Short: "Runs database migration",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("Start database migration")
-		db, err := db.GetPG(viper.GetString("db.config"))
-		if err != nil {
-			log.Fatal(err)
-		}
+		db.Init(&config.Get().DB)
+		db := db.New()
 		if drop {
 			log.Warn("Drop tables")
 			db.DropTableIfExists(&models.Mail{})

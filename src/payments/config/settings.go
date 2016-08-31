@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
@@ -16,11 +17,8 @@ type Settings struct {
 
 	Debug     bool
 	SentryDSN string
-	DB        struct {
-		Conf  string
-		Debug bool
-	}
-	Payture struct {
+	DB        db.Settings
+	Payture   struct {
 		Sandbox bool
 		URL     string
 		Key     string
@@ -55,6 +53,6 @@ func Init() {
 }
 
 //Get returns an app settings
-func Get() Settings {
-	return *settings
+func Get() *Settings {
+	return settings
 }

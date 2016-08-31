@@ -4,10 +4,10 @@ import (
 	"github.com/spf13/cobra"
 	"proto/sms"
 	"sms/conf"
-	"sms/db"
 	"sms/models"
 	"sms/server"
 	"utils/cli"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 
@@ -19,12 +19,9 @@ var startCmd = &cobra.Command{
 	Short: "Starts service",
 	Run: func(cmd *cobra.Command, args []string) {
 		// initialize database
-		db.InitDB()
-		defer db.DB.Close()
+		db.Init(&conf.GetSettings().DB)
 
 		settings := conf.GetSettings()
-
-		db.DB.LogMode(settings.Debug)
 
 		sender, err := server.GetSender(settings.Sender)
 		if err != nil {
@@ -42,7 +39,7 @@ var startCmd = &cobra.Command{
 			grpcServer,
 			server.NewSmsServer(
 				sender,
-				models.MakeNewSmsRepository(db.DB),
+				models.MakeNewSmsRepository(db.New()),
 			),
 		)
 		cli.Terminate(nil)

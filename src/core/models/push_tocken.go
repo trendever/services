@@ -3,10 +3,10 @@ package models
 import (
 	"github.com/jinzhu/gorm"
 
-	"core/db"
 	"errors"
 	"fmt"
 	proto "proto/core"
+	"utils/db"
 )
 
 type PushToken struct {

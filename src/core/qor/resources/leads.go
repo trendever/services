@@ -2,7 +2,6 @@ package resources
 
 import (
 	"core/conf"
-	"core/db"
 	"core/models"
 	"core/qor/filters"
 	"errors"
@@ -11,6 +10,7 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
+	"utils/db"
 	"utils/log"
 )
 

@@ -2,7 +2,6 @@ package views
 
 import (
 	"core/api"
-	"core/db"
 	"core/models"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"proto/core"
 	"strings"
+	"utils/db"
 	"utils/log"
 )
 

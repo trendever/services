@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
@@ -66,14 +67,7 @@ type Settings struct {
 		Telegram       string
 	}
 
-	DB struct {
-		User     string
-		Password string
-		Host     string
-		Port     string
-		Name     string
-		Debug    bool
-	}
+	DB db.Settings
 
 	Bitly struct {
 		APIKey      string

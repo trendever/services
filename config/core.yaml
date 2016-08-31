@@ -18,7 +18,7 @@ db:
   password: 1234
   host:     db
   port:     5432
-  name:     postgres
+  base:     postgres
 
 elastic:
   addr: elastic:9200

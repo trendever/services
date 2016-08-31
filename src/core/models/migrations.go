@@ -1,8 +1,8 @@
 package models
 
 import (
-	"core/db"
 	"fmt"
+	"utils/db"
 )
 
 //Migrate runs migrations

@@ -3,12 +3,12 @@ package models
 import (
 	"core/api"
 	"core/chat"
-	"core/db"
 	"encoding/json"
 	"errors"
 	"fmt"
 	proto_chat "proto/chat"
 	proto_core "proto/core"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 )

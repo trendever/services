@@ -3,7 +3,6 @@ package project
 import (
 	"core/api"
 	"core/conf"
-	"core/db"
 	"core/messager"
 	"core/models"
 	"core/qor"
@@ -14,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"utils/db"
 	"utils/log"
 )
 
@@ -27,7 +27,7 @@ func (s *Service) AutoMigrate(cli *cli.Context) {
 	// init config
 	conf.Init()
 	// connect to database
-	db.Init()
+	db.Init(&conf.GetSettings().DB)
 
 	if cli.Bool("drop") {
 		err := db.
@@ -65,7 +65,7 @@ func (s *Service) Run(cli *cli.Context) {
 
 	go log.PanicLogger(func() {
 		// connect to database
-		db.Init()
+		db.Init(&conf.GetSettings().DB)
 		messager.Init()
 		if err := models.LoadOrCreateSystemUser(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))

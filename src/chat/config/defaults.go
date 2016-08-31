@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
@@ -13,7 +14,7 @@ type Settings struct {
 	Port          string
 	Host          string
 	Debug         bool
-	DB            struct{ Conf string }
+	DB            db.Settings
 	Receiver      string
 	UploadService string `mapstructure:"upload_service"`
 	SentryDSN     string
@@ -31,7 +32,6 @@ func Init() {
 	viper.SetDefault("Port", "2010")
 	viper.SetDefault("Host", "localhost")
 	viper.SetDefault("upload_service", "http://localhost:8080")
-	viper.SetDefault("DB", struct{ Conf string }{Conf: "user=postgres dbname=postgres password=1234 sslmode=disable"})
 	viper.SetDefault("Debug", true)
 	viper.SetDefault("Receiver", ":2011,:2012")
 	if err := viper.Unmarshal(settings); err != nil {
