@@ -228,3 +228,17 @@ func (s productServer) GetSpecialProducts(_ context.Context, _ *core.GetSpecialP
 	}
 	return &core.GetSpecialProductsReply{List: list}, nil
 }
+
+func (s productServer) GetLikedBy(ctx context.Context, in *core.GetLikedByRequest) (*core.GetLikedByReply, error) {
+	var ids []uint64
+	err := db.New().
+		Select("DISTINCT product_id").
+		Table("users_products").
+		Where("user_id = ?", in.UserId).
+		Where("deleted_at IS NULL").
+		Pluck("product_id", &ids).Error
+	if err != nil {
+		return nil, errors.New("db error")
+	}
+	return &core.GetLikedByReply{ProductIds: ids}, nil
+}

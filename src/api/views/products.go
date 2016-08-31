@@ -26,6 +26,7 @@ func init() {
 		soso.Route{"like", "product", LikeProduct},
 		soso.Route{"get_specials", "product", GetSpecialProducts},
 		soso.Route{"elastic_search", "product", ElasticSearch},
+		soso.Route{"get_liked_by", "product", GetLikedBy},
 	)
 }
 
@@ -262,7 +263,21 @@ func ElasticSearch(c *soso.Context) {
 
 	byOwner := false
 	if value, _ := req["mentioner_id"].(float64); value > 0 {
-		query.Filter(elastic.NewTermQuery("mentioner.id", uint64(value)))
+		liked_ids, err := getLikedBy(uint64(value))
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+		if len(liked_ids) != 0 {
+			query.Filter(
+				elastic.NewBoolQuery().Should(
+					elastic.NewTermQuery("mentioner.id", uint64(value)),
+					elastic.NewTermsQuery("_id", liked_ids),
+				),
+			)
+		} else {
+			query.Filter(elastic.NewTermQuery("mentioner.id", uint64(value)))
+		}
 		byOwner = true
 	}
 	if value, _ := req["shop_id"].(float64); value > 0 {
@@ -311,4 +326,28 @@ func ElasticSearch(c *soso.Context) {
 		})
 	}
 	c.SuccessResponse(hits)
+}
+
+// returns slice of product ids that are liked by user
+func getLikedBy(user_id uint64) ([]uint64, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	res, err := productServiceClient.GetLikedBy(ctx, &core.GetLikedByRequest{user_id})
+	return res.ProductIds, err
+}
+
+func GetLikedBy(c *soso.Context) {
+	userID, ok := c.RequestMap["user_id"].(float64)
+	if !ok {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("user_id undefined"))
+		return
+	}
+	ids, err := getLikedBy(uint64(userID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"products": ids,
+	})
 }
