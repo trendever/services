@@ -2,7 +2,7 @@
 
 cat > "$1/onbuild.sh" << EOF
   apk add --no-cache imagemagick
-  cat > cat /etc/ImageMagick-6/policy.xml << POLICY
+  cat > /etc/ImageMagick-6/policy.xml << POLICY
 <?xml version="1.0" encoding="UTF-8"?>
 <!ATTLIST policy domain (delegate|coder|filter|path|resource) #IMPLIED>
 <!ATTLIST policy name CDATA #IMPLIED>
