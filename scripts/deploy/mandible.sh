@@ -1,9 +1,15 @@
 #!/bin/sh
 
 cat > "$1/onbuild.sh" << EOF
-  sed -i 's|v[^/]\+|edge|g' /etc/apk/repositories
+  cat > /etc/apk/repositories << APK
+http://dl-cdn.alpinelinux.org/alpine/edge/main
+http://dl-cdn.alpinelinux.org/alpine/edge/community
+http://dl-cdn.alpinelinux.org/alpine/edge/testing
+APK
   apk update
-  apk add --no-cache graphicsmagick optipng
+  apk upgrade
+  apk add graphicsmagick optipng
+  rm -rf /var/cache/apk/*
   cat > /etc/ImageMagick-6/policy.xml << POLICY
 <?xml version="1.0" encoding="UTF-8"?>
 <!ATTLIST policy domain (delegate|coder|filter|path|resource) #IMPLIED>
