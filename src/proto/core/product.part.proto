@@ -14,6 +14,8 @@ service ProductService {
   rpc CreateProduct(CreateProductRequest) returns (CreateProductResult) {}
 
   rpc LikeProduct(LikeProductRequest) returns (LikeProductReply) {}
+  // returns list of product ids that are liked by user
+  rpc GetLikedBy(GetLikedByRequest) returns (GetLikedByReply) {}
   // Method returns list of product with non-default chat templates
   rpc GetSpecialProducts(GetSpecialProductsRequest) returns (GetSpecialProductsReply) {}
 }
@@ -111,6 +113,14 @@ message ImageCandidate {
   int64 id = 1;
   string url = 2;
   string name = 3;
+}
+
+message GetLikedByRequest{
+  uint64 user_id = 1;
+}
+
+message GetLikedByReply{
+  repeated uint64 product_ids = 1;
 }
 
 message LikeProductRequest {

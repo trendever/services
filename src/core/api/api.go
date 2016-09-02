@@ -11,6 +11,7 @@ import (
 	"proto/bot"
 	"proto/chat"
 	"proto/mail"
+	"proto/push"
 	"proto/sms"
 	"utils/log"
 	"utils/rpc"
@@ -38,6 +39,7 @@ var (
 	SmsServiceClient      sms.SmsServiceClient
 	ChatServiceClient     chat.ChatServiceClient
 	AuthServiceClient     auth.AuthServiceClient
+	PushServiceClient     push.PushServiceClient
 	TelegramServiceClient bot.TelegramServiceClient
 )
 
@@ -79,6 +81,9 @@ func startClients() {
 
 	authConn := rpc.Connect(conf.GetSettings().RPC.Auth)
 	AuthServiceClient = auth.NewAuthServiceClient(authConn)
+
+	pushConn := rpc.Connect(conf.GetSettings().RPC.Push)
+	PushServiceClient = push.NewPushServiceClient(pushConn)
 
 	telegramConn := rpc.Connect(conf.GetSettings().RPC.Telegram)
 	TelegramServiceClient = bot.NewTelegramServiceClient(telegramConn)

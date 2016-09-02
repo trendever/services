@@ -1,13 +1,13 @@
 package models
 
 import (
-	"core/db"
 	"database/sql"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"proto/core"
 	"strings"
 	"time"
+	"utils/db"
 )
 
 // FindLeadByID returns Lead with id

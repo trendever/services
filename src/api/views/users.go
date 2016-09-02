@@ -60,11 +60,11 @@ func GetUserProfile(c *soso.Context) {
 	})
 }
 
-func GetUser(user_id uint64) (*User, error) {
+func GetUser(user_id uint64, getShops bool) (*User, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	resp, err := userServiceClient.ReadUser(ctx, &core.ReadUserRequest{Id: user_id})
+	resp, err := userServiceClient.ReadUser(ctx, &core.ReadUserRequest{Id: user_id, GetShops: getShops})
 
 	if err != nil {
 		return nil, err

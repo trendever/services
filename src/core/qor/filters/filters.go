@@ -1,10 +1,9 @@
 package filters
 
 import (
-	"core/db"
 	"fmt"
-
 	"github.com/qor/admin"
+	"utils/db"
 	"utils/log"
 )
 

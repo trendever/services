@@ -2,6 +2,8 @@ service PushTokensService {
   rpc AddToken (AddTokenRequest) returns (ErrorResult) {}
   rpc DelToken (DelTokenRequest) returns (ErrorResult) {}
   rpc GetTokens (GetTokensRequest) returns (GetTokensResult) {}
+  rpc InvalidateTokens (InvalidateTokensRequest) returns (InvalidateTokensResult) {}
+  rpc UpdateToken (UpdateTokenRequest) returns (UpdateTokenResult) {}
 }
 
 enum TokenType {
@@ -40,3 +42,18 @@ message GetTokensResult {
   repeated TokenInfo tokens = 1;
   string error = 2;
 }
+
+message InvalidateTokensRequest {
+  TokenType type = 1;
+  repeated string tokens = 2;
+}
+
+message InvalidateTokensResult {}
+
+message UpdateTokenRequest {
+  TokenType type = 1;
+  string old_token = 2;
+  string new_token = 3;
+}
+
+message UpdateTokenResult {}

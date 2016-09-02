@@ -7,7 +7,12 @@ site_url: "http://localdev.trendever.com:3002/"
 sms_template: "Введите код {{.Password}} или перейдите по ссылке {{.Url}}"
 debug: true
 db:
-  config: "user=postgres dbname=postgres password=1234 sslmode=disable host=db"
+    debug:    true
+    user:     postgres
+    password: 1234
+    host:     db
+    port:     5432
+    base:     postgres
 bitly:
   login: o_v1v8rptir
   apiKey: R_05e4113d379c43d695030ba8fbac6edf

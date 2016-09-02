@@ -12,8 +12,8 @@ type thumbnailRequest map[string]*Thumbnail
 // Thumbnail should contain info about wanted thumbnail
 type Thumbnail struct {
 	Name   string `json:"-"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+	Width  uint   `json:"width"`
+	Height uint   `json:"height"`
 	Shape  string `json:"shape"`
 }
 

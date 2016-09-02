@@ -27,7 +27,7 @@ func addUserResource(a *admin.Admin) {
 	)
 
 	res.IndexAttrs(
-		"Name", "InstagramUsername", "InstagramCaption", "Email", "Phone",
+		"ID", "Name", "InstagramUsername", "InstagramCaption", "Email", "Phone",
 	)
 	res.ShowAttrs(
 		&admin.Section{

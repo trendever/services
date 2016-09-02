@@ -2,13 +2,13 @@ package models
 
 import (
 	"core/api"
-	"core/db"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"proto/chat"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 )

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"core/db"
 	"fmt"
+	"utils/db"
 )
 
 //Migrate runs migrations
@@ -79,6 +79,8 @@ func Migrate() error {
 	)
 	`)
 	db.New().Exec("CREATE UNIQUE INDEX unique_active_lead ON products_leads(shop_id, customer_id) WHERE state IN ('EMPTY','NEW','IN_PROGRESS') AND deleted_at IS NULL")
+
+	db.New().Model(&Lead{}).AddForeignKey("cancel_reason_id", "lead_cancel_reasons(id)", "SET NULL", "RESTRICT")
 
 	relationsIndices()
 

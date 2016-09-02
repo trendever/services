@@ -2,11 +2,11 @@ package views
 
 import (
 	"core/api"
-	"core/db"
 	"core/models"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 )
 
@@ -25,6 +25,7 @@ func (ts tagService) GetMainTags(ctx context.Context, req *core.GetMainTagsReque
 			New().
 			Where("main = ?", true).
 			Where("hidden = ?", false).
+			Where("EXISTS (SELECT 1 FROM products_product_item_tags relation WHERE relation.tag_id = products_tag.id)").
 			Limit(int(req.Limit)).
 			Find(&tags).
 			Error

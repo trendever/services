@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"chat/config"
-	"chat/db"
 	"chat/models"
 	"chat/publisher"
 	"chat/queue"
@@ -13,6 +12,7 @@ import (
 	"proto/chat"
 	"syscall"
 	"time"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 )
@@ -26,7 +26,8 @@ var cmdRun = &cobra.Command{
 
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)
 		s := rpc.Serve(conf.Host + ":" + conf.Port)
-		db := db.GetPG()
+		db.Init(&conf.DB)
+		db := db.New()
 		repository := models.NewConversationRepository(db)
 		publisher.Init(repository)
 		chat.RegisterChatServiceServer(s, server.NewChatServer(

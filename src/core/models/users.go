@@ -3,9 +3,9 @@ package models
 import (
 	"core/api"
 	"core/conf"
-	"core/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"utils/db"
 	"utils/log"
 )
 

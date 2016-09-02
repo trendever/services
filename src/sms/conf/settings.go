@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
@@ -43,7 +44,7 @@ func GetSettings() *Settings {
 type Settings struct {
 	Debug     bool
 	Rpc       string
-	DB        DB
+	DB        db.Settings
 	Sender    string
 	Atompark  Atompark
 	SentryDSN string
@@ -54,19 +55,9 @@ type Settings struct {
 		Rates    int
 	}
 	Telegram struct {
-		Rpc     string
+		RPC     string
 		Channel string
 	}
-}
-
-//DB is database settings
-type DB struct {
-	User     string
-	Password string
-	Host     string
-	Port     string
-	Name     string
-	Debug    bool
 }
 
 //Atompark is Atompark settings

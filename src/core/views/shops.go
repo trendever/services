@@ -2,13 +2,13 @@ package views
 
 import (
 	"core/api"
-	"core/db"
 	"core/models"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 )
 
