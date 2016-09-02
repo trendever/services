@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/core"
+	"savetrend/tumbmap"
 	"time"
+	"utils/log"
 )
 
 const productTable = "products_product"
@@ -101,6 +103,26 @@ func (p Product) Stringify() string {
 	}
 
 	return out
+}
+
+func (p Product) SmallestImg() *ImageCandidate {
+	if len(p.InstagramImages) == 0 {
+		return nil
+	}
+	ret := &p.InstagramImages[0]
+	var minSize uint = 100500
+	for i := range p.InstagramImages {
+		img := &p.InstagramImages[i]
+		info, ok := tumbmap.ThumbByName[img.Name]
+		if !ok {
+			continue
+		}
+		if info.Size < minSize {
+			ret = img
+			minSize = info.Size
+		}
+	}
+	return ret
 }
 
 // ImageCandidate contains instagram image info

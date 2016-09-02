@@ -2,12 +2,11 @@ package models
 
 import (
 	"core/api"
-	"core/chat"
 	"encoding/json"
 	"errors"
 	"fmt"
-	proto_chat "proto/chat"
-	proto_core "proto/core"
+	"proto/chat"
+	"proto/core"
 	"utils/db"
 	"utils/log"
 	"utils/rpc"
@@ -19,13 +18,13 @@ func init() {
 	RegisterTemplate("chat", "product_chat_init")
 }
 
-var templatesMap = map[proto_core.LeadAction]string{
-	proto_core.LeadAction_BUY:  "product_buy",
-	proto_core.LeadAction_INFO: "product_info",
+var templatesMap = map[core.LeadAction]string{
+	core.LeadAction_BUY:  "product_buy",
+	core.LeadAction_INFO: "product_info",
 }
 
 //SendProductToChat sends the product to the lead chat
-func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadAction, source string, chat_init bool) error {
+func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, source string, chat_init bool) error {
 	// determine whether product is special
 	var specials []uint
 	res := db.New().
@@ -74,7 +73,11 @@ func SendProductToChat(lead *Lead, product *Product, action proto_core.LeadActio
 	}
 
 	content, _ := json.Marshal(product.Encode())
-	err = chat.SendChatMessage(uint64(lead.CustomerID), lead.ConversationID, string(content), "text/json")
+	err = SendChatMessage(
+		uint64(lead.CustomerID),
+		lead.ConversationID,
+		&chat.MessagePart{Content: string(content), MimeType: "text/json"},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to send product json to chat: %v", err)
 	}
@@ -89,7 +92,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		ProductID    uint
 	}
 	res := db.New().
-		Select("msg.text, msg.position, tmpl.template_name, tmpl.product_id").
+		Select("msg.text, msg.image_url, msg.position, tmpl.template_name, tmpl.product_id").
 		Table("chat_template_messages msg").
 		Joins("JOIN chat_template_cases c ON c.id = msg.case_id").
 		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
@@ -112,7 +115,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		return nil
 	}
 
-	err := joinChat(lead.ConversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	err := joinChat(lead.ConversationID, &SystemUser, chat.MemberRole_SYSTEM)
 	if err != nil {
 		return fmt.Errorf("failed to join chat: %v", err)
 	}
@@ -138,17 +141,17 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			continue
 		}
 
-		str, ok := content.(string)
+		parts, ok := content.([]*chat.MessagePart)
 		if !ok {
 			log.Error(fmt.Errorf("template '%v' returned unexpected type", tmpl.TemplateName))
 			continue
 		}
-		if str == "" {
-			log.Warn("template '%v' returned empty string", tmpl.TemplateName)
+		if len(parts) == 0 {
+			log.Warn("template '%v' returned empty result", tmpl.TemplateName)
 			continue
 		}
 
-		err = chat.SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, content.(string), "text/html")
+		err = SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, parts...)
 		if err != nil {
 			return fmt.Errorf("failed to send status message to chat: %v", err)
 		}
@@ -156,33 +159,56 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 	return nil
 }
 
+//SendChatMessage sends message to chat
+func SendChatMessage(userID, conversationID uint64, parts ...*chat.MessagePart) error {
+	context, cancel := rpc.DefaultContext()
+	defer cancel()
+	_, err := api.ChatServiceClient.SendNewMessage(context, &chat.SendMessageRequest{
+		ConversationId: conversationID,
+		Messages: []*chat.Message{
+			{
+				UserId: userID,
+				Parts:  parts,
+			},
+		},
+	})
+	return err
+}
+
 //SendStatusMessage sends status message
 func SendStatusMessage(conversationID uint64, statusType, value string) {
-	err := joinChat(conversationID, &SystemUser, proto_chat.MemberRole_SYSTEM)
+	err := joinChat(conversationID, &SystemUser, chat.MemberRole_SYSTEM)
 	if err != nil {
 		log.Error(fmt.Errorf("failed to join chat: %v", err))
 		return
 	}
-	content := &chat.StatusContent{
+	content, _ := json.Marshal(struct {
+		Type  string `json:"type"`
+		Value string `json:"value,omitempty"`
+	}{
 		Type:  statusType,
 		Value: value,
-	}
-	err = chat.SendChatMessage(uint64(SystemUser.ID), conversationID, content.JSON(), "json/status")
+	})
+	err = SendChatMessage(
+		uint64(SystemUser.ID),
+		conversationID,
+		&chat.MessagePart{Content: string(content), MimeType: "json/status"},
+	)
 	if err != nil {
 		log.Error(fmt.Errorf("failed to send message: %v", err))
 	}
 }
 
-func joinChat(conversationID uint64, user *User, role proto_chat.MemberRole) error {
+func joinChat(conversationID uint64, user *User, role chat.MemberRole) error {
 	context, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	members := []*proto_chat.Member{{
+	members := []*chat.Member{{
 		UserId: uint64(user.ID), Name: user.GetName(), Role: role,
 	}}
 	resp, err := api.ChatServiceClient.JoinChat(
 		context,
-		&proto_chat.JoinChatRequest{
+		&chat.JoinChatRequest{
 			ConversationId: conversationID,
 			Members:        members,
 		},
