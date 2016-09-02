@@ -72,3 +72,5 @@ func (svc *projectService) run() error {
 
 	return nil
 }
+
+// if you see this; email to meow-I-saw-this-line@2-47.ru
