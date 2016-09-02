@@ -7,7 +7,6 @@ import (
 	"proto/core"
 	"savetrend/tumbmap"
 	"time"
-	"utils/log"
 )
 
 const productTable = "products_product"
