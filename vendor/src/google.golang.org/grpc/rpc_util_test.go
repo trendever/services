@@ -36,7 +36,6 @@ package grpc
 import (
 	"bytes"
 	"io"
-	"math"
 	"reflect"
 	"testing"
 
@@ -67,9 +66,9 @@ func TestSimpleParsing(t *testing.T) {
 	} {
 		buf := bytes.NewReader(test.p)
 		parser := &parser{r: buf}
-		pt, b, err := parser.recvMsg(math.MaxInt32)
+		pt, b, err := parser.recvMsg()
 		if err != test.err || !bytes.Equal(b, test.b) || pt != test.pt {
-			t.Fatalf("parser{%v}.recvMsg(_) = %v, %v, %v\nwant %v, %v, %v", test.p, pt, b, err, test.pt, test.b, test.err)
+			t.Fatalf("parser{%v}.recvMsg() = %v, %v, %v\nwant %v, %v, %v", test.p, pt, b, err, test.pt, test.b, test.err)
 		}
 	}
 }
@@ -89,16 +88,16 @@ func TestMultipleParsing(t *testing.T) {
 		{compressionNone, []byte("d")},
 	}
 	for i, want := range wantRecvs {
-		pt, data, err := parser.recvMsg(math.MaxInt32)
+		pt, data, err := parser.recvMsg()
 		if err != nil || pt != want.pt || !reflect.DeepEqual(data, want.data) {
-			t.Fatalf("after %d calls, parser{%v}.recvMsg(_) = %v, %v, %v\nwant %v, %v, <nil>",
+			t.Fatalf("after %d calls, parser{%v}.recvMsg() = %v, %v, %v\nwant %v, %v, <nil>",
 				i, p, pt, data, err, want.pt, want.data)
 		}
 	}
 
-	pt, data, err := parser.recvMsg(math.MaxInt32)
+	pt, data, err := parser.recvMsg()
 	if err != io.EOF {
-		t.Fatalf("after %d recvMsgs calls, parser{%v}.recvMsg(_) = %v, %v, %v\nwant _, _, %v",
+		t.Fatalf("after %d recvMsgs calls, parser{%v}.recvMsg() = %v, %v, %v\nwant _, _, %v",
 			len(wantRecvs), p, pt, data, err, io.EOF)
 	}
 }
@@ -185,8 +184,8 @@ func TestContextErr(t *testing.T) {
 
 func TestErrorsWithSameParameters(t *testing.T) {
 	const description = "some description"
-	e1 := Errorf(codes.AlreadyExists, description).(*rpcError)
-	e2 := Errorf(codes.AlreadyExists, description).(*rpcError)
+	e1 := Errorf(codes.AlreadyExists, description)
+	e2 := Errorf(codes.AlreadyExists, description)
 	if e1 == e2 {
 		t.Fatalf("Error interfaces should not be considered equal - e1: %p - %v  e2: %p - %v", e1, e1, e2, e2)
 	}

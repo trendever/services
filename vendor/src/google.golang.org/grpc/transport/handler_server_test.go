@@ -333,7 +333,7 @@ func handleStreamCloseBodyTest(t *testing.T, statusCode codes.Code, msg string) 
 		"Content-Type": {"application/grpc"},
 		"Trailer":      {"Grpc-Status", "Grpc-Message"},
 		"Grpc-Status":  {fmt.Sprint(uint32(statusCode))},
-		"Grpc-Message": {encodeGrpcMessage(msg)},
+		"Grpc-Message": {msg},
 	}
 	if !reflect.DeepEqual(st.rw.HeaderMap, wantHeader) {
 		t.Errorf("Header+Trailer mismatch.\n got: %#v\nwant: %#v", st.rw.HeaderMap, wantHeader)
@@ -381,7 +381,7 @@ func TestHandlerTransport_HandleStreams_Timeout(t *testing.T) {
 		"Content-Type": {"application/grpc"},
 		"Trailer":      {"Grpc-Status", "Grpc-Message"},
 		"Grpc-Status":  {"4"},
-		"Grpc-Message": {encodeGrpcMessage("too slow")},
+		"Grpc-Message": {"too slow"},
 	}
 	if !reflect.DeepEqual(rw.HeaderMap, wantHeader) {
 		t.Errorf("Header+Trailer Map mismatch.\n got: %#v\nwant: %#v", rw.HeaderMap, wantHeader)
