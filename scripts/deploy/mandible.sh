@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cat > "$1/onbuild.sh" << EOF
-  apk add --no-cache imagemagick
+  apk add --no-cache graphicsmagick
   cat > /etc/ImageMagick-6/policy.xml << POLICY
 <?xml version="1.0" encoding="UTF-8"?>
 <!ATTLIST policy domain (delegate|coder|filter|path|resource) #IMPLIED>
