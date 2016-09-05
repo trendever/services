@@ -7,19 +7,23 @@ service UserService {
   rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
 
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
+
+  rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserReply) {}
 }
 
 message CreateUserRequest {
   User user = 1;
 }
 
-//where instagram_id = ? OR phone = ? OR instagram_username = ?
+//where instagram_id = ? OR phone = ? OR instagram_username = ? OR name = ?
 message ReadUserRequest {
   uint64 instagram_id = 1;
   string phone = 2;
   string instagram_username = 3;
+  string name = 7;
   //direct by user.id
   uint64 id = 4;
+
   //if true PuclicEncode will be used(phone/mail will be empty)
   bool public = 5;
   //if true list of relared shops will be provided
@@ -60,6 +64,8 @@ message User {
   bool has_email = 14;
   bool has_phone = 15;
 
+  bool confirmed = 21;
+
   bool seller = 16;
   //list of shops where user is a supplier
   repeated uint64 supplier_of = 19;
@@ -68,10 +74,16 @@ message User {
 }
 
 message SetEmailRequest {
-    uint64 user_id = 1;
-    string email = 2;
+  uint64 user_id = 1;
+  string email = 2;
 }
 
 message SetEmailReply {
-    string error = 1;
+  string error = 1;
 }
+
+message ConfirmUserRequest {
+  uint64 user_id = 1;
+}
+
+message ConfirmUserReply {}
