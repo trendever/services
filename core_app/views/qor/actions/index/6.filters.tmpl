@@ -1,9 +1,9 @@
-{{ $resource := .Resource }}
 {{ $context := . }}
 {{ $inputs := filter_list $context  }}
 
 {{ range $input := $inputs }}
   {{ $meta := $input.Meta }}
+  {{ $resource := $meta.GetBaseResource }}
   {{ $input_id := $meta.Name }}
   {{ $view_url := ajaxor_url $context $resource nil }}
   {{ $filter_name := printf "filters[%v]" $input.FilterName }}
