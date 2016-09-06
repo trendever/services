@@ -40,6 +40,8 @@ func NewAuthServer(core core_protocol.UserServiceClient, sms sms_protocol.SmsSer
 	}
 }
 
+// @CHECK background contexts everywhere? why?
+
 //RegisterNewUser creates new user
 func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol.NewUserRequest) (*auth_protocol.UserReply, error) {
 	//todo: add country to request
@@ -54,6 +56,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 
 	userRequest := &core_protocol.ReadUserRequest{
 		Phone:             phoneNumber,
+		Name:              request.Username,
 		InstagramUsername: request.InstagramUsername,
 	}
 	userExists, err := s.core.ReadUser(context.Background(), userRequest)
@@ -61,8 +64,8 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 		log.Error(err)
 		return nil, err
 	}
-	//That's mean we found the user, and can't create a new user with the same phone
-	if userExists.Id > 0 && userExists.User.Phone != "" {
+	//That's mean we found confirmed user
+	if userExists.Id > 0 && userExists.User.Confirmed {
 		log.Warn("User already exists: %v", userExists)
 		return &auth_protocol.UserReply{ErrorCode: auth_protocol.ErrorCodes_USER_ALREADY_EXISTS}, nil
 	}
@@ -148,6 +151,9 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	}
 
 	s.passwords.Delete(pass)
+	if !resp.User.Confirmed {
+		go s.core.ConfirmUser(context.Background(), &core_protocol.ConfirmUserRequest{UserId: uint64(resp.Id)})
+	}
 
 	return &auth_protocol.LoginReply{Token: token}, nil
 }

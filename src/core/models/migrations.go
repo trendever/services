@@ -82,6 +82,8 @@ func Migrate() error {
 
 	db.New().Model(&Lead{}).AddForeignKey("cancel_reason_id", "lead_cancel_reasons(id)", "SET NULL", "RESTRICT")
 
+	db.New().Exec("UPDATE users_user SET confirmed = (phone != '') WHERE confirmed IS NULL")
+
 	relationsIndices()
 
 	return nil

@@ -3,13 +3,11 @@ package views
 import (
 	"core/api"
 	"core/models"
-	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
-	"strings"
 	"utils/db"
 	"utils/log"
 )
@@ -24,52 +22,27 @@ type userServer struct{}
 
 func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
 	user := models.User{}.Decode(request.User)
-	searchUser := models.User{}
+	searchUser, found, err := models.FindUserMatchAny(
+		uint64(user.ID), user.InstagramID,
+		user.Name, user.InstagramUsername,
+		user.Email, user.Phone,
+	)
 
-	query := db.New().Model(&models.User{})
-	ok := false
-
-	if request.User.Email != "" {
-		query = query.Or("email = ?", request.User.Email)
-		ok = true
+	if err != nil {
+		log.Error(err)
+		return nil, err
 	}
 
-	if request.User.InstagramUsername != "" {
-		query = query.Or("instagram_username = ?", strings.ToLower(request.User.InstagramUsername))
-		ok = true
-	}
-
-	if request.User.InstagramId != 0 {
-		query = query.Or("instagram_id = ?", request.User.InstagramId)
-		ok = true
-	}
-
-	if request.User.Phone != "" {
-		query = query.Or("phone = ?", request.User.Phone)
-		ok = true
-	}
-
-	if !ok {
-		errorf := errors.New("Incorrect request")
-		log.Error(errorf)
-		return nil, errorf
-	}
-
-	// we don't want to return RecordNotFound as an rpc error
-	req := query.Find(&searchUser)
-	err := req.Error
-
-	if req.RecordNotFound() {
+	if !found {
 		err = db.New().Create(&user).Error
-		//telegram notification, moved to user callbacks
 		log.Error(err)
 	} else {
 		//update user phone if it not exists
-		if searchUser.Phone == "" {
+		if !searchUser.Confirmed {
 			searchUser.Phone = request.User.Phone
 			db.New().Model(&searchUser).Update("phone", searchUser.Phone)
 		}
-		user = searchUser
+		user = *searchUser
 	}
 
 	return &core.ReadUserReply{
@@ -79,35 +52,19 @@ func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUs
 }
 
 func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest) (*core.ReadUserReply, error) {
-	user := models.User{}
-	scope := db.New()
+	user, found, err := models.FindUserMatchAny(
+		request.Id, request.InstagramId,
+		request.Name, request.InstagramUsername,
+		"", request.Phone,
+	)
 
-	ok := false
-	if request.Id > 0 {
-		scope = scope.Where("id = ?", request.Id)
-		ok = true
-	} else {
-		if request.InstagramId > 0 {
-			scope = scope.Or("instagram_id = ?", request.InstagramId)
-			ok = true
-		}
-		if request.Phone != "" {
-			scope = scope.Or("phone = ?", request.Phone)
-			ok = true
-		}
-		if request.InstagramUsername != "" {
-			scope = scope.Or("instagram_username = ?", strings.ToLower(request.InstagramUsername))
-			ok = true
-		}
+	if err != nil {
+		log.Error(err)
+		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("empty conditions")
-	}
-
-	query := scope.Find(&user)
-	if query.Error != nil && !query.RecordNotFound() {
-		log.Error(query.Error)
-		return nil, query.Error
+	if !found {
+		// @TODO fix code which can't handle nil User in response
+		return &core.ReadUserReply{User: &core.User{}}, nil
 	}
 
 	var cUser *core.User
@@ -116,7 +73,6 @@ func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest)
 	} else {
 		cUser = user.PrivateEncode()
 	}
-	var err error
 	if request.GetShops {
 		cUser.SupplierOf, err = models.GetShopsIDWhereUserIsSupplier(user.ID)
 		if err != nil {
@@ -146,4 +102,12 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 		return &core.SetEmailReply{Error: "unknown UserId"}, nil
 	}
 	return &core.SetEmailReply{}, nil
+}
+
+func (s userServer) ConfirmUser(_ context.Context, in *core.ConfirmUserRequest) (*core.ConfirmUserReply, error) {
+	err := db.New().Model(&models.User{}).Where("id = ?", in.UserId).Update("confirmed", true).Error
+	if err != nil {
+		log.Error(fmt.Errorf("failed to confirm user: %v", err))
+	}
+	return &core.ConfirmUserReply{}, nil
 }

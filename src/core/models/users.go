@@ -45,6 +45,8 @@ type User struct {
 	SuperSeller bool `sql:"default:false"`
 
 	previousPhone string
+	// true if the user was logged in at least once
+	Confirmed bool `sql:"default:false"`
 }
 
 // SystemUser is used if we need to send a message from system
