@@ -20,7 +20,7 @@ type Telesender struct {
 
 func NewTelesender() (server.Sender, error) {
 	s := conf.GetSettings().Telegram
-	conn := rpc.Connect(s.Rpc)
+	conn := rpc.Connect(s.RPC)
 	return &Telesender{
 		client:  bot.NewTelegramServiceClient(conn),
 		channel: s.Channel,

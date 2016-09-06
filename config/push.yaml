@@ -1,0 +1,21 @@
+debug: true
+
+rpc: :2011
+pushTokensServer: core:3005
+
+retryTimeout: 60
+
+FCMServerKey: AIzaSyBk8p7ZfqMmLay2Ma5ATD9nImyhfkQepu4
+
+APNPemFile: pushcert.pem
+#APNPemPass:
+APNTopic:   com.trendever.main
+APNSandbox: false
+
+db:
+    debug:    true
+    user:     postgres
+    password: 1234
+    host:     db
+    port:     5432
+    base:     postgres

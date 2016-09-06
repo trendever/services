@@ -5,14 +5,13 @@ import (
 	"github.com/dvsekhvalnov/jose2go"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
 const (
-	defaultDbDriver = "postgres"
-	defaultDbConfig = "user=postgres dbname=postgres password=1234 sslmode=disable"
-	defaultPort     = "12443"
-	defaultAlg      = jose.HS256
+	defaultPort = "12443"
+	defaultAlg  = jose.HS256
 )
 
 type Config struct {
@@ -23,9 +22,7 @@ type Config struct {
 	PasswordLen int    `mapstructure:"password_len"`
 	Key         string
 	Debug       bool
-	DB          struct {
-		Config string
-	}
+	DB          db.Settings
 	SiteUrl     string `mapstructure:"site_url"`
 	SmsTemplate string `mapstructure:"sms_template"`
 	Bitly       struct {
@@ -41,8 +38,6 @@ var settings = &Config{}
 func init() {
 
 	viper.SetDefault("port", defaultPort)
-	viper.SetDefault("db.dirver", defaultDbDriver)
-	viper.SetDefault("db.config", defaultDbConfig)
 	viper.SetDefault("alg", defaultAlg)
 	viper.SetDefault("password_len", 6)
 	if err := config.Load("auth"); err != nil {
@@ -68,6 +63,6 @@ func init() {
 
 }
 
-func Get() Config {
-	return *settings
+func Get() *Config {
+	return settings
 }

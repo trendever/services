@@ -1,8 +1,8 @@
 package models
 
 import (
-	"core/db"
 	"fmt"
+	"utils/db"
 )
 
 // get all tags that each product from relatedProducts(tags) has

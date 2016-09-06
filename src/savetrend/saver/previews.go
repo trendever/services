@@ -2,25 +2,32 @@ package saver
 
 import (
 	"savetrend/conf"
+	"savetrend/tumbmap"
 
 	"proto/core"
 	"utils/mandible"
 )
 
-var thumbnails = []mandible.Thumbnail{
-	{"XL", 1080, 1080, "thumb"},
-	{"L", 750, 750, "thumb"},
-	{"M_square", 480, 480, "square"},
-	{"S_square", 306, 306, "square"},
-}
-
 // image uploaders
 var (
 	mandibleURL = conf.GetSettings().MandibleURL
 
-	productUploader = mandible.New(mandibleURL, thumbnails...)
+	productUploader *mandible.Uploader
 	avatarUploader  = mandible.New(mandibleURL)
 )
+
+func init() {
+	thumbnails := []mandible.Thumbnail{}
+	for name, info := range tumbmap.ThumbByName {
+		thumbnails = append(thumbnails, mandible.Thumbnail{
+			Name:   name,
+			Width:  info.Size,
+			Height: info.Size,
+			Shape:  info.Shape,
+		})
+	}
+	mandible.New(mandibleURL, thumbnails...)
+}
 
 func generateThumbnails(imageURL string) ([]*core.ImageCandidate, error) {
 

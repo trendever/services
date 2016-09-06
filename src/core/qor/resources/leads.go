@@ -2,7 +2,6 @@ package resources
 
 import (
 	"core/conf"
-	"core/db"
 	"core/models"
 	"core/qor/filters"
 	"errors"
@@ -11,6 +10,7 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/trendever/ajaxor"
+	"utils/db"
 	"utils/log"
 )
 
@@ -80,7 +80,7 @@ func addLeadResource(a *admin.Admin) {
 		"ID", "Name", "Source", "Customer.Name", "Comment",
 	)
 	res.IndexAttrs(
-		"ID", "CreatedAt", "Customer", "Name", "Source", "ProductItems", "State",
+		"ID", "CreatedAt", "Customer", "Name", "Source", "ProductItems", "State", "CancelReason",
 	)
 	res.ShowAttrs(
 		&admin.Section{
@@ -89,8 +89,10 @@ func addLeadResource(a *admin.Admin) {
 				{"ID"},
 				{"CreatedAt"},
 				{"Source", "Comment"},
-				{"Shop"},
-				{"ProductItems", "Customer"},
+				{"Shop", "Customer"},
+				{"ProductItems"},
+				{"CancelReason"},
+				{"StatusComment"},
 			},
 		},
 	)

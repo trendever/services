@@ -1,24 +1,21 @@
 package fetcher
 
 import (
+	"github.com/codegangsta/cli"
+	"instagram_api"
 	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+	"utils/db"
+	"utils/log"
 
 	"fetcher/api"
 	"fetcher/conf"
-	"fetcher/db"
 	"fetcher/models"
-
-	"github.com/codegangsta/cli"
-	"instagram_api"
-	"utils/log"
-
 	"fetcher/views"
-	_ "github.com/lib/pq"
 )
 
 var (
@@ -38,11 +35,10 @@ type ProjectService struct{}
 // migrate
 func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
 	// initialize database
-	db.InitDB()
-	defer db.DB.Close()
+	db.Init(&conf.GetSettings().DB)
 
 	if cli.Bool("drop") {
-		err := db.DB.DropTableIfExists(modelsList...).Error
+		err := db.New().DropTableIfExists(modelsList...).Error
 		if err != nil {
 			return err
 		}
@@ -50,7 +46,7 @@ func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
 		log.Warn("Drop Tables: success.")
 	}
 
-	err := db.DB.AutoMigrate(modelsList...).Error
+	err := db.New().AutoMigrate(modelsList...).Error
 	if err != nil {
 		return err
 	}
@@ -62,9 +58,7 @@ func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
 
 // run fetching
 func (this *ProjectService) Run() error {
-	// initialize database
-	db.InitDB()
-	defer db.DB.Close()
+	db.Init(&conf.GetSettings().DB)
 
 	settings := conf.GetSettings()
 
@@ -175,13 +169,13 @@ func fetch(stories instagram_api.RecentActivityStories, mentionName string) {
 	}
 
 	// write activity to DB
-	if ok := db.DB.NewRecord(act); ok {
+	if ok := db.New().NewRecord(act); ok {
 
 		var count int
 
 		// check by pk if record exist
-		if err := db.DB.Model(&act).Where("pk = ?", act.Pk).Count(&count).Error; err == nil && count <= 0 {
-			if err := db.DB.Create(&act).Error; err != nil {
+		if err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error; err == nil && count <= 0 {
+			if err := db.New().Create(&act).Error; err != nil {
 				log.Error(err)
 			} else {
 				log.Debug("Add row: %v", act.Pk)

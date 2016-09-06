@@ -1,5 +1,11 @@
 port: 12325
+debug: true
 mailcatcher:
-  addr: "mailcatcher:25"
+    addr: "mailcatcher:25"
 db:
-  config: "user=postgres dbname=postgres password=1234 host=db sslmode=disable"
+    debug:    true
+    user:     postgres
+    password: 1234
+    host:     db
+    port:     5432
+    base:     postgres

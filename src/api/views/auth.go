@@ -37,6 +37,11 @@ func RegisterNewUser(c *soso.Context) {
 		request.Username = value
 	}
 
+	if request.InstagramUsername == "" && request.Username == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("User name or instagram name is required"))
+		return
+	}
+
 	if request.PhoneNumber == "" {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("User phone number is required"))
 		return
@@ -99,7 +104,7 @@ func Login(c *soso.Context) {
 		return
 	}
 
-	user, err := GetUser(tokenData.UID)
+	user, err := GetUser(tokenData.UID, true)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

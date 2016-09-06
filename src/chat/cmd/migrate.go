@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"chat/config"
-	"chat/db"
 	"chat/models"
 	"github.com/spf13/cobra"
 	"log"
+	"utils/db"
 )
 
 var dbModels = []interface{}{
@@ -21,7 +21,8 @@ var migrateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 		log.Println("Start database migration")
-		db := db.GetPG()
+		db.Init(&config.Get().DB)
+		db := db.New()
 
 		if drop {
 			log.Println("Drop tables")

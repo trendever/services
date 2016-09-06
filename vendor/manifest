@@ -8,6 +8,18 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/alecthomas/template",
+			"repository": "https://github.com/alecthomas/template",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/alecthomas/units",
+			"repository": "https://github.com/alecthomas/units",
+			"revision": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/armon/consul-api",
 			"repository": "https://github.com/armon/consul-api",
 			"revision": "dcfedd50ed5334f96adee43fc88518a4f095e15c",
@@ -74,6 +86,12 @@
 			"revision": "3c37d29820480639ff03fd66df00a0f27984f88d",
 			"branch": "master",
 			"path": "/service/sts"
+		},
+		{
+			"importpath": "github.com/betrok/go-fcm",
+			"repository": "https://github.com/betrok/go-fcm",
+			"revision": "081d1973de16d8fc9ce8d995b8389d9d4be86c5a",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/bradfitz/gomemcache/memcache",
@@ -615,6 +633,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/sideshow/apns2",
+			"repository": "https://github.com/sideshow/apns2",
+			"revision": "0ef66aa028afcef5a6337280ecf90aae9de706c5",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/spf13/cast",
 			"repository": "https://github.com/spf13/cast",
 			"revision": "27b586b42e29bec072fe7379259cc719e1289da6",
@@ -757,6 +781,13 @@
 			"path": "/openpgp"
 		},
 		{
+			"importpath": "golang.org/x/crypto/pkcs12",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "b35ccbc95a0eaae49fb65c5d627cb7149ed8d1ab",
+			"branch": "master",
+			"path": "/pkcs12"
+		},
+		{
 			"importpath": "golang.org/x/crypto/ssh/terminal",
 			"repository": "https://go.googlesource.com/crypto",
 			"revision": "f28b56427a527c2e35c0bcac123f0a6a8a943cd3",
@@ -850,6 +881,12 @@
 			"importpath": "google.golang.org/grpc",
 			"repository": "https://github.com/grpc/grpc-go",
 			"revision": "02fca896ff5f50c6bbbee0860345a49344b37a03",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/alecthomas/kingpin.v2",
+			"repository": "https://gopkg.in/alecthomas/kingpin.v2",
+			"revision": "e5900212cbf65b181d3d8e08308ef06a01d117cf",
 			"branch": "master"
 		},
 		{

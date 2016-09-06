@@ -28,6 +28,7 @@ func (u *User) PrivateEncode() *core.User {
 		HasEmail:           u.Email != "",
 		HasPhone:           u.Phone != "",
 		Seller:             u.IsSeller,
+		Confirmed:          u.Confirmed,
 	}
 }
 
@@ -46,6 +47,7 @@ func (u *User) PublicEncode() *core.User {
 		InstagramCaption:  u.InstagramCaption,
 		HasEmail:          u.Email != "",
 		HasPhone:          u.Phone != "",
+		Confirmed:         u.Confirmed,
 	}
 }
 

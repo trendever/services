@@ -3,10 +3,12 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/flosch/pongo2"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/sorting"
 	"github.com/qor/validations"
+	"proto/chat"
 	"strings"
 )
 
@@ -42,7 +44,8 @@ type ChatTemplateMessage struct {
 	ID     uint `gorm:"primary_key"`
 	CaseID uint `gorm:"index"`
 	sorting.Sorting
-	Text string `gorm:"type:text"`
+	Text     string `gorm:"type:text"`
+	ImageURL string `gorm:"type:text"`
 }
 
 // Validate fields
@@ -103,9 +106,44 @@ func (m ChatTemplateMessage) Validate(db *gorm.DB) {
 			fmt.Sprintf("failed to compile template: %v", err),
 		))
 	}
+	_, err = pongo2.FromString(m.ImageURL)
+	if err != nil {
+		db.AddError(validations.NewError(
+			m,
+			"ImageURL",
+			fmt.Sprintf("failed to compile template: %v", err),
+		))
+	}
 }
 
-// Execute returns ready-to-use message text
+// Execute returns ready-to-use message parts([]*chat.MessagePart)
 func (t *ChatTemplateMessage) Execute(ctx interface{}) (interface{}, error) {
-	return applyTemplate(t.Text, ctx)
+	text, err := applyTemplate(t.Text, ctx)
+	if err != nil {
+		return nil, err
+	}
+	img, err := applyTemplate(t.ImageURL, ctx)
+	if err != nil {
+		return nil, err
+	}
+	parts := make([]*chat.MessagePart, 0, 2)
+	text = strings.Trim(text, " \t\n")
+	if text != "" {
+		parts = append(parts, &chat.MessagePart{
+			Content:  text,
+			MimeType: "text/plain",
+		})
+	}
+	img = strings.Trim(img, " \t\n")
+	if img != "" {
+		if govalidator.IsURL(img) {
+			parts = append(parts, &chat.MessagePart{
+				Content:  img,
+				MimeType: "image/x-url",
+			})
+		} else {
+			return nil, fmt.Errorf("'%v' isn't valid URL", img)
+		}
+	}
+	return parts, nil
 }

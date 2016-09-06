@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"payments/config"
-	"payments/db"
 	"payments/models"
+	"utils/db"
 	"utils/log"
 )
 
@@ -19,7 +19,7 @@ var migrateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Warn("Starting database migration for payment service")
 		config.Init()
-		db.Init()
+		db.Init(&config.Get().DB)
 		db := db.New()
 
 		if drop {

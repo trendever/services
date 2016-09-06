@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"github.com/qor/validations"
@@ -29,10 +30,10 @@ type Lead struct {
 
 	ProductItems []ProductItem `gorm:"many2many:products_leads_items"`
 	Products     []*Product    `sql:"-"`
-
+	// user comment from instagram
 	Comment       string `gorm:"text"`
 	InstagramPk   string `gorm:"index"`
-	InstagramLink string // link to reposted instgram product
+	InstagramLink string // link to reposted instagram product
 
 	ConversationID uint64 `gorm:"index"`
 
@@ -44,6 +45,20 @@ type Lead struct {
 	IsNotified bool `gorm:"index"`
 	//ChatUpdatedAt is a field for sorting leads
 	ChatUpdatedAt time.Time `gorm:"index"`
+
+	CancelReasonID sql.NullInt64
+	CancelReason   LeadCancelReason `gorm:"ForeignKey:CancelReasonID"`
+	// comment about lead status
+	StatusComment string `gorm:"text"`
+}
+
+type LeadCancelReason struct {
+	ID   uint64 `gorm:"primary_key"`
+	Name string `gorm:"text"`
+}
+
+func (r LeadCancelReason) Stringify() string {
+	return r.Name
 }
 
 // Validate lead
@@ -83,6 +98,8 @@ func (l *Lead) Encode() *core.LeadInfo {
 		ConversationId: l.ConversationID,
 		UserRole:       l.UserRole,
 		UpdatedAt:      l.ChatUpdatedAt.UnixNano(),
+		CancelReason:   uint64(l.CancelReasonID.Int64),
+		StatusComment:  l.StatusComment,
 	}
 
 	//if l.ProductItems != nil {
