@@ -47,6 +47,7 @@ message ChatMessagePaymentFinished {
   uint64 pay_id = 1;
   bool success = 3;
   uint64 amount = 4;
+  Currency currency = 5;
   Direction direction = 6;
 }
 
