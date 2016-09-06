@@ -26,7 +26,7 @@ func init() {
 			Shape:  info.Shape,
 		})
 	}
-	mandible.New(mandibleURL, thumbnails...)
+	productUploader = mandible.New(mandibleURL, thumbnails...)
 }
 
 func generateThumbnails(imageURL string) ([]*core.ImageCandidate, error) {
