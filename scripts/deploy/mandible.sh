@@ -8,6 +8,7 @@ http://dl-cdn.alpinelinux.org/alpine/edge/testing
 APK
   apk update
   apk upgrade
-  apk add graphicsmagick optipng
+  ln -sv /usr/bin/graphicsmagick /usr/bin/convert
+  apk add graphicsmagick optipng libjpeg-turbo-utils exiftool
   rm -rf /var/cache/apk/*
 EOF
