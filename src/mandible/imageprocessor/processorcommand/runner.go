@@ -9,6 +9,8 @@ import (
 )
 
 func runProcessorCommand(command string, args []string) error {
+	log.Printf("Running %v %v", command, args)
+
 	cmd := exec.Command(command, args...)
 
 	var out bytes.Buffer
