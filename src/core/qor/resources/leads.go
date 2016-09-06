@@ -23,7 +23,7 @@ type leadEvent struct {
 	Handler  func(*admin.ActionArgument, *gorm.DB, interface{}) error
 }
 
-type AddProductActionArg struct {
+type ProductArg struct {
 	ProductID uint64
 	Product   models.Product
 }
@@ -117,7 +117,7 @@ func addLeadResource(a *admin.Admin) {
 
 	addTransitionActions(a, res)
 
-	argRes := a.NewResource(&AddProductActionArg{})
+	argRes := a.NewResource(&ProductArg{})
 	ajaxor.Meta(argRes, &admin.Meta{
 		Name: "Product",
 		Type: "select_one",
@@ -126,7 +126,7 @@ func addLeadResource(a *admin.Admin) {
 	res.Action(&admin.Action{
 		Name: "Add product",
 		Handle: func(argument *admin.ActionArgument) error {
-			arg, ok := argument.Argument.(*AddProductActionArg)
+			arg, ok := argument.Argument.(*ProductArg)
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
@@ -149,6 +149,22 @@ func addLeadResource(a *admin.Admin) {
 		Resource: argRes,
 		Modes:    []string{"show", "menu_item"},
 	})
+
+	res.Filter(&admin.Filter{
+		Name: "products_filter",
+		Handler: func(fieldName string, value string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+			return scope.Where(
+				`EXISTS (
+					SELECT 1 FROM products_leads_items related
+					JOIN products_product_item item
+					ON related.product_item_id = item.id
+					WHERE item.product_id = ? AND related.lead_id = products_leads.id
+				)`,
+				value)
+		},
+	})
+
+	filters.AddFilter(res, argRes.GetMeta("Product"), "products_filter", "select_one", "wat")
 }
 
 // and typical actions for changing order state

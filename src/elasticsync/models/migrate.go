@@ -26,7 +26,7 @@ func Migrate(drop bool) {
 	el := ewrapper.Cli()
 	if drop {
 		log.Warn("Droping tables")
-		db.DropTableIfExists(dbModels)
+		db.DropTableIfExists(dbModels...)
 		log.Warn("Droping indexes")
 		for _, index := range elasticIndexes {
 			el.DeleteIndex(index.name).Do()

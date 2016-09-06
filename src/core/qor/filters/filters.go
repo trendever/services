@@ -113,3 +113,12 @@ func MetaFilter(resource *admin.Resource, metaName, operation string) {
 	resource.UseTheme("filter-workaround")
 	resource.UseTheme("jquery.query-object")
 }
+
+func AddFilter(res *admin.Resource, meta *admin.Meta, filterName, metaType, placeholder string) {
+	filters[res] = append(filters[res], filter{
+		Meta:        meta,
+		FilterName:  filterName,
+		Type:        metaType,
+		Placeholder: placeholder,
+	})
+}

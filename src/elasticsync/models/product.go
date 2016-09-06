@@ -31,6 +31,10 @@ const ProductIndex = `{
 "mappings": {
 	"product": {
 		"properties": {
+			"id": {
+				"type": "long",
+				"include_in_all": false
+			},
 			"code": {
 				"type": "string",
 				"index": "not_analyzed"
@@ -142,6 +146,7 @@ type ElasticProductImage struct {
 }
 
 type ElasticProductData struct {
+	ID      uint64 `json:"id"`
 	Code    string `json:"code"`
 	Title   string `json:"title,omitempty"`
 	Caption string `json:"caption,omitempty"`
