@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+	"mail/config"
 	"mail/models"
 	"proto/mail"
 	"strings"
@@ -21,7 +21,7 @@ type Mailer interface {
 }
 
 func MakeNewMailServer(mailer Mailer, mails models.MailRepository) mail.MailServiceServer {
-	return &Server{mailer: mailer, mails: mails, defaultFromAddress: viper.GetString("from")}
+	return &Server{mailer: mailer, mails: mails, defaultFromAddress: config.Get().From}
 }
 
 func (s *Server) Send(ctx context.Context, m *mail.MessageRequest) (*mail.StatusReply, error) {

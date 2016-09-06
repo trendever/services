@@ -105,7 +105,7 @@ func ChatJoin(c *soso.Context) {
 		return
 	}
 
-	user, err := GetUser(c.Token.UID)
+	user, err := GetUser(c.Token.UID, false)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

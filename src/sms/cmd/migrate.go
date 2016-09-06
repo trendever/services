@@ -3,8 +3,9 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"log"
-	"sms/db"
+	"sms/conf"
 	"sms/models"
+	"utils/db"
 )
 
 var (
@@ -17,10 +18,9 @@ var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Runs database migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		db.InitDB()
-		defer db.DB.Close()
+		db.Init(&conf.GetSettings().DB)
 		if drop {
-			err := db.DB.DropTableIfExists(modelsList...).Error
+			err := db.New().DropTableIfExists(modelsList...).Error
 			if err != nil {
 				log.Fatalf("Can't drop tables: %v", err)
 			}
@@ -28,7 +28,7 @@ var migrateCmd = &cobra.Command{
 			log.Println("Drop Tables: success.")
 		}
 
-		if err := db.DB.AutoMigrate(modelsList...).Error; err != nil {
+		if err := db.New().AutoMigrate(modelsList...).Error; err != nil {
 			log.Fatalf("Can't migreate tables: %v", err)
 		}
 

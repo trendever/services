@@ -27,7 +27,8 @@ func addUserResource(a *admin.Admin) {
 	)
 
 	res.IndexAttrs(
-		"Name", "InstagramUsername", "InstagramCaption", "Email", "Phone",
+		"ID", "Name", "InstagramUsername", "InstagramCaption",
+		"Email", "Phone", "Confirmed",
 	)
 	res.ShowAttrs(
 		&admin.Section{
@@ -37,7 +38,7 @@ func addUserResource(a *admin.Admin) {
 				{"Name"},
 				{"Email", "Phone"},
 				{"Website"},
-				{"IsAdmin", "IsSeller", "SuperSeller", "IsScout"},
+				{"IsAdmin", "IsSeller", "SuperSeller", "IsScout", "Confirmed"},
 				{"Caption"},
 				{"Slogan"},
 			},
@@ -56,10 +57,17 @@ func addUserResource(a *admin.Admin) {
 		res.NewAttrs(res.ShowAttrs())
 	}
 
-	res.EditAttrs(res.ShowAttrs(), "-CreatedAt")
+	res.EditAttrs(res.ShowAttrs(), "-CreatedAt", "-Confirmed")
 
 	filters.MetaFilter(res, "CreatedAt", "gt")
 	filters.MetaFilter(res, "CreatedAt", "lt")
+
+	res.Scope(&admin.Scope{
+		Name: "Only confirmed users",
+		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+			return db.Where("confirmed = ?", true)
+		},
+	})
 
 	res.Scope(&admin.Scope{
 		Name:  "With phone",

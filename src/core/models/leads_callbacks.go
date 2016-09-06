@@ -1,8 +1,8 @@
 package models
 
 import (
-	"core/db"
 	"proto/core"
+	"utils/db"
 	"utils/log"
 )
 

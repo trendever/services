@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -8,6 +9,7 @@ import (
 	"gopkg.in/flosch/pongo2.v3"
 	"regexp"
 	"strings"
+	"utils/log"
 )
 
 // Template is a common interface for all the models
@@ -69,19 +71,16 @@ type SMSTemplate struct {
 	Message string `gorm:"type:text"`
 }
 
-//GetFrom returns from
-func (em *EmailMessage) GetFrom() string {
-	return em.From
+type PushMessage struct {
+	Title string `gorm:"type:text"`
+	Body  string `gorm:"type:text"`
+	// always URL, there is no need in template
+	Data string `gorm:"-"`
 }
 
-//GetSubject returns subject
-func (em *EmailMessage) GetSubject() string {
-	return em.Subject
-}
-
-//GetMessage returns message
-func (em *EmailMessage) GetMessage() string {
-	return em.Body
+type PushTemplate struct {
+	BaseNotifierTemplate
+	PushMessage
 }
 
 // TableName for gorm
@@ -92,6 +91,10 @@ func (t EmailTemplate) TableName() string {
 // TableName for gorm
 func (t SMSTemplate) TableName() string {
 	return "settings_templates_sms"
+}
+
+func (t PushTemplate) TableName() string {
+	return "settings_templates_push"
 }
 
 // Validate fields
@@ -138,6 +141,25 @@ func (t SMSTemplate) Validate(db *gorm.DB) {
 	}
 }
 
+func (t PushTemplate) Validate(db *gorm.DB) {
+	t.BaseNotifierTemplate.Validate(db)
+	sources := map[string]string{
+		"Title": t.Title,
+		"Body":  t.Body,
+		"Data":  t.Data,
+	}
+	for column, str := range sources {
+		_, err := pongo2.FromString(str)
+		if err != nil {
+			db.AddError(validations.NewError(
+				t,
+				column,
+				fmt.Sprintf("Failed to compile template: %v", err),
+			))
+		}
+	}
+}
+
 // Execute returns MessageFields object with ready-to-use fields
 func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
@@ -166,6 +188,38 @@ func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 // Execute returns ready-to-use message text
 func (t *SMSTemplate) Execute(ctx interface{}) (interface{}, error) {
 	return applyTemplate(t.Message, ctx)
+}
+
+// setting data to string from ctx["URL"] is hardcoded, you need this field in context or data will be empty
+func (t *PushTemplate) Execute(ctx interface{}) (interface{}, error) {
+	title, err := applyTemplate(t.Title, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := applyTemplate(t.Body, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data string
+	if ctxMap, ok := ctx.(map[string]interface{}); ok {
+		if url, ok := ctxMap["URL"]; ok {
+			if str, ok := url.(string); ok {
+				json, _ := json.Marshal(struct{ URL string }{URL: str})
+				data = string(json)
+			}
+		}
+	}
+	if data == "" {
+		log.Warn("push template: URL string field not found in context, data will be empty")
+	}
+
+	return &PushMessage{
+		Title: title,
+		Body:  body,
+		Data:  data,
+	}, nil
 }
 
 // applyTemplate applies template from string to ctx and returns result

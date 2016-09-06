@@ -3,18 +3,18 @@ debug: true
 rpc: 0.0.0.0:3006
 
 db:
-  user: postgres
+  debug:    true
+  user:     postgres
   password: 1234
-  host: db
-  port: 5432
-  name: postgres
-  debug: true
+  host:     db
+  port:     5432
+  base:     postgres
 
 instagram:
   timeoutMin: 2000
   timeoutMax: 20000
   users:
-    - username: happierall2
-      password: 555777
-    #    - username: admin_trend
-    #  password: 555777
+    - username: nmstrs1
+      password: pass4ig
+    - username: nmstrs2
+      password: pass4ig

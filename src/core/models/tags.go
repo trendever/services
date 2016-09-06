@@ -83,9 +83,11 @@ func (t Tag) Decode(tag *core.Tag) Tag {
 
 //Encode converts collection to core.Tag collection
 func (t Tags) Encode() []*core.Tag {
-	results := make([]*core.Tag, len(t))
-	for i, v := range t {
-		results[i] = v.Encode()
+	results := make([]*core.Tag, 0, len(t))
+	for _, v := range t {
+		if !v.Hidden {
+			results = append(results, v.Encode())
+		}
 	}
 	return results
 }

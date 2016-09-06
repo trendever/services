@@ -2,10 +2,10 @@ package views
 
 import (
 	"fetcher/api"
-	"fetcher/db"
 	"fetcher/models"
 	"golang.org/x/net/context"
 	"proto/bot"
+	"utils/db"
 	"utils/log"
 )
 
@@ -47,7 +47,7 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 
 	result := []models.Activity{}
 
-	req := db.DB.
+	req := db.New().
 		Order("updated_at asc").
 		Limit(int(in.Limit))
 

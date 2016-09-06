@@ -5,12 +5,12 @@ sender: telegram
 debug: true
 
 db:
-  user: postgres
+  debug:    true
+  user:     postgres
   password: 1234
-  host: db
-  port: 5432
-  name: postgres
-  debug: true
+  host:     db
+  port:     5432
+  base:     postgres
 
 atompark:
   test:        1

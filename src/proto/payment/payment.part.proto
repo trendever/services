@@ -39,23 +39,27 @@ message BuyOrderReply {
 // chat messages
 message ChatMessageNewOrder {
   uint64 pay_id = 1;
+  uint64 amount = 2;
+  Currency currency = 3;
 }
 
 message ChatMessagePaymentFinished {
   uint64 pay_id = 1;
   bool success = 3;
   uint64 amount = 4;
+  Currency currency = 5;
   Direction direction = 6;
 }
 
 enum Currency {
   RUB = 0;
   USD = 1;
+  COP = 2;
 }
 
 enum Errors {
   OK = 0;
-  
+
   // internal errors
   INVALID_DATA = 1;
   DB_FAILED = 2;

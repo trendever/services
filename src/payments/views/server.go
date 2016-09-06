@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"utils/db"
 	"utils/log"
 	"utils/rpc"
 
 	"payments/api"
 	"payments/config"
-	"payments/db"
 	"payments/models"
 	"payments/payture"
 	"proto/payment"
@@ -102,6 +102,7 @@ func (ps *paymentServer) HandleNotification(c *gin.Context) {
 		if err != nil {
 			log.Error(err)
 		}
+
 	}()
 }
 

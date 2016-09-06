@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
+	"utils/db"
 	"utils/log"
 )
 
@@ -39,18 +40,9 @@ func GetSettings() *Settings {
 type Settings struct {
 	Debug     bool
 	RPC       string
-	DB        DB
+	DB        db.Settings
 	Instagram Instagram
 	SentryDSN string
-}
-
-type DB struct {
-	User     string
-	Password string
-	Host     string
-	Port     string
-	Name     string
-	Debug    bool
 }
 
 type Instagram struct {

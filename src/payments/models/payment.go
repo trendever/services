@@ -22,6 +22,7 @@ type Payment struct {
 	// p2p params
 	ShopCardNumber string
 	Amount         uint64
+	Currency       int32
 }
 
 // Session once-used pay sess
@@ -174,6 +175,12 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 
 		// must convert to cops (1/100 of rub)
 		pay.Amount = r.Amount * 100
+		pay.Currency = int32(payment.Currency_COP)
+
+	case payment.Currency_COP:
+
+		pay.Amount = r.Amount
+		pay.Currency = int32(payment.Currency_COP)
 
 	default:
 		// unknown currency! panic

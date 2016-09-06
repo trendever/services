@@ -25,6 +25,7 @@ func init() {
 		soso.Route{"list", "lead", GetUserLeads},
 		soso.Route{"retrieve", "lead", GetUserLead},
 		soso.Route{"event", "lead", SetLeadStatus},
+		soso.Route{"get_cancel_reasons", "lead", GetCancelReasons},
 	)
 }
 
@@ -168,6 +169,21 @@ func GetUserLeads(c *soso.Context) {
 	})
 }
 
+func GetCancelReasons(c *soso.Context) {
+	// @TODO cache it?
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := leadServiceClient.GetCancelReasons(ctx, &core.GetCancelReasonsRequest{})
+	if err != nil {
+		log.Error(fmt.Errorf("failed to get cancel reasons: %v", err))
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"reasons": resp.Reasons,
+	})
+}
+
 func SetLeadStatus(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
@@ -197,6 +213,13 @@ func SetLeadStatus(c *soso.Context) {
 		return
 	}
 
+	if value, ok := req["cancel_reason"].(float64); ok {
+		request.CancelReason = uint64(value)
+	}
+	if value, ok := req["status_commet"].(string); ok {
+		request.StatusComment = value
+	}
+
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := leadServiceClient.SetLeadStatus(ctx, request)
@@ -220,6 +243,7 @@ func SetLeadStatus(c *soso.Context) {
 			remote_ctx := soso.NewRemoteContext("lead", "retrieve", r)
 
 			go chat.BroadcastMessage(lead.Chat.Members, c, remote_ctx)
+		} else {
 			log.Error(fmt.Errorf("Chat with id %v not found", lead.ConversationId))
 		}
 

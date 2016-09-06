@@ -5,9 +5,9 @@ import (
 	"os/signal"
 	//"payments/api"
 	"payments/config"
-	"payments/db"
 	"payments/views"
 	"syscall"
+	"utils/db"
 	"utils/log"
 
 	"github.com/spf13/cobra"
@@ -22,7 +22,7 @@ var cmdRun = &cobra.Command{
 		config.Init()
 
 		//	api.Init()
-		db.Init()
+		db.Init(&config.Get().DB)
 		views.Init()
 
 		// interrupt

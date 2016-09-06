@@ -12,6 +12,7 @@ service LeadService {
   rpc SetLeadStatus (SetLeadStatusRequest) returns (SetLeadStatusReply){}
   rpc CallSupplier(CallSupplierRequest) returns (CallSupplierReply){}
   rpc CallCustomer(CallCustomerRequest) returns (CallCustomerReply){}
+  rpc GetCancelReasons(GetCancelReasonsRequest) returns (GetCancelReasonsReply) {}
 }
 
 message ReadLeadRequest {
@@ -117,13 +118,17 @@ message LeadInfo {
     uint64 conversation_id = 11;
     Shop shop = 12;
     int64 updated_at = 13;
+
+    uint64 cancel_reason = 15;
+    string status_comment = 16;
 }
 
 message SetLeadStatusRequest {
     uint64 lead_id = 1;
     LeadStatusEvent event = 2;
     uint64 user_id = 3;
-
+    uint64 cancel_reason = 4;
+    string status_comment = 5;
 }
 
 message SetLeadStatusReply {
@@ -157,3 +162,16 @@ message GetLeadRequest {
 message GetLeadReply {
     LeadInfo lead = 1;
 }
+
+message GetCancelReasonsRequest{}
+
+message CancelReason {
+    uint64 id = 1;
+    string name = 2;
+}
+
+message GetCancelReasonsReply {
+    repeated CancelReason reasons = 1;
+}
+
+
