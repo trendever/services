@@ -15,6 +15,13 @@ var (
 	chatClient chat.ChatServiceClient
 )
 
+// Mime types
+const (
+	newOrder    = "json/order"
+	cancelOrder = "json/cancel_order"
+	newPayment  = "json/payment"
+)
+
 // ChatNotifier is mockable chat-notifier interface
 type ChatNotifier interface {
 	// create pay button
@@ -68,7 +75,7 @@ func (cn *chatNotifierImpl) SendSession(sess *models.Session) error {
 		sess.Payment.UserID,
 		sess.Payment.ConversationID,
 		string(message),
-		"json/payment",
+		newPayment,
 	)
 
 	if err != nil {
@@ -83,7 +90,7 @@ func (cn *chatNotifierImpl) SendSession(sess *models.Session) error {
 	err = cn.appendStatusMessage(
 		sess.Payment.MessageID,
 		string(message),
-		"json/payment",
+		newPayment,
 	)
 
 	if err != nil {
@@ -107,7 +114,18 @@ func (cn *chatNotifierImpl) SendCancelOrder(pay *models.Payment) error {
 	err = cn.appendStatusMessage(
 		pay.MessageID,
 		string(message),
-		"json/cancel_order",
+		cancelOrder,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = cn.sendStatusMessage(
+		pay.UserID,
+		pay.ConversationID,
+		string(message),
+		cancelOrder,
 	)
 
 	if err != nil {
@@ -135,7 +153,7 @@ func (cn *chatNotifierImpl) SendPayment(pay *models.Payment) error {
 		pay.UserID,
 		pay.ConversationID,
 		string(message),
-		"json/order",
+		newOrder,
 	)
 
 	if err != nil {
