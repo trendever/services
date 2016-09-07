@@ -346,12 +346,6 @@
 			"path": "/pkg/escape"
 		},
 		{
-			"importpath": "github.com/jinzhu/configor",
-			"repository": "https://github.com/jinzhu/configor",
-			"revision": "fb7a3183cd987802d006408fe3a4a9e1f6002ece",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/jinzhu/gorm",
 			"repository": "https://github.com/jinzhu/gorm",
 			"revision": "b507cdf93d0629e7177a70df20932bd834c92b03",
@@ -393,18 +387,6 @@
 			"repository": "https://github.com/kr/text",
 			"revision": "7cafcd837844e784b526369c9bce262804aebc60",
 			"branch": "main"
-		},
-		{
-			"importpath": "github.com/lann/builder",
-			"repository": "https://github.com/lann/builder",
-			"revision": "f22ce00fd9394014049dad11c244859432bd6820",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/lann/ps",
-			"repository": "https://github.com/lann/ps",
-			"revision": "62de8c46ede02a7675c4c79c84883eb164cb71e3",
-			"branch": "master"
 		},
 		{
 			"importpath": "github.com/lib/pq",
@@ -540,12 +522,6 @@
 			"importpath": "github.com/pborman/uuid",
 			"repository": "https://github.com/pborman/uuid",
 			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/pkg/profile",
-			"repository": "https://github.com/pkg/profile",
-			"revision": "7b053ad66e2a49baca9cc97b982dcea0e182bda4",
 			"branch": "master"
 		},
 		{
@@ -764,12 +740,6 @@
 			"importpath": "github.com/trendever/ajaxor",
 			"repository": "https://github.com/trendever/ajaxor",
 			"revision": "abeefbebf3ef6209b89a13f9d6cf61b43b946619",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/trustmaster/go-aspell",
-			"repository": "https://github.com/trustmaster/go-aspell",
-			"revision": "b1cc0c2c49f83195f1708a1e6d23967d94817296",
 			"branch": "master"
 		},
 		{
@@ -1010,13 +980,6 @@
 			"path": "/bigquery/v2"
 		},
 		{
-			"importpath": "google.golang.org/api/container/v1",
-			"repository": "https://code.googlesource.com/google-api-go-client",
-			"revision": "66a8bc6d16488febe10aa767dce67cbf3e7dd21d",
-			"branch": "master",
-			"path": "/container/v1"
-		},
-		{
 			"importpath": "google.golang.org/api/gensupport",
 			"repository": "https://code.googlesource.com/google-api-go-client",
 			"revision": "66a8bc6d16488febe10aa767dce67cbf3e7dd21d",
@@ -1113,25 +1076,11 @@
 			"path": "/compute/metadata"
 		},
 		{
-			"importpath": "google.golang.org/cloud/container",
-			"repository": "https://code.googlesource.com/gocloud-legacy",
-			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
-			"branch": "master",
-			"path": "/container"
-		},
-		{
 			"importpath": "google.golang.org/cloud/datastore",
 			"repository": "https://code.googlesource.com/gocloud-legacy",
 			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
 			"branch": "master",
 			"path": "/datastore"
-		},
-		{
-			"importpath": "google.golang.org/cloud/examples",
-			"repository": "https://code.googlesource.com/gocloud-legacy",
-			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
-			"branch": "master",
-			"path": "/examples"
 		},
 		{
 			"importpath": "google.golang.org/cloud/internal",
@@ -1245,13 +1194,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "google.golang.org/grpc/benchmark",
-			"repository": "https://github.com/grpc/grpc-go",
-			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
-			"branch": "master",
-			"path": "/benchmark"
-		},
-		{
 			"importpath": "google.golang.org/grpc/codes",
 			"repository": "https://github.com/grpc/grpc-go",
 			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
@@ -1264,13 +1206,6 @@
 			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
 			"branch": "master",
 			"path": "/credentials"
-		},
-		{
-			"importpath": "google.golang.org/grpc/examples",
-			"repository": "https://github.com/grpc/grpc-go",
-			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
-			"branch": "master",
-			"path": "/examples"
 		},
 		{
 			"importpath": "google.golang.org/grpc/grpclog",
@@ -1323,12 +1258,6 @@
 			"importpath": "gopkg.in/flosch/pongo2.v3",
 			"repository": "https://gopkg.in/flosch/pongo2.v3",
 			"revision": "5e81b817a0c48c1c57cdf1a9056cf76bdee02ca9",
-			"branch": "master"
-		},
-		{
-			"importpath": "gopkg.in/fsnotify.v1",
-			"repository": "https://gopkg.in/fsnotify.v1",
-			"revision": "a8a77c9133d2d6fd8334f3260d06f60e8d80a5fb",
 			"branch": "master"
 		},
 		{

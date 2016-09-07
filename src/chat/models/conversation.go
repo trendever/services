@@ -138,14 +138,15 @@ func (c *conversationRepositoryImpl) GetMember(model *Conversation, userID uint6
 	return
 }
 
-func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) (messages []*Message, err error) {
-	messages = []*Message{}
+func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) ([]*Message, error) {
+
+	messages := []*Message{}
 	scope := c.db.
-		Preload("Parts").
+		Preload("Parts", func(db *gorm.DB) *gorm.DB { return db.Order("id asc") }). // force sorting of parts by id
 		Preload("Member").
 		Model(&Message{}).
 		Where("conversation_id = ?", chat.ID)
-		//Order("created_at desc")
+
 	if fromMessageID > 0 {
 		if direction { // if true -- from new to old
 			scope = scope.Where("id < ?", fromMessageID)
@@ -153,18 +154,21 @@ func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageI
 			scope = scope.Where("id > ?", fromMessageID)
 		}
 	}
+
 	if direction {
 		scope = scope.Order("created_at desc")
 	} else {
 		scope = scope.Order("created_at asc")
 	}
+
 	if limit > 0 {
 		scope = scope.Limit(int(limit))
 	} else {
 		scope = scope.Limit(20)
 	}
-	err = scope.Find(&messages).Error
-	return
+
+	err := scope.Find(&messages).Error
+	return messages, err
 }
 
 func (c *conversationRepositoryImpl) TotalMessages(chat *Conversation) uint64 {
