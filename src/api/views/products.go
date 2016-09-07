@@ -305,7 +305,7 @@ func ElasticSearch(c *soso.Context) {
 	if text != "" {
 		query.Must(elastic.NewMatchQuery("_all", text))
 	} else {
-		search = search.Sort("_uid", true)
+		search = search.Sort("id", false)
 	}
 
 	res, err := search.Query(query).Do()

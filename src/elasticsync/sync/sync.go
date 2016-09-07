@@ -173,6 +173,7 @@ WHERE
 		if err != nil {
 			return
 		}
+		p.Data.ID = p.Meta.ID
 		p.Data.Shop.ID = uint64(shop_id.Int64)
 		p.Data.Mentioner.ID = uint64(mentioner_id.Int64)
 		p.Meta.SourceUpdatedAt = maxNullTime(times)
