@@ -23,7 +23,6 @@ func init() {
 		soso.Route{"join", "chat", ChatJoin},
 		soso.Route{"leave", "chat", ChatLeave},
 		soso.Route{"search", "message", ChatHistory},
-		soso.Route{"list", "chat", ChatList},
 		soso.Route{"call_supplier", "chat", CallSupplierToChat},
 		soso.Route{"call_customer", "chat", CallCustomerToChat},
 	)
@@ -240,29 +239,6 @@ func ChatHistory(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"error":    resp.Error,
 		"messages": resp.Messages,
-	})
-}
-
-func ChatList(c *soso.Context) {
-	if c.Token == nil {
-		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
-		return
-	}
-	request := &proto_chat.UserChatsRequest{
-		UserId: c.Token.UID,
-	}
-
-	ctx, cancell := rpc.DefaultContext()
-	defer cancell()
-	resp, err := chatClient.GetUserChats(ctx, request)
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	c.SuccessResponse(map[string]interface{}{
-		"error": resp.Error,
-		"chats": resp.Chats,
 	})
 }
 
