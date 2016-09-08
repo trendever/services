@@ -65,7 +65,7 @@ func LoadOrCreateSystemUser() error {
 }
 
 //Users is an array of users
-type Users []User
+type Users []*User
 
 // returns something that can be used like first name
 func (u User) getName() string {

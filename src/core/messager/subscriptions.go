@@ -53,7 +53,7 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 
 	for _, seller := range lead.Shop.Sellers {
 		if msg.UserId != uint64(seller.ID) {
-			log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead, msg))
+			log.Error(n.NotifySellerAboutUnreadMessage(seller, lead, msg))
 		}
 	}
 

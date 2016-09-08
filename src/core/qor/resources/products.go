@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -9,6 +10,7 @@ import (
 
 	"core/models"
 	"core/qor/filters"
+	"utils/db"
 )
 
 func init() {
@@ -220,5 +222,43 @@ func addProductResource(a *admin.Admin) {
 				tagrel.product_id = products_product.id AND tagrel.tag_id = ?
 			`, query)
 		},
+	})
+
+	type userArg struct {
+		UserID uint64
+		User   models.User
+	}
+	userArgRes := a.NewResource(&userArg{})
+	ajaxor.Meta(userArgRes, &admin.Meta{
+		Name: "User",
+		Type: "select_one",
+	})
+
+	res.Action(&admin.Action{
+		Name: "Set supplier",
+		Handle: func(argument *admin.ActionArgument) error {
+			arg, ok := argument.Argument.(*userArg)
+			if !ok {
+				return errors.New("unxepected argument type")
+			}
+			shop_id, err := models.FindOrCreateShopForSupplier(&arg.User)
+			if err != nil {
+				return err
+			}
+			for _, record := range argument.FindSelectedRecords() {
+				product, ok := record.(models.Product)
+				if !ok {
+					return errors.New("unxepected record type")
+				}
+				product.ShopID = uint(shop_id)
+				err := db.New().Save(&product).Error
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Resource: userArgRes,
+		Modes:    []string{"show", "menu_item"},
 	})
 }
