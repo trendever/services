@@ -27,8 +27,6 @@ var cmdTest = &cobra.Command{
 			resp, err = join(c)
 		case "history":
 			resp, err = history(c)
-		case "userChats":
-			resp, err = userChats(c)
 		case "chats":
 			resp, err = chats(c)
 		case "readed":
@@ -117,12 +115,6 @@ func history(c chat.ChatServiceClient) (interface{}, error) {
 		UserId:         userID,
 		FromMessageId:  fromID,
 		Limit:          limit,
-	})
-}
-
-func userChats(c chat.ChatServiceClient) (interface{}, error) {
-	return c.GetUserChats(context.Background(), &chat.UserChatsRequest{
-		UserId: userID,
 	})
 }
 

@@ -46,3 +46,15 @@ func Load(name string) error {
 	// read local
 	return viper.ReadInConfig()
 }
+
+// LoadStruct loads config and decodes in to struct config
+func LoadStruct(name string, config interface{}) error {
+	err := Load(name)
+
+	if err != nil {
+		return err
+	}
+
+	err = viper.Unmarshal(config)
+	return err
+}

@@ -15,14 +15,24 @@ var (
 	chatClient chat.ChatServiceClient
 )
 
+// Mime types
+const (
+	newOrder    = "json/order"
+	cancelOrder = "json/cancel_order"
+	newPayment  = "json/payment"
+)
+
 // ChatNotifier is mockable chat-notifier interface
 type ChatNotifier interface {
 	// create pay button
 	// return created message ID
-	SendPaymentToChat(pay *models.Payment) error
+	SendPayment(pay *models.Payment) error
 
 	// use when session is in FINISHED state; create pay service msg; delete pay button
-	SendSessionToChat(sess *models.Session) error
+	SendSession(sess *models.Session) error
+
+	// use when we want to cancel order
+	SendCancelOrder(pay *models.Payment) error
 }
 
 type chatNotifierImpl struct {
@@ -44,8 +54,8 @@ func Init() {
 	chatClient = chat.NewChatServiceClient(rpc.Connect(settings.ChatServer))
 }
 
-// SendSessionToChat notifies chat about session finish
-func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
+// SendSession notifies chat about session finish
+func (cn *chatNotifierImpl) SendSession(sess *models.Session) error {
 
 	// STEP1: send status message
 	message, err := json.Marshal(&payment.ChatMessagePaymentFinished{
@@ -65,7 +75,7 @@ func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
 		sess.Payment.UserID,
 		sess.Payment.ConversationID,
 		string(message),
-		"json/payment",
+		newPayment,
 	)
 
 	if err != nil {
@@ -80,7 +90,7 @@ func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
 	err = cn.appendStatusMessage(
 		sess.Payment.MessageID,
 		string(message),
-		"json/payment",
+		newPayment,
 	)
 
 	if err != nil {
@@ -90,8 +100,43 @@ func (cn *chatNotifierImpl) SendSessionToChat(sess *models.Session) error {
 	return nil
 }
 
-// SendPaymentToChat notifies chat about new payment order
-func (cn *chatNotifierImpl) SendPaymentToChat(pay *models.Payment) error {
+// SendPayment notifies chat about new payment order
+func (cn *chatNotifierImpl) SendCancelOrder(pay *models.Payment) error {
+
+	// Step1: notify chat about message
+	message, err := json.Marshal(&payment.ChatMessageOrderCancelled{
+		PayId: uint64(pay.ID),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = cn.appendStatusMessage(
+		pay.MessageID,
+		string(message),
+		cancelOrder,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = cn.sendStatusMessage(
+		pay.UserID,
+		pay.ConversationID,
+		string(message),
+		cancelOrder,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SendPayment notifies chat about new payment order
+func (cn *chatNotifierImpl) SendPayment(pay *models.Payment) error {
 
 	// Step1: notify chat about message
 	message, err := json.Marshal(&payment.ChatMessageNewOrder{
@@ -108,7 +153,7 @@ func (cn *chatNotifierImpl) SendPaymentToChat(pay *models.Payment) error {
 		pay.UserID,
 		pay.ConversationID,
 		string(message),
-		"json/order",
+		newOrder,
 	)
 
 	if err != nil {

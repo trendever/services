@@ -18,6 +18,7 @@ type Payment struct {
 	ConversationID uint64
 	UserID         uint64 // that's client id
 	MessageID      uint64 // message id (in chat service) that contains payment button
+	Cancelled      bool   `sql:"default:false"` // sender side can cancel payment
 
 	// p2p params
 	ShopCardNumber string

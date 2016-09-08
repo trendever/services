@@ -29,22 +29,32 @@ func (_m *MockChatNotifier) EXPECT() *_MockChatNotifierRecorder {
 	return _m.recorder
 }
 
-func (_m *MockChatNotifier) SendPaymentToChat(_param0 *models.Payment) error {
-	ret := _m.ctrl.Call(_m, "SendPaymentToChat", _param0)
+func (_m *MockChatNotifier) SendCancelOrder(_param0 *models.Payment) error {
+	ret := _m.ctrl.Call(_m, "SendCancelOrder", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockChatNotifierRecorder) SendPaymentToChat(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SendPaymentToChat", arg0)
+func (_mr *_MockChatNotifierRecorder) SendCancelOrder(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SendCancelOrder", arg0)
 }
 
-func (_m *MockChatNotifier) SendSessionToChat(_param0 *models.Session) error {
-	ret := _m.ctrl.Call(_m, "SendSessionToChat", _param0)
+func (_m *MockChatNotifier) SendPayment(_param0 *models.Payment) error {
+	ret := _m.ctrl.Call(_m, "SendPayment", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockChatNotifierRecorder) SendSessionToChat(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SendSessionToChat", arg0)
+func (_mr *_MockChatNotifierRecorder) SendPayment(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SendPayment", arg0)
+}
+
+func (_m *MockChatNotifier) SendSession(_param0 *models.Session) error {
+	ret := _m.ctrl.Call(_m, "SendSession", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockChatNotifierRecorder) SendSession(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SendSession", arg0)
 }

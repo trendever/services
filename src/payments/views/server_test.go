@@ -43,7 +43,7 @@ var (
 	chatMock *fixtures.MockChatNotifier
 )
 
-func TestCreateOrder(t *testing.T) {
+func TestChatServer(t *testing.T) {
 
 	mock := gomock.NewController(t)
 	defer mock.Finish()
@@ -51,6 +51,10 @@ func TestCreateOrder(t *testing.T) {
 	repoMock = fixtures.NewMockRepo(mock)
 	gwMock = fixtures.NewMockGateway(mock)
 	chatMock = fixtures.NewMockChatNotifier(mock)
+
+	// @TODO: EXPECT only needed times of chat calls
+	chatMock.EXPECT().
+		SendPayment(gomock.Any()).MinTimes(0)
 
 	server := &paymentServer{
 		gateway: gwMock,
