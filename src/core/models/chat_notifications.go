@@ -115,7 +115,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		return nil
 	}
 
-	err := joinChat(lead.ConversationID, &SystemUser, chat.MemberRole_SYSTEM)
+	err := joinChat(lead.ConversationID, chat.MemberRole_SYSTEM, &SystemUser)
 	if err != nil {
 		return fmt.Errorf("failed to join chat: %v", err)
 	}
@@ -177,7 +177,7 @@ func SendChatMessage(userID, conversationID uint64, parts ...*chat.MessagePart) 
 
 //SendStatusMessage sends status message
 func SendStatusMessage(conversationID uint64, statusType, value string) {
-	err := joinChat(conversationID, &SystemUser, chat.MemberRole_SYSTEM)
+	err := joinChat(conversationID, chat.MemberRole_SYSTEM, &SystemUser)
 	if err != nil {
 		log.Error(fmt.Errorf("failed to join chat: %v", err))
 		return
@@ -199,13 +199,21 @@ func SendStatusMessage(conversationID uint64, statusType, value string) {
 	}
 }
 
-func joinChat(conversationID uint64, user *User, role chat.MemberRole) error {
+func joinChat(conversationID uint64, role chat.MemberRole, users ...*User) error {
+	if conversationID == 0 || len(users) == 0 {
+		return nil
+	}
 	context, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	members := []*chat.Member{{
-		UserId: uint64(user.ID), Name: user.GetName(), Role: role,
-	}}
+	var members []*chat.Member
+	for _, user := range users {
+		members = append(members, &chat.Member{
+			UserId: uint64(user.ID),
+			Name:   user.GetName(),
+			Role:   role,
+		})
+	}
 	resp, err := api.ChatServiceClient.JoinChat(
 		context,
 		&chat.JoinChatRequest{
