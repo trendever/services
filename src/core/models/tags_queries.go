@@ -39,7 +39,7 @@ func relatedTagsIds(tags []int64, limit int) ([]int64, error) {
 			fmt.Sprintf(" ON (%v.product_item_id = finrel.product_item_id AND finrel.tag_id NOT IN (?))", relname),
 			tags,
 		).
-		Joins("INNER JOIN products_tag as pt ON (pt.id = finrel.tag_id AND pt.main = false AND hidden = false)").
+		Joins("INNER JOIN products_tag as pt ON (pt.id = finrel.tag_id AND hidden = false)").
 		Joins("INNER JOIN products_product as pr ON (pr.id = it.product_id AND is_sale = true AND pr.deleted_at is null)").
 		// filter out groups
 		Joins("INNER JOIN products_tag_group as grp ON (grp.id = pt.group_id AND grp.name != pt.name)")
