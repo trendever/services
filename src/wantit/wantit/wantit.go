@@ -34,9 +34,10 @@ type textField struct {
 type ProjectService struct{}
 
 var (
-	lastChecked    = int64(0)
-	pool           *instagram_api.Pool
-	settings       = conf.GetSettings()
+	lastChecked = int64(0)
+	pool        *instagram_api.Pool
+	settings    = conf.GetSettings()
+	// @TODO products with big id will have more symbols
 	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
 	avatarUploader = mandible.New(conf.GetSettings().MandibleURL)
 )

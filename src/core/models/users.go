@@ -1,7 +1,6 @@
 package models
 
 import (
-	"core/api"
 	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -154,13 +153,4 @@ func (u *User) GetName() string {
 		return u.Name
 	}
 	return "User"
-}
-
-//AfterUpdate is a gorm callback
-func (u *User) AfterUpdate() {
-	go api.Publish("core.user.flush", u.ID)
-}
-
-func (u *User) AfterDelete() {
-	go api.Publish("core.user.flush", u.ID)
 }

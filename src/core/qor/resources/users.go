@@ -4,6 +4,7 @@ import (
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
+	"errors"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
@@ -159,6 +160,21 @@ func addUserResource(a *admin.Admin) {
 			return db.
 				Joins("LEFT JOIN products_shops shop ON users_user.id = shop.supplier_id AND shop.deleted_at IS NULL").
 				Where("shop.id IS NULL OR NOT EXISTS (SELECT 1 FROM products_product product WHERE product.shop_id = shop.id AND product.deleted_at IS NULL)")
+		},
+	})
+
+	res.Action(&admin.Action{
+		Name:  "Check instagram",
+		Modes: []string{"index", "menu_item"},
+		Handle: func(arg *admin.ActionArgument) error {
+			for _, record := range arg.FindSelectedRecords() {
+				user, ok := record.(models.User)
+				if !ok {
+					return errors.New("unexpected record type")
+				}
+				user.CheckInstagram()
+			}
+			return nil
 		},
 	})
 }

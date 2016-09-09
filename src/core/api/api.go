@@ -2,18 +2,22 @@ package api
 
 import (
 	"core/conf"
+	"errors"
 	"fmt"
-	"net/url"
-
 	"github.com/timehop/go-bitly"
 	"google.golang.org/grpc"
+	"instagram_api"
+	"math/rand"
+	"net/url"
 	"proto/auth"
 	"proto/bot"
 	"proto/chat"
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
+	"time"
 	"utils/log"
+	"utils/mandible"
 	"utils/rpc"
 )
 
@@ -41,6 +45,9 @@ var (
 	AuthServiceClient     auth.AuthServiceClient
 	PushServiceClient     push.PushServiceClient
 	TelegramServiceClient bot.TelegramServiceClient
+
+	ImageUploader *mandible.Uploader
+	Instagram     *instagram_api.Pool
 )
 
 // Telegram channel destanations
@@ -70,23 +77,51 @@ func AddOnStartCallback(cb callbackFunc) {
 
 // startClients starts RPC connections to external services
 func startClients() {
-	mailConn := rpc.Connect(conf.GetSettings().RPC.Mail)
+	config := conf.GetSettings()
+	mailConn := rpc.Connect(config.RPC.Mail)
 	MailServiceClient = mail.NewMailServiceClient(mailConn)
 
-	smsConn := rpc.Connect(conf.GetSettings().RPC.SMS)
+	smsConn := rpc.Connect(config.RPC.SMS)
 	SmsServiceClient = sms.NewSmsServiceClient(smsConn)
 
-	chatConn := rpc.Connect(conf.GetSettings().RPC.Chat)
+	chatConn := rpc.Connect(config.RPC.Chat)
 	ChatServiceClient = chat.NewChatServiceClient(chatConn)
 
-	authConn := rpc.Connect(conf.GetSettings().RPC.Auth)
+	authConn := rpc.Connect(config.RPC.Auth)
 	AuthServiceClient = auth.NewAuthServiceClient(authConn)
 
-	pushConn := rpc.Connect(conf.GetSettings().RPC.Push)
+	pushConn := rpc.Connect(config.RPC.Push)
 	PushServiceClient = push.NewPushServiceClient(pushConn)
 
-	telegramConn := rpc.Connect(conf.GetSettings().RPC.Telegram)
+	telegramConn := rpc.Connect(config.RPC.Telegram)
 	TelegramServiceClient = bot.NewTelegramServiceClient(telegramConn)
+
+	ImageUploader = mandible.New(config.MandibleURL)
+
+	initInstagramPool()
+}
+
+func initInstagramPool() {
+	rand.Seed(time.Now().Unix())
+	config := &conf.GetSettings().Instagram
+	Instagram = instagram_api.NewPool(&config.Pool)
+	for {
+		activeCount := 0
+		for _, user := range config.Users {
+			item, err := instagram_api.NewInstagram(user.Name, user.Pass)
+			if err != nil {
+				log.Error(fmt.Errorf("failed to add instagram user %v: %v", user.Name, err))
+				continue
+			}
+			activeCount++
+			Instagram.Add(item)
+		}
+		if activeCount != 0 {
+			return
+		}
+		log.Error(errors.New("we don't have any active instagram accaounts"))
+		time.Sleep(5 * time.Second)
+	}
 }
 
 // GetBitly returns Bitly client

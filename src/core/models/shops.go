@@ -87,7 +87,6 @@ func (s Shop) Encode() *core.Shop {
 
 //Decode converts core.Shop to Shop
 func (s Shop) Decode(cs *core.Shop) Shop {
-	// @CHECK: why was that necessary?
 	if cs == nil {
 		return s
 	}
