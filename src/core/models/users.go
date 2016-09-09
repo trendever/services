@@ -20,7 +20,7 @@ type User struct {
 	AvatarURL string `gorm:"text"`
 
 	// Instagram fields
-	InstagramID        uint64
+	InstagramID        uint64 `gorm:"index"`
 	InstagramUsername  string `gorm:"index"`
 	InstagramFullname  string
 	InstagramAvatarURL string
@@ -158,5 +158,9 @@ func (u *User) GetName() string {
 
 //AfterUpdate is a gorm callback
 func (u *User) AfterUpdate() {
+	go api.Publish("core.user.flush", u.ID)
+}
+
+func (u *User) AfterDelete() {
 	go api.Publish("core.user.flush", u.ID)
 }

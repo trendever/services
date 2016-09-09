@@ -16,7 +16,7 @@ type Shop struct {
 	gorm.Model
 
 	// Instagram fields
-	InstagramID        uint64
+	InstagramID        uint64 `gorm:"index"`
 	InstagramUsername  string `gorm:"index"`
 	InstagramFullname  string
 	InstagramAvatarURL string
@@ -259,7 +259,7 @@ func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint64, err error) {
 	return
 }
 
-func FindOrCreateShopForSupplier(supplier *User) (shop_id uint64, err error) {
+func FindOrCreateShopForSupplier(supplier *User) (shopID uint64, err error) {
 	existing, err := GetShopsIDWhereUserIsSupplier(supplier.ID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to check fot existing shop: %v", err)
@@ -274,9 +274,7 @@ func FindOrCreateShopForSupplier(supplier *User) (shop_id uint64, err error) {
 		InstagramAvatarURL: supplier.InstagramAvatarURL,
 		InstagramCaption:   supplier.InstagramCaption,
 		SupplierID:         supplier.ID,
-		//NotifySupplier:     supplier.Confirmed
-		// @TODO savetrend uploads InstagramAvatarURL with Mandible and set it here
-		//AvatarURL: ?
+		AvatarURL:          supplier.AvatarURL,
 	}
 	err = db.New().Save(&new).Error
 	if err != nil {
