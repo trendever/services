@@ -1,4 +1,4 @@
-package instagram_api
+package instagram
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 		isLoggedIn: false,
 		uuid:       generateUUID(true),
 		phoneId:    generateUUID(true),
-		deviceId:   generateDeviceId(userName),
+		deviceId:   generateDeviceID(userName),
 		userNameId: 0,
 		rankToken:  "",
 		cookies:    nil,
@@ -57,7 +57,7 @@ func (this *Instagram) GetUserName() string {
 // Login to Instagram.
 func (this *Instagram) Login() error {
 
-	fetch := API_URL + "/si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false)
+	fetch := URL + "/si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false)
 
 	resp, err := this.requestLogin("GET", fetch, nil)
 	if err != nil {
@@ -90,7 +90,7 @@ func (this *Instagram) Login() error {
 
 	signature := generateSignature(jsonData)
 
-	resp, err = this.requestLogin("POST", API_URL+"/accounts/login/?", bytes.NewReader([]byte(signature)))
+	resp, err = this.requestLogin("POST", URL+"/accounts/login/?", bytes.NewReader([]byte(signature)))
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (this *Instagram) Login() error {
 // Get media likers.
 func (this *Instagram) GetMediaLikers(mediaId string) (*MediaLikers, error) {
 
-	endpoint := API_URL + "/media/" + mediaId + "/likers/?"
+	endpoint := URL + "/media/" + mediaId + "/likers/?"
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -144,7 +144,7 @@ func (this *Instagram) GetMediaLikers(mediaId string) (*MediaLikers, error) {
 // Get media comments.
 func (this *Instagram) GetMediaComment(mediaId string) (*MediaComment, error) {
 
-	endpoint := API_URL + "/media/" + mediaId + "/comments/?"
+	endpoint := URL + "/media/" + mediaId + "/comments/?"
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -163,7 +163,7 @@ func (this *Instagram) GetMediaComment(mediaId string) (*MediaComment, error) {
 // Get media by id.
 func (this *Instagram) GetMedia(mediaId string) (*Medias, error) {
 
-	endpoint := API_URL + "/media/" + mediaId + "/info/?"
+	endpoint := URL + "/media/" + mediaId + "/info/?"
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -182,7 +182,7 @@ func (this *Instagram) GetMedia(mediaId string) (*Medias, error) {
 // Get recent activity.
 func (this *Instagram) GetRecentActivity() (*RecentActivity, error) {
 
-	endpoint := API_URL + "/news/inbox/?"
+	endpoint := URL + "/news/inbox/?"
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -201,7 +201,7 @@ func (this *Instagram) GetRecentActivity() (*RecentActivity, error) {
 // Search users.
 func (this *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 
-	endpoint := API_URL + "/users/search/?ig_sig_key_version=" + SIG_KEY_VERSION +
+	endpoint := URL + "/users/search/?ig_sig_key_version=" + SigKeyVersion +
 		"&is_typeahead=true&query=" + query + "&rank_token=" + this.rankToken
 
 	resp, err := this.request("GET", endpoint, nil)
@@ -221,7 +221,7 @@ func (this *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 // Get username info.
 func (this *Instagram) GetUserNameInfo(userNameId int64) (*UserNameInfo, error) {
 
-	endpoint := API_URL + "/users/" + strconv.FormatInt(userNameId, 10) + "/info/?"
+	endpoint := URL + "/users/" + strconv.FormatInt(userNameId, 10) + "/info/?"
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -240,7 +240,7 @@ func (this *Instagram) GetUserNameInfo(userNameId int64) (*UserNameInfo, error) 
 // Get user tags.
 func (this *Instagram) GetUserTags(userNameId int64) (*UserTags, error) {
 
-	endpoint := API_URL + "/usertags/" + strconv.FormatInt(userNameId, 10) + "/feed/?rank_token=" +
+	endpoint := URL + "/usertags/" + strconv.FormatInt(userNameId, 10) + "/feed/?rank_token=" +
 		this.rankToken + "&ranked_content=false"
 
 	resp, err := this.request("GET", endpoint, nil)
@@ -260,7 +260,7 @@ func (this *Instagram) GetUserTags(userNameId int64) (*UserTags, error) {
 // Search tags.
 func (this *Instagram) SearchTags(query string) (*SearchTags, error) {
 
-	endpoint := API_URL + "/tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + this.rankToken
+	endpoint := URL + "/tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + this.rankToken
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -279,7 +279,7 @@ func (this *Instagram) SearchTags(query string) (*SearchTags, error) {
 // Get tagged media.
 func (this *Instagram) TagFeed(tag, maxId string) (*TagFeed, error) {
 
-	endpoint := API_URL + "/feed/tag/" + tag + "/?rank_token=" + this.rankToken + "&ranked_content=false&max_id=" + maxId
+	endpoint := URL + "/feed/tag/" + tag + "/?rank_token=" + this.rankToken + "&ranked_content=false&max_id=" + maxId
 
 	resp, err := this.request("GET", endpoint, nil)
 	if err != nil {
@@ -302,7 +302,7 @@ func (this *Instagram) requestLogin(method, endpoint string, body io.Reader) (*h
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", USER_AGENT)
+	req.Header.Add("User-Agent", UserAgent)
 	req.Header.Add("Accept", "*/*")
 	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
 	req.Header.Add("Accept-Language", "en-US")
@@ -321,7 +321,7 @@ func (this *Instagram) requestMain(method, endpoint string, body io.Reader) (*ht
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", USER_AGENT)
+	req.Header.Add("User-Agent", UserAgent)
 	for _, cookie := range this.cookies {
 		req.AddCookie(cookie)
 	}

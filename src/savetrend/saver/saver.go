@@ -15,7 +15,7 @@ import (
 	"savetrend/api"
 	"savetrend/conf"
 
-	"instagram_api"
+	"instagram"
 	"proto/bot"
 	"proto/core"
 	"utils/log"
@@ -35,7 +35,7 @@ var (
 	lastChecked        = int64(0)
 	errorAlreadyAdded  = errors.New("Product already exists")
 	errorShopIsDeleted = errors.New("Shop is deleted; product will not be added")
-	pool               *instagram_api.Pool
+	pool               *instagram.Pool
 	settings           = conf.GetSettings()
 )
 
@@ -102,7 +102,7 @@ func registerApis() error {
 
 	settings := conf.GetSettings()
 
-	pool = instagram_api.NewPool(&instagram_api.PoolSettings{
+	pool = instagram.NewPool(&instagram.PoolSettings{
 		TimeoutMin:     settings.Instagram.TimeoutMin,
 		TimeoutMax:     settings.Instagram.TimeoutMax,
 		ReloginTimeout: settings.Instagram.ReloginTimeout,
@@ -111,7 +111,7 @@ func registerApis() error {
 	// open connection and append connections pool
 	for _, user := range conf.GetSettings().Instagram.Users {
 
-		api, err := instagram_api.NewInstagram(user.Username, user.Password)
+		api, err := instagram.NewInstagram(user.Username, user.Password)
 		if err != nil {
 			return err
 		}
@@ -248,7 +248,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 	return productID, retry, err
 }
 
-func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
+func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
 		return -1, errors.New("Product media has no images!")

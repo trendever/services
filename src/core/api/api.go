@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/timehop/go-bitly"
 	"google.golang.org/grpc"
-	"instagram_api"
+	"instagram"
 	"math/rand"
 	"net/url"
 	"proto/auth"
@@ -47,7 +47,7 @@ var (
 	TelegramServiceClient bot.TelegramServiceClient
 
 	ImageUploader *mandible.Uploader
-	Instagram     *instagram_api.Pool
+	Instagram     *instagram.Pool
 )
 
 // Telegram channel destanations
@@ -104,11 +104,11 @@ func startClients() {
 func initInstagramPool() {
 	rand.Seed(time.Now().Unix())
 	config := &conf.GetSettings().Instagram
-	Instagram = instagram_api.NewPool(&config.Pool)
+	Instagram = instagram.NewPool(&config.Pool)
 	for {
 		activeCount := 0
 		for _, user := range config.Users {
-			item, err := instagram_api.NewInstagram(user.Name, user.Pass)
+			item, err := instagram.NewInstagram(user.Name, user.Pass)
 			if err != nil {
 				log.Error(fmt.Errorf("failed to add instagram user %v: %v", user.Name, err))
 				continue

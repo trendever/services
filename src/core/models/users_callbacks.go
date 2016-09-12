@@ -6,7 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"github.com/ttacon/libphonenumber"
-	"instagram_api"
+	"instagram"
 	"strings"
 	"utils/db"
 	"utils/log"
@@ -112,7 +112,7 @@ func (u *User) CheckInstagram() {
 		log.Error(fmt.Errorf("failed to search user in instagram: %v", err))
 		return
 	}
-	var instagramInfo *instagram_api.SearchUserInfo
+	var instagramInfo *instagram.SearchUserInfo
 	for i := range candidates.Users {
 		if candidates.Users[i].Username == u.InstagramUsername {
 			instagramInfo = &candidates.Users[i]

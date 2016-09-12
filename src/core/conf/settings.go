@@ -3,7 +3,7 @@ package conf
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"instagram_api"
+	"instagram"
 	"utils/config"
 	"utils/db"
 	"utils/log"
@@ -72,7 +72,7 @@ type Settings struct {
 	DB db.Settings
 
 	Instagram struct {
-		Pool    instagram_api.PoolSettings
+		Pool    instagram.PoolSettings
 		Updater struct {
 			RequestsPerTick uint64
 			MinimalTickLen  uint64

@@ -16,7 +16,7 @@ import (
 	"wantit/api"
 	"wantit/conf"
 
-	"instagram_api"
+	"instagram"
 	"proto/bot"
 	"proto/core"
 	"utils/log"
@@ -35,7 +35,7 @@ type ProjectService struct{}
 
 var (
 	lastChecked = int64(0)
-	pool        *instagram_api.Pool
+	pool        *instagram.Pool
 	settings    = conf.GetSettings()
 	// @TODO products with big id will have more symbols
 	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
@@ -100,7 +100,7 @@ func saveLastChecked() {
 
 func registerApis() error {
 
-	pool = instagram_api.NewPool(&instagram_api.PoolSettings{
+	pool = instagram.NewPool(&instagram.PoolSettings{
 		TimeoutMin:     settings.Instagram.TimeoutMin,
 		TimeoutMax:     settings.Instagram.TimeoutMax,
 		ReloginTimeout: settings.Instagram.ReloginTimeout,
@@ -109,7 +109,7 @@ func registerApis() error {
 	// open connection and append connections pool
 	for _, user := range settings.Instagram.Users {
 
-		api, err := instagram_api.NewInstagram(user.Username, user.Password)
+		api, err := instagram.NewInstagram(user.Username, user.Password)
 		if err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func saveProduct(mention *bot.Activity) (id int64, retry bool, err error) {
 	return res.Id, res.Retry, nil
 }
 
-func createOrder(mention *bot.Activity, media *instagram_api.MediaInfo, customerID, productID int64) error {
+func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, productID int64) error {
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
