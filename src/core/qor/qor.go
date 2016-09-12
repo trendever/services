@@ -49,6 +49,7 @@ var (
 		&activity.QorActivity{},
 		&models.UsersProducts{},
 		&models.PushToken{},
+		&models.VarData{},
 	}
 )
 

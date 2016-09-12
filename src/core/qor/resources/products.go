@@ -241,6 +241,9 @@ func addProductResource(a *admin.Admin) {
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
+			if arg.UserID == 0 {
+				return nil
+			}
 			shop_id, err := models.FindOrCreateShopForSupplier(&arg.User)
 			if err != nil {
 				return err

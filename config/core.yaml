@@ -2,6 +2,7 @@ debug: true
 appHost: :3004
 siteURL: http://localhost
 natsURL: nats://nats:4222
+mandibleURL: http://images:8080/
 
 rpc:
   listen: :3005
@@ -20,11 +21,19 @@ db:
   port:     5432
   base:     postgres
 
-elastic:
-  addr: elastic:9200
-  debug: true
-
 bitly:
   login: o_v1v8rptir
   apiKey: R_05e4113d379c43d695030ba8fbac6edf
   accessToken: c8d0210ba7542be997bc36071d966e582ca9890b
+
+instagram:
+  updater:
+    requestsPerTick: 10
+    minimalTickLen:  10000
+  pool:
+    timeoutMin: 500
+    timeoutMax: 2000
+    reloginTimeout: 10000
+  users:
+  - name: nmstrs1
+    pass: pass4ig

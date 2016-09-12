@@ -6,6 +6,7 @@ import (
 	"core/messager"
 	"core/models"
 	"core/qor"
+	"core/updater"
 	"fmt"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
@@ -63,6 +64,7 @@ func (s *Service) Run(cli *cli.Context) {
 	}
 	log.Info("Starting service")
 
+	var instagram_updater *updater.Updater
 	go log.PanicLogger(func() {
 		// connect to database
 		db.Init(&conf.GetSettings().DB)
@@ -78,6 +80,8 @@ func (s *Service) Run(cli *cli.Context) {
 		// Start api
 		api.Start()
 
+		instagram_updater = updater.CreateAndRun()
+
 		// Initial gin web server
 		if err := r.Run(settings.AppHost); err != nil {
 			log.Fatal(err)
@@ -89,5 +93,6 @@ func (s *Service) Run(cli *cli.Context) {
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	ss := <-interrupt
+	instagram_updater.Stop()
 	log.Warn("Service stopped: %v", ss)
 }

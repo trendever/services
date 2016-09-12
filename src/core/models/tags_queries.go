@@ -72,36 +72,6 @@ func relatedTagsIds(tags []int64, limit int) ([]int64, error) {
 
 }
 
-// mainTagIds returns main tag ID
-func mainTagIds(ignore []int64, limit int) ([]int64, error) {
-	var result []int64
-	err := db.New().
-		Model(&Tag{}).
-		Where("main = ?", true).
-		Where("hidden = ?", false).
-		Where("id NOT IN (?)", ignore).
-		Limit(limit).
-		Pluck("id", &result).
-		Error
-
-	return result, err
-}
-
-// MainTags func returns main tags
-func MainTags(limit int) ([]Tag, error) {
-
-	var result []Tag
-	err := db.New().
-		Where("main = ?", true).
-		Where("hidden = ?", false).
-		Limit(limit).
-		Find(&result).
-		Error
-
-	return result, err
-
-}
-
 // RelatedTags func returns main tags
 func RelatedTags(tags []int64, limit int) ([]Tag, error) {
 

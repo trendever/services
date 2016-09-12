@@ -1,6 +1,7 @@
 package saver
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -18,7 +19,6 @@ import (
 	"proto/bot"
 	"proto/core"
 	"utils/log"
-
 	"utils/rpc"
 )
 
@@ -33,8 +33,8 @@ type ProjectService struct{}
 
 var (
 	lastChecked        = int64(0)
-	errorAlreadyAdded  = fmt.Errorf("Product already exists")
-	errorShopIsDeleted = fmt.Errorf("Shop is deleted; product will not be added")
+	errorAlreadyAdded  = errors.New("Product already exists")
+	errorShopIsDeleted = errors.New("Shop is deleted; product will not be added")
 	pool               *instagram_api.Pool
 	settings           = conf.GetSettings()
 )
@@ -127,16 +127,8 @@ func registerProducts() {
 	for {
 		log.Debug("Checking for new products (last checked at %v)", lastChecked)
 
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
-
 		// Step #1: get new entries from fetcher
-		res, err := api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
-			AfterId:     lastChecked,
-			Type:        "mentioned",
-			MentionName: conf.GetSettings().Instagram.TrendUser,
-			Limit:       100, //@CHECK this number
-		})
+		res, err := retrieveActivities()
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
@@ -162,6 +154,17 @@ func registerProducts() {
 	}
 }
 
+func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
+		AfterId:     lastChecked,
+		Type:        "mentioned",
+		MentionName: conf.GetSettings().Instagram.TrendUser,
+		Limit:       100, //@CHECK this number
+	})
+}
+
 // processProductMedia returns id of product or error and retry flag
 func processProductMedia(mediaID string, mention *bot.Activity) (productID int64, retry bool, err error) {
 
@@ -170,18 +173,21 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existance
+	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existence
 	if err != nil {
 		return -1, true, err
-	} else if alreadyExists {
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
-		//Product already exists, but we want to add it to user trends
-		api.ProductClient.LikeProduct(ctx, &core.LikeProductRequest{
-			UserId:    uint64(mentionerID),
-			ProductId: uint64(productID),
-			Like:      true,
-		})
+	}
+	if alreadyExists {
+		go func() {
+			ctx, cancel := rpc.DefaultContext()
+			defer cancel()
+			//Product already exists, but we want to add it to user trends
+			api.ProductClient.LikeProduct(ctx, &core.LikeProductRequest{
+				UserId:    uint64(mentionerID),
+				ProductId: uint64(productID),
+				Like:      true,
+			})
+		}()
 		return productID, false, errorAlreadyAdded
 	}
 
@@ -238,13 +244,14 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 	}
 
 	productID, err = createProduct(mediaID, &productMedia, supplierID, mentionerID)
-	return productID, false, err
+	retry = err != nil
+	return productID, retry, err
 }
 
 func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
-		return -1, fmt.Errorf("Product media has no images!")
+		return -1, errors.New("Product media has no images!")
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -301,7 +308,7 @@ func productExists(mediaID string) (bool, int64, error) {
 func userID(instagramID int64, instagramUsername string) (int64, error) {
 
 	if instagramID == 0 {
-		return 0, fmt.Errorf("zero instagramId in userId()")
+		return 0, errors.New("zero instagramId in userId()")
 	}
 
 	// firstly, check if user exists
@@ -400,7 +407,7 @@ func findShop(instagramID int64) (int64, error) {
 func shopID(instagramID int64) (int64, error) {
 
 	if instagramID == 0 {
-		return 0, fmt.Errorf("zero instagramId in userId()")
+		return 0, errors.New("zero instagramId in userId()")
 	}
 
 	// firstly, check if shop exists

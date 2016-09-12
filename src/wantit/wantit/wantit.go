@@ -34,9 +34,10 @@ type textField struct {
 type ProjectService struct{}
 
 var (
-	lastChecked    = int64(0)
-	pool           *instagram_api.Pool
-	settings       = conf.GetSettings()
+	lastChecked = int64(0)
+	pool        *instagram_api.Pool
+	settings    = conf.GetSettings()
+	// @TODO products with big id will have more symbols
 	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
 	avatarUploader = mandible.New(conf.GetSettings().MandibleURL)
 )
@@ -124,16 +125,8 @@ func registerOrders() {
 	for {
 		log.Debug("Checking for new mention orders (last processed at %v)...", lastChecked)
 
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
-
 		// Step #1: get new entries from fetcher
-		res, err := api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
-			AfterId:     lastChecked,
-			Type:        "mentioned",
-			MentionName: settings.Instagram.WantitUser,
-			Limit:       100, //@CHECK this number
-		})
+		res, err := retrieveActivities()
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
@@ -165,6 +158,17 @@ func registerOrders() {
 
 		time.Sleep(time.Millisecond * time.Duration(settings.Instagram.PollTimeout))
 	}
+}
+
+func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
+		AfterId:     lastChecked,
+		Type:        "mentioned",
+		MentionName: conf.GetSettings().Instagram.WantitUser,
+		Limit:       100, //@CHECK this number
+	})
 }
 
 // return arguments:
