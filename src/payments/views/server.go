@@ -23,6 +23,7 @@ type paymentServer struct {
 	gateway models.Gateway
 	repo    models.Repo
 	chat    api.ChatNotifier
+	shed    *checkerScheduler
 }
 
 // Init starts serving
@@ -37,6 +38,8 @@ func Init() {
 		repo:    repo,
 		chat:    api.GetChatNotifier(repo),
 	}
+
+	server.shed = createScheduler(server)
 
 	// register API calls
 	payment.RegisterPaymentServiceServer(
@@ -224,6 +227,10 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	}
 
 	return &payment.CancelOrderReply{Cancelled: true}, nil
+}
+
+func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
+	go ps.shed.process(session)
 }
 
 func (ps *paymentServer) CheckStatus(session *models.Session) error {
