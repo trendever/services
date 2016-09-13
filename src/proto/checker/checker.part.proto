@@ -1,0 +1,10 @@
+service CheckerService {
+	// runs instagram check for users with provided ids
+	rpc Check(CheckRequest) returns (CheckReply) {}
+}
+
+message CheckRequest {
+	repeated uint64 ids = 1;
+}
+
+message CheckReply {}

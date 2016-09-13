@@ -18,6 +18,12 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+  checker:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: bin/checker start
   elasticsync:
     image: debian:jessie
     volumes_from:

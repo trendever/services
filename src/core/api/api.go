@@ -2,22 +2,18 @@ package api
 
 import (
 	"core/conf"
-	"errors"
 	"fmt"
 	"github.com/timehop/go-bitly"
 	"google.golang.org/grpc"
-	"instagram"
-	"math/rand"
 	"net/url"
 	"proto/auth"
 	"proto/bot"
 	"proto/chat"
+	"proto/checker"
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
-	"time"
 	"utils/log"
-	"utils/mandible"
 	"utils/rpc"
 )
 
@@ -45,9 +41,7 @@ var (
 	AuthServiceClient     auth.AuthServiceClient
 	PushServiceClient     push.PushServiceClient
 	TelegramServiceClient bot.TelegramServiceClient
-
-	ImageUploader *mandible.Uploader
-	Instagram     *instagram.Pool
+	CheckerServiceClient  checker.CheckerServiceClient
 )
 
 // Telegram channel destanations
@@ -96,32 +90,8 @@ func startClients() {
 	telegramConn := rpc.Connect(config.RPC.Telegram)
 	TelegramServiceClient = bot.NewTelegramServiceClient(telegramConn)
 
-	ImageUploader = mandible.New(config.MandibleURL)
-
-	initInstagramPool()
-}
-
-func initInstagramPool() {
-	rand.Seed(time.Now().Unix())
-	config := &conf.GetSettings().Instagram
-	Instagram = instagram.NewPool(&config.Pool)
-	for {
-		activeCount := 0
-		for _, user := range config.Users {
-			item, err := instagram.NewInstagram(user.Name, user.Pass)
-			if err != nil {
-				log.Error(fmt.Errorf("failed to add instagram user %v: %v", user.Name, err))
-				continue
-			}
-			activeCount++
-			Instagram.Add(item)
-		}
-		if activeCount != 0 {
-			return
-		}
-		log.Error(errors.New("we don't have any active instagram accaounts"))
-		time.Sleep(5 * time.Second)
-	}
+	checkerConn := rpc.Connect(config.RPC.Checker)
+	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
 }
 
 // GetBitly returns Bitly client

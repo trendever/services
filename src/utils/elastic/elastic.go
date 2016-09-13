@@ -55,8 +55,8 @@ func Init(settings *Settings) {
 		if err == nil {
 			break
 		}
-		log.Warn("Failed to connect to elastic node: %v! Retrying in 1 second", err)
-		<-time.After(time.Second)
+		log.Warn("Failed to connect to elastic node: %v! Retrying in 5 seconds", err)
+		<-time.After(5 * time.Second)
 	}
 }
 

@@ -9,6 +9,8 @@ service UserService {
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
 
   rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserReply) {}
+
+  rpc UpdateUsers(UpdateUsersRequest) returns (UpdateUsersReply) {}
 }
 
 message CreateUserRequest {

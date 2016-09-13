@@ -3,7 +3,6 @@ package conf
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"instagram"
 	"utils/config"
 	"utils/db"
 	"utils/log"
@@ -50,13 +49,12 @@ func GetSettings() *Settings {
 
 // Settings container
 type Settings struct {
-	Debug       bool
-	AppHost     string
-	SiteURL     string
-	SentryDSN   string
-	NatsURL     string
-	SystemUser  string
-	MandibleURL string
+	Debug      bool
+	AppHost    string
+	SiteURL    string
+	SentryDSN  string
+	NatsURL    string
+	SystemUser string
 
 	RPC struct {
 		Listen         string
@@ -67,21 +65,10 @@ type Settings struct {
 		Auth           string
 		Push           string
 		Telegram       string
+		Checker        string
 	}
 
 	DB db.Settings
-
-	Instagram struct {
-		Pool    instagram.PoolSettings
-		Updater struct {
-			RequestsPerTick uint64
-			MinimalTickLen  uint64
-		}
-		Users []struct {
-			Name string
-			Pass string
-		}
-	}
 
 	Bitly struct {
 		APIKey      string
