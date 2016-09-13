@@ -197,7 +197,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		if strings.Contains(err.Error(), "Media not found or unavailable") {
 			return -1, false, err
 		}
-		return -1, true, err
+		return -1, true, fmt.Errorf("failed to load media '%v': %v", mediaID, err)
 	} else if len(medias.Items) != 1 {
 		// this seems not no happen normally; so put Warning here
 		err = fmt.Errorf("Media (%v) not found (got result with %v items)", mediaID, len(medias.Items))
@@ -217,7 +217,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 		candidats, err := pool.GetFree().SearchUsers(shopInstagramName)
 		if err != nil {
-			return -1, true, err
+			return -1, true, fmt.Errorf("failed to search user '%v': %v", shopInstagramName, err)
 		}
 
 		for _, user := range candidats.Users {
@@ -228,9 +228,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 		if shopInstagramID == 0 {
 			// something really weird search should (was) be stable. just skip the entry
-			err = fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
-			log.Error(err)
-			return -1, false, err
+			return -1, false, fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
 		}
 
 	}
@@ -421,13 +419,13 @@ func shopID(instagramID int64) (int64, error) {
 	// secondly, get this user profile
 	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get user %v info: %v", instagramID, err)
 	}
 
 	// upload avatar
 	avatarURL, err := uploadAvatar(userInfo.User.ProfilePicURL)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to aupload avatar: %v", err)
 	}
 
 	// carefully: creating of context should follow uploading avatar: it's responsible for timeouts
