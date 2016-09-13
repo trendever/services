@@ -230,8 +230,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 }
 
 func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
-	//go ps.shed.process(session)
-	log.Warn("%v", ps.CheckStatus(session))
+	go ps.shed.process(session)
 }
 
 func (ps *paymentServer) CheckStatus(session *models.Session) error {
