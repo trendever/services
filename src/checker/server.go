@@ -6,7 +6,9 @@ import (
 	"instagram"
 	"io/ioutil"
 	"proto/checker"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"utils/db"
 	"utils/log"
@@ -64,6 +66,7 @@ func (s *CheckerServer) loop() {
 			err := db.New().
 				Where("id > ?", lastChecked).
 				Where("instagram_username != ''").
+				Where("deleted_at IS NULL").
 				Limit(settings.RequestsPerTick).Order("id ASC").
 				Find(&users).Error
 			if err != nil {
@@ -96,23 +99,32 @@ func (s *CheckerServer) loop() {
 	}
 }
 
+var nameValidator = regexp.MustCompile("^(\\w|\\.)*$")
+
 func checkUser(user *User) {
 	if user.ID == 0 {
 		return
 	}
-	candidates, err := Instagram.GetFree().SearchUsers(user.InstagramUsername)
-	if err != nil {
-		log.Error(fmt.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err))
-		return
-	}
 	var instagramInfo *instagram.SearchUserInfo
-	for i := range candidates.Users {
-		if candidates.Users[i].Username == user.InstagramUsername {
-			instagramInfo = &candidates.Users[i]
-			break
+	updateMap := map[string]interface{}{}
+	trimmed := strings.Trim(user.InstagramUsername, " \n\t")
+	if trimmed != user.InstagramUsername {
+		user.InstagramUsername = trimmed
+		updateMap["instagram_username"] = trimmed
+	}
+	if nameValidator.MatchString(user.InstagramUsername) {
+		candidates, err := Instagram.GetFree().SearchUsers(user.InstagramUsername)
+		if err != nil {
+			log.Error(fmt.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err))
+			return
+		}
+		for i := range candidates.Users {
+			if candidates.Users[i].Username == user.InstagramUsername {
+				instagramInfo = &candidates.Users[i]
+				break
+			}
 		}
 	}
-	updateMap := map[string]interface{}{}
 	// user not found
 	if instagramInfo == nil {
 		if user.Name == "" {

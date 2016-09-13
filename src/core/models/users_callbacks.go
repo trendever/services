@@ -18,19 +18,22 @@ var NotifyUserCreated func(u *User)
 func (u *User) BeforeSave(db *gorm.DB) {
 	u.validatePhone(db)
 	u.fetchPreviousPhone(db)
-	u.InstagramUsername = strings.ToLower(u.InstagramUsername)
+	u.Name = strings.Trim(u.Name, " \t\n")
+	u.InstagramUsername = strings.ToLower(strings.Trim(u.InstagramUsername, " \n\t"))
 	if u.InstagramUsername == "" {
 		u.InstagramID = 0
 	}
 }
 
-func (u *User) AfterSave() {
+func (u *User) AfterCommit() {
 	if u.previousPhone == "" && u.Phone != "" {
 		go notifyUserAboutLeads(u)
 		go NotifyUserCreated(u)
 	}
 	if u.InstagramUsername != "" {
-		go u.InitInstagramCheck()
+		go func() {
+			u.InitInstagramCheck()
+		}()
 	}
 }
 
