@@ -3,6 +3,8 @@ service PaymentService {
   rpc CreateOrder(CreateOrderRequest) returns (CreateOrderReply) {}
 
   rpc BuyOrder(BuyOrderRequest) returns (BuyOrderReply) {}
+
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply) {}
 }
 
 message CreateOrderRequest {
@@ -20,13 +22,14 @@ message CreateOrderRequest {
 message CreateOrderReply {
   uint64 id = 1;
   Errors error = 2;
+  string error_message = 3;
 }
 
 message BuyOrderRequest {
   uint64 pay_id = 1;
   string ip = 2;
 
-  // parameters to check correctness
+  // parameters to check permissions
   uint64 lead_id = 3;
   Direction direction = 4;
 }
@@ -34,6 +37,21 @@ message BuyOrderRequest {
 message BuyOrderReply {
   string redirect_url = 1;
   Errors error = 2;
+  string error_message = 3;
+}
+
+message CancelOrderRequest {
+  uint64 pay_id = 1;
+
+  // parameters to check permissions
+  uint64 lead_id = 3;
+  Direction direction = 4;
+}
+
+message CancelOrderReply {
+  bool cancelled = 1;
+  Errors error = 2;
+  string error_message = 3;
 }
 
 // chat messages
@@ -51,6 +69,10 @@ message ChatMessagePaymentFinished {
   Direction direction = 6;
 }
 
+message ChatMessageOrderCancelled {
+  uint64 pay_id = 1;
+}
+
 enum Currency {
   RUB = 0;
   USD = 1;
@@ -64,10 +86,12 @@ enum Errors {
   INVALID_DATA = 1;
   DB_FAILED = 2;
   ALREADY_PAYED = 3;
+  PAY_CANCELLED = 4;
 
   // external errors
   INIT_FAILED = 127;
   PAY_FAILED = 128;
+  CHAT_DOWN = 129;
 }
 
 enum Direction {

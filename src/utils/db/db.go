@@ -43,10 +43,19 @@ func Init(s *Settings) {
 			if err = db.DB().Ping(); err == nil {
 				db.LogMode(s.Debug)
 				connection = db
-				return
+				break
 			}
 		}
-		log.Warn("DB error: %v \n try reconnect after 1 second", err)
-		time.Sleep(time.Second)
+		log.Warn("DB error: %v \n try to reconnect after 5 seconds", err)
+		time.Sleep(5 * time.Second)
+	}
+	connection.Callback().Create().After("gorm:commit_or_rollback_transaction").Register("gorm:after_commit", afterCommitCallback)
+	connection.Callback().Update().After("gorm:commit_or_rollback_transaction").Register("gorm:after_commit", afterCommitCallback)
+}
+
+// afterCommitCallback will invoke `AfterCommit` method after commit
+func afterCommitCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		scope.CallMethod("AfterCommit")
 	}
 }

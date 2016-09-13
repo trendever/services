@@ -11,6 +11,7 @@ var (
 	CoreConn     *grpc.ClientConn
 	AuthConn     *grpc.ClientConn
 	ChatConn     *grpc.ClientConn
+	SMSConn      *grpc.ClientConn
 	PaymentsConn *grpc.ClientConn
 )
 
@@ -21,5 +22,6 @@ func init() {
 	CoreConn = rpc.Connect(settings.CoreAddr)
 	AuthConn = rpc.Connect(settings.AuthAddr)
 	ChatConn = rpc.Connect(settings.ChatAddr)
+	SMSConn = rpc.Connect(settings.SMSAddr)
 	PaymentsConn = rpc.Connect(settings.PaymentsAddr)
 }

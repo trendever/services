@@ -4,9 +4,11 @@ import (
 	"core/api"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"proto/chat"
 	"proto/core"
 	"savetrend/tumbmap"
 	"time"
+	"utils/db"
 )
 
 const productTable = "products_product"
@@ -32,12 +34,14 @@ type Product struct {
 	// Product shop
 	ShopID uint `gorm:"index:shops_index"`
 	Shop   Shop
+	// for update related chats in update callbacks
+	oldShop uint
 
 	// Product mentioner
 	MentionedByID uint `gorm:"index:mentioners_index"`
 	MentionedBy   User
 
-	LikedBy []User `gorm:"many2many:users_products"`
+	LikedBy []*User `gorm:"many2many:users_products"`
 
 	Items []ProductItem
 
@@ -82,9 +86,74 @@ func (p Product) TableName() string {
 	return productTable
 }
 
-//AfterUpdate is a gorm callback
-func (p Product) AfterUpdate() {
+//gorm callbacks
+func (p *Product) BeforeUpdate() error {
+	err := db.New().Model(&p).Select("shop_id").Where("id = ?", p.ID).Row().Scan(&p.oldShop)
+	if err != nil {
+		return fmt.Errorf("failed to load old shop for product %v: %v", p.ID, err)
+	}
+	return nil
+}
+
+func (p Product) AfterUpdate() error {
+	if p.oldShop != 0 && p.ShopID != p.oldShop {
+		err := p.onShopChanged()
+		if err != nil {
+			return err
+		}
+	}
 	go api.Publish("core.product.flush", p.ID)
+	return nil
+}
+
+func (p Product) AfterDelete() {
+	go api.Publish("core.product.flush", p.ID)
+}
+
+// this method should update all related data
+// however change shop for product with already created leads is bad idea
+// especially if those leads contains multiple products
+func (p Product) onShopChanged() error {
+	var info []struct {
+		ConversationID uint64
+		State          string
+	}
+	err := db.New().
+		Raw(`
+		UPDATE products_leads SET shop_id = ?
+		WHERE deleted_at IS NULL
+		AND EXISTS (
+			SELECT 1 FROM products_leads_items related
+			JOIN products_product_item item
+				ON related.product_item_id = item.id
+			WHERE item.product_id = ?
+				AND related.lead_id = products_leads.id
+				AND item.deleted_at IS NULL
+		)
+		RETURNING conversation_id, state`, p.ShopID, p.ID).
+		Scan(&info).
+		Error
+	if err != nil {
+		return fmt.Errorf("failed to update related leads for product %v: %v", p.ID, err)
+	}
+	err = db.New().Preload("Supplier").Preload("Sellers").First(&p.Shop, "id = ?", p.ShopID).Error
+	if err != nil {
+		return fmt.Errorf("failed to load shop %v: %v", p.ShopID, err)
+	}
+	for _, lead := range info {
+		if lead.State == "NEW" || lead.State == "EMPTY" {
+			continue
+		}
+		err = joinChat(lead.ConversationID, chat.MemberRole_SUPPLIER, &p.Shop.Supplier)
+		if err != nil {
+			return fmt.Errorf("failed to add supplier to chat %v: %v", lead.ConversationID, err)
+		}
+		err = joinChat(lead.ConversationID, chat.MemberRole_SELLER, p.Shop.Sellers...)
+		if err != nil {
+			return fmt.Errorf("failed to add sellers to chat %v: %v", lead.ConversationID, err)
+		}
+	}
+	return nil
 }
 
 // Validate fields

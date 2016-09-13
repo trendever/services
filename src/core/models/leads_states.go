@@ -255,7 +255,7 @@ func init() {
 				}
 
 				for _, seller := range shop.Sellers {
-					if err := n.NotifySellerAboutLead(&seller, lead); err != nil {
+					if err := n.NotifySellerAboutLead(seller, lead); err != nil {
 						log.Error(fmt.Errorf(
 							"failed to send notify for supplier: %v", err,
 						))

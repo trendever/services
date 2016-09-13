@@ -43,7 +43,7 @@ var (
 	chatMock *fixtures.MockChatNotifier
 )
 
-func TestCreateOrder(t *testing.T) {
+func TestChatServer(t *testing.T) {
 
 	mock := gomock.NewController(t)
 	defer mock.Finish()
@@ -51,6 +51,13 @@ func TestCreateOrder(t *testing.T) {
 	repoMock = fixtures.NewMockRepo(mock)
 	gwMock = fixtures.NewMockGateway(mock)
 	chatMock = fixtures.NewMockChatNotifier(mock)
+
+	// @TODO: EXPECT only needed times of chat calls
+	chatMock.EXPECT().
+		SendPayment(gomock.Any()).AnyTimes()
+
+	chatMock.EXPECT().
+		SendSession(gomock.Any()).AnyTimes()
 
 	server := &paymentServer{
 		gateway: gwMock,
@@ -184,7 +191,8 @@ func doCreate(t *testing.T, s *paymentServer, test *createTest) {
 	}).MaxTimes(1)
 
 	res, err := s.CreateOrder(context.Background(), &test.request)
-	assert.Equal(t, err == nil, test.wantSucc, test.desc)
+	assert.Equal(t, res.Error == 0, test.wantSucc, test.desc)
+	assert.Nil(t, err, test.desc)
 	assert.Equal(t, res.Error == 0, test.wantSucc, test.desc)
 	assert.EqualValues(t, res.Id, createdID, test.desc)
 	assert.Equal(t, createdID == 0, !test.wantSucc, test.desc)
@@ -235,7 +243,7 @@ func doBuy(t *testing.T, s *paymentServer, test *buyTest) {
 
 	res, err := s.BuyOrder(context.Background(), &test.request)
 
-	assert.Equal(t, test.wantSucc, err == nil, test.desc)
+	assert.Nil(t, err, test.desc)
 	assert.Equal(t, test.wantSucc, res.Error == 0, test.desc)
 
 	if test.wantSucc {

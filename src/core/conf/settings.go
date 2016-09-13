@@ -65,6 +65,7 @@ type Settings struct {
 		Auth           string
 		Push           string
 		Telegram       string
+		Checker        string
 	}
 
 	DB db.Settings

@@ -23,6 +23,7 @@ type paymentServer struct {
 	gateway models.Gateway
 	repo    models.Repo
 	chat    api.ChatNotifier
+	shed    *checkerScheduler
 }
 
 // Init starts serving
@@ -37,6 +38,8 @@ func Init() {
 		repo:    repo,
 		chat:    api.GetChatNotifier(repo),
 	}
+
+	server.shed = createScheduler(server)
 
 	// register API calls
 	payment.RegisterPaymentServiceServer(
@@ -121,18 +124,18 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	// Step1: create order
 	pay, err := models.NewPayment(req)
 	if err != nil {
-		return &payment.CreateOrderReply{Error: payment.Errors_INVALID_DATA}, err
+		return &payment.CreateOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step2: Save pay
 	err = ps.repo.CreatePay(pay)
 	if err != nil {
-		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED}, err
+		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step3: Send to chat
 	go func() {
-		err := ps.chat.SendPaymentToChat(pay)
+		err := ps.chat.SendPayment(pay)
 		if err != nil {
 			log.Error(err)
 		}
@@ -149,38 +152,85 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	// Step0: find pay
 	pay, err := ps.repo.GetPayByID(uint(req.PayId))
 	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED}, err
+		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step0.5: check if saved pay parameters are equal to supplied
 	if req.LeadId != pay.LeadID || pay.LeadID == 0 || int32(req.Direction) != pay.Direction {
-		return &payment.BuyOrderReply{Error: payment.Errors_INVALID_DATA}, fmt.Errorf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)
+		return &payment.BuyOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)}, nil
+	}
+
+	// Step0.55: cancelled pays shall not proceed
+	if pay.Cancelled {
+		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: fmt.Sprintf("Payment is cancelled, aborting")}, nil
 	}
 
 	// Step0.6: check if TX is already finished
 	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
 	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED}, err
+		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 	if finished > 0 {
-		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED}, fmt.Errorf("payments: This pay is already payed")
+		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: fmt.Sprintf("payments: This pay is already payed")}, nil
 	}
 
 	// Step1: init TX
 	sess, err := ps.gateway.Buy(pay, req.Ip)
 	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED}, err
+		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step2: save session
 	err = ps.repo.CreateSess(sess)
 	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED}, err
+		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step3: redirect client
 	return &payment.BuyOrderReply{RedirectUrl: ps.gateway.Redirect(sess)}, nil
 
+}
+
+func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrderRequest) (*payment.CancelOrderReply, error) {
+
+	// Step0: find pay
+	pay, err := ps.repo.GetPayByID(uint(req.PayId))
+	if err != nil {
+		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step0.5: check if saved pay parameters are equal to supplied
+	if req.LeadId != pay.LeadID || pay.LeadID == 0 || int32(req.Direction) != pay.Direction {
+		return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)}, nil
+	}
+
+	// Step0.6: check if TX is already finished
+	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
+	if err != nil {
+		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	}
+	if finished > 0 {
+		return &payment.CancelOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: fmt.Sprintf("payments: This pay is already payed; why do you want to cancel it?")}, nil
+	}
+
+	// Step0.8: notify chat; check before sending to chat to avoid inconsistiency if chat is down
+	err = ps.chat.SendCancelOrder(pay)
+	if err != nil {
+		return &payment.CancelOrderReply{Error: payment.Errors_CHAT_DOWN, ErrorMessage: fmt.Sprintf("payments: chat service is unreachable")}, nil
+	}
+
+	// Step0.7: do the cancel
+	pay.Cancelled = true
+	err = ps.repo.SavePay(pay)
+	if err != nil {
+		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: fmt.Sprintf("payments: could not save modified pay")}, nil
+	}
+
+	return &payment.CancelOrderReply{Cancelled: true}, nil
+}
+
+func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
+	go ps.shed.process(session)
 }
 
 func (ps *paymentServer) CheckStatus(session *models.Session) error {
@@ -208,7 +258,7 @@ func (ps *paymentServer) CheckStatus(session *models.Session) error {
 	}
 
 	// Step4: notify chat
-	err = ps.chat.SendSessionToChat(session)
+	err = ps.chat.SendSession(session)
 	if err != nil {
 		log.Error(err)
 		return err

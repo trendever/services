@@ -18,6 +18,12 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+  checker:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: bin/checker start
   elasticsync:
     image: debian:jessie
     volumes_from:
@@ -126,6 +132,7 @@ services:
       - data
     working_dir: /services/
     command: bin/wantit start
+
   payments:
     image: debian:jessie
     volumes_from:
@@ -138,16 +145,20 @@ services:
       - 127.0.0.1:7777:7777
       - 127.0.0.1:7780:7780
 
+  mandible:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    command: sh -c 'apt-get update && apt-get -y install graphicsmagick optipng libjpeg-progs exiftool && ln -sv /usr/bin/gm /usr/bin/convert && exec ./bin/mandible'
+    ports:
+      - 127.0.0.1:8089:8089
+
   nats:
     image: "nats"
     ports:
       - 127.0.0.1:8222:8222
-  images:
-    image: girokon/mandible
-    ports:
-      - 127.0.0.1:8087:8080
-    volumes:
-      - ./mandible:/etc/mandible
+
   redis:
     image: redis
     ports:

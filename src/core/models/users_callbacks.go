@@ -1,24 +1,48 @@
 package models
 
 import (
+	"core/api"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"github.com/ttacon/libphonenumber"
+	"proto/checker"
 	"strings"
 	"utils/db"
 	"utils/log"
+	"utils/rpc"
 )
 
 //NotifyUserCreated is a notification function
 var NotifyUserCreated func(u *User)
 
-// BeforeSave saves edited phone number (and edit it if neccessary)
 func (u *User) BeforeSave(db *gorm.DB) {
 	u.validatePhone(db)
 	u.fetchPreviousPhone(db)
+	u.Name = strings.Trim(u.Name, " \t\n")
+	u.InstagramUsername = strings.ToLower(strings.Trim(u.InstagramUsername, " \n\t"))
+	if u.InstagramUsername == "" {
+		u.InstagramID = 0
+	}
+}
 
-	u.InstagramUsername = strings.ToLower(u.InstagramUsername)
+func (u *User) AfterCommit() {
+	if u.previousPhone == "" && u.Phone != "" {
+		go notifyUserAboutLeads(u)
+		go NotifyUserCreated(u)
+	}
+	if u.InstagramUsername != "" {
+		go func() {
+			u.InitInstagramCheck()
+		}()
+	}
+}
 
+func (u *User) AfterUpdate() {
+	go api.Publish("core.user.flush", u.ID)
+}
+
+func (u *User) AfterDelete() {
+	go api.Publish("core.user.flush", u.ID)
 }
 
 func (u *User) fetchPreviousPhone(db *gorm.DB) {
@@ -41,14 +65,6 @@ func (u *User) validatePhone(db *gorm.DB) {
 		default:
 			u.Phone = libphonenumber.Format(newPhone, libphonenumber.E164)
 		}
-	}
-}
-
-//AfterSave is gorm callback
-func (u *User) AfterSave() {
-	if u.previousPhone == "" && u.Phone != "" {
-		go notifyUserAboutLeads(u)
-		go NotifyUserCreated(u)
 	}
 }
 
@@ -79,4 +95,14 @@ func notifyUserAboutLeads(user *User) {
 			log.Error(err)
 		}
 	}
+}
+
+// checks if instagram user exists and updates instagramID and avatar
+func (u *User) InitInstagramCheck() {
+	if u.ID == 0 {
+		return
+	}
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	api.CheckerServiceClient.Check(ctx, &checker.CheckRequest{Ids: []uint64{uint64(u.ID)}})
 }

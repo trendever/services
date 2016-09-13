@@ -1,7 +1,6 @@
 package models
 
 import (
-	"core/api"
 	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -20,7 +19,7 @@ type User struct {
 	AvatarURL string `gorm:"text"`
 
 	// Instagram fields
-	InstagramID        uint64
+	InstagramID        uint64 `gorm:"index"`
 	InstagramUsername  string `gorm:"index"`
 	InstagramFullname  string
 	InstagramAvatarURL string
@@ -65,7 +64,7 @@ func LoadOrCreateSystemUser() error {
 }
 
 //Users is an array of users
-type Users []User
+type Users []*User
 
 // returns something that can be used like first name
 func (u User) getName() string {
@@ -154,9 +153,4 @@ func (u *User) GetName() string {
 		return u.Name
 	}
 	return "User"
-}
-
-//AfterUpdate is a gorm callback
-func (u *User) AfterUpdate() {
-	go api.Publish("core.user.flush", u.ID)
 }

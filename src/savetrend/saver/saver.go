@@ -1,6 +1,7 @@
 package saver
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -14,11 +15,10 @@ import (
 	"savetrend/api"
 	"savetrend/conf"
 
-	"instagram_api"
+	"instagram"
 	"proto/bot"
 	"proto/core"
 	"utils/log"
-
 	"utils/rpc"
 )
 
@@ -33,9 +33,9 @@ type ProjectService struct{}
 
 var (
 	lastChecked        = int64(0)
-	errorAlreadyAdded  = fmt.Errorf("Product already exists")
-	errorShopIsDeleted = fmt.Errorf("Shop is deleted; product will not be added")
-	pool               *instagram_api.Pool
+	errorAlreadyAdded  = errors.New("Product already exists")
+	errorShopIsDeleted = errors.New("Shop is deleted; product will not be added")
+	pool               *instagram.Pool
 	settings           = conf.GetSettings()
 )
 
@@ -102,7 +102,7 @@ func registerApis() error {
 
 	settings := conf.GetSettings()
 
-	pool = instagram_api.NewPool(&instagram_api.PoolSettings{
+	pool = instagram.NewPool(&instagram.PoolSettings{
 		TimeoutMin:     settings.Instagram.TimeoutMin,
 		TimeoutMax:     settings.Instagram.TimeoutMax,
 		ReloginTimeout: settings.Instagram.ReloginTimeout,
@@ -111,7 +111,7 @@ func registerApis() error {
 	// open connection and append connections pool
 	for _, user := range conf.GetSettings().Instagram.Users {
 
-		api, err := instagram_api.NewInstagram(user.Username, user.Password)
+		api, err := instagram.NewInstagram(user.Username, user.Password)
 		if err != nil {
 			return err
 		}
@@ -127,16 +127,8 @@ func registerProducts() {
 	for {
 		log.Debug("Checking for new products (last checked at %v)", lastChecked)
 
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
-
 		// Step #1: get new entries from fetcher
-		res, err := api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
-			AfterId:     lastChecked,
-			Type:        "mentioned",
-			MentionName: conf.GetSettings().Instagram.TrendUser,
-			Limit:       100, //@CHECK this number
-		})
+		res, err := retrieveActivities()
 
 		if err != nil {
 			log.Warn("RPC connection error: %v", err)
@@ -162,6 +154,17 @@ func registerProducts() {
 	}
 }
 
+func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
+		AfterId:     lastChecked,
+		Type:        "mentioned",
+		MentionName: conf.GetSettings().Instagram.TrendUser,
+		Limit:       100, //@CHECK this number
+	})
+}
+
 // processProductMedia returns id of product or error and retry flag
 func processProductMedia(mediaID string, mention *bot.Activity) (productID int64, retry bool, err error) {
 
@@ -170,18 +173,21 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existance
+	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existence
 	if err != nil {
 		return -1, true, err
-	} else if alreadyExists {
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
-		//Product already exists, but we want to add it to user trends
-		api.ProductClient.LikeProduct(ctx, &core.LikeProductRequest{
-			UserId:    uint64(mentionerID),
-			ProductId: uint64(productID),
-			Like:      true,
-		})
+	}
+	if alreadyExists {
+		go func() {
+			ctx, cancel := rpc.DefaultContext()
+			defer cancel()
+			//Product already exists, but we want to add it to user trends
+			api.ProductClient.LikeProduct(ctx, &core.LikeProductRequest{
+				UserId:    uint64(mentionerID),
+				ProductId: uint64(productID),
+				Like:      true,
+			})
+		}()
 		return productID, false, errorAlreadyAdded
 	}
 
@@ -191,7 +197,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		if strings.Contains(err.Error(), "Media not found or unavailable") {
 			return -1, false, err
 		}
-		return -1, true, err
+		return -1, true, fmt.Errorf("failed to load media '%v': %v", mediaID, err)
 	} else if len(medias.Items) != 1 {
 		// this seems not no happen normally; so put Warning here
 		err = fmt.Errorf("Media (%v) not found (got result with %v items)", mediaID, len(medias.Items))
@@ -211,7 +217,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 		candidats, err := pool.GetFree().SearchUsers(shopInstagramName)
 		if err != nil {
-			return -1, true, err
+			return -1, true, fmt.Errorf("failed to search user '%v': %v", shopInstagramName, err)
 		}
 
 		for _, user := range candidats.Users {
@@ -222,9 +228,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 		if shopInstagramID == 0 {
 			// something really weird search should (was) be stable. just skip the entry
-			err = fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
-			log.Error(err)
-			return -1, false, err
+			return -1, false, fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
 		}
 
 	}
@@ -238,13 +242,14 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 	}
 
 	productID, err = createProduct(mediaID, &productMedia, supplierID, mentionerID)
-	return productID, false, err
+	retry = err != nil
+	return productID, retry, err
 }
 
-func createProduct(mediaID string, media *instagram_api.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
+func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
-		return -1, fmt.Errorf("Product media has no images!")
+		return -1, errors.New("Product media has no images!")
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -301,7 +306,7 @@ func productExists(mediaID string) (bool, int64, error) {
 func userID(instagramID int64, instagramUsername string) (int64, error) {
 
 	if instagramID == 0 {
-		return 0, fmt.Errorf("zero instagramId in userId()")
+		return 0, errors.New("zero instagramId in userId()")
 	}
 
 	// firstly, check if user exists
@@ -400,7 +405,7 @@ func findShop(instagramID int64) (int64, error) {
 func shopID(instagramID int64) (int64, error) {
 
 	if instagramID == 0 {
-		return 0, fmt.Errorf("zero instagramId in userId()")
+		return 0, errors.New("zero instagramId in userId()")
 	}
 
 	// firstly, check if shop exists
@@ -414,13 +419,13 @@ func shopID(instagramID int64) (int64, error) {
 	// secondly, get this user profile
 	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get user %v info: %v", instagramID, err)
 	}
 
 	// upload avatar
 	avatarURL, err := uploadAvatar(userInfo.User.ProfilePicURL)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to aupload avatar: %v", err)
 	}
 
 	// carefully: creating of context should follow uploading avatar: it's responsible for timeouts

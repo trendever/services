@@ -39,7 +39,7 @@ func relatedTagsIds(tags []int64, limit int) ([]int64, error) {
 			fmt.Sprintf(" ON (%v.product_item_id = finrel.product_item_id AND finrel.tag_id NOT IN (?))", relname),
 			tags,
 		).
-		Joins("INNER JOIN products_tag as pt ON (pt.id = finrel.tag_id AND pt.main = false AND hidden = false)").
+		Joins("INNER JOIN products_tag as pt ON (pt.id = finrel.tag_id AND hidden = false)").
 		Joins("INNER JOIN products_product as pr ON (pr.id = it.product_id AND is_sale = true AND pr.deleted_at is null)").
 		// filter out groups
 		Joins("INNER JOIN products_tag_group as grp ON (grp.id = pt.group_id AND grp.name != pt.name)")
@@ -69,36 +69,6 @@ func relatedTagsIds(tags []int64, limit int) ([]int64, error) {
 	}
 
 	return related, err
-
-}
-
-// mainTagIds returns main tag ID
-func mainTagIds(ignore []int64, limit int) ([]int64, error) {
-	var result []int64
-	err := db.New().
-		Model(&Tag{}).
-		Where("main = ?", true).
-		Where("hidden = ?", false).
-		Where("id NOT IN (?)", ignore).
-		Limit(limit).
-		Pluck("id", &result).
-		Error
-
-	return result, err
-}
-
-// MainTags func returns main tags
-func MainTags(limit int) ([]Tag, error) {
-
-	var result []Tag
-	err := db.New().
-		Where("main = ?", true).
-		Where("hidden = ?", false).
-		Limit(limit).
-		Find(&result).
-		Error
-
-	return result, err
 
 }
 

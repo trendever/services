@@ -185,21 +185,6 @@ func (cs *chatServer) GetChatHistory(ctx context.Context, req *proto_chat.ChatHi
 	return reply, err
 }
 
-// returns user's chats
-func (cs *chatServer) GetUserChats(ctx context.Context, req *proto_chat.UserChatsRequest) (reply *proto_chat.UserChatsReply, err error) {
-	return nil, errors.New("Deprecated. Don't use this method. Use lead.list instead of this")
-	reply = &proto_chat.UserChatsReply{
-		Chats: []*proto_chat.Chat{},
-	}
-	var chats []*models.Conversation
-	if chats, err = cs.chats.GetByUserID(uint(req.UserId)); err == nil {
-		for _, chat := range chats {
-			reply.Chats = append(reply.Chats, chat.Encode())
-		}
-	}
-	return
-}
-
 // updated last message id for member
 func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsReadedRequest) (reply *proto_chat.MarkAsReadedReply, err error) {
 	reply = &proto_chat.MarkAsReadedReply{}

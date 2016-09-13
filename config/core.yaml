@@ -10,6 +10,7 @@ rpc:
   chat: chat:2010
   auth: auth:8433
   push: push:2011
+  checker: checker:2013
   telegram: telegram:4040
 
 db:
@@ -20,11 +21,8 @@ db:
   port:     5432
   base:     postgres
 
-elastic:
-  addr: elastic:9200
-  debug: true
-
 bitly:
   login: o_v1v8rptir
   apiKey: R_05e4113d379c43d695030ba8fbac6edf
   accessToken: c8d0210ba7542be997bc36071d966e582ca9890b
+

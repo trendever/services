@@ -51,10 +51,13 @@ type Settings struct {
 	SentryDSN string
 	NatsURL   string
 
+	MarketSMS string
+
 	CoreAddr     string
 	AuthAddr     string
 	ChatAddr     string
 	PaymentsAddr string
+	SMSAddr      string
 
 	Elastic elastic.Settings
 

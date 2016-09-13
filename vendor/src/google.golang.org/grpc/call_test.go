@@ -81,7 +81,7 @@ type testStreamHandler struct {
 func (h *testStreamHandler) handleStream(t *testing.T, s *transport.Stream) {
 	p := &parser{r: s}
 	for {
-		pf, req, err := p.recvMsg()
+		pf, req, err := p.recvMsg(math.MaxInt32)
 		if err == io.EOF {
 			break
 		}
@@ -274,5 +274,20 @@ func TestInvokeCancel(t *testing.T) {
 		t.Fatalf("received %d of 100 canceled requests", canceled)
 	}
 	cc.Close()
+	server.stop()
+}
+
+// TestInvokeCancelClosedNonFail checks that a canceled non-failfast RPC
+// on a closed client will terminate.
+func TestInvokeCancelClosedNonFailFast(t *testing.T) {
+	server, cc := setUp(t, 0, math.MaxUint32)
+	var reply string
+	cc.Close()
+	req := "hello"
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := Invoke(ctx, "/foo/bar", &req, &reply, cc, FailFast(false)); err == nil {
+		t.Fatalf("canceled invoke on closed connection should fail")
+	}
 	server.stop()
 }

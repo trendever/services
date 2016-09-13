@@ -2,7 +2,7 @@ package fetcher
 
 import (
 	"github.com/codegangsta/cli"
-	"instagram_api"
+	"instagram"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -69,7 +69,7 @@ func (this *ProjectService) Run() error {
 	rand.Seed(time.Now().Unix())
 
 	// connections pool
-	var apis []*instagram_api.Instagram
+	var apis []*instagram.Instagram
 
 	// interrupt
 	interrupt := make(chan os.Signal)
@@ -77,7 +77,7 @@ func (this *ProjectService) Run() error {
 
 	// open connection and append connections pool
 	for _, user := range settings.Instagram.Users {
-		api, err := instagram_api.NewInstagram(
+		api, err := instagram.NewInstagram(
 			user.Username,
 			user.Password,
 		)
@@ -115,7 +115,7 @@ func (this *ProjectService) Run() error {
 }
 
 // get activity
-func getActivity(api *instagram_api.Instagram, rndTimeout int) {
+func getActivity(api *instagram.Instagram, rndTimeout int) {
 
 	// little log
 	log.Debug("Start getting with timeout: %v ms.", rndTimeout)
@@ -145,7 +145,7 @@ func getActivity(api *instagram_api.Instagram, rndTimeout int) {
 }
 
 // fetch data and fill database model
-func fetch(stories instagram_api.RecentActivityStories, mentionName string) {
+func fetch(stories instagram.RecentActivityStories, mentionName string) {
 
 	// parse text field
 	txt := parseText(stories.Args.Text)

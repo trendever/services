@@ -3,13 +3,13 @@ package api
 import (
 	"core/conf"
 	"fmt"
-	"net/url"
-
 	"github.com/timehop/go-bitly"
 	"google.golang.org/grpc"
+	"net/url"
 	"proto/auth"
 	"proto/bot"
 	"proto/chat"
+	"proto/checker"
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
@@ -41,6 +41,7 @@ var (
 	AuthServiceClient     auth.AuthServiceClient
 	PushServiceClient     push.PushServiceClient
 	TelegramServiceClient bot.TelegramServiceClient
+	CheckerServiceClient  checker.CheckerServiceClient
 )
 
 // Telegram channel destanations
@@ -70,23 +71,27 @@ func AddOnStartCallback(cb callbackFunc) {
 
 // startClients starts RPC connections to external services
 func startClients() {
-	mailConn := rpc.Connect(conf.GetSettings().RPC.Mail)
+	config := conf.GetSettings()
+	mailConn := rpc.Connect(config.RPC.Mail)
 	MailServiceClient = mail.NewMailServiceClient(mailConn)
 
-	smsConn := rpc.Connect(conf.GetSettings().RPC.SMS)
+	smsConn := rpc.Connect(config.RPC.SMS)
 	SmsServiceClient = sms.NewSmsServiceClient(smsConn)
 
-	chatConn := rpc.Connect(conf.GetSettings().RPC.Chat)
+	chatConn := rpc.Connect(config.RPC.Chat)
 	ChatServiceClient = chat.NewChatServiceClient(chatConn)
 
-	authConn := rpc.Connect(conf.GetSettings().RPC.Auth)
+	authConn := rpc.Connect(config.RPC.Auth)
 	AuthServiceClient = auth.NewAuthServiceClient(authConn)
 
-	pushConn := rpc.Connect(conf.GetSettings().RPC.Push)
+	pushConn := rpc.Connect(config.RPC.Push)
 	PushServiceClient = push.NewPushServiceClient(pushConn)
 
-	telegramConn := rpc.Connect(conf.GetSettings().RPC.Telegram)
+	telegramConn := rpc.Connect(config.RPC.Telegram)
 	TelegramServiceClient = bot.NewTelegramServiceClient(telegramConn)
+
+	checkerConn := rpc.Connect(config.RPC.Checker)
+	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
 }
 
 // GetBitly returns Bitly client

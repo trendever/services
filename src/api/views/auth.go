@@ -6,6 +6,9 @@ import (
 	"errors"
 	"net/http"
 	auth_protocol "proto/auth"
+	"regexp"
+	"strings"
+	"utils/log"
 	"utils/rpc"
 )
 
@@ -20,6 +23,8 @@ func init() {
 	)
 }
 
+var nameValidator = regexp.MustCompile("^(\\w|\\.)*$")
+
 //RegisterNewUser creates new user
 func RegisterNewUser(c *soso.Context) {
 	req := c.RequestMap
@@ -30,10 +35,22 @@ func RegisterNewUser(c *soso.Context) {
 	}
 
 	if value, ok := req["instagram_username"].(string); ok {
+		value = strings.Trim(value, " \n\t")
+		if !nameValidator.MatchString(value) {
+			log.Debug("name '%v' isn't valid", value)
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid instagram name"))
+			return
+		}
 		request.InstagramUsername = value
 	}
 
 	if value, ok := req["username"].(string); ok {
+		value = strings.Trim(value, " \n\t")
+		if !nameValidator.MatchString(value) {
+			log.Debug("name '%v' isn't valid", value)
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid user name"))
+			return
+		}
 		request.Username = value
 	}
 

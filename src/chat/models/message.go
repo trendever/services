@@ -109,3 +109,10 @@ func (m *Message) IsStatusMessage() bool {
 	}
 	return false
 }
+
+// Sorting shiet
+type messageParts []*MessagePart
+
+func (a messageParts) Len() int           { return len(a) }
+func (a messageParts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a messageParts) Less(i, j int) bool { return a[i].ID < a[j].ID }

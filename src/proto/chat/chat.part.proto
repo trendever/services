@@ -12,8 +12,6 @@ service ChatService {
     rpc SendNewMessage(SendMessageRequest) returns (SendMessageReply) {}
     //returns chat history
     rpc GetChatHistory(ChatHistoryRequest) returns (ChatHistoryReply) {}
-    //returns user's chats
-    rpc GetUserChats(UserChatsRequest) returns (UserChatsReply) {}
     //updated last message id for member
     rpc MarkAsReaded(MarkAsReadedRequest) returns (MarkAsReadedReply){}
     //returns total count of unread messages
@@ -139,15 +137,6 @@ message ChatHistoryReply {
     uint64 total_messages = 3;
     Error error = 4;
 
-}
-
-message UserChatsRequest {
-    uint64 user_id = 1;
-}
-
-message UserChatsReply {
-    repeated Chat chats = 1;
-    Error error = 2;
 }
 
 message MarkAsReadedRequest {
