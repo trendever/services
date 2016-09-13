@@ -44,6 +44,7 @@ type User struct {
 	InstagramID        uint64
 	InstagramUsername  string
 	InstagramAvatarURL string
+	AvatarURL          string
 }
 
 func (u User) TableName() string {
@@ -101,7 +102,7 @@ func checkUser(user *User) {
 	}
 	candidates, err := Instagram.GetFree().SearchUsers(user.InstagramUsername)
 	if err != nil {
-		log.Error(fmt.Errorf("failed to search user in instagram: %v", err))
+		log.Error(fmt.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err))
 		return
 	}
 	var instagramInfo *instagram.SearchUserInfo
