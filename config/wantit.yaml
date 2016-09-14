@@ -4,7 +4,7 @@ coreServer:      core:3005
 fetcherServer:   fetcher:3006
 saveTrendServer: savetrend:3009
 orderUrlFormat:  'https://localhost:8040/order/%v'
-mandibleURL:     'http://images:8080/'
+mandibleURL:     'http://mandible:8089/'
 lastCheckedFile: 'wantit.last'
 
 instagram:
