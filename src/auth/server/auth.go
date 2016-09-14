@@ -141,7 +141,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	}
 
 	if pass.SmsPassword != request.Password {
-		log.Debug("wrong password not found for user %v: '%v' != '%v'", resp.Id, pass.SmsPassword, request.Password)
+		log.Debug("wrong password for user %v: '%v' != '%v'", resp.Id, pass.SmsPassword, request.Password)
 		return s.wrongCredentialsReply(), nil
 	}
 
