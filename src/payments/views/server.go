@@ -200,7 +200,22 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	}
 
 	// Step0.5: check if saved pay parameters are equal to supplied
-	if req.LeadId != pay.LeadID || pay.LeadID == 0 || int32(req.Direction) != pay.Direction {
+
+	// allow both sides cancel
+	// we have only 2 direction and this may seem useless; but it is planned to have other people in conversation
+	// so I will disable checks only for new payment sides
+	switch req.Direction {
+	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
+		if pay.Direction != int32(payment.Direction_CLIENT_PAYS) && pay.Direction != int32(payment.Direction_CLIENT_RECV) {
+			return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId)}, nil
+		}
+	default:
+		if int32(req.Direction) != pay.Direction {
+			return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId)}, nil
+		}
+	}
+
+	if req.LeadId != pay.LeadID || pay.LeadID == 0 {
 		return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)}, nil
 	}
 
