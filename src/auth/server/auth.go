@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/dvsekhvalnov/jose2go"
 	"github.com/ttacon/libphonenumber"
 	"golang.org/x/net/context"
@@ -48,6 +49,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
 
 	if err != nil {
+		log.Debug("invalid phone number %v", phoneNumber)
 		return &auth_protocol.UserReply{
 			ErrorCode:    auth_protocol.ErrorCodes_INCORRECT_PHONE_FORMAT,
 			ErrorMessage: err.Error(),
@@ -61,7 +63,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	}
 	userExists, err := s.core.ReadUser(context.Background(), userRequest)
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("failed to read user with phone %v: %v", phoneNumber, err))
 		return nil, err
 	}
 	//That's mean we found confirmed user
@@ -79,13 +81,13 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	}
 	resp, err := s.core.FindOrCreateUser(context.Background(), newUser)
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("failed to create user with phone %v: %v", phoneNumber, err))
 		return nil, err
 	}
 
 	go (func() {
 		if err := s.sendSMSWithPassword(uint(resp.Id), phoneNumber); err != nil {
-			log.Error(err)
+			log.Error(fmt.Errorf("failed to send password sms to %v: %v", phoneNumber, err))
 		}
 	})()
 
@@ -105,6 +107,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
 
 	if err != nil {
+		log.Debug("invalid phone number %v", phoneNumber)
 		return &auth_protocol.LoginReply{
 			ErrorCode:    auth_protocol.ErrorCodes_INCORRECT_PHONE_FORMAT,
 			ErrorMessage: err.Error(),
@@ -117,22 +120,28 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	resp, err := s.core.ReadUser(context.Background(), userRequest)
 
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("failed to read user with phone %v: %v", phoneNumber, err))
 		return nil, err
 	}
 
 	if resp.Id == 0 {
-		log.Error(err)
+		log.Error(fmt.Errorf("user with phone %v not found", phoneNumber))
 		return s.wrongCredentialsReply(), nil
 	}
 
 	pass, err := s.passwords.FindByUserID(uint(resp.Id))
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("failed to find password for user %v: %v", resp.Id, err))
 		return nil, err
 	}
 
-	if pass == nil || pass.SmsPassword != request.Password {
+	if pass == nil {
+		log.Debug("password not found for user %v", resp.Id)
+		return s.wrongCredentialsReply(), nil
+	}
+
+	if pass.SmsPassword != request.Password {
+		log.Debug("wrong password for user %v: '%v' != '%v'", resp.Id, pass.SmsPassword, request.Password)
 		return s.wrongCredentialsReply(), nil
 	}
 
