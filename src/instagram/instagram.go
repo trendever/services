@@ -304,6 +304,8 @@ func (this *Instagram) requestLogin(method, endpoint string, body io.Reader) (*h
 	}
 	req.Header.Add("User-Agent", UserAgent)
 	req.Header.Add("Accept", "*/*")
+	req.Header.Add("X-IG-Capabilities", "3Q4=")
+	req.Header.Add("X-IG-Connection-Type", "WIFI")
 	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
 	req.Header.Add("Accept-Language", "en-US")
 	req.Header.Add("Cookie2", "$Version=1")
@@ -322,9 +324,17 @@ func (this *Instagram) requestMain(method, endpoint string, body io.Reader) (*ht
 		return nil, err
 	}
 	req.Header.Add("User-Agent", UserAgent)
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("X-IG-Capabilities", "3Q4=")
+	req.Header.Add("X-IG-Connection-Type", "WIFI")
+	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+	req.Header.Add("Accept-Language", "en-US")
+	req.Header.Add("Cookie2", "$Version=1")
+
 	for _, cookie := range this.cookies {
 		req.AddCookie(cookie)
 	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
