@@ -128,7 +128,7 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	} else if !canOpen {
 		return &payment.CreateOrderReply{
 			Error:        payment.Errors_ANOTHER_OPEN_ORDER,
-			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open lead", req.LeadId),
+			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open order", req.LeadId),
 		}, nil
 	}
 
