@@ -235,3 +235,26 @@ func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
 
 	return &object, err
 }
+
+// RankedRecipients returns @TODO wtf it returns?
+func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
+	endpoint := "/direct_v2/ranked_recipients/?show_threads=true"
+
+	var object RankedRecipientsResponse
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+
+}
+
+// DirectThread @TODO wtf returns
+func (ig *Instagram) DirectThread(threadID string) (*DirectThreadResponse, error) {
+
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
+
+	var object DirectThreadResponse
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+
+}
