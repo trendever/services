@@ -87,6 +87,7 @@ enum Errors {
   DB_FAILED = 2;
   ALREADY_PAYED = 3;
   PAY_CANCELLED = 4;
+  ANOTHER_OPEN_ORDER = 5;
 
   // external errors
   INIT_FAILED = 127;
