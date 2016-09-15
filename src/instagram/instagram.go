@@ -57,7 +57,7 @@ func (ig *Instagram) GetUserName() string {
 // Login to Instagram.
 func (ig *Instagram) Login() error {
 
-	fetch := "/si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false)
+	fetch := fmt.Sprintf("/si/fetch_headers/?challenge_type=signup&guid=%v", generateUUID(false))
 
 	resp, err := ig.requestMain("GET", fetch, nil, true)
 	if err != nil {
@@ -89,7 +89,7 @@ func (ig *Instagram) Login() error {
 	}
 
 	var loginResp LoginResponse
-	cookies, err := ig.loginRequest("POST", URL+"/accounts/login/?", generateSignature(jsonData), &loginResp)
+	cookies, err := ig.loginRequest("POST", "/accounts/login/?", generateSignature(jsonData), &loginResp)
 	if err != nil {
 		return err
 	}
