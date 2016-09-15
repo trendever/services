@@ -146,11 +146,11 @@ services:
       - 127.0.0.1:7780:7780
 
   mandible:
-    image: debian:jessie
+    image: debmandible
     volumes_from:
       - data
     working_dir: /services/
-    command: sh -c 'apt-get update && apt-get -y install graphicsmagick optipng libjpeg-progs exiftool && ln -sfv /usr/bin/gm /usr/bin/convert && exec ./bin/mandible'
+    command: sh -c 'exec ./bin/mandible'
     ports:
       - 127.0.0.1:8089:8089
 

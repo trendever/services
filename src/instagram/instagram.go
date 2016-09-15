@@ -1,29 +1,27 @@
 package instagram
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
+	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 )
 
+// Instagram defines client
 type Instagram struct {
 	userName   string
 	password   string
 	token      string
 	isLoggedIn bool
 	uuid       string
-	deviceId   string
-	phoneId    string
-	userNameId int64
+	deviceID   string
+	phoneID    string
+	userNameID int64
 	rankToken  string
 	cookies    []*http.Cookie
 }
 
+// NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
 		userName:   userName,
@@ -31,9 +29,9 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 		token:      "",
 		isLoggedIn: false,
 		uuid:       generateUUID(true),
-		phoneId:    generateUUID(true),
-		deviceId:   generateDeviceID(userName),
-		userNameId: 0,
+		phoneID:    generateUUID(true),
+		deviceID:   generateDeviceID(userName),
+		userNameID: 0,
 		rankToken:  "",
 		cookies:    nil,
 	}
@@ -46,20 +44,22 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 	return i, nil
 }
 
-func (this *Instagram) IsLoggedIn() bool {
-	return this.isLoggedIn
+// IsLoggedIn returns if last request does not have auth error
+func (ig *Instagram) IsLoggedIn() bool {
+	return ig.isLoggedIn
 }
 
-func (this *Instagram) GetUserName() string {
-	return this.userName
+// GetUserName (will you guess what?) returns set-up username
+func (ig *Instagram) GetUserName() string {
+	return ig.userName
 }
 
 // Login to Instagram.
-func (this *Instagram) Login() error {
+func (ig *Instagram) Login() error {
 
-	fetch := URL + "/si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false)
+	fetch := fmt.Sprintf("/si/fetch_headers/?challenge_type=signup&guid=%v", generateUUID(false))
 
-	resp, err := this.requestLogin("GET", fetch, nil)
+	resp, err := ig.requestMain("GET", fetch, nil, true)
 	if err != nil {
 		return err
 	}
@@ -68,18 +68,18 @@ func (this *Instagram) Login() error {
 	// get csrftoken
 	for _, cookie := range resp.Cookies() {
 		if cookie.Name == "csrftoken" {
-			this.token = cookie.Value
+			ig.token = cookie.Value
 		}
 	}
 
 	// login
 	login := &Login{
-		DeviceId:          this.deviceId,
-		PhoneId:           this.phoneId,
-		Guid:              this.uuid,
-		UserName:          this.userName,
-		Password:          this.password,
-		Csrftoken:         this.token,
+		DeviceId:          ig.deviceID,
+		PhoneId:           ig.phoneID,
+		Guid:              ig.uuid,
+		UserName:          ig.userName,
+		Password:          ig.password,
+		Csrftoken:         ig.token,
 		LoginAttemptCount: "0",
 	}
 
@@ -88,297 +88,173 @@ func (this *Instagram) Login() error {
 		return err
 	}
 
-	signature := generateSignature(jsonData)
-
-	resp, err = this.requestLogin("POST", URL+"/accounts/login/?", bytes.NewReader([]byte(signature)))
+	var loginResp LoginResponse
+	cookies, err := ig.loginRequest("POST", "/accounts/login/?", generateSignature(jsonData), &loginResp)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	// get new csrftoken
-	for _, cookie := range resp.Cookies() {
+	for _, cookie := range cookies {
 		if cookie.Name == "csrftoken" {
-			this.token = cookie.Value
+			ig.token = cookie.Value
 		}
 	}
-	this.cookies = resp.Cookies()
 
-	var object *LoginResponse
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&object)
-	if err != nil {
-		return err
+	ig.cookies = cookies
+
+	if loginResp.Status == "fail" {
+		return errors.New(loginResp.Message)
 	}
 
-	if object.Status == "fail" {
-		return errors.New(object.Message)
-	}
-
-	this.userNameId = object.LoggedInUser.Pk
-	this.rankToken = strconv.FormatInt(this.userNameId, 10) + "_" + this.uuid
-	this.isLoggedIn = true
+	ig.userNameID = loginResp.LoggedInUser.Pk
+	ig.rankToken = fmt.Sprintf("%d_%v", ig.userNameID, ig.uuid)
+	ig.isLoggedIn = true
 
 	return nil
 }
 
-// Get media likers.
-func (this *Instagram) GetMediaLikers(mediaId string) (*MediaLikers, error) {
+// GetMediaLikers returns likers of given media
+func (ig *Instagram) GetMediaLikers(mediaID string) (*MediaLikers, error) {
 
-	endpoint := URL + "/media/" + mediaId + "/likers/?"
+	endpoint := fmt.Sprintf("/media/%v/likers/?", mediaID)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object MediaLikers
+	err := ig.request("GET", endpoint, &object)
 
-	var object *MediaLikers
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get media comments.
-func (this *Instagram) GetMediaComment(mediaId string) (*MediaComment, error) {
+// GetMediaComment returns comment info for this media
+func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 
-	endpoint := URL + "/media/" + mediaId + "/comments/?"
+	endpoint := fmt.Sprintf("/media/%v/comments/?", mediaID)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object MediaComment
+	err := ig.request("GET", endpoint, &object)
 
-	var object *MediaComment
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get media by id.
-func (this *Instagram) GetMedia(mediaId string) (*Medias, error) {
+// GetMedia by id.
+func (ig *Instagram) GetMedia(mediaID string) (*Medias, error) {
 
-	endpoint := URL + "/media/" + mediaId + "/info/?"
+	endpoint := fmt.Sprintf("/media/%v/info/?", mediaID)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object Medias
+	err := ig.request("GET", endpoint, &object)
 
-	var object *Medias
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get recent activity.
-func (this *Instagram) GetRecentActivity() (*RecentActivity, error) {
+// GetRecentActivity returns main instagram feed
+func (ig *Instagram) GetRecentActivity() (*RecentActivity, error) {
 
-	endpoint := URL + "/news/inbox/?"
+	endpoint := "/news/inbox/?"
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object RecentActivity
+	err := ig.request("GET", endpoint, &object)
 
-	var object *RecentActivity
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Search users.
-func (this *Instagram) SearchUsers(query string) (*SearchUsers, error) {
+// SearchUsers find user by query
+func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 
-	endpoint := URL + "/users/search/?ig_sig_key_version=" + SigKeyVersion +
-		"&is_typeahead=true&query=" + query + "&rank_token=" + this.rankToken
+	endpoint := fmt.Sprintf(
+		"/users/search/?ig_sig_key_version=%v&is_typeahead=true&query=%v&rank_token=%v",
+		SigKeyVersion, query, ig.rankToken,
+	)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object SearchUsers
+	err := ig.request("GET", endpoint, &object)
 
-	var object *SearchUsers
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get username info.
-func (this *Instagram) GetUserNameInfo(userNameId int64) (*UserNameInfo, error) {
+// GetUserNameInfo for userNameID
+func (ig *Instagram) GetUserNameInfo(userNameID int64) (*UserNameInfo, error) {
 
-	endpoint := URL + "/users/" + strconv.FormatInt(userNameId, 10) + "/info/?"
+	endpoint := fmt.Sprintf("/users/%d/info/?", userNameID)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object UserNameInfo
+	err := ig.request("GET", endpoint, &object)
 
-	var object *UserNameInfo
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get user tags.
-func (this *Instagram) GetUserTags(userNameId int64) (*UserTags, error) {
+// GetUserTags for given userID
+func (ig *Instagram) GetUserTags(userNameID int64) (*UserTags, error) {
 
-	endpoint := URL + "/usertags/" + strconv.FormatInt(userNameId, 10) + "/feed/?rank_token=" +
-		this.rankToken + "&ranked_content=false"
+	endpoint := fmt.Sprintf(
+		"/usertags/%d/feed/?rank_token=%v&ranked_content=false",
+		userNameID, ig.rankToken,
+	)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object UserTags
+	err := ig.request("GET", endpoint, &object)
 
-	var object *UserTags
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Search tags.
-func (this *Instagram) SearchTags(query string) (*SearchTags, error) {
+// SearchTags for some query
+func (ig *Instagram) SearchTags(query string) (*SearchTags, error) {
 
-	endpoint := URL + "/tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + this.rankToken
+	endpoint := fmt.Sprintf(
+		"/tags/search/?is_typeahead=true&q=%v&rank_token=%v",
+		query, ig.rankToken,
+	)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object SearchTags
+	err := ig.request("GET", endpoint, &object)
 
-	var object *SearchTags
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Get tagged media.
-func (this *Instagram) TagFeed(tag, maxId string) (*TagFeed, error) {
+// TagFeed returns tagged media.
+func (ig *Instagram) TagFeed(tag, maxID string) (*TagFeed, error) {
 
-	endpoint := URL + "/feed/tag/" + tag + "/?rank_token=" + this.rankToken + "&ranked_content=false&max_id=" + maxId
+	endpoint := fmt.Sprintf(
+		"/feed/tag/%v/?rank_token=%v&ranked_content=false&max_id=%v",
+		tag, ig.rankToken, maxID,
+	)
 
-	resp, err := this.request("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var object TagFeed
+	err := ig.request("GET", endpoint, &object)
 
-	var object *TagFeed
-	err = json.Unmarshal(resp, &object)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return &object, err
 }
 
-// Request for Login method. Needs to get the authorization cookies.
-func (this *Instagram) requestLogin(method, endpoint string, body io.Reader) (*http.Response, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest(method, endpoint, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("User-Agent", UserAgent)
-	req.Header.Add("Accept", "*/*")
-	req.Header.Add("X-IG-Capabilities", "3Q4=")
-	req.Header.Add("X-IG-Connection-Type", "WIFI")
-	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-	req.Header.Add("Accept-Language", "en-US")
-	req.Header.Add("Cookie2", "$Version=1")
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+// PendingInbox returns chats that needs to be either confirmed or declined
+func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
+
+	endpoint := "/direct_v2/pending_inbox/?"
+
+	var object PendingInboxResponse
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
 }
 
-// Main request for all other methods. Reading the authorization cookies.
-func (this *Instagram) requestMain(method, endpoint string, body io.Reader) (*http.Response, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest(method, endpoint, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("User-Agent", UserAgent)
-	req.Header.Add("Accept", "*/*")
-	req.Header.Add("X-IG-Capabilities", "3Q4=")
-	req.Header.Add("X-IG-Connection-Type", "WIFI")
-	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-	req.Header.Add("Accept-Language", "en-US")
-	req.Header.Add("Cookie2", "$Version=1")
+// RankedRecipients returns @TODO wtf it returns?
+func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
+	endpoint := "/direct_v2/ranked_recipients/?show_threads=true"
 
-	for _, cookie := range this.cookies {
-		req.AddCookie(cookie)
-	}
+	var object RankedRecipientsResponse
+	err := ig.request("GET", endpoint, &object)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return &object, err
+
 }
 
-// Request with five attempts re-login. Re-login if getting error 'login_required'.
-func (this *Instagram) request(method, endpoint string, body io.Reader) ([]byte, error) {
+// DirectThread @TODO wtf returns
+func (ig *Instagram) DirectThread(threadID string) (*DirectThreadResponse, error) {
 
-	for attempt := 0; attempt < 5; attempt++ {
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
 
-		resp, err := this.requestMain(method, endpoint, body)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
+	var object DirectThreadResponse
+	err := ig.request("GET", endpoint, &object)
 
-		jsonBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
+	return &object, err
 
-		var message *Message
-		err = json.Unmarshal(jsonBody, &message)
-		if err != nil {
-			return nil, err
-		}
-
-		if message.Status == "fail" {
-			if message.Message != "login_required" {
-				return nil, errors.New(message.Message)
-			}
-			// relogin
-			this.isLoggedIn = false
-			err = this.Login()
-			if err != nil {
-				return nil, err
-			}
-			time.Sleep(time.Millisecond * 500)
-		} else {
-			return jsonBody, nil
-		}
-	}
-
-	return nil, errors.New("max_attempts")
 }
