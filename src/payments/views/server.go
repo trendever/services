@@ -207,16 +207,26 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	switch req.Direction {
 	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
 		if pay.Direction != int32(payment.Direction_CLIENT_PAYS) && pay.Direction != int32(payment.Direction_CLIENT_RECV) {
-			return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId)}, nil
+			return &payment.CancelOrderReply{
+				Error:        payment.Errors_INVALID_DATA,
+				ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId),
+			}, nil
 		}
 	default:
 		if int32(req.Direction) != pay.Direction {
-			return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId)}, nil
+			return &payment.CancelOrderReply{
+				Error:        payment.Errors_INVALID_DATA,
+				ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId),
+			}, nil
 		}
 	}
 
+	// checks to make sure leadID is not mangled
 	if req.LeadId != pay.LeadID || pay.LeadID == 0 {
-		return &payment.CancelOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)}, nil
+		return &payment.CancelOrderReply{
+			Error:        payment.Errors_INVALID_DATA,
+			ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId),
+		}, nil
 	}
 
 	// Step0.6: check if TX is already finished
@@ -225,20 +235,29 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 	if finished > 0 {
-		return &payment.CancelOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: fmt.Sprintf("payments: This pay is already payed; why do you want to cancel it?")}, nil
+		return &payment.CancelOrderReply{
+			Error:        payment.Errors_ALREADY_PAYED,
+			ErrorMessage: fmt.Sprintf("payments: This pay is already payed; why do you want to cancel it?"),
+		}, nil
 	}
 
 	// Step0.8: notify chat; check before sending to chat to avoid inconsistiency if chat is down
 	err = ps.chat.SendCancelOrder(pay)
 	if err != nil {
-		return &payment.CancelOrderReply{Error: payment.Errors_CHAT_DOWN, ErrorMessage: fmt.Sprintf("payments: chat service is unreachable")}, nil
+		return &payment.CancelOrderReply{
+			Error:        payment.Errors_CHAT_DOWN,
+			ErrorMessage: fmt.Sprintf("payments: chat service is unreachable"),
+		}, nil
 	}
 
 	// Step0.7: do the cancel
 	pay.Cancelled = true
 	err = ps.repo.SavePay(pay)
 	if err != nil {
-		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: fmt.Sprintf("payments: could not save modified pay")}, nil
+		return &payment.CancelOrderReply{
+			Error:        payment.Errors_DB_FAILED,
+			ErrorMessage: fmt.Sprintf("payments: could not save modified pay"),
+		}, nil
 	}
 
 	return &payment.CancelOrderReply{Cancelled: true}, nil
