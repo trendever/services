@@ -11,8 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/qor/activity"
 	"github.com/qor/admin"
-	"github.com/qor/i18n"
-	"github.com/qor/i18n/backends/database"
 	"github.com/qor/qor"
 	"github.com/qor/sorting"
 	"github.com/qor/transition"
@@ -63,11 +61,6 @@ func Init(engine *gin.Engine) {
 	Admin.SetAuth(Auth{})
 
 	Admin.AddMenu(&admin.Menu{Name: "Dashboard", Link: "/admin"})
-
-	//TODO: this is dirty workaround, needs to be fixed
-	Admin.I18n = i18n.New(
-		database.New(db.New()),
-	)
 
 	resources.Init(Admin)
 	ajaxor.Init(Admin)
