@@ -67,12 +67,18 @@ func (t *Transaction) Perform(tx *gorm.DB) error {
 		destination := Account{UserID: t.Destination}
 		res := tx.Find(&destination)
 		if res.Error != nil && !res.RecordNotFound() {
-			return fmt.Errorf("failed to load source account: %v", res.Error)
+			return fmt.Errorf("failed to load destination account: %v", res.Error)
 		}
 		destination.Balance += int64(t.Amount)
-		err := tx.Save(&destination).Error
-		if err != nil {
-			return fmt.Errorf("failed to save source account: %v", res.Error)
+		res = tx.Save(&destination)
+		if res.Error != nil {
+			return fmt.Errorf("failed to save destination account: %v", res.Error)
+		}
+		if res.RowsAffected == 0 {
+			err := tx.Create(&destination).Error
+			if err != nil {
+				return fmt.Errorf("failed to create destination account: %v", err)
+			}
 		}
 	}
 	err := tx.Save(t).Error
