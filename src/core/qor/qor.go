@@ -9,7 +9,6 @@ import (
 	"utils/db"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qor/activity"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/sorting"
@@ -44,7 +43,6 @@ var (
 		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},
-		&activity.QorActivity{},
 		&models.UsersProducts{},
 		&models.PushToken{},
 	}

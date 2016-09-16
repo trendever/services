@@ -560,12 +560,6 @@
 			"branch": "develop"
 		},
 		{
-			"importpath": "github.com/qor/activity",
-			"repository": "https://github.com/qor/activity",
-			"revision": "0e02e585d6f96ae1aa01312a6ae93e3011574e32",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/qor/admin",
 			"repository": "https://github.com/qor/admin",
 			"revision": "ea08a13048be73a47777515eecdc9aec32c7f085",
