@@ -100,13 +100,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/bradfitz/gomemcache/memcache",
-			"repository": "https://github.com/bradfitz/gomemcache",
-			"revision": "fb1f79c6b65acda83063cbc69f6bba1522558bfc",
-			"branch": "master",
-			"path": "/memcache"
-		},
-		{
 			"importpath": "github.com/bradfitz/http2",
 			"repository": "https://github.com/bradfitz/http2",
 			"revision": "aa7658c0e9902e929a9ed0996ef949e59fc0f3ab",
@@ -138,13 +131,6 @@
 			"path": "/etcd"
 		},
 		{
-			"importpath": "github.com/coreos/pkg/flagutil",
-			"repository": "https://github.com/coreos/pkg",
-			"revision": "a48e304ff9331be6d5df352b6b47bd1395ab5dd7",
-			"branch": "master",
-			"path": "/flagutil"
-		},
-		{
 			"importpath": "github.com/cpuguy83/go-md2man",
 			"repository": "https://github.com/cpuguy83/go-md2man",
 			"revision": "2724a9c9051aa62e9cca11304e7dd518e9e41599",
@@ -161,18 +147,6 @@
 			"importpath": "github.com/denisenkom/go-mssqldb",
 			"repository": "https://github.com/denisenkom/go-mssqldb",
 			"revision": "c5885153c18c8e4cdde7608f3fa65c2df212d3cb",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/derlaft/sling",
-			"repository": "https://github.com/derlaft/sling",
-			"revision": "b7710584a866b09b08405c4eed0dab4f9b7e7dc1",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/dghubble/sling",
-			"repository": "https://github.com/dghubble/sling",
-			"revision": "3db1177a9ec00dae4266e45abb504e2e13d7dc04",
 			"branch": "master"
 		},
 		{
@@ -604,18 +578,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/qor/cache",
-			"repository": "https://github.com/qor/cache",
-			"revision": "f20a48076390a8c8260ad81540d6a30727979e7c",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/qor/i18n",
-			"repository": "https://github.com/qor/i18n",
-			"revision": "f162a4b9035abbd35b13c344e74ee4636bcf2eac",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/qor/media_library",
 			"repository": "https://github.com/qor/media_library",
 			"revision": "141db2bae1d68597da4f22896d35809f3fb0a275",
@@ -973,13 +935,6 @@
 			"path": "/transform"
 		},
 		{
-			"importpath": "google.golang.org/api/bigquery/v2",
-			"repository": "https://code.googlesource.com/google-api-go-client",
-			"revision": "66a8bc6d16488febe10aa767dce67cbf3e7dd21d",
-			"branch": "master",
-			"path": "/bigquery/v2"
-		},
-		{
 			"importpath": "google.golang.org/api/gensupport",
 			"repository": "https://code.googlesource.com/google-api-go-client",
 			"revision": "66a8bc6d16488febe10aa767dce67cbf3e7dd21d",
@@ -1046,13 +1001,6 @@
 			"repository": "https://code.googlesource.com/gocloud-legacy",
 			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
 			"branch": "master"
-		},
-		{
-			"importpath": "google.golang.org/cloud/bigquery",
-			"repository": "https://code.googlesource.com/gocloud-legacy",
-			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
-			"branch": "master",
-			"path": "/bigquery"
 		},
 		{
 			"importpath": "google.golang.org/cloud/bigtable",
@@ -1276,12 +1224,6 @@
 			"importpath": "gopkg.in/olivere/elastic.v3",
 			"repository": "https://gopkg.in/olivere/elastic.v3",
 			"revision": "787ebbb5a7600662bca364e4e8ca959f315e442f",
-			"branch": "master"
-		},
-		{
-			"importpath": "gopkg.in/redis.v3",
-			"repository": "https://gopkg.in/redis.v3",
-			"revision": "b5e368500d0a508ef8f16e9c2d4025a8a46bcc29",
 			"branch": "master"
 		},
 		{
