@@ -6,5 +6,5 @@ rm -rf pkg vendor/pkg
 cd vendor/
 
 for dep in $(cat manifest | grep importpath | tr '"' '\n' | grep /); do 
-  grep -rl $dep ../src/ src/ | grep -qv $dep || echo $dep; done | \
+  grep -rl $dep ../src/ src/ | grep '.go$' | grep -qv $dep || echo $dep; done | \
   xargs -n1 echo gb vendor delete
