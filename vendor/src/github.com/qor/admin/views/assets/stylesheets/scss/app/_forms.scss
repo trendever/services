@@ -143,7 +143,6 @@
     }
   }
 }
-
 .qor-field {
   padding-top: 4px;
   padding-bottom: 4px;
@@ -329,6 +328,13 @@
       width: 100%;
       align-items: center;
       height: 80px;
+
+      img {
+        display: block;
+        margin: auto;
+        max-height: 80px;
+      }
+
       span{
         display: inline-block;
         width: 100%;
@@ -411,4 +417,15 @@
       overflow: inherit;
     }
   }
+}
+
+::-webkit-input-placeholder { /* WebKit, Blink, Edge */
+    color: unquote("rgba(#{$color-black}, 0.12)");
+}
+::-moz-placeholder { /* Mozilla Firefox 19+ */
+   color: unquote("rgba(#{$color-black}, 0.12)");
+   opacity:  1;
+}
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+   color: unquote("rgba(#{$color-black}, 0.12)");
 }

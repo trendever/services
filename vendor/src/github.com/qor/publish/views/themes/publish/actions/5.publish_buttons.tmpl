@@ -1,14 +1,5 @@
 <div class="qor-actions qor-actions--publish">
 
-  <!-- discard button -->
-  <button
-        type="submit"
-        class="mdl-button qor-action--button qor-publish__discard"
-        data-confirm="{{t "Are you sure?"}}"
-        name="publish_type" value="discard">
-        {{t "qor_publish.form.discard" "Discard"}}
-  </button>
-
   <!-- publish button -->
   <button
         type="submit"
@@ -23,11 +14,21 @@
   <button
         type="button"
         class="mdl-button mdl-button--accent qor-action--button qor-action--button qor-publish__button-popover"
+        data-no-item="{{t "qor_admin.actions.please_select_an_item" "Please select an item"}}"
         data-modal-title="{{t "qor_publish.form.schedule_time_to_publish" "Schedule Time To Publish"}}"
         data-modal-hint="{{t "qor_publish.form.schedule_time_to_publish.hint" "Select the date and time you want to publish"}}"
         data-modal-set="{{t "qor_publish.form.publish" "Publish"}}"
         data-modal-cancel="{{t "qor_admin.form.cancel" "Cancel"}}">
         {{t "qor_publish.form.schedule_time_to_publish" "Schedule Time To Publish"}}
+    </button>
+
+    <!-- discard button -->
+    <button
+          type="submit"
+          class="mdl-button qor-action--button qor-publish__discard"
+          data-confirm="{{t "Are you sure?"}}"
+          name="publish_type" value="discard">
+          {{t "qor_publish.form.discard" "Discard"}}
     </button>
 
   <input class="publish-schedule-time" type="text" name="scheduled_time" style="display: none;" />

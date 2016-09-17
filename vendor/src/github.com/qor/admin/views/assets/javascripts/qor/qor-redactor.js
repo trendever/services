@@ -281,20 +281,18 @@
         }
 
         $this.data(NAMESPACE, (data = {}));
-        config = $this.data();
-
-        $this.redactor({
-          imageUpload: config.uploadUrl,
-          fileUpload: config.uploadUrl,
+        config = {
+          imageUpload: $this.data("uploadUrl"),
+          fileUpload: $this.data("uploadUrl"),
 
           initCallback: function () {
-            if (!config.cropUrl) {
+            if (!$this.data("cropUrl")) {
               return;
             }
 
             $this.data(NAMESPACE, (data = new QorRedactor($this, {
-              remote: config.cropUrl,
-              text: config.text,
+              remote: $this.data("cropUrl"),
+              text: $this.data("text"),
               parent: '.qor-field',
               toggle: '.qor-cropper__toggle--redactor',
               replace: function (url) {
@@ -323,7 +321,10 @@
           imageDeleteCallback: function (/*url, image*/) {
             $this.triggerHandler(EVENT_IMAGE_DELETE, arguments[1]);
           }
-        });
+        };
+
+        $.extend(config, $this.data("redactorSettings"));
+        $this.redactor(config);
       } else {
         if (/destroy/.test(option)) {
           $this.redactor('core.destroy');

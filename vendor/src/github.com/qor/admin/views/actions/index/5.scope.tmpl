@@ -1,7 +1,7 @@
 {{$scopes := get_scopes}}
 {{$resource := .Resource}}
 {{if $scopes}}
-  <div class="qor-actions" data-toggle="qor.filter">
+  <div class="qor-actions qor-bottomsheet__filter" data-toggle="qor.filter">
     {{range $scope := $scopes}}
       {{if $scope.Group}}
         <select class="qor-action--select" data-toggle="qor.selector" data-clearable="true" name="scopes" placeholder="{{t (printf "%v.scopes.%v" $resource.ToParam $scope.Group) $scope.Group}}">

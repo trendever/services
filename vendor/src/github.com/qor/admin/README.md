@@ -2,7 +2,7 @@
 
 Instantly create a beautiful, cross platform, configurable Admin Interface and API for managing your data in minutes.
 
-[![GoDoc](https://godoc.org/github.com/qor/admin?status.svg)](https://godoc.org/github.com/qor/log)
+[![GoDoc](https://godoc.org/github.com/qor/admin?status.svg)](https://godoc.org/github.com/qor/admin)
 
 ## Features
 

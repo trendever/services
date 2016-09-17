@@ -1,6 +1,7 @@
 package admin_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -78,6 +79,7 @@ func TestRelationFieldMetaType(t *testing.T) {
 
 	userLanguagesMeta := &admin.Meta{Name: "Languages", Collection: []string{"Fake language"}}
 	user.Meta(userLanguagesMeta)
+	fmt.Println(userLanguagesMeta.Type)
 
 	if userLanguagesMeta.Type != "select_many" {
 		t.Error("many_to_many relation doesn't generate select_many type meta")
@@ -136,52 +138,6 @@ func TestGetSliceMetaValue(t *testing.T) {
 
 	if addresses.Index(0).FieldByName("Address1").String() != "an address" || addresses.Index(1).FieldByName("Address1").String() != "another address" {
 		t.Error("slice field value doesn't get")
-	}
-}
-
-func TestStringMetaCollection(t *testing.T) {
-	user := Admin.AddResource(&User{})
-	meta := &admin.Meta{Name: "Name", Collection: []string{"Alpha", "Omega"}}
-	user.Meta(meta)
-
-	expectedResult := [][]string{{"Alpha", "Alpha"}, {"Omega", "Omega"}}
-	collection := meta.GetCollection(user, &qor.Context{Config: &qor.Config{DB: db}})
-
-	if !reflect.DeepEqual(expectedResult, collection) {
-		t.Error("string collection doesn't generated")
-	}
-}
-
-func Test2DimensionStringMetaCollection(t *testing.T) {
-	user := Admin.AddResource(&User{})
-	meta := &admin.Meta{Name: "Name", Collection: [][]string{{"Alpha", "Beta"}, {"Omega", "Beta"}}}
-	user.Meta(meta)
-
-	expectedResult := [][]string{{"Alpha", "Beta"}, {"Omega", "Beta"}}
-	collection := meta.GetCollection(user, &qor.Context{Config: &qor.Config{DB: db}})
-
-	if !reflect.DeepEqual(expectedResult, collection) {
-		t.Error("2 dimensions string collection doesn't generated")
-	}
-}
-
-func TestCustomizeMetaCollection(t *testing.T) {
-	user := Admin.AddResource(&User{})
-	meta := &admin.Meta{Name: "Name", Collection: func(resource interface{}, context *qor.Context) (results [][]string) {
-		reflectedResource := reflect.Indirect(reflect.ValueOf(resource))
-
-		return [][]string{{reflectedResource.FieldByName("Name").String(), reflectedResource.FieldByName("Name").String()}}
-	}}
-	user.Meta(meta)
-
-	userRecord := &User{Name: "user name"}
-	db.Create(&userRecord)
-
-	expectedResult := [][]string{{userRecord.Name, userRecord.Name}}
-	collection := meta.GetCollection(userRecord, &qor.Context{Config: &qor.Config{DB: db}})
-
-	if !reflect.DeepEqual(expectedResult, collection) {
-		t.Error("customized function collection doesn't generated")
 	}
 }
 

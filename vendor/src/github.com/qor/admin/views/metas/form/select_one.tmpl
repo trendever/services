@@ -7,16 +7,73 @@
     {{.Value}}
   </div>
 
-  <div class="qor-field__block qor-field__edit">
-    <select class="qor-field__input" id="{{.InputId}}" data-toggle="qor.chooser" data-placeholder="{{t "qor_admin.form.select_an_option" "Select an Option"}}" name="{{.InputName}}" {{if not (has_update_permission .Meta)}}disabled{{end}}>
-      {{$current_values := (raw_value_of .ResourceValue .Meta)}}
-      {{range $values := (call .CollectionValue)}}
-        {{if (is_included $current_values (index $values 0))}}
-          <option value="{{index $values 0}}" selected>{{index $values 1}}</option>
-        {{else}}
-          <option value="{{index $values 0}}">{{index $values 1}}</option>
-        {{end}}
+  {{if .Meta.Config.Select2ResultTemplate}}
+    <script name="select2-result-template" type="x-tmpl-mustache">
+      {{.Meta.Config.Select2ResultTemplate}}
+    </script>
+  {{end}}
+
+  {{if .Meta.Config.Select2SelectionTemplate}}
+    <script name="select2-selection-template" type="x-tmpl-mustache">
+      {{.Meta.Config.Select2SelectionTemplate}}
+    </script>
+  {{end}}
+
+  <script name="select-one-selected-template" type="x-tmpl-mustache">
+    <p class="qor-field__selected" data-primary-key="[[ primaryKey ]]">
+      <span class="qor-selected__change">[[ Name ]]</span>
+      <a href="#" class="qor-selected__remove"><i class="material-icons">remove_circle_outline</i></a>
+    </p>
+  </script>
+
+  <script name="select-one-selected-icon" type="x-tmpl-mustache">
+    <span class="qor-select__select-icon"><i class="material-icons">check_circle</i></span>
+  </script>
+
+  <div class="qor-field__block qor-field__edit  qor-field__selectone" {{if (eq .Meta.Config.SelectMode "bottom_sheet")}} data-toggle="qor.selectone"{{end}}>
+    {{$current_values := (raw_value_of .ResourceValue .Meta)}}
+
+    {{if (eq .Meta.Config.SelectMode "bottom_sheet")}}
+      {{if .Value}}
+        <p class="qor-field__selected" data-primary-key="{{primary_key_of $current_values}}">
+          <span class="qor-selected__change">{{.Value}}</span>
+          <a href="javascripr://" class="qor-selected__remove"><i class="material-icons">remove_circle_outline</i></a>
+        </p>
       {{end}}
-    </select>
+
+      <a href="javascript://" {{if .Value}} style="display:none;" {{end}} class="mdl-button mdl-button--colored qor-field__selectone-trigger" data-select-modal="one" data-select-id="#{{.InputId}}" data-selectone-url="{{url_for .Meta.Config.RemoteDataResource}}">{{t "qor_admin.form.click_to_select" "Click to Select"}}</a>
+
+      <select id="{{.InputId}}" class="qor-field__input qor-field__selectone-input hidden" name="{{.InputName}}" {{if not (has_update_permission .Meta)}}disabled{{end}}>
+        {{range $values := (.Meta.Config.GetCollection .ResourceValue .Context)}}
+          {{if (is_equal $current_values (index $values 0))}}
+            <option value="{{index $values 0}}" selected>{{index $values 1}}</option>
+          {{else}}
+            <option value="{{index $values 0}}">{{index $values 1}}</option>
+          {{end}}
+        {{end}}
+      </select>
+    {{else}}
+      <select id="{{.InputId}}" class="qor-field__input hidden" {{if .Meta.Config.RemoteDataResource}}{{if .Value}}chooser-selected="true"{{end}}{{end}} data-toggle="qor.chooser" data-placeholder="{{t "qor_admin.form.select_an_option" "Select an Option"}}" name="{{.InputName}}" {{if not (has_update_permission .Meta)}}disabled{{end}} {{if .Meta.Config.AllowBlank}}data-allow-clear="true"{{end}} {{if .Meta.Config.RemoteDataResource}}data-remote-data-url="{{url_for .Meta.Config.RemoteDataResource}}"{{end}}>
+        {{$current_values := (raw_value_of .ResourceValue .Meta)}}
+        {{if .Meta.Config.RemoteDataResource}}
+          {{if .Value}}
+            <option value="{{primary_key_of $current_values}}" selected>{{.Value}}</option>
+          {{end}}
+        {{else}}
+          {{if .Meta.Config.AllowBlank}}
+            <option></option>
+          {{end}}
+          {{range $values := (.Meta.Config.GetCollection .ResourceValue .Context)}}
+            {{if (is_included $current_values (index $values 0))}}
+              <option value="{{index $values 0}}" selected>{{index $values 1}}</option>
+            {{else}}
+              <option value="{{index $values 0}}">{{index $values 1}}</option>
+            {{end}}
+          {{end}}
+        {{end}}
+      </select>
+    {{end}}
+
+    <input type="hidden" name="{{.InputName}}" value="">
   </div>
 </div>

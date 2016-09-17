@@ -2,11 +2,11 @@ package publish
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/qor/admin"
 	"github.com/qor/qor"
+	"github.com/qor/roles"
 	"github.com/qor/worker"
 )
 
@@ -18,11 +18,13 @@ func (job workerJobLogger) Print(results ...interface{}) {
 	job.job.AddLog(fmt.Sprint(results...))
 }
 
+// QorWorkerArgument used for qor publish job's argument
 type QorWorkerArgument struct {
 	IDs []string
 	worker.Schedule
 }
 
+// SetWorker set publish's worker
 func (publish *Publish) SetWorker(w *worker.Worker) {
 	publish.WorkerScheduler = w
 	publish.registerWorkerJob()
@@ -37,12 +39,12 @@ func (publish *Publish) registerWorkerJob() {
 
 		qorWorkerArgumentResource := w.Admin.NewResource(&QorWorkerArgument{})
 		qorWorkerArgumentResource.Meta(&admin.Meta{Name: "IDs", Type: "publish_job_argument", Valuer: func(record interface{}, context *qor.Context) interface{} {
-			var values = map[*admin.Resource][]string{}
+			var values = map[*admin.Resource][][]string{}
 
 			if workerArgument, ok := record.(*QorWorkerArgument); ok {
 				for _, id := range workerArgument.IDs {
-					if keys := strings.Split(id, "__"); len(keys) == 2 {
-						name, id := keys[0], keys[1]
+					if keys := strings.Split(id, "__"); len(keys) >= 2 {
+						name, id := keys[0], keys[1:]
 						recordRes := w.Admin.GetResource(name)
 						values[recordRes] = append(values[recordRes], id)
 					}
@@ -53,32 +55,12 @@ func (publish *Publish) registerWorkerJob() {
 		}})
 
 		w.RegisterJob(&worker.Job{
-			Name:  "Publish",
-			Group: "Publish",
+			Name:       "Publish",
+			Group:      "Publish",
+			Permission: roles.Deny(roles.Read, roles.Anyone),
 			Handler: func(argument interface{}, job worker.QorJobInterface) error {
 				if argu, ok := argument.(*QorWorkerArgument); ok {
-					var records = []interface{}{}
-					var values = map[string][]string{}
-
-					for _, id := range argu.IDs {
-						if keys := strings.Split(id, "__"); len(keys) == 2 {
-							name, id := keys[0], keys[1]
-							values[name] = append(values[name], id)
-						}
-					}
-
-					draftDB := publish.DraftDB().Unscoped()
-					for name, value := range values {
-						recordRes := w.Admin.GetResource(name)
-						results := recordRes.NewSlice()
-						if draftDB.Find(results, fmt.Sprintf("%v IN (?)", recordRes.PrimaryDBName()), value).Error == nil {
-							resultValues := reflect.Indirect(reflect.ValueOf(results))
-							for i := 0; i < resultValues.Len(); i++ {
-								records = append(records, resultValues.Index(i).Interface())
-							}
-						}
-					}
-
+					records := publish.searchWithPublishIDs(publish.DraftDB(), w.Admin, argu.IDs)
 					publish.Logger(&workerJobLogger{job: job}).Publish(records...)
 				}
 				return nil
@@ -87,32 +69,12 @@ func (publish *Publish) registerWorkerJob() {
 		})
 
 		w.RegisterJob(&worker.Job{
-			Name:  "DiscardPublish",
-			Group: "Publish",
+			Name:       "Discard",
+			Group:      "Publish",
+			Permission: roles.Deny(roles.Read, roles.Anyone),
 			Handler: func(argument interface{}, job worker.QorJobInterface) error {
 				if argu, ok := argument.(*QorWorkerArgument); ok {
-					var records = []interface{}{}
-					var values = map[string][]string{}
-
-					for _, id := range argu.IDs {
-						if keys := strings.Split(id, "__"); len(keys) == 2 {
-							name, id := keys[0], keys[1]
-							values[name] = append(values[name], id)
-						}
-					}
-
-					draftDB := publish.DraftDB().Unscoped()
-					for name, value := range values {
-						recordRes := w.Admin.GetResource(name)
-						results := recordRes.NewSlice()
-						if draftDB.Find(results, fmt.Sprintf("%v IN (?)", recordRes.PrimaryDBName()), value).Error == nil {
-							resultValues := reflect.Indirect(reflect.ValueOf(results))
-							for i := 0; i < resultValues.Len(); i++ {
-								records = append(records, resultValues.Index(i).Interface())
-							}
-						}
-					}
-
+					records := publish.searchWithPublishIDs(publish.DraftDB(), w.Admin, argu.IDs)
 					publish.Logger(&workerJobLogger{job: job}).Discard(records...)
 				}
 				return nil

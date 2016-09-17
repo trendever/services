@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/qor/admin"
+	"github.com/qor/qor"
 	"github.com/qor/qor/utils"
 	"github.com/qor/roles"
 	"strconv"
@@ -156,7 +157,9 @@ func getVariantsHandler(context *admin.Context) {
 	)
 
 	// do the search using meta.GetCollection
-	out := meta.GetCollection(record, searchCtx)
+	out := meta.Config.(interface {
+		GetCollection(value interface{}, context *qor.Context) [][]string
+	}).GetCollection(record, searchCtx)
 	context.JSON("show", map[string]interface{}{"collection": out})
 }
 

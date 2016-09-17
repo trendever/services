@@ -2,6 +2,7 @@ package admin
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -37,7 +39,11 @@ func (context *Context) NewResourceContext(name ...interface{}) *Context {
 }
 
 func (context *Context) primaryKeyOf(value interface{}) interface{} {
-	return context.GetDB().NewScope(value).PrimaryKeyValue()
+	if reflect.Indirect(reflect.ValueOf(value)).Kind() == reflect.Struct {
+		scope := &gorm.Scope{Value: value}
+		return fmt.Sprint(scope.PrimaryKeyValue())
+	}
+	return fmt.Sprint(value)
 }
 
 func (context *Context) isNewRecord(value interface{}) bool {
@@ -138,7 +144,14 @@ func (context *Context) RawValueOf(value interface{}, meta *Meta) interface{} {
 
 // FormattedValueOf return formatted value of a meta for current resource
 func (context *Context) FormattedValueOf(value interface{}, meta *Meta) interface{} {
-	return context.valueOf(meta.GetFormattedValuer(), value, meta)
+	result := context.valueOf(meta.GetFormattedValuer(), value, meta)
+	if resultValuer, ok := result.(driver.Valuer); ok {
+		if result, err := resultValuer.Value(); err == nil {
+			return result
+		}
+	}
+
+	return result
 }
 
 func (context *Context) renderForm(value interface{}, sections []*Section) template.HTML {
@@ -184,22 +197,57 @@ func (context *Context) renderSections(value interface{}, sections []*Section, p
 	}
 }
 
+func (context *Context) renderFilter(filter *Filter) template.HTML {
+	var (
+		err     error
+		content []byte
+		result  = bytes.NewBufferString("")
+	)
+
+	defer func() {
+		if r := recover(); r != nil {
+			debug.PrintStack()
+			result.WriteString(fmt.Sprintf("Get error when render template for filter %v (%v): %v", filter.Name, filter.Type, r))
+		}
+	}()
+
+	if content, err = context.Asset(fmt.Sprintf("metas/filter/%v.tmpl", filter.Type)); err == nil {
+		tmpl := template.New(filter.Type + ".tmpl").Funcs(context.FuncMap())
+		if tmpl, err = tmpl.Parse(string(content)); err == nil {
+			var data = map[string]interface{}{
+				"Filter":          filter,
+				"Label":           filter.Label,
+				"InputNamePrefix": fmt.Sprintf("filters[%v]", filter.Name),
+				"Context":         context,
+				"Resource":        context.Resource,
+			}
+
+			err = tmpl.Execute(result, data)
+		}
+	}
+
+	if err != nil {
+		result.WriteString(fmt.Sprintf("got error when render filter template for %v(%v):%v", filter.Name, filter.Type, err))
+	}
+
+	return template.HTML(result.String())
+}
+
 func (context *Context) renderMeta(meta *Meta, value interface{}, prefix []string, metaType string, writer *bytes.Buffer) {
 	var (
-		tmpl     *template.Template
 		err      error
 		funcsMap = context.FuncMap()
 	)
 	prefix = append(prefix, meta.Name)
 
-	var generateNestedRenderSections = func(kind string) func(interface{}, []*Section, ...int) template.HTML {
-		return func(value interface{}, sections []*Section, index ...int) template.HTML {
+	var generateNestedRenderSections = func(kind string) func(interface{}, []*Section, int) template.HTML {
+		return func(value interface{}, sections []*Section, index int) template.HTML {
 			var result = bytes.NewBufferString("")
 			var newPrefix = append([]string{}, prefix...)
 
-			if len(index) > 0 {
+			if index >= 0 {
 				last := newPrefix[len(newPrefix)-1]
-				newPrefix = append(newPrefix[:len(newPrefix)-1], fmt.Sprintf("%v[%v]", last, index[0]))
+				newPrefix = append(newPrefix[:len(newPrefix)-1], fmt.Sprintf("%v[%v]", last, index))
 			}
 
 			if len(sections) > 0 {
@@ -216,18 +264,29 @@ func (context *Context) renderMeta(meta *Meta, value interface{}, prefix []strin
 		}
 	}
 
-	funcsMap["render_form"] = generateNestedRenderSections("form")
+	funcsMap["render_nested_form"] = generateNestedRenderSections("form")
 
-	if content, err := context.Asset(fmt.Sprintf("metas/%v/%v.tmpl", metaType, meta.Name), fmt.Sprintf("metas/%v/%v.tmpl", metaType, meta.Type)); err == nil {
-		defer func() {
-			if r := recover(); r != nil {
-				writer.Write([]byte(fmt.Sprintf("Get error when render template for meta %v: %v", meta.Name, r)))
-			}
-		}()
+	defer func() {
+		if r := recover(); r != nil {
+			debug.PrintStack()
+			writer.WriteString(fmt.Sprintf("Get error when render template for meta %v (%v): %v", meta.Name, meta.Type, r))
+		}
+	}()
 
-		tmpl, err = template.New(meta.Type + ".tmpl").Funcs(funcsMap).Parse(string(content))
-	} else {
-		tmpl, err = template.New(meta.Type + ".tmpl").Funcs(funcsMap).Parse("{{.Value}}")
+	tmpl := template.New(meta.Type + ".tmpl").Funcs(funcsMap)
+	switch {
+	case meta.Config != nil:
+		if content, err := meta.Config.GetTemplate(context, metaType); err == nil {
+			tmpl, err = tmpl.Parse(string(content))
+			break
+		}
+		fallthrough
+	default:
+		if content, err := context.Asset(fmt.Sprintf("metas/%v/%v.tmpl", metaType, meta.Name), fmt.Sprintf("metas/%v/%v.tmpl", metaType, meta.Type)); err == nil {
+			tmpl, err = tmpl.Parse(string(content))
+		} else {
+			tmpl, err = tmpl.Parse("{{.Value}}")
+		}
 	}
 
 	if err == nil {
@@ -239,14 +298,18 @@ func (context *Context) renderMeta(meta *Meta, value interface{}, prefix []strin
 			"ResourceValue": value,
 			"Value":         context.FormattedValueOf(value, meta),
 			"Label":         meta.Label,
-			"InputId":       fmt.Sprintf("%v_%v_%v", scope.GetModelStruct().ModelType.Name(), scope.PrimaryKeyValue(), meta.Name),
 			"InputName":     strings.Join(prefix, "."),
 		}
 
-		if meta.GetCollection != nil {
-			data["CollectionValue"] = func() [][]string {
-				return meta.GetCollection(value, context.Context)
-			}
+		if !scope.PrimaryKeyZero() {
+			data["InputId"] = fmt.Sprintf("%v_%v_%v", scope.GetModelStruct().ModelType.Name(), scope.PrimaryKeyValue(), meta.Name)
+		}
+
+		data["CollectionValue"] = func() [][]string {
+			fmt.Printf("%v: Call .CollectionValue from views already Deprecated, get the value with `.Meta.Config.GetCollection .ResourceValue .Context`", meta.Name)
+			return meta.Config.(interface {
+				GetCollection(value interface{}, context *Context) [][]string
+			}).GetCollection(value, context)
 		}
 
 		err = tmpl.Execute(writer, data)
@@ -532,7 +595,7 @@ func (context *Context) themesClass() (result string) {
 	var results []string
 	if context.Resource != nil {
 		for _, theme := range context.Resource.Config.Themes {
-			results = append(results, "qor-theme-"+theme)
+			results = append(results, "qor-theme-"+theme.GetName())
 		}
 	}
 	return strings.Join(results, " ")
@@ -556,9 +619,11 @@ func (context *Context) styleSheetTag(names ...string) template.HTML {
 	return template.HTML(strings.Join(results, ""))
 }
 
-func (context *Context) getThemes() (themes []string) {
+func (context *Context) getThemes() (themes []ThemeInterface) {
 	if context.Resource != nil {
-		themes = append(themes, context.Resource.Config.Themes...)
+		for _, theme := range context.Resource.Config.Themes {
+			themes = append(themes, theme)
+		}
 	}
 	return
 }
@@ -566,9 +631,9 @@ func (context *Context) getThemes() (themes []string) {
 func (context *Context) loadThemeStyleSheets() template.HTML {
 	var results []string
 	for _, theme := range context.getThemes() {
-		var file = path.Join("themes", theme, "assets", "stylesheets", theme+".css")
+		var file = path.Join("themes", theme.GetName(), "assets", "stylesheets", theme.GetName()+".css")
 		if _, err := context.Asset(file); err == nil {
-			results = append(results, fmt.Sprintf(`<link type="text/css" rel="stylesheet" href="%s?theme=%s">`, path.Join(context.Admin.GetRouter().Prefix, "assets", "stylesheets", theme+".css"), theme))
+			results = append(results, fmt.Sprintf(`<link type="text/css" rel="stylesheet" href="%s?theme=%s">`, path.Join(context.Admin.GetRouter().Prefix, "assets", "stylesheets", theme.GetName()+".css"), theme.GetName()))
 		}
 	}
 
@@ -578,9 +643,9 @@ func (context *Context) loadThemeStyleSheets() template.HTML {
 func (context *Context) loadThemeJavaScripts() template.HTML {
 	var results []string
 	for _, theme := range context.getThemes() {
-		var file = path.Join("themes", theme, "assets", "javascripts", theme+".js")
+		var file = path.Join("themes", theme.GetName(), "assets", "javascripts", theme.GetName()+".js")
 		if _, err := context.Asset(file); err == nil {
-			results = append(results, fmt.Sprintf(`<script src="%s?theme=%s"></script>`, path.Join(context.Admin.GetRouter().Prefix, "assets", "javascripts", theme+".js"), theme))
+			results = append(results, fmt.Sprintf(`<script src="%s?theme=%s"></script>`, path.Join(context.Admin.GetRouter().Prefix, "assets", "javascripts", theme.GetName()+".js"), theme.GetName()))
 		}
 	}
 
@@ -615,11 +680,20 @@ func (context *Context) loadAdminStyleSheets() template.HTML {
 
 func (context *Context) loadActions(action string) template.HTML {
 	var (
-		actionKeys, actionFiles []string
-		actions                 = map[string]string{}
+		actionPatterns, actionKeys, actionFiles []string
+		actions                                 = map[string]string{}
 	)
 
-	for _, pattern := range []string{"actions/*.tmpl", filepath.Join("actions", action, "*.tmpl")} {
+	switch action {
+	case "index", "show", "edit", "new":
+		actionPatterns = []string{"actions/*.tmpl", filepath.Join("actions", action, "*.tmpl")}
+	case "global":
+		actionPatterns = []string{"actions/*.tmpl"}
+	default:
+		actionPatterns = []string{filepath.Join("actions", action, "*.tmpl")}
+	}
+
+	for _, pattern := range actionPatterns {
 		if matches, err := context.Admin.AssetFS.Glob(pattern); err == nil {
 			actionFiles = append(actionFiles, matches...)
 		}
@@ -631,12 +705,12 @@ func (context *Context) loadActions(action string) template.HTML {
 		}
 
 		for _, theme := range context.getThemes() {
-			if matches, err := context.Admin.AssetFS.Glob(filepath.Join("themes", theme, pattern)); err == nil {
+			if matches, err := context.Admin.AssetFS.Glob(filepath.Join("themes", theme.GetName(), pattern)); err == nil {
 				actionFiles = append(actionFiles, matches...)
 			}
 
 			if resourcePath := context.resourcePath(); resourcePath != "" {
-				if matches, err := context.Admin.AssetFS.Glob(filepath.Join("themes", theme, resourcePath, pattern)); err == nil {
+				if matches, err := context.Admin.AssetFS.Glob(filepath.Join("themes", theme.GetName(), resourcePath, pattern)); err == nil {
 					actionFiles = append(actionFiles, matches...)
 				}
 			}
@@ -748,9 +822,23 @@ func (context *Context) AllowedActions(actions []*Action, mode string, records .
 	var allowedActions []*Action
 	for _, action := range actions {
 		for _, m := range action.Modes {
-			if m == mode && action.HasPermission(roles.Update, context, records...) {
-				allowedActions = append(allowedActions, action)
-				break
+			if m == mode {
+				var permission = roles.Update
+				switch strings.ToUpper(action.Method) {
+				case "POST":
+					permission = roles.Create
+				case "DELETE":
+					permission = roles.Delete
+				case "PUT":
+					permission = roles.Update
+				case "GET":
+					permission = roles.Read
+				}
+
+				if action.HasPermission(permission, context, records...) {
+					allowedActions = append(allowedActions, action)
+					break
+				}
 			}
 		}
 	}
@@ -824,11 +912,20 @@ func (context *Context) FuncMap() template.FuncMap {
 		"plural":     inflection.Plural,
 		"singular":   inflection.Singular,
 		"marshal": func(v interface{}) template.JS {
-			byt, _ := json.Marshal(v)
-			return template.JS(byt)
+			switch value := v.(type) {
+			case string:
+				return template.JS(value)
+			case template.HTML:
+				return template.JS(value)
+			default:
+				byt, _ := json.Marshal(v)
+				return template.JS(byt)
+			}
 		},
 
 		"render":      context.Render,
+		"render_text": context.renderText,
+		"render_with": context.renderWith,
 		"render_form": context.renderForm,
 		"render_meta": func(value interface{}, meta *Meta, types ...string) template.HTML {
 			var (
@@ -843,7 +940,8 @@ func (context *Context) FuncMap() template.FuncMap {
 			context.renderMeta(meta, value, []string{}, typ, result)
 			return template.HTML(result.String())
 		},
-		"page_title": context.pageTitle,
+		"render_filter": context.renderFilter,
+		"page_title":    context.pageTitle,
 		"meta_label": func(meta *Meta) template.HTML {
 			key := fmt.Sprintf("%v.attributes.%v", meta.baseResource.ToParam(), meta.Label)
 			return context.Admin.T(context.Context, key, meta.Label)

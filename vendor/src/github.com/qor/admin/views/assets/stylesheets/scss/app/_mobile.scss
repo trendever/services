@@ -1,6 +1,17 @@
-@media only screen 
-and (min-device-width : 320px) 
+@media only screen
+and (min-device-width : 320px)
 and (max-device-width : 736px) {
+
+  .qor-layout .mdl-layout__content{
+    padding-top: 0 !important;
+  }
+
+  .qor-table{
+    margin: 0;
+    .is-fixed{
+      display: none;
+    }
+  }
   .qor-section{
     margin: 24px 0;
     .qor-section__header{
@@ -13,12 +24,8 @@ and (max-device-width : 736px) {
       background-color: transparent;
     }
   }
-  .qor-page__header{
-    margin-bottom: 2px;
-  }
   .qor-table-container{
     margin: 0 0 24px 0;
-    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14);
     th{
       background-color: #f5f5f5;
     }
@@ -31,9 +38,23 @@ and (max-device-width : 736px) {
     margin-right: 8px;
     margin-bottom: 8px;
   }
+
+  .mdl-textfield.is-dirty .mdl-textfield__expandable-holder, .mdl-textfield.is-focused .mdl-textfield__expandable-holder{
+    max-width: 100px;
+  }
+
   .qor-search{
+    height: 56px !important;
+    line-height: 56px !important;
+    .qor-search__label{
+      top: 13px !important;
+    }
     &.is-focused{
-      width: 360px;
+      background-color: #0277bd;
+      position: absolute;
+      left: 54px;
+      top: 0;
+      right: 8px;
     }
     .mdl-textfield__expandable-holder{
       width: calc(100% - 64px);
@@ -45,5 +66,52 @@ and (max-device-width : 736px) {
   .qor-form-container{
     margin: 0;
     padding: 16px;
+  }
+
+  .qor-page__header+.qor-page__body{
+    padding-top: 8px;
+  }
+
+  /* Header */
+
+  header{
+    .qor-mobile--show-actions{
+      display: none;
+    }
+    .mdl-layout__header-row{
+      padding-left: 56px;
+      .qor-mobile--show-actions{
+        color: #fff;
+      }
+    }
+    .mdl-layout-title, .mdl-layout__title{
+      font-size: 16px;
+    }
+
+    &.has-action{
+      .qor-mobile--show-actions{
+        display: inline-block;
+      }
+    }
+    &.has-search{
+      .qor-mobile--show-actions{
+        margin-right: 16px;
+      }
+    }
+
+  }
+  .qor-page__header{
+    min-height: 0;
+    background: transparent;
+    margin-bottom: 2px;
+    & > div{
+      display: none;
+    }
+    &.actions-show{
+      background: #fff;
+      & > div{
+        display: block;
+      }
+    }
   }
 }

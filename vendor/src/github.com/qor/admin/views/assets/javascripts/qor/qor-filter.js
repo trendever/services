@@ -15,11 +15,13 @@
 
   var location = window.location;
   var NAMESPACE = 'qor.filter';
+  var EVENT_FILTER_CHANGE = 'filterChanged.' + NAMESPACE;
   var EVENT_ENABLE = 'enable.' + NAMESPACE;
   var EVENT_DISABLE = 'disable.' + NAMESPACE;
   var EVENT_CLICK = 'click.' + NAMESPACE;
   var EVENT_CHANGE = 'change.' + NAMESPACE;
   var CLASS_IS_ACTIVE = 'is-active';
+  var CLASS_BOTTOMSHEETS = '.qor-bottomsheets';
 
   function QorFilter(element, options) {
     this.$element = $(element);
@@ -121,10 +123,11 @@
       var value;
       var index;
       var matched;
+      var paramName;
 
       if ($target.is('select')) {
         params = decodeSearch(location.search);
-        name = $target.attr('name');
+        paramName = name = $target.attr('name');
         value = $target.val();
         param = [name];
 
@@ -164,6 +167,7 @@
         }
       } else if ($target.is('a')) {
         e.preventDefault();
+        paramName = $target.data().paramName;
         data = decodeSearch($target.attr('href'));
         if ($target.hasClass(CLASS_IS_ACTIVE)) {
           search = encodeSearch(data, true); // set `true` to detach
@@ -172,7 +176,13 @@
         }
       }
 
-      location.search = search;
+      if (this.$element.closest(CLASS_BOTTOMSHEETS).length) {
+        $(CLASS_BOTTOMSHEETS).trigger(EVENT_FILTER_CHANGE, [search, paramName]);
+      } else {
+        location.search = search;
+      }
+
+
     },
 
     destroy: function () {

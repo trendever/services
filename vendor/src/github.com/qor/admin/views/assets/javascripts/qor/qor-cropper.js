@@ -96,6 +96,10 @@
       var $parent = $this.closest(options.parent);
       var $list;
       var data;
+      var outputValue;
+      var fetchUrl;
+      var _this = this;
+      var imageData;
 
       if (!$parent.length) {
         $parent = $this.parent();
@@ -105,20 +109,47 @@
       this.$output = $parent.find(options.output);
       this.$list = $list = $parent.find(options.list);
 
+      fetchUrl = this.$output.data().fetchSizedata;
+
       if (!$list.find('img').attr('src')) {
         $list.find('ul').hide();
       }
 
-      data = JSON.parse($.trim(this.$output.val()));
+      if (fetchUrl) {
+        $.getJSON(fetchUrl,function(data){
+          imageData = JSON.parse(data.MediaOption);
+          _this.$output.val(JSON.stringify(data));
+          _this.data = imageData || {};
+          _this.build();
+          _this.bind();
+        });
+      } else {
+        outputValue = $.trim(this.$output.val());
+        if (outputValue) {
+          data = JSON.parse(outputValue);
+        }
 
-      this.data = data || {};
-      this.build();
-      this.bind();
+        this.data = data || {};
+        this.build();
+        this.bind();
+      }
     },
 
     build: function () {
+      var textData = this.$output.data(),
+          text = {
+            title: textData.cropperTitle,
+            ok: textData.cropperOk,
+            cancel: textData.cropperCancel
+          },
+          replaceTexts = this.options.text;
+
+      if (text.ok && text.title && text.cancel) {
+        replaceTexts = text;
+      }
+
       this.wrap();
-      this.$modal = $(replaceText(QorCropper.MODAL, this.options.text)).appendTo('body');
+      this.$modal = $(replaceText(QorCropper.MODAL, replaceTexts)).appendTo('body');
     },
 
     unbuild: function () {
@@ -195,10 +226,8 @@
           this.$list.show();
           delete data.Delete;
           this.$output.val(JSON.stringify(data));
-          return false;
         }.bind(this));
         this.$parent.find('.qor-fieldset').append($alert);
-        return false;
       }
 
       if ($target.closest(CLASS_CROP).size()) {
@@ -206,8 +235,6 @@
         this.$target = $target;
         this.$modal.qorModal('show');
       }
-
-
     },
 
     read: function (e) {
@@ -225,15 +252,16 @@
       }
     },
 
-    load: function (url) {
+    load: function (url, callback) {
       var options = this.options;
       var _this = this;
       var $list = this.$list;
       var $ul = $list.find('ul');
-      var data = this.data;
+      var data = this.data || {};
       var $image;
+      var imageLength;
 
-      if (!$ul.length) {
+      if (!$ul.length || !$ul.find('li').length) {
         $ul  = $(QorCropper.LIST);
         $list.html($ul);
         this.wrap();
@@ -242,6 +270,7 @@
       $ul.show(); // show ul when it is hidden
 
       $image = $list.find('img');
+      imageLength = $image.size();
       $image.one('load', function () {
         var $this = $(this);
         var naturalWidth = this.naturalWidth;
@@ -252,12 +281,14 @@
         var emulateImageData = {};
         var emulateCropData = {};
         var aspectRatio;
-        var width;
-        var height;
+        var width = sizeData.sizeResolutionWidth;
+        var height = sizeData.sizeResolutionHeight;
 
         if (sizeResolution) {
-          width = getValueByNoCaseKey(sizeResolution, 'width');
-          height = getValueByNoCaseKey(sizeResolution, 'height');
+          if (!width && !height) {
+            width = getValueByNoCaseKey(sizeResolution, 'width');
+            height = getValueByNoCaseKey(sizeResolution, 'height');
+          }
           aspectRatio = width / height;
 
           if (naturalHeight * aspectRatio > naturalWidth) {
@@ -267,9 +298,6 @@
             height = naturalHeight;
             width = height * aspectRatio;
           }
-
-          width *= 0.8;
-          height *= 0.8;
 
           emulateImageData = {
             naturalWidth: naturalWidth,
@@ -299,6 +327,13 @@
         }
 
         _this.$output.val(JSON.stringify(data));
+
+        // callback after load complete
+        if (sizeName && Object.keys(data[options.key]).length >= imageLength) {
+          if (callback && $.isFunction(callback)) {
+            callback();
+          }
+        }
       }).attr('src', url).data('originalUrl', url);
 
       $list.show();
@@ -312,16 +347,18 @@
       var sizeName = sizeData.sizeName || 'original';
       var sizeResolution = sizeData.sizeResolution;
       var $clone = $('<img>').attr('src', sizeData.originalUrl);
-      var data = this.data;
+      var data = this.data || {};
       var _this = this;
       var sizeAspectRatio = NaN;
-      var sizeWidth;
-      var sizeHeight;
+      var sizeWidth = sizeData.sizeResolutionWidth;
+      var sizeHeight = sizeData.sizeResolutionHeight;
       var list;
 
       if (sizeResolution) {
-        sizeWidth = getValueByNoCaseKey(sizeResolution, 'width');
-        sizeHeight = getValueByNoCaseKey(sizeResolution, 'height');
+        if (!sizeWidth && !sizeHeight) {
+          sizeWidth = getValueByNoCaseKey(sizeResolution, 'width');
+          sizeHeight = getValueByNoCaseKey(sizeResolution, 'height');
+        }
         sizeAspectRatio = sizeWidth / sizeHeight;
       }
 
@@ -346,13 +383,14 @@
         scalable: false,
         rotatable: false,
         checkImageOrigin: false,
+        autoCropArea: 1,
 
         built: function () {
           $modal.find(CLASS_SAVE).one(EVENT_CLICK, function () {
             var cropData = $clone.cropper('getData', true);
             var syncData = [];
             var url;
-
+            
             data.crop = true;
             data[options.key][sizeName] = cropData;
             _this.imageData = $clone.cropper('getImageData');
@@ -395,12 +433,14 @@
         var data = $(this).data();
         var resolution = data.sizeResolution;
         var name = data.sizeName;
-        var width;
-        var height;
+        var width = data.sizeResolutionWidth;
+        var height = data.sizeResolutionHeight;
 
         if (resolution) {
-          width = getValueByNoCaseKey(resolution, 'width');
-          height = getValueByNoCaseKey(resolution, 'height');
+          if (!width && !height) {
+            width = getValueByNoCaseKey(resolution, 'width');
+            height = getValueByNoCaseKey(resolution, 'height');
+          }
 
           if (width / height === aspectRatio) {
             list.push(
@@ -431,7 +471,7 @@
         this.autoCrop(url, data);
       }
 
-      this.$output.val(JSON.stringify(this.data));
+      this.$output.val(JSON.stringify(this.data)).trigger(EVENT_CHANGE);
     },
 
     preview: function ($target, emulateImageData, emulateCropData) {
@@ -443,29 +483,21 @@
       var cropData = $.extend({}, emulateCropData || this.cropData); // Clone one to avoid changing it
       var aspectRatio = cropData.width / cropData.height;
       var canvasWidth = containerWidth;
-      var canvasHeight = containerHeight;
       var scaledRatio;
 
-      if (containerHeight * aspectRatio > containerWidth) {
-        canvasHeight = containerWidth / aspectRatio;
-      } else {
+      if (canvasWidth == 0 || imageData.naturalWidth == 0 || imageData.naturalHeight == 0) {
+        return;
+      }
+
+      if (containerHeight * aspectRatio <= containerWidth) {
         canvasWidth = containerHeight * aspectRatio;
       }
 
       scaledRatio = cropData.width / canvasWidth;
 
-      $canvas.css({
-        width: canvasWidth,
-        height: canvasHeight
-      });
-
       $target.css({
-        maxWidth: 'none',
-        maxHeight: 'none',
-        width: imageData.naturalWidth / scaledRatio,
-        height: imageData.naturalHeight / scaledRatio,
-        marginLeft: -cropData.x / scaledRatio,
-        marginTop: -cropData.y / scaledRatio
+        maxWidth: imageData.naturalWidth / scaledRatio,
+        maxHeight: imageData.naturalHeight / scaledRatio
       });
 
       this.center($target);

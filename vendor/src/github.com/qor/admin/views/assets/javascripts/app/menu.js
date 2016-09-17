@@ -37,6 +37,11 @@ $(function () {
 
   if ($('.qor-page').find('.qor-page__header').size()){
     $('.qor-page').addClass("has-header");
+    $('header.mdl-layout__header').addClass('has-action');
+  }
+
+  if ($('.qor-page .qor-page__header').height() > 48) {
+    $('.qor-page').css('padding-top',$('.qor-page .qor-page__header').height());
   }
 
 });

@@ -24,7 +24,7 @@ type URLTemplater interface {
 }
 
 // MediaLibrary is an interface including methods that needs for a media library storage
-type MediaLibrary interface {
+type Media interface {
 	Scan(value interface{}) error
 	Value() (driver.Value, error)
 
@@ -45,6 +45,7 @@ type MediaLibrary interface {
 	IsImage() bool
 
 	URL(style ...string) string
+	Ext() string
 	String() string
 }
 

@@ -25,6 +25,15 @@ func (res *Resource) Action(action *Action) {
 	res.Actions = append(res.Actions, action)
 }
 
+func (res *Resource) GetAction(name string) *Action {
+	for _, action := range res.Actions {
+		if action.Name == name {
+			return action
+		}
+	}
+	return nil
+}
+
 // ActionArgument action argument that used in handle
 type ActionArgument struct {
 	PrimaryValues []string

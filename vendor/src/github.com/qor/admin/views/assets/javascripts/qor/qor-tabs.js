@@ -14,13 +14,14 @@
   'use strict';
 
   var _ = window._;
+  var $body = $('body');
   var NAMESPACE = 'qor.tabbar';
   var EVENT_ENABLE = 'enable.' + NAMESPACE;
   var EVENT_DISABLE = 'disable.' + NAMESPACE;
   var EVENT_CLICK = 'click.' + NAMESPACE;
   var CLASS_TAB = '.qor-layout__tab-button';
   var CLASS_TAB_CONTENT = '.qor-layout__tab-content';
-  var CLASS_TAB_BAR = '.qor-layout__tab-bar';
+  var CLASS_TAB_BAR = '.mdl-layout__tab-bar-container';
   var CLASS_TAB_BAR_RIGHT = '.qor-layout__tab-right';
   var CLASS_TAB_BAR_LEFT = '.qor-layout__tab-left';
   var CLASS_ACTIVE = 'is-active';
@@ -35,7 +36,6 @@
     constructor: QorTab,
 
     init: function () {
-      $(CLASS_TAB).first().addClass(CLASS_ACTIVE);
       this.initTab();
       this.bind();
     },
@@ -53,6 +53,15 @@
     },
 
     initTab: function () {
+      var data = this.$element.data();
+
+      if (!data.scopeActive) {
+        $(CLASS_TAB).first().addClass(CLASS_ACTIVE);
+        $body.data('tabScopeActive',$(CLASS_TAB).first().data('name'));
+      } else {
+        $body.data('tabScopeActive',data.scopeActive);
+      }
+
       this.tabWidth = 0;
       this.slideoutWidth = $(CLASS_TAB_CONTENT).outerWidth();
 
@@ -109,11 +118,15 @@
     },
 
     switchTab: function (e) {
-      e.stopPropagation();
-
       var $target = $(e.target),
           $element = this.$element,
-          data = $target.data();
+          data = $target.data(),
+          tabScopeActive = $body.data().tabScopeActive,
+          isInSlideout = $('.qor-slideout').is(':visible');
+
+      if (!isInSlideout) {
+        return;
+      }
 
       if ($target.hasClass(CLASS_ACTIVE)){
         return false;
@@ -130,24 +143,27 @@
           beforeSend: function () {
             $('.qor-layout__tab-spinner').remove();
             var $spinner = '<div class="mdl-spinner mdl-js-spinner is-active qor-layout__tab-spinner"></div>';
-            $element.find(CLASS_TAB_CONTENT).hide().before($spinner);
+            $(CLASS_TAB_CONTENT).hide().before($spinner);
             window.componentHandler.upgradeElement($('.qor-layout__tab-spinner')[0]);
           },
           success: function (html) {
             $('.qor-layout__tab-spinner').remove();
+            $body.data('tabScopeActive',$target.data('name'));
             var $content = $(html).find(CLASS_TAB_CONTENT).html();
-            $element.find(CLASS_TAB_CONTENT).show().html($content).trigger('enable');
+            $(CLASS_TAB_CONTENT).show().html($content).trigger('enable');
+
           },
           error: function () {
             $('.qor-layout__tab-spinner').remove();
+            $body.data('tabScopeActive',tabScopeActive);
           }
         });
-
       return false;
     },
 
     destroy: function () {
       this.unbind();
+      $body.removeData('tabScopeActive');
     }
   };
 

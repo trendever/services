@@ -12,6 +12,7 @@ type Menu struct {
 	Name       string
 	Link       string
 	Ancestors  []string
+	Priority   int
 	Permission *roles.Permission
 	subMenus   []*Menu
 	rawPath    string
@@ -76,7 +77,7 @@ func prefixMenuLinks(menus []*Menu, prefix string) {
 	}
 }
 
-func newMenu(menus []string, menu *Menu) *Menu {
+func generateMenu(menus []string, menu *Menu) *Menu {
 	menuCount := len(menus)
 	for index := range menus {
 		menu = &Menu{Name: menus[menuCount-index-1], subMenus: []*Menu{menu}}
@@ -95,11 +96,53 @@ func appendMenu(menus []*Menu, ancestors []string, menu *Menu) []*Menu {
 			if len(ancestors) > 1 {
 				m.subMenus = appendMenu(m.subMenus, ancestors[1:], menu)
 			} else {
-				m.subMenus = append(m.subMenus, newMenu(nil, menu))
+				m.subMenus = appendMenu(m.subMenus, []string{}, menu)
 			}
+
 			return menus
 		}
 	}
 
-	return append(menus, newMenu(ancestors, menu))
+	var newMenu = generateMenu(ancestors, menu)
+	var added bool
+	if len(menus) == 0 {
+		menus = append(menus, newMenu)
+	} else if newMenu.Priority > 0 {
+		for idx, menu := range menus {
+			if menu.Priority > newMenu.Priority || menu.Priority == 0 {
+				menus = append(menus[0:idx], append([]*Menu{newMenu}, menus[idx:]...)...)
+				added = true
+				break
+			}
+		}
+		if !added {
+			menus = append(menus, menu)
+		}
+	} else {
+		if newMenu.Priority < 0 {
+			for idx := len(menus) - 1; idx >= 0; idx-- {
+				menu := menus[idx]
+				if menu.Priority < newMenu.Priority || menu.Priority == 0 {
+					menus = append(menus[0:idx+1], append([]*Menu{newMenu}, menus[idx+1:]...)...)
+					added = true
+					break
+				}
+			}
+		} else {
+			for idx := len(menus) - 1; idx >= 0; idx-- {
+				menu := menus[idx]
+				if menu.Priority >= 0 {
+					menus = append(menus[0:idx+1], append([]*Menu{newMenu}, menus[idx+1:]...)...)
+					added = true
+					break
+				}
+			}
+		}
+
+		if !added {
+			menus = append([]*Menu{menu}, menus...)
+		}
+	}
+
+	return menus
 }
