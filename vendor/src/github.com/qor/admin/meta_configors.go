@@ -90,4 +90,34 @@ var metaConfigorMaps = map[string]func(*Meta){
 			})
 		}
 	},
+
+	"select_one": func(meta *Meta) {
+		if meta.Config == nil {
+			meta.Config = &SelectOneConfig{Collection: meta.Collection}
+		}
+	},
+
+	"select_many": func(meta *Meta) {
+		if meta.Config == nil {
+			meta.Config = &SelectManyConfig{Collection: meta.Collection}
+		}
+	},
+
+	"single_edit": func(meta *Meta) {
+		if meta.Config == nil {
+			meta.Config = &SingleEditConfig{}
+		}
+	},
+
+	"collection_edit": func(meta *Meta) {
+		if meta.Config == nil {
+			meta.Config = &CollectionEditConfig{}
+		}
+	},
+
+	"rich_editor": func(meta *Meta) {
+		if meta.Config == nil {
+			meta.Config = &RichEditorConfig{}
+		}
+	},
 }

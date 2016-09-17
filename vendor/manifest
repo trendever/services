@@ -100,12 +100,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/bradfitz/http2",
-			"repository": "https://github.com/bradfitz/http2",
-			"revision": "aa7658c0e9902e929a9ed0996ef949e59fc0f3ab",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/bsm/ratelimit",
 			"repository": "https://github.com/bsm/ratelimit",
 			"revision": "cf024e72f03fcbd6d7464850ef70cd3f77d5c64a",
@@ -562,7 +556,7 @@
 		{
 			"importpath": "github.com/qor/admin",
 			"repository": "https://github.com/qor/admin",
-			"revision": "ea08a13048be73a47777515eecdc9aec32c7f085",
+			"revision": "107acd5480b58a46a1b78099db6ee681331f7e9e",
 			"branch": "master"
 		},
 		{
@@ -574,7 +568,7 @@
 		{
 			"importpath": "github.com/qor/media_library",
 			"repository": "https://github.com/qor/media_library",
-			"revision": "141db2bae1d68597da4f22896d35809f3fb0a275",
+			"revision": "e33e1af89792ab6aed3ac89b0dd08663ba8d34da",
 			"branch": "master"
 		},
 		{
@@ -586,7 +580,7 @@
 		{
 			"importpath": "github.com/qor/qor",
 			"repository": "https://github.com/qor/qor",
-			"revision": "0a25bf545c83337fbf750d24c555e700d427e262",
+			"revision": "7538a4488d04f9c0f472a5318598bc600895b9a8",
 			"branch": "master"
 		},
 		{
@@ -604,13 +598,13 @@
 		{
 			"importpath": "github.com/qor/serializable_meta",
 			"repository": "https://github.com/qor/serializable_meta",
-			"revision": "947c56768f6fbc4ccb1946813a64469daf9accbd",
+			"revision": "0f4aea1a3d8a100587260327a955c80efad56623",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/sorting",
 			"repository": "https://github.com/qor/sorting",
-			"revision": "dd210d46f97fc0940dd0060bf8caef4c303472d3",
+			"revision": "0814b9242568f959f8b2f13f01392b7f5b20d1ab",
 			"branch": "master"
 		},
 		{
@@ -848,7 +842,7 @@
 		{
 			"importpath": "golang.org/x/net/http2",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "3797cd8864994d713d909eda5e61ede8683fdc12",
+			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
 			"branch": "master",
 			"path": "/http2"
 		},
@@ -862,7 +856,7 @@
 		{
 			"importpath": "golang.org/x/net/lex/httplex",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "3797cd8864994d713d909eda5e61ede8683fdc12",
+			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
 			"branch": "master",
 			"path": "/lex/httplex"
 		},

@@ -5,11 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/qor/roles"
 )
 
 const (
@@ -154,6 +156,10 @@ func (worker *Worker) ConfigureQorResource(res resource.Resourcer) {
 			var groupName = context.Request.URL.Query().Get("group")
 			var jobName = context.Request.URL.Query().Get("job")
 			for _, job := range worker.Jobs {
+				if !(job.HasPermission(roles.Read, context.Context) && job.HasPermission(roles.Create, context.Context)) {
+					continue
+				}
+
 				if (groupName == "" || groupName == job.Group) && (jobName == "" || jobName == job.Name) {
 					groupedJobs[job.Group] = append(groupedJobs[job.Group], job)
 				}
@@ -230,6 +236,7 @@ func (worker *Worker) RunJob(jobID string) error {
 	if err == nil {
 		defer func() {
 			if r := recover(); r != nil {
+				qorJob.AddLog(string(debug.Stack()))
 				qorJob.SetProgressText(fmt.Sprint(r))
 				qorJob.SetStatus(JobStatusException)
 			}

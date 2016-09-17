@@ -3,7 +3,7 @@
   <div class="promotion-rules-argument qor-field qor-fieldset-container">
     <div class="qor-field__block">
       <fieldset id="{{.InputId}}">
-        {{render_form .Value.Value (edit_sections .Value.Resource)}}
+        {{render_nested_form .Value.Value (edit_sections .Value.Resource) -1}}
       </fieldset>
     </div>
   </div>

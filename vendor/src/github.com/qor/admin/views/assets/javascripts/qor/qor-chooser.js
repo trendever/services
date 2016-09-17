@@ -13,12 +13,10 @@
 
   'use strict';
 
+  var Mustache = window.Mustache;
   var NAMESPACE = 'qor.chooser';
   var EVENT_ENABLE = 'enable.' + NAMESPACE;
   var EVENT_DISABLE = 'disable.' + NAMESPACE;
-  var CLASS_MULTI = '.chosen-container-multi';
-  var CLASS_DEFAULT = 'chosen-default';
-  var CLASS_CHOSE = '.search-choice';
 
   function QorChooser(element, options) {
     this.$element = $(element);
@@ -31,55 +29,69 @@
 
     init: function () {
       var $this = this.$element;
+      var remoteUrl = $this.data('remote-data-url');
+      var option = {
+        minimumResultsForSearch: 20,
+        dropdownParent: $this.parent()
+      };
 
-      if (!$this.prop('multiple')) {
-        if ($this.children('[selected]').length) {
-          $this.prepend('<option value=""></option>');
-        } else {
-          $this.prepend('<option value="" selected></option>');
-        }
+      if (remoteUrl) {
+        option.ajax = {
+          url: remoteUrl,
+          dataType: 'json',
+          cache: true,
+          delay: 250,
+          data: function (params) {
+            return {
+              keyword: params.term, // search term
+              page: params.page,
+              per_page: 20
+            };
+          },
+          processResults: function (data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            var processedData = $.map(data, function (obj) {
+              obj.id = obj.Id || obj.ID;
+              return obj;
+            });
+
+            return {
+              results: processedData,
+              pagination: {
+                more: processedData.length >= 20
+              }
+            };
+          }
+        };
+
+        option.templateResult =  function(data) {
+          var tmpl = $this.parents('.qor-field').find('[name="select2-result-template"]');
+          return QorChooser.formatResult(data, tmpl);
+        };
+
+        option.templateSelection = function(data) {
+          if (data.loading) return data.text;
+          var tmpl = $this.parents('.qor-field').find('[name="select2-selection-template"]');
+          return QorChooser.formatResult(data, tmpl);
+        };
+
+        $this.on('select2:select', function (evt) {
+          $(evt.target).attr('chooser-selected','true');
+        }).on('select2:unselect', function (evt) {
+          $(evt.target).attr('chooser-selected','');
+        });
       }
 
-      $this.chosen({
-        // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-        allow_single_deselect: true,
-        search_contains: true,
-        disable_search_threshold: 10,
-        width: '100%',
-        display_selected_options: false
-      })
-      .on('change', function (e,params) {
-        var $target = $(e.target);
-        var $chosenMulti = $target.next(CLASS_MULTI);
-
-        if (!$chosenMulti.size()){
-          return;
-        }
-
-        if (params.deselected){
-          setTimeout(function () {
-            if (!$chosenMulti.find(CLASS_CHOSE).size()){
-              $chosenMulti.addClass(CLASS_DEFAULT);
-            }
-          }, 10);
-        } else if (params.selected){
-          $chosenMulti.removeClass(CLASS_DEFAULT);
-        }
-
-      });
-
-      // init multiple selector layout
-      if ($this.prop('multiple')){
-        var $thisChosenMulti = $this.next(CLASS_MULTI);
-        if (!$thisChosenMulti.find(CLASS_CHOSE).size()){
-          $thisChosenMulti.addClass(CLASS_DEFAULT);
-        }
-      }
-
+      $this.select2(option);
     },
 
     destroy: function () {
-      this.$element.chosen('destroy').removeData(NAMESPACE);
+      this.$element.select2('destroy').removeData(NAMESPACE);
     }
   };
 
@@ -107,6 +119,21 @@
         fn.apply(data);
       }
     });
+  };
+
+  QorChooser.formatResult = function (data, tmpl) {
+    var result = "";
+    if (tmpl.length > 0) {
+      result = Mustache.render(tmpl.html().replace(/{{(.*?)}}/g, '[[$1]]'), data);
+    } else {
+      result = data.text || data.Name || data.Title || data.Code || data[Object.keys(data)[0]];
+    }
+
+    // if is HTML
+    if (/<(.*)(\/>|<\/.+>)/.test(result)) {
+      return $(result);
+    }
+    return result;
   };
 
   $(function () {

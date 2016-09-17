@@ -75,29 +75,23 @@ function adminTasks() {
 
   gulp.task('qor+', function () {
     return gulp.src([scripts.qorInit,scripts.qor])
-    .pipe(plugins.sourcemaps.init())
     .pipe(eslint({configFile: '.eslintrc'}))
     .pipe(eslint.format())
     .pipe(plugins.concat('qor.js'))
     .pipe(plugins.uglify())
-    .pipe(plugins.sourcemaps.write('./'))
     .pipe(gulp.dest(scripts.dest));
   });
 
   gulp.task('js+', function () {
     return gulp.src(scripts.src)
-    .pipe(plugins.sourcemaps.init())
     .pipe(plugins.concat('app.js'))
     .pipe(plugins.uglify())
-    .pipe(plugins.sourcemaps.write('./'))
     .pipe(gulp.dest(scripts.dest));
   });
 
   gulp.task('sass', function () {
     return gulp.src(styles.src)
-    .pipe(plugins.sourcemaps.init())
     .pipe(plugins.sass())
-    .pipe(plugins.sourcemaps.write('./'))
     .pipe(gulp.dest(styles.dest));
   });
 
@@ -128,11 +122,15 @@ function adminTasks() {
 //  example:
 // Watch Worker module: gulp --worker
 //
-// if module's assets just like normal path:
+// if module's assets just as normal path:
 // moduleName/views/themes/moduleName/assets/javascripts(stylesheets)
 // just use gulp --worker
 //
-// if module's assets path like Admin module:
+// if module's assets in enterprise as normal path:
+// moduleName/views/themes/moduleName/assets/javascripts(stylesheets)
+// just use gulp --worker--enterprise
+//
+// if module's assets path as Admin module:
 // moduleName/views/assets/javascripts(stylesheets)
 // you need set subModuleName as admin
 // gulp --worker--admin
@@ -151,6 +149,8 @@ function moduleTasks(moduleNames) {
     if(moduleName && subModuleName) {
       if(subModuleName == 'admin') {
         return '../' + moduleName + '/views/assets/' + file;
+      } else if (subModuleName == 'enterprise'){
+        return '../../qor-enterprise/' + moduleName + '/views/assets/' + file;
       } else {
         return '../' + moduleName + '/' + subModuleName + '/views/themes/' + moduleName + '/assets/' + file;
       }
@@ -183,10 +183,8 @@ function moduleTasks(moduleNames) {
       return gulp.src(path.join(scriptPath, folder, '/*.js'))
         .pipe(eslint({configFile: '.eslintrc'}))
         .pipe(eslint.format())
-        .pipe(plugins.sourcemaps.init())
         .pipe(plugins.concat(folder + '.js'))
         .pipe(plugins.uglify())
-        .pipe(plugins.sourcemaps.write('./'))
         .pipe(gulp.dest(scriptPath));
     });
 
@@ -202,9 +200,7 @@ function moduleTasks(moduleNames) {
 
       return gulp.src(path.join(stylePath, folder, '/*.scss'))
 
-        .pipe(plugins.sourcemaps.init())
         .pipe(plugins.sass({outputStyle: 'compressed'}))
-        .pipe(plugins.sourcemaps.write('./'))
         .pipe(plugins.minifyCss())
         .pipe(rename(folder + '.css'))
         .pipe(gulp.dest(stylePath))
@@ -235,7 +231,10 @@ if (moduleName.name) {
     if (moduleName.subName == 'admin'){
       taskPath = moduleName.name + '/views/assets/';
       runModuleName = 'Running "' + moduleName.name + '" module task in "' + taskPath + '"...';
-    } else {
+    } else if (moduleName.subName == 'enterprise'){
+      taskPath = '../../enterprise/' + moduleName.name + '/views/assets/';
+      runModuleName = 'Running "' + moduleName.name + '" module task in "' + taskPath + '"...';
+    }else {
       taskPath = moduleName.name + '/' + moduleName.subName + '/views/themes/' + moduleName.name + '/assets/';
       runModuleName = 'Running "' + moduleName.name + ' > ' + moduleName.subName + '" module task in "' + taskPath + '"...';
     }
@@ -250,6 +249,7 @@ if (moduleName.name) {
 // Task for compress js and css vendor assets
 gulp.task('compressJavaScriptVendor', function () {
   return gulp.src(['!../admin/views/assets/javascripts/vendors/jquery.min.js','../admin/views/assets/javascripts/vendors/*.js'])
+  .pipe(plugins.uglify())
   .pipe(plugins.concat('vendors.js'))
   .pipe(gulp.dest('../admin/views/assets/javascripts'));
 });

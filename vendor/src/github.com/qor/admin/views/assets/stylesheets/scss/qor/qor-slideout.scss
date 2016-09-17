@@ -17,6 +17,7 @@
   background-color: #fff;
   overflow: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   @include shadow-16dp();
 
   &.is-shown {
@@ -30,6 +31,9 @@
 
     @media (min-width: $layout-screen-size-threshold) {
       width: 50%;
+      &.qor-slideout-mini{
+        width: 480px;
+      }
     }
   }
 

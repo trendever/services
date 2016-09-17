@@ -7,7 +7,7 @@ $(function () {
       '<div class="qor-dialog-content">' +
         '<form action=[[actionUrl]]>' +
           '<div class="mdl-textfield mdl-js-textfield" id="global-search-textfield">' +
-            '<input class="mdl-textfield__input" name="keyword" id="globalSearch" value="" type="text" placeholder="" />' +
+            '<input class="mdl-textfield__input ignore-dirtyform" name="keyword" id="globalSearch" value="" type="text" placeholder="" />' +
             '<label class="mdl-textfield__label" for="globalSearch">[[placeholder]]</label>' +
           '</div>' +
         '</form>' +

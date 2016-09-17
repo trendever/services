@@ -20,6 +20,7 @@ $(function () {
     };
 
     $this.closest('.qor-page__header').addClass('has-search');
+    $('header.mdl-layout__header').addClass('has-search');
 
     $clear.on('click', function () {
       if ($input.val() || isSearched) {

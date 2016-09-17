@@ -97,8 +97,7 @@ func (admin *Admin) GetRouter() *Router {
 	return admin.router
 }
 
-// NewResource initialize a new qor resource, won't add it to admin, just initialize it
-func (admin *Admin) NewResource(value interface{}, config ...*Config) *Resource {
+func (admin *Admin) newResource(value interface{}, config ...*Config) *Resource {
 	var configuration *Config
 	if len(config) > 0 {
 		configuration = config[0]
@@ -112,7 +111,6 @@ func (admin *Admin) NewResource(value interface{}, config ...*Config) *Resource 
 		Resource:    *resource.New(value),
 		Config:      configuration,
 		cachedMetas: &map[string][]*Meta{},
-		filters:     map[string]*Filter{},
 		admin:       admin,
 	}
 
@@ -149,13 +147,19 @@ func (admin *Admin) NewResource(value interface{}, config ...*Config) *Resource 
 		}
 		return findOneHandler(result, metaValues, context)
 	}
+	return res
+}
 
+// NewResource initialize a new qor resource, won't add it to admin, just initialize it
+func (admin *Admin) NewResource(value interface{}, config ...*Config) *Resource {
+	res := admin.newResource(value, config...)
+	res.configure()
 	return res
 }
 
 // AddResource make a model manageable from admin interface
 func (admin *Admin) AddResource(value interface{}, config ...*Config) *Resource {
-	res := admin.NewResource(value, config...)
+	res := admin.newResource(value, config...)
 
 	if !res.Config.Invisible {
 		var menuName string
@@ -165,7 +169,7 @@ func (admin *Admin) AddResource(value interface{}, config ...*Config) *Resource 
 			menuName = inflection.Plural(res.Name)
 		}
 
-		menu := &Menu{rawPath: res.ToParam(), Name: menuName, Permission: res.Config.Permission}
+		menu := &Menu{rawPath: res.ToParam(), Name: menuName, Permission: res.Config.Permission, Priority: res.Config.Priority}
 		admin.menus = appendMenu(admin.menus, res.Config.Menu, menu)
 
 		res.Action(&Action{

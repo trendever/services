@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -23,7 +24,7 @@ func HumanizeString(str string) string {
 	var human []rune
 	for i, l := range str {
 		if i > 0 && isUppercase(byte(l)) {
-			if i > 0 && !isUppercase(str[i-1]) || i+1 < len(str) && !isUppercase(str[i+1]) {
+			if (!isUppercase(str[i-1]) && str[i-1] != ' ') || i+1 < len(str) && !isUppercase(str[i+1]) && str[i+1] != ' ' {
 				human = append(human, rune(' '))
 			}
 		}
@@ -81,8 +82,7 @@ func GetLocale(context *qor.Context) string {
 	if locale := context.Request.URL.Query().Get("locale"); locale != "" {
 		if context.Writer != nil {
 			context.Request.Header.Set("Locale", locale)
-			c := http.Cookie{Name: "locale", Value: locale, Expires: time.Now().AddDate(1, 0, 0), Path: "/", HttpOnly: true}
-			http.SetCookie(context.Writer, &c)
+			SetCookie(http.Cookie{Name: "locale", Value: locale, Expires: time.Now().AddDate(1, 0, 0)}, context)
 		}
 		return locale
 	}
@@ -92,6 +92,23 @@ func GetLocale(context *qor.Context) string {
 	}
 
 	return ""
+}
+
+// SetCookie set cookie for context
+func SetCookie(cookie http.Cookie, context *qor.Context) {
+	cookie.HttpOnly = true
+
+	// set https cookie
+	if context.Request != nil && context.Request.URL.Scheme == "https" {
+		cookie.Secure = true
+	}
+
+	// set default path
+	if cookie.Path == "" {
+		cookie.Path = "/"
+	}
+
+	http.SetCookie(context.Writer, &cookie)
 }
 
 // Stringify stringify any data, if it is a struct, will try to use its Name, Title, Code field, else will use its primary key
@@ -105,7 +122,13 @@ func Stringify(object interface{}) string {
 	scope := gorm.Scope{Value: object}
 	for _, column := range []string{"Name", "Title", "Code"} {
 		if field, ok := scope.FieldByName(column); ok {
-			return fmt.Sprintf("%v", field.Field.Interface())
+			result := field.Field.Interface()
+			if valuer, ok := result.(driver.Valuer); ok {
+				if result, err := valuer.Value(); err == nil {
+					return fmt.Sprint(result)
+				}
+			}
+			return fmt.Sprint(result)
 		}
 	}
 
@@ -148,7 +171,7 @@ func ParseTagOption(str string) map[string]string {
 
 // ExitWithMsg debug error messages and print stack
 func ExitWithMsg(msg interface{}, value ...interface{}) {
-	fmt.Printf("\n"+filenameWithLineNum()+"\n%v\n", append([]interface{}{msg}, value...)...)
+	fmt.Printf("\n"+filenameWithLineNum()+"\n"+fmt.Sprint(msg)+"\n", value...)
 	debug.PrintStack()
 }
 
