@@ -322,7 +322,7 @@
 		{
 			"importpath": "github.com/jinzhu/gorm",
 			"repository": "https://github.com/jinzhu/gorm",
-			"revision": "b507cdf93d0629e7177a70df20932bd834c92b03",
+			"revision": "041cd3dd31a68a3e9ad20fcddb46085df5aebc76",
 			"branch": "master"
 		},
 		{
