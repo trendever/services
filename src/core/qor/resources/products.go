@@ -70,7 +70,9 @@ func addProductResource(a *admin.Admin) {
 				Order("COUNT(pr.id) DESC"),
 			)
 
-			return res.GetMeta("MentionedBy").GetCollection(this, searchCtx)
+			return res.GetMeta("MentionedBy").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -90,7 +92,9 @@ func addProductResource(a *admin.Admin) {
 				Order("COUNT(pr.id) DESC"),
 			)
 
-			return res.GetMeta("Shop").GetCollection(this, searchCtx)
+			return res.GetMeta("Shop").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -204,8 +208,12 @@ func addProductResource(a *admin.Admin) {
 		var actcp = act
 		res.Filter(&admin.Filter{
 			Name: "created_at_" + op,
-			Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
-				return scope.Where(fmt.Sprintf("products_product.created_at %v ?", actcp), query)
+			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+				metaValue := arg.Value.Get("Value")
+				if metaValue == nil {
+					return scope
+				}
+				return scope.Where(fmt.Sprintf("products_product.created_at %v ?", actcp), metaValue.Value)
 			},
 		})
 	}
@@ -216,11 +224,15 @@ func addProductResource(a *admin.Admin) {
 
 	res.Filter(&admin.Filter{
 		Name: "tags_id_eq",
-		Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Joins(`
-				INNER JOIN products_product_item_tags as tagrel ON 
+				INNER JOIN products_product_item_tags as tagrel ON
 				tagrel.product_id = products_product.id AND tagrel.tag_id = ?
-			`, query)
+			`, metaValue.Value)
 		},
 	})
 
