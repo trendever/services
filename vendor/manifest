@@ -316,13 +316,13 @@
 		{
 			"importpath": "github.com/jinzhu/gorm",
 			"repository": "https://github.com/jinzhu/gorm",
-			"revision": "b507cdf93d0629e7177a70df20932bd834c92b03",
+			"revision": "041cd3dd31a68a3e9ad20fcddb46085df5aebc76",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/jinzhu/inflection",
 			"repository": "https://github.com/jinzhu/inflection",
-			"revision": "8f4d3a0d04ce0b7c0cf3126fb98524246d00d102",
+			"revision": "74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff",
 			"branch": "master"
 		},
 		{
