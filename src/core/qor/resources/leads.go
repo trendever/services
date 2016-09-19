@@ -70,7 +70,9 @@ func addLeadResource(a *admin.Admin) {
 				Order("COUNT(lead.id) DESC"),
 			)
 
-			return res.GetMeta("Customer").GetCollection(this, searchCtx)
+			return res.GetMeta("Customer").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -155,7 +157,11 @@ func addLeadResource(a *admin.Admin) {
 
 	res.Filter(&admin.Filter{
 		Name: "products_filter",
-		Handler: func(fieldName string, value string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Where(
 				`EXISTS (
 					SELECT 1 FROM products_leads_items related
@@ -163,11 +169,12 @@ func addLeadResource(a *admin.Admin) {
 					ON related.product_item_id = item.id
 					WHERE item.product_id = ? AND related.lead_id = products_leads.id
 				)`,
-				value)
+				metaValue.Value)
 		},
+		Type: "custom",
 	})
 
-	filters.AddFilter(res, argRes.GetMeta("Product"), "products_filter", "select_one", "wat")
+	filters.AddFilter(res, argRes.GetMeta("Product"), "products_filter", "custom", "wat")
 }
 
 // and typical actions for changing order state
@@ -342,7 +349,9 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 				Order("COUNT(pl.id) DESC"),
 			)
 
-			return res.GetMeta("Shop").GetCollection(this, searchCtx)
+			return res.GetMeta("Shop").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -358,8 +367,12 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 
 		res.Filter(&admin.Filter{
 			Name: "created_at_" + op,
-			Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
-				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", actcp), query)
+			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+				metaValue := arg.Value.Get("Value")
+				if metaValue == nil {
+					return scope
+				}
+				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", actcp), metaValue.Value)
 			},
 		})
 	}

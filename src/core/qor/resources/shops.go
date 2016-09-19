@@ -46,7 +46,9 @@ func addShopResource(a *admin.Admin) {
 
 			searchCtx.SetDB(ctx.GetDB().Where("users_user.is_seller = true"))
 
-			return res.GetMeta("Sellers").GetCollection(this, searchCtx)
+			return res.GetMeta("Sellers").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -81,7 +83,9 @@ func addShopResource(a *admin.Admin) {
 				Order("COUNT(tagrel.tag_id) DESC"),
 			)
 
-			return res.GetMeta("Tags").GetCollection(this, searchCtx)
+			return res.GetMeta("Tags").Config.(interface {
+				GetCollection(value interface{}, context *admin.Context) [][]string
+			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
 
@@ -172,11 +176,15 @@ func addShopResource(a *admin.Admin) {
 	filters.MetaFilter(res, "TagsSearch", "eq")
 	res.Filter(&admin.Filter{
 		Name: "tags_id_eq",
-		Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Joins(`
-				INNER JOIN products_shops_tags as tagrel ON 
+				INNER JOIN products_shops_tags as tagrel ON
 				tagrel.shop_id = id AND tagrel.tag_id = ?
-			`, query)
+			`, metaValue.Value)
 		},
 	})
 

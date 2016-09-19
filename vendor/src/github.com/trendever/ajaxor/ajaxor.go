@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/qor/admin"
-	"github.com/qor/qor"
 	"github.com/qor/qor/utils"
 	"github.com/qor/roles"
 	"strconv"
@@ -156,10 +155,9 @@ func getVariantsHandler(context *admin.Context) {
 		Offset(searchPage * pageSize),
 	)
 
-	// do the search using meta.GetCollection
 	out := meta.Config.(interface {
-		GetCollection(value interface{}, context *qor.Context) [][]string
-	}).GetCollection(record, searchCtx)
+		GetCollection(value interface{}, context *admin.Context) [][]string
+	}).GetCollection(record, &admin.Context{Context: searchCtx})
 	context.JSON("show", map[string]interface{}{"collection": out})
 }
 
