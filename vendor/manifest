@@ -322,7 +322,7 @@
 		{
 			"importpath": "github.com/jinzhu/inflection",
 			"repository": "https://github.com/jinzhu/inflection",
-			"revision": "8f4d3a0d04ce0b7c0cf3126fb98524246d00d102",
+			"revision": "74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff",
 			"branch": "master"
 		},
 		{
