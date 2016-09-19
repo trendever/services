@@ -65,23 +65,11 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		return fmt.Errorf("failed to determine whether user is new: %v", err)
 	}
 
-	if chat_init {
+	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+	if err == nil && chat_init {
 		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source)
-		if err != nil {
-			return err
-		}
 	}
-
-	content, _ := json.Marshal(product.Encode())
-	err = SendChatMessage(
-		uint64(lead.CustomerID),
-		lead.ConversationID,
-		&chat.MessagePart{Content: string(content), MimeType: "text/json"},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to send product json to chat: %v", err)
-	}
-	return SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+	return err
 }
 
 func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string) error {
