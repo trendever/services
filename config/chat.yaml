@@ -8,6 +8,6 @@ db:
     port:     5432
     base:     postgres
 
-upload_service: http://images:8080
+upload_service: http://mandible:8089
 natsURL: "nats://nats:4222"
 debug: true

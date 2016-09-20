@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"payments/config"
 	"payments/models"
+	"proto/payment"
 
 	"github.com/pborman/uuid"
 )
@@ -48,19 +49,29 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 
 	uniqueID := uuid.New()
 
-	err := c.xmlRequest(initMethod, &res, map[string]string{
+	request := map[string]string{
 		"SessionType": "Pay",
 		"OrderID":     uniqueID,
 		"Amount":      fmt.Sprintf("%v", pay.Amount),
 		"IP":          ipAddr,
 
 		// callback URL; seems not to work in sandbox mode
+		// or work at all? file support to change it
 		"Url": config.Get().HTTP.Public + "?orderid={orderid}&success={success}",
 
 		// template fields
 		"Product": fmt.Sprintf("#%d", pay.LeadID),
-		"Total":   fmt.Sprintf("%v", pay.Amount),
-	}, nil)
+		"CardTo":  pay.ShopCardNumber,
+	}
+
+	switch payment.Currency(pay.Currency) {
+	case payment.Currency_RUB:
+		request["Total"] = fmt.Sprintf("%d", pay.Amount)
+	case payment.Currency_COP:
+		request["Total"] = fmt.Sprintf("%d", pay.Amount/100)
+	}
+
+	err := c.xmlRequest(initMethod, &res, request, nil)
 
 	if err != nil {
 		return nil, err

@@ -5,7 +5,7 @@ rpc: :3009
 coreServer: core:3005
 fetcherServer: fetcher:3006
 productUrlFormat: 'https://localhost:8040/product/%d'
-mandibleURL: 'http://images:8080/'
+mandibleURL: 'http://mandible:8089/'
 lastCheckedFile: 'savetrend.last'
 
 instagram:

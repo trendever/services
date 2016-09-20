@@ -1,6 +1,6 @@
 debug: true
 rpc: :2013
-mandibleURL: http://images:8080/
+mandibleURL: http://mandible:8089/
 
 lastCheckedFile: checker.last
 

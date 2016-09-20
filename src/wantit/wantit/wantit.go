@@ -200,12 +200,6 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 
 	productMedia := medias.Items[0]
 
-	// check if self-mention
-	if mention.UserName == productMedia.User.Username {
-		log.Debug("Skipping @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
-		return false, nil
-	}
-
 	// get product via code
 	var productID int64
 	code, found := findProductCode(productMedia.Caption.Text)
@@ -228,6 +222,12 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		if productID <= 0 {
 			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
 		}
+	}
+
+	// check if self-mention
+	if mention.UserName == productMedia.User.Username {
+		log.Debug("Skipping order creation: @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
+		return false, nil
 	}
 
 	// get customer core id
