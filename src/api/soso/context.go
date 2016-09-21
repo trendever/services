@@ -99,7 +99,6 @@ func IPMiddleware(req *Request, ctx *Context, session Session) error {
 		addr = tokens[0]
 	}
 
-	log.Debug("Got remote addr: %v", addr)
 	ctx.RemoteIP = addr
 	return nil
 }
