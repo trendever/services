@@ -16,12 +16,14 @@ message BalanceReply {
 
 message TransactionData {
 	uint64 source = 1;
+	// if destination account do not exists, it will be created
+	// be aware: there will be no checks for core user
 	uint64 destination = 2;
 	uint64 amount = 3;
 	string reason = 4;
 	// allows negative balance as a result
 	bool allow_credit = 5;
-	// allows empty "from" or "to" field
+	// allows empty "source" or "destination" field
 	bool allow_empty_side = 6;
 }
 
@@ -36,12 +38,12 @@ message MakeTransactionsReply {
 
 message TransactionLogRequest {
 	uint64 user_id = 1;
-	// if "before" and "after" are undefinied default limit is 20
-	// for bounded request 0 limit means unlimited
+	// default limit is 20
 	uint64 limit = 2;
+	uint64 offset = 3;
 	// created_at bounds, unixnano, [after, before)
-	int64 before = 3;
-	int64 after = 4;
+	int64 before = 4;
+	int64 after = 5;
 }
 
 message Transaction {

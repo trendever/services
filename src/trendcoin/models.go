@@ -20,8 +20,8 @@ type Account struct {
 type Transaction struct {
 	ID             uint64    `gorm:"primary_key"`
 	CreatedAt      time.Time `gorm:"index"`
-	Source         uint64    `gorm:"index"`
-	Destination    uint64    `gorm:"index"`
+	Source         uint64    `gorm:"index" sql:"default:NULL"`
+	Destination    uint64    `gorm:"index" sql:"default:NULL"`
 	Amount         uint64
 	Reason         string
 	AllowCredit    bool

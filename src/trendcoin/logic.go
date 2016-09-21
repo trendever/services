@@ -74,12 +74,6 @@ func (t *Transaction) Perform(tx *gorm.DB) error {
 		if res.Error != nil {
 			return fmt.Errorf("failed to save destination account: %v", res.Error)
 		}
-		if res.RowsAffected == 0 {
-			err := tx.Create(&destination).Error
-			if err != nil {
-				return fmt.Errorf("failed to create destination account: %v", err)
-			}
-		}
 	}
 	err := tx.Save(t).Error
 	if err != nil {

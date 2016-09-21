@@ -52,7 +52,7 @@ func (s *TrendcoinServer) MakeTransactions(_ context.Context, in *proto.MakeTran
 	for _, protoTrans := range in.Transactions {
 		trans := DecodeTransactionData(protoTrans)
 		if err := trans.Validate(); err != nil {
-			log.Debug("invalid transaction request %+v: %v", protoTrans, err)
+			log.Debug("invalid transaction request {%+v}: %v", protoTrans, err)
 			return &proto.MakeTransactionsReply{
 				Error: err.Error(),
 			}, nil
@@ -83,21 +83,19 @@ func (s *TrendcoinServer) loop() {
 func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.TransactionLogRequest) (*proto.TransactionLogReply, error) {
 	var transactions TransactionsSlice
 	scope := db.New().Where("from = ? OR to = ?", in.UserId, in.UserId).Order("id DESC")
-	bound := false
 	if in.Before != 0 {
 		scope = scope.Where("created_at < ?", time.Unix(0, in.Before))
-		bound = true
 	}
 	if in.After != 0 {
 		scope = scope.Where("created_at >= ?", time.Unix(0, in.After))
-		bound = true
 	}
-	switch {
-	case in.Limit != 0:
+	if in.Limit != 0 {
 		scope = scope.Limit(in.Limit)
-	case bound:
-	default:
+	} else {
 		scope = scope.Limit(20)
+	}
+	if in.Offset != 0 {
+		scope = scope.Offset(in.Offset)
 	}
 	err := scope.Find(&transactions).Error
 	if err != nil {
