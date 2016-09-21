@@ -46,6 +46,11 @@ type User struct {
 	previousPhone string
 	// true if the user was logged in at least once
 	Confirmed bool `sql:"default:false"`
+
+	// trendcoin balance
+	// may be loaded with call LoadExternals method
+	// Assigned to qor db has callbacks to do it
+	Balance int64 `sql:"-"`
 }
 
 // SystemUser is used if we need to send a message from system

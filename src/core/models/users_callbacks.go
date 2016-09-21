@@ -2,10 +2,12 @@ package models
 
 import (
 	"core/api"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"github.com/ttacon/libphonenumber"
 	"proto/checker"
+	"proto/trendcoin"
 	"strings"
 	"utils/db"
 	"utils/log"
@@ -43,6 +45,23 @@ func (u *User) AfterUpdate() {
 
 func (u *User) AfterDelete() {
 	go api.Publish("core.user.flush", u.ID)
+}
+
+func (u *User) LoadExternals(db *gorm.DB) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	res, err := api.TrendcoinServiceClient.Balance(ctx, &trendcoin.BalanceRequest{
+		UserId: uint64(u.ID),
+	})
+	if err != nil {
+		db.AddError(fmt.Errorf("failed to load balance: %v", err))
+		return
+	}
+	if res.Error != "" {
+		db.AddError(fmt.Errorf("failed to load balance: %v", res.Error))
+		return
+	}
+	u.Balance = res.Balance
 }
 
 func (u *User) fetchPreviousPhone(db *gorm.DB) {
