@@ -4,6 +4,7 @@ import (
 	"api/auth"
 	. "api/debug"
 	"encoding/json"
+	"fmt"
 	"github.com/igm/sockjs-go/sockjs"
 	"net/http"
 	auth_protocol "proto/auth"
@@ -19,8 +20,14 @@ var (
 		"delete":   "DELETED",
 		"flush":    "FLUSHED",
 	}
+
+	middlewares = []func(*Request, *Context, Session) error{
+		TokenMiddleware,
+		IPMiddleware,
+	}
 )
 
+// Context of the request
 type Context struct {
 	DataType   string
 	ActionStr  string
@@ -33,7 +40,8 @@ type Context struct {
 	// Client socket session, public for testing convinience
 	Session Session
 
-	Token *auth_protocol.Token
+	Token    *auth_protocol.Token
+	RemoteIP string
 }
 
 func NewContext(req *Request, session Session) *Context {
@@ -46,18 +54,54 @@ func NewContext(req *Request, session Session) *Context {
 		LogList:    req.LogList,
 	}
 	ctx.Response = NewResponse(ctx)
-	if token, ok := req.TransMap["token"].(string); ok {
-		tokenObj, err := auth.GetTokenData(token)
-		if err != nil {
+
+	for _, mw := range middlewares {
+		if err := mw(req, ctx, session); err != nil {
 			log.Error(err)
 			ctx.ErrorResponse(http.StatusUnauthorized, LevelError, err)
 			return nil
+		}
+	}
+
+	return ctx
+}
+
+func TokenMiddleware(req *Request, ctx *Context, session Session) error {
+	if token, ok := req.TransMap["token"].(string); ok {
+		tokenObj, err := auth.GetTokenData(token)
+		if err != nil {
+			return err
 		}
 
 		ctx.Token = tokenObj
 		Sessions.Push(session, tokenObj.UID)
 	}
-	return ctx
+
+	return nil
+}
+
+func IPMiddleware(req *Request, ctx *Context, session Session) error {
+
+	request := session.Request()
+	if request == nil {
+		return fmt.Errorf("No request (can not get client IP)")
+	}
+
+	forwarded := request.Header.Get("X-Forwarded-For")
+	addr := strings.Split(forwarded, ", ")[0]
+
+	if addr == "" || strings.Count(addr, ":") != 1 {
+		// addr format: "127.0.0.1:4242"
+		tokens := strings.Split(request.RemoteAddr, ":")
+		if len(tokens) != 2 {
+			return fmt.Errorf("Can not parse remote addr (%v)", request.RemoteAddr)
+		}
+		addr = tokens[0]
+	}
+
+	log.Debug("Got remote addr: %v", addr)
+	ctx.RemoteIP = addr
+	return nil
 }
 
 func NewRemoteContext(dataType, action string, response map[string]interface{}) *Context {

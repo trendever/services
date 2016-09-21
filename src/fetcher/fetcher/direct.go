@@ -11,7 +11,7 @@ func directActivity(api *instagram.Instagram, rndTimeout time.Duration) {
 
 	for {
 
-		err = checkNewMessages(api)
+		err := checkNewMessages(api)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -57,9 +57,8 @@ func checkNewMessages(api *instagram.Instagram) error {
 	}
 
 	if resp.PendingRequestsTotal > 0 {
-		return acceptDirectThreads()
+		return acceptDirectThreads(api)
 	}
 
-	_ = chats
 	return nil
 }
