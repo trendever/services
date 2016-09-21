@@ -3,8 +3,8 @@ package mandible
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/derlaft/sling"
+	"github.com/google/go-querystring/query"
+	"net/http"
 )
 
 type thumbnailRequest map[string]*Thumbnail
@@ -71,18 +71,20 @@ func (u *Uploader) doPostRequest(imageURL string) (*image, error) {
 	}
 
 	result := imageResp{}
-
-	_, err = sling.New().
-		Base(u.mandibleURL).
-		Post("/url").
-		BodyForm(&imageReq{
-			Image:  imageURL,
-			Thumbs: string(thumbsJSON),
-		}).
-		Receive(&result, &result)
-
+	data, err := query.Values(&imageReq{
+		Image:  imageURL,
+		Thumbs: string(thumbsJSON),
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to prepare post data: %v", err)
+	}
+	resp, err := http.PostForm(u.mandibleURL+"url", data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make post request: %v", err)
+	}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode response with status %v: %v", resp.Status, err)
 	}
 
 	// check result

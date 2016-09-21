@@ -54,6 +54,7 @@ type Repo interface {
 	GetPayByID(uint) (*Payment, error)
 	CreatePay(*Payment) error
 	SavePay(*Payment) error
+	CanCreateOrder(leadID uint) (bool, error)
 
 	// sess part
 	CreateSess(*Session) error
@@ -148,6 +149,24 @@ func (r *RepoImpl) SavePay(p *Payment) error {
 	return r.DB.Save(p).Error
 }
 
+// CanCreateOrder shows if you can create another order for this leadID
+func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
+
+	var count int
+	err := r.DB.
+		Model(&Payment{}).
+		Where("lead_id = ? and cancelled = FALSE", leadID).
+		Joins("LEFT JOIN sessions as sess ON payments.id = sess.payment_id and sess.finished = FALSE").
+		Count(&count).
+		Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count == 0, nil
+}
+
 // NewPayment generates a payment infocard by request
 func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 
@@ -189,7 +208,6 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 	}
 
 	return pay, nil
-
 }
 
 // decorator to call CC check

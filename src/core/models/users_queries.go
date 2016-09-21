@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"github.com/jinzhu/gorm"
 	"strings"
 	"utils/db"
 )
@@ -59,9 +61,12 @@ func FindUserMatchAny(ID, instagramID uint64, name, instagramName, email, phone 
 		}
 	}
 	user = &User{}
-	res := scope.Find(user)
+	res := scope.Order(gorm.Expr("phone = ? DESC", phone)).Find(user)
 	if res.RecordNotFound() {
 		return nil, false, nil
+	}
+	if res.Error != nil {
+		return nil, false, fmt.Errorf("failed to find user: %v", err)
 	}
 	return user, true, nil
 }

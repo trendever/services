@@ -4,10 +4,13 @@ import (
 	"core/api"
 	"core/models"
 	"core/telegram"
+	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"proto/chat"
 	"proto/core"
 	"utils/db"
 	"utils/log"
@@ -170,37 +173,73 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 		return nil, err
 	}
 
-	reply = &core.SetLeadStatusReply{}
 	var lead *models.Lead
 	lead, err = models.GetUserLead(user, req.LeadId)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if models.CanUserChangeLeadState(lead.UserRole.String(), req.Event.String()) {
-		err = models.LeadState.Trigger(req.Event.String(), lead, db.New())
-		if err == nil {
-			upd := map[string]interface{}{"state": lead.State}
-			if req.CancelReason != 0 {
-				upd["cancel_reason_id"] = req.CancelReason
-			}
-			if req.StatusComment != "" {
-				upd["status_comment"] = req.StatusComment
-			}
-			if err := db.New().Model(lead).UpdateColumns(upd).Error; err != nil {
-				log.Error(err)
-			} else {
-				go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
-			}
-		} else {
-			log.Error(err)
-		}
-	} else {
-		log.Debug("User role %s, event %s, user %v, lead %v", lead.UserRole.String(), req.Event.String(), req.UserId, req.LeadId)
-		err = errors.New("Forbidden")
+
+	if !models.CanUserChangeLeadState(lead.UserRole.String(), req.Event.String()) {
+		log.Debug("User %v with role %s can't set lead %v state to %v", req.UserId, lead.UserRole.String(), req.LeadId, req.Event.String())
+		return nil, errors.New("Forbidden")
 	}
-	reply.Lead = lead.Encode()
-	return
+
+	upd := map[string]interface{}{
+		"cancel_reason_id": sql.NullInt64{},
+	}
+	reason := models.LeadCancelReason{ID: req.CancelReason}
+	reasonIsValid := false
+	if req.Event == core.LeadStatusEvent_CANCEL {
+		err := db.New().First(&reason).Error
+		if err != nil {
+			log.Error(fmt.Errorf("failed to load cancel reason %v: %v", reason.ID, err))
+		} else {
+			upd["cancel_reason_id"] = reason.ID
+			reasonIsValid = true
+		}
+
+	}
+
+	err = models.LeadState.Trigger(req.Event.String(), lead, db.New())
+	upd["state"] = lead.State
+	if err != nil {
+		err = fmt.Errorf("failed to trigger lead event %v: %v", req.Event, err)
+		log.Error(err)
+		return nil, err
+	}
+
+	if req.StatusComment != "" {
+		upd["status_comment"] = req.StatusComment
+	}
+
+	if err := db.New().Model(lead).UpdateColumns(upd).Error; err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if reasonIsValid {
+		chatMsg, err := reason.GenChatMessage(lead, user)
+		if err != nil {
+			log.Error(fmt.Errorf(
+				"failed to generate chat message for cancel reason %v: %v",
+				reason.ID, err,
+			))
+		}
+		if chatMsg != "" {
+			go func() {
+				log.Error(models.SendChatMessage(
+					uint64(models.SystemUser.ID),
+					lead.ConversationID, &chat.MessagePart{
+						Content:  chatMsg,
+						MimeType: "text/plain",
+					},
+				))
+			}()
+		}
+	}
+	go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
+	return &core.SetLeadStatusReply{Lead: lead.Encode()}, nil
 }
 
 //CallSupplier calls supplier to the chat

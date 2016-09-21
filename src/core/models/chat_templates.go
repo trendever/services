@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"github.com/flosch/pongo2"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/sorting"
@@ -44,8 +43,8 @@ type ChatTemplateMessage struct {
 	ID     uint `gorm:"primary_key"`
 	CaseID uint `gorm:"index"`
 	sorting.Sorting
-	Text     string `gorm:"type:text"`
-	ImageURL string `gorm:"type:text"`
+	Text string `gorm:"type:text"`
+	Data string `gorm:"type:text"`
 }
 
 // Validate fields
@@ -106,7 +105,7 @@ func (m ChatTemplateMessage) Validate(db *gorm.DB) {
 			fmt.Sprintf("failed to compile template: %v", err),
 		))
 	}
-	_, err = pongo2.FromString(m.ImageURL)
+	_, err = pongo2.FromString(m.Data)
 	if err != nil {
 		db.AddError(validations.NewError(
 			m,
@@ -122,28 +121,22 @@ func (t *ChatTemplateMessage) Execute(ctx interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, err := applyTemplate(t.ImageURL, ctx)
+	data, err := applyTemplate(t.Data, ctx)
 	if err != nil {
 		return nil, err
 	}
 	parts := make([]*chat.MessagePart, 0, 2)
-	text = strings.Trim(text, " \t\n")
 	if text != "" {
 		parts = append(parts, &chat.MessagePart{
 			Content:  text,
 			MimeType: "text/plain",
 		})
 	}
-	img = strings.Trim(img, " \t\n")
-	if img != "" {
-		if govalidator.IsURL(img) {
-			parts = append(parts, &chat.MessagePart{
-				Content:  img,
-				MimeType: "image/x-url",
-			})
-		} else {
-			return nil, fmt.Errorf("'%v' isn't valid URL", img)
-		}
+	if data != "" {
+		parts = append(parts, &chat.MessagePart{
+			Content:  data,
+			MimeType: "text/data",
+		})
 	}
 	return parts, nil
 }
