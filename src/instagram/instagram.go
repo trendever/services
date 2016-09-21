@@ -258,3 +258,21 @@ func (ig *Instagram) DirectThread(threadID string) (*DirectThreadResponse, error
 	return &object, err
 
 }
+
+// possible direct thread actions
+const (
+	ActionApprove = "approve"
+	ActionDecline = "decline"
+	ActionBlock   = "block"
+)
+
+// DirectThreadAction allows to accept or decline private thread
+func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadActionResponse, error) {
+
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/%v/", threadID, action)
+
+	var object DirectThreadActionResponse
+	err := ig.request("POST", endpoint, &object)
+
+	return &object, err
+}

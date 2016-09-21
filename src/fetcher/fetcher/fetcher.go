@@ -18,11 +18,9 @@ import (
 	"fetcher/views"
 )
 
-var (
-	modelsList = []interface{}{
-		&models.Activity{},
-	}
-)
+var modelsList = []interface{}{
+	&models.Activity{},
+}
 
 type textField struct {
 	userName string
@@ -30,10 +28,11 @@ type textField struct {
 	comment  string
 }
 
+// ProjectService is fetcher service
 type ProjectService struct{}
 
-// migrate
-func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
+// AutoMigrate used models
+func (ps *ProjectService) AutoMigrate(cli *cli.Context) error {
 	// initialize database
 	db.Init(&conf.GetSettings().DB)
 
@@ -56,8 +55,8 @@ func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
 	return nil
 }
 
-// run fetching
-func (this *ProjectService) Run() error {
+// Run fetching
+func (ps *ProjectService) Run() error {
 	db.Init(&conf.GetSettings().DB)
 
 	settings := conf.GetSettings()
@@ -98,24 +97,17 @@ func (this *ProjectService) Run() error {
 		)
 
 		go getActivity(api, rndTimeout)
-
-		time.Sleep(500 * time.Millisecond)
+		go directActivity(api, rndTimeout)
 	}
 
 	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			log.Warn("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
-
+	<-interrupt
+	log.Warn("Cleanup and terminating...")
 	return nil
 }
 
-// get activity
-func getActivity(api *instagram.Instagram, rndTimeout int) {
+// get activity: fetch and parse instagram feed
+func getActivity(api *instagram.Instagram, rndTimeout time.Duration) {
 
 	// little log
 	log.Debug("Start getting with timeout: %v ms.", rndTimeout)
@@ -140,7 +132,7 @@ func getActivity(api *instagram.Instagram, rndTimeout int) {
 		}
 
 		// sleep
-		time.Sleep(time.Duration(rndTimeout) * time.Millisecond)
+		time.Sleep(rndTimeout)
 	}
 }
 
@@ -169,21 +161,30 @@ func fetch(stories instagram.RecentActivityStories, mentionName string) {
 	}
 
 	// write activity to DB
+	// @TODO: just make pk primary key
 	if ok := db.New().NewRecord(act); ok {
 
 		var count int
 
 		// check by pk if record exist
-		if err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error; err == nil && count <= 0 {
-			if err := db.New().Create(&act).Error; err != nil {
-				log.Error(err)
-			} else {
-				log.Debug("Add row: %v", act.Pk)
-			}
-		} else if err != nil {
-			// COUNT(*) error
+		err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		if count >= 0 {
+			// skipping dupe
+			return
+		}
+
+		// now -- create
+		err = db.New().Create(&act).Error
+		if err != nil {
 			log.Error(err)
 		}
+
+		log.Debug("Add row: %v", act.Pk)
 	}
 }
 
@@ -213,6 +214,6 @@ func parseText(text string) *textField {
 }
 
 // get random timeout
-func generateTimeout(min, max int) int {
-	return min + rand.Intn(max-min)
+func generateTimeout(min, max int) time.Duration {
+	return time.Duration(min+rand.Intn(max-min)) * time.Millisecond
 }
