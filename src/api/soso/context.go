@@ -88,6 +88,7 @@ func IPMiddleware(req *Request, ctx *Context, session Session) error {
 	}
 
 	forwarded := request.Header.Get("X-Forwarded-For")
+	log.Debug("Forwarded content: %v", forwarded)
 	addr := strings.Split(forwarded, ", ")[0]
 
 	if addr == "" || strings.Count(addr, ":") != 1 {
