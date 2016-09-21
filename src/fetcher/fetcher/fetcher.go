@@ -20,6 +20,7 @@ import (
 
 var modelsList = []interface{}{
 	&models.Activity{},
+	&models.Thread{},
 }
 
 type textField struct {

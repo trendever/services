@@ -236,6 +236,17 @@ func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
 	return &object, err
 }
 
+// Inbox returns usual normal chats
+func (ig *Instagram) Inbox() (*InboxResponse, error) {
+
+	endpoint := "/direct_v2/inbox/?"
+
+	var object InboxResponse
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+}
+
 // RankedRecipients returns @TODO wtf it returns?
 func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 	endpoint := "/direct_v2/ranked_recipients/?show_threads=true"
