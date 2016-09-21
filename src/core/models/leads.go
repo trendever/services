@@ -52,15 +52,6 @@ type Lead struct {
 	StatusComment string `gorm:"text"`
 }
 
-type LeadCancelReason struct {
-	ID   uint64 `gorm:"primary_key"`
-	Name string `gorm:"text"`
-}
-
-func (r LeadCancelReason) Stringify() string {
-	return r.Name
-}
-
 // Validate lead
 func (l Lead) Validate(db *gorm.DB) {
 	stateOk := false

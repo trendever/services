@@ -48,6 +48,7 @@ var (
 		leadRoleCustomer: {
 			leadEventProgress,
 			leadEventCreate,
+			leadEventCancel,
 		},
 		leadRoleSeller: {
 			leadEventCreate,
