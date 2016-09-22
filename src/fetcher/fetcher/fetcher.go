@@ -98,9 +98,7 @@ func (ps *ProjectService) Run() error {
 		)
 
 		go getActivity(api, rndTimeout)
-		if false { //@TODO
-			go directActivity(api, rndTimeout)
-		}
+		go directActivity(api, rndTimeout)
 	}
 
 	// wait for terminating

@@ -33,13 +33,12 @@ func acceptDirectThreads(api *instagram.Instagram) error {
 			// @TODO: various checks (for example, must be one-to-one chat)
 
 			log.Debug("Approving message thread with ID=%v", thread.ThreadID)
-			resp, err := api.DirectThreadAction(thread.ThreadID, instagram.ActionApprove)
+			_, err := api.DirectThreadAction(thread.ThreadID, instagram.ActionApprove)
 			// response status is checked inside instagram API and corresponding err is generated in this case
 			if err != nil {
 				return err
 			}
 
-			_ = resp
 		}
 	}
 

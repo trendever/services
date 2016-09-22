@@ -31,7 +31,7 @@ type PendingInboxResponse struct {
 			ThreadID       string        `json:"thread_id"`
 			LastActivityAt int64         `json:"last_activity_at"`
 			NewestCursor   string        `json:"newest_cursor"`
-			IsSpam         bool          `json:"is_spam"`
+			IsSpuham       bool          `json:"is_spam"`
 			HasOlder       bool          `json:"has_older"`
 			OldestCursor   string        `json:"oldest_cursor"`
 			LeftUsers      []interface{} `json:"left_users"`
