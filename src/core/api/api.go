@@ -13,6 +13,7 @@ import (
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
+	"proto/trendcoin"
 	"utils/log"
 	"utils/rpc"
 )
@@ -35,13 +36,14 @@ var (
 
 // RPC Clients
 var (
-	MailServiceClient     mail.MailServiceClient
-	SmsServiceClient      sms.SmsServiceClient
-	ChatServiceClient     chat.ChatServiceClient
-	AuthServiceClient     auth.AuthServiceClient
-	PushServiceClient     push.PushServiceClient
-	TelegramServiceClient bot.TelegramServiceClient
-	CheckerServiceClient  checker.CheckerServiceClient
+	MailServiceClient      mail.MailServiceClient
+	SmsServiceClient       sms.SmsServiceClient
+	ChatServiceClient      chat.ChatServiceClient
+	AuthServiceClient      auth.AuthServiceClient
+	PushServiceClient      push.PushServiceClient
+	TelegramServiceClient  bot.TelegramServiceClient
+	CheckerServiceClient   checker.CheckerServiceClient
+	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
 )
 
 // Telegram channel destanations
@@ -92,6 +94,9 @@ func startClients() {
 
 	checkerConn := rpc.Connect(config.RPC.Checker)
 	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
+
+	trendcoinConn := rpc.Connect(config.RPC.Trendcoin)
+	TrendcoinServiceClient = trendcoin.NewTrendcoinServiceClient(trendcoinConn)
 }
 
 // GetBitly returns Bitly client

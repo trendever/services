@@ -66,6 +66,14 @@ services:
     depends_on:
       - db
     command: sh -c './bin/chat migrate && exec ./bin/chat start'
+  trendcoin:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+    command: sh -c './bin/trendcoin migrate && exec ./bin/trendcoin start'
   auth:
     image: debian:jessie
     volumes_from:
