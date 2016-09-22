@@ -10,7 +10,7 @@ service UserService {
 
   rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserReply) {}
 
-  rpc UpdateUsers(UpdateUsersRequest) returns (UpdateUsersReply) {}
+  // rpc UpdateUsers(UpdateUsersRequest) returns (UpdateUsersReply) {}
 }
 
 message CreateUserRequest {
