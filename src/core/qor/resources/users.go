@@ -169,7 +169,8 @@ func addUserResource(a *admin.Admin) {
 	})
 
 	type refillArg struct {
-		Amount uint64
+		Amount  uint64
+		Comment string
 	}
 	refillArgRes := a.NewResource(&refillArg{})
 	res.Action(&admin.Action{
@@ -184,8 +185,8 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger refill action in qor",
-				mover.ID, mover.GetName(),
+				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
 			)
 			for _, record := range argument.FindSelectedRecords() {
 				user, ok := record.(models.User)
@@ -205,6 +206,7 @@ func addUserResource(a *admin.Admin) {
 	type writeOffArg struct {
 		Amount      uint64
 		AllowCredit bool
+		Comment     string
 	}
 	writeOffArgRes := a.NewResource(&writeOffArg{})
 	res.Action(&admin.Action{
@@ -219,8 +221,8 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger write-off action in qor",
-				mover.ID, mover.GetName(),
+				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
 			)
 			for _, record := range argument.FindSelectedRecords() {
 				user, ok := record.(models.User)
@@ -244,6 +246,7 @@ func addUserResource(a *admin.Admin) {
 		Destination   models.User
 		Amount        uint64
 		AllowCredit   bool
+		Comment       string
 	}
 	transferArgRes := a.NewResource(&transferArg{})
 	// @TODO resource in context should have all this themes...
@@ -267,8 +270,8 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger tranfer action in qor",
-				mover.ID, mover.GetName(),
+				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
 			)
 			for _, record := range argument.FindSelectedRecords() {
 				user, ok := record.(models.User)
