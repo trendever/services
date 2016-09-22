@@ -15,6 +15,7 @@ var (
 	TwoEmptySidesError    = errors.New("Transaction should not have two empty sides")
 	EmptySideError        = errors.New("Emply side is not allowed for this transaction")
 	InvalidSourceError    = errors.New("Invalid source account")
+	IdenticalSidesError   = errors.New("Transaction should not have identical source and destination")
 	CreditNotAllowedError = errors.New("Credit is not allowed for this transaction")
 )
 
@@ -31,6 +32,9 @@ func (t *Transaction) Validate() error {
 	}
 	if t.Source == 0 && t.Destination == 0 {
 		return TwoEmptySidesError
+	}
+	if t.Source == t.Destination {
+		return IdenticalSidesError
 	}
 	if !t.AllowEmptySide && (t.Source == 0 || t.Destination == 0) {
 		return EmptySideError

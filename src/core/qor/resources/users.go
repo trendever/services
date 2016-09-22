@@ -184,7 +184,7 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger write-off action in qor",
+				"User %v(%v) trigger refill action in qor",
 				mover.ID, mover.GetName(),
 			)
 			for _, record := range argument.FindSelectedRecords() {

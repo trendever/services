@@ -8,8 +8,8 @@ import (
 )
 
 var dbModels = []interface{}{
-	&Account{},
 	&Transaction{},
+	&Account{},
 }
 
 type Account struct {

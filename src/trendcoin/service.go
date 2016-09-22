@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -22,7 +23,7 @@ var settings struct {
 	SentryDSN string
 }
 
-func init() {
+func Init() {
 	err := config.LoadStruct(ServiceName, &settings)
 	log.Init(settings.Debug, ServiceName, settings.SentryDSN)
 	if err != nil {
@@ -40,6 +41,7 @@ func main() {
 		Use:   "start",
 		Short: "Starts service",
 		Run: func(cmd *cobra.Command, args []string) {
+			Init()
 			log.Info("Starting service...")
 
 			rpc := rpc.Serve(settings.RPC)
@@ -63,6 +65,7 @@ func main() {
 		Use:   "migrate",
 		Short: "Runs database migration",
 		Run: func(cmd *cobra.Command, args []string) {
+			Init()
 			log.Warn("Starting database migration...")
 			db.Init(&settings.DB)
 
@@ -75,10 +78,14 @@ func main() {
 	cmd.AddCommand(migrateCmd)
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "test",
-		Short: "Runs tests",
+		Use:   "test test_config.yaml",
+		Short: "Runs tests. Test db will be migrated with drop!",
 		Run: func(cmd *cobra.Command, args []string) {
-			// @TODO
+			log.Init(true, ServiceName, "")
+			if len(args) == 0 {
+				log.Fatal(errors.New("missing test config argument"))
+			}
+			runTests(args[0])
 		},
 	})
 
