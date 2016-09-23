@@ -103,11 +103,3 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 	}
 	return &core.SetEmailReply{}, nil
 }
-
-func (s userServer) ConfirmUser(_ context.Context, in *core.ConfirmUserRequest) (*core.ConfirmUserReply, error) {
-	err := db.New().Model(&models.User{}).Where("id = ?", in.UserId).Update("confirmed", true).Error
-	if err != nil {
-		log.Error(fmt.Errorf("failed to confirm user: %v", err))
-	}
-	return &core.ConfirmUserReply{}, nil
-}

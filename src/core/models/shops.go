@@ -1,13 +1,15 @@
 package models
 
 import (
-	"core/api"
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"proto/core"
 	"strings"
+	"time"
 	"utils/db"
+	"utils/nats"
 )
 
 // Shop model defines virtual "Shop"
@@ -27,9 +29,10 @@ type Shop struct {
 	InstagramCaption string `gorm:"type:text"`
 
 	// Supplier is a real user who act his responsible for shop
-	SupplierID  uint
-	Supplier    User
-	oldSupplier uint
+	SupplierID        uint
+	Supplier          User
+	SupplierLastLogin time.Time
+	oldSupplier       uint
 
 	ShippingRules string `gorm:"type:text"`
 	PaymentRules  string `gorm:"type:text"`
@@ -119,7 +122,7 @@ func (s *Shop) BeforeSave(db *gorm.DB) {
 
 func (s *Shop) BeforeUpdate() error {
 	err := db.New().Model(&s).Select("supplier_id").Where("id = ?", s.ID).Row().Scan(&s.oldSupplier)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to load old supplier for shop %v: %v", s.ID, err)
 	}
 	return nil
@@ -132,12 +135,12 @@ func (s *Shop) AfterUpdate() error {
 			return err
 		}
 	}
-	go api.Publish("core.shop.flush", s.ID)
+	go nats.Publish("core.shop.flush", s.ID)
 	return nil
 }
 
 func (s *Shop) AfterDelete() {
-	go api.Publish("core.shop.flush", s.ID)
+	go nats.Publish("core.shop.flush", s.ID)
 }
 
 func (s *Shop) onSupplierChanged() error {
