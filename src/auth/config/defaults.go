@@ -23,6 +23,7 @@ type Config struct {
 	Key         string
 	Debug       bool
 	DB          db.Settings
+	NatsURL     string
 	SiteUrl     string `mapstructure:"site_url"`
 	SmsTemplate string `mapstructure:"sms_template"`
 	Bitly       struct {

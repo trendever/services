@@ -1,6 +1,7 @@
 port: "8433"
 core_server: "core:3005"
 sms_server: "sms:12326"
+natsURL: nats://nats:4222
 key: "asdasdasdasdasdasd"
 password_len: 4
 site_url: "http://localdev.trendever.com:3002/"
