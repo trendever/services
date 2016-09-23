@@ -221,7 +221,7 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				"User %v(%v) trigger write-off action in qor, comment: '%v'",
 				mover.ID, mover.GetName(), arg.Comment,
 			)
 			for _, record := range argument.FindSelectedRecords() {
@@ -270,7 +270,7 @@ func addUserResource(a *admin.Admin) {
 			transactions := []*trendcoin.TransactionData{}
 			mover := argument.Context.CurrentUser.(*models.User)
 			reason := fmt.Sprintf(
-				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				"User %v(%v) trigger transfer action in qor, comment: '%v'",
 				mover.ID, mover.GetName(), arg.Comment,
 			)
 			for _, record := range argument.FindSelectedRecords() {

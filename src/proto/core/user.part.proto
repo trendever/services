@@ -7,10 +7,6 @@ service UserService {
   rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
 
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
-
-  rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserReply) {}
-
-  // rpc UpdateUsers(UpdateUsersRequest) returns (UpdateUsersReply) {}
 }
 
 message CreateUserRequest {
@@ -83,9 +79,3 @@ message SetEmailRequest {
 message SetEmailReply {
   string error = 1;
 }
-
-message ConfirmUserRequest {
-  uint64 user_id = 1;
-}
-
-message ConfirmUserReply {}

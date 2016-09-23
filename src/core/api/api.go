@@ -20,15 +20,6 @@ import (
 
 type callbackFunc func(*grpc.Server)
 
-//NatsMessage is nats message
-type NatsMessage struct {
-	Subj string
-	Data interface{}
-}
-
-//Messages is chan for nats messages
-var Messages = make(chan NatsMessage, 10)
-
 var (
 	server    *grpc.Server
 	callbacks = make([]callbackFunc, 0)
@@ -162,9 +153,4 @@ func NotifyByTelegram(channel, message string) (err error) {
 	}
 
 	return err
-}
-
-//Publish sends message to nats
-func Publish(subj string, data interface{}) {
-	Messages <- NatsMessage{Subj: subj, Data: data}
 }

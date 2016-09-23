@@ -2,7 +2,6 @@ package views
 
 import (
 	"core/api"
-	"core/messager"
 	"core/models"
 	"core/telegram"
 	"errors"
@@ -11,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"proto/core"
 	"utils/db"
+	"utils/nats"
 	"utils/product_code"
 )
 
@@ -169,7 +169,7 @@ func (s productServer) CreateProduct(ctx context.Context, request *core.CreatePr
 	}
 
 	go telegram.NotifyProductCreated(&product)
-	go messager.Publish("core.product.new", product.Encode())
+	go nats.Publish("core.product.new", product.Encode())
 
 	return &core.CreateProductResult{
 		Id:   int64(product.ID),
@@ -207,7 +207,7 @@ func (s productServer) LikeProduct(_ context.Context, req *core.LikeProductReque
 		Find(product, product.ID)
 
 	if err == nil {
-		go api.Publish("core.product.flush", product.ID)
+		go nats.Publish("core.product.flush", product.ID)
 	}
 
 	return

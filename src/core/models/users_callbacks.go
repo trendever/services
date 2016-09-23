@@ -11,6 +11,7 @@ import (
 	"strings"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -40,11 +41,11 @@ func (u *User) AfterCommit() {
 }
 
 func (u *User) AfterUpdate() {
-	go api.Publish("core.user.flush", u.ID)
+	go nats.Publish("core.user.flush", u.ID)
 }
 
 func (u *User) AfterDelete() {
-	go api.Publish("core.user.flush", u.ID)
+	go nats.Publish("core.user.flush", u.ID)
 }
 
 func (u *User) LoadExternals(db *gorm.DB) {

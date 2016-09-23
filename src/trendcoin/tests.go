@@ -133,7 +133,6 @@ var tests = []struct {
 		Name: "identical sides",
 		Transactions: TransactionsSlice{
 			&Transaction{
-				// this account should not exists
 				Source:         1,
 				Destination:    1,
 				Amount:         10,
@@ -148,8 +147,9 @@ var tests = []struct {
 		Name: "unexpected credit",
 		Transactions: TransactionsSlice{
 			&Transaction{
-				Source:         1,
-				Destination:    2,
+				Source:      1,
+				Destination: 2,
+				// definitely negative balance in result
 				Amount:         100500,
 				Reason:         "reasonable",
 				AllowEmptySide: false,
@@ -177,8 +177,9 @@ var tests = []struct {
 		Name: "normal transfer",
 		Transactions: TransactionsSlice{
 			&Transaction{
-				Source:         2,
-				Destination:    1,
+				Source:      2,
+				Destination: 1,
+				// transfer it back
 				Amount:         100500,
 				Reason:         "reasonable",
 				AllowEmptySide: false,
@@ -262,7 +263,7 @@ var tests = []struct {
 		Name: "rollback test(continuing previous)",
 		Transactions: TransactionsSlice{
 			&Transaction{
-				// this account was created in previous test, but shuld be rollbacked
+				// this account was created in previous test, but had to be rollbacked
 				Source:         3,
 				Destination:    1,
 				Amount:         5,
@@ -300,7 +301,7 @@ func runTests(configPath string) {
 	}
 }
 
-// checks whether balances of all accounts math transactions log
+// checks whether balances of all accounts match transactions log
 func checkIntegrity() {
 	var results []struct {
 		UserID  uint64
