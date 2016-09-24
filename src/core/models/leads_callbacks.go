@@ -2,6 +2,7 @@ package models
 
 import (
 	"proto/core"
+	"time"
 	"utils/db"
 	"utils/log"
 )
@@ -11,6 +12,10 @@ func (l *Lead) BeforeSave() {
 	if l.State == "" {
 		l.State = core.LeadStatus_EMPTY.String()
 	}
+}
+
+func (l *Lead) BeforeCreate() {
+	l.ChatUpdatedAt = time.Now()
 }
 
 //AfterSave is gorm callback
