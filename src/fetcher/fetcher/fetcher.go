@@ -140,6 +140,8 @@ func getActivity(api *instagram.Instagram, rndTimeout time.Duration) {
 // fetch data and fill database model
 func fetch(stories instagram.RecentActivityStories, mentionName string) {
 
+	log.Debug("Fetching new story")
+
 	// parse text field
 	txt := parseText(stories.Args.Text)
 
@@ -162,31 +164,28 @@ func fetch(stories instagram.RecentActivityStories, mentionName string) {
 	}
 
 	// write activity to DB
-	// @TODO: just make pk primary key
-	if ok := db.New().NewRecord(act); ok {
+	var count int
 
-		var count int
-
-		// check by pk if record exist
-		err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		if count >= 0 {
-			// skipping dupe
-			return
-		}
-
-		// now -- create
-		err = db.New().Create(&act).Error
-		if err != nil {
-			log.Error(err)
-		}
-
-		log.Debug("Add row: %v", act.Pk)
+	// check by pk if record exist
+	err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error
+	if err != nil {
+		log.Error(err)
+		return
 	}
+
+	if count >= 0 {
+		// skipping dupe
+		log.Debug("Skipping dupe")
+		return
+	}
+
+	// now -- create
+	err = db.New().Create(&act).Error
+	if err != nil {
+		log.Error(err)
+	}
+
+	log.Debug("Add row: %v", act.Pk)
 }
 
 // parse Args.Text field
