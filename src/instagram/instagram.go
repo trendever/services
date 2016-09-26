@@ -287,3 +287,14 @@ func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadA
 
 	return &object, err
 }
+
+// DirectThreadApproveAll allows to accept all the threads
+func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, error) {
+
+	endpoint := "/direct_v2/threads/approve_all/?"
+
+	var object DirectThreadApproveAllResponse
+	err := ig.request("POST", endpoint, &object)
+
+	return &object, err
+}

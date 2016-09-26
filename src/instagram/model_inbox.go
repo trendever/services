@@ -170,3 +170,8 @@ type DirectThreadResponse struct {
 type DirectThreadActionResponse struct {
 	Message
 }
+
+// DirectThreadApproveAllResponse if the request is ok
+type DirectThreadApproveAllResponse struct {
+	Message
+}
