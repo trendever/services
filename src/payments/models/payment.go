@@ -155,7 +155,7 @@ func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
 	var count int
 	err := r.DB.
 		Model(&Payment{}).
-		Where("lead_id = ? and cancelled = FALSE", leadID).
+		Where("lead_id = ? and cancelled = FALSE and finished != TRUE", leadID).
 		Joins("LEFT JOIN sessions as sess ON payments.id = sess.payment_id and sess.finished = FALSE").
 		Count(&count).
 		Error
