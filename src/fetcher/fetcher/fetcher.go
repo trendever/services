@@ -145,7 +145,7 @@ func fetch(stories instagram.RecentActivityStories, mentionName string) {
 	// parse text field
 	txt := parseText(stories.Args.Text)
 
-	act := &models.Activity{
+	act := models.Activity{
 		Pk:           stories.Pk, // instagram's post primary key from json
 		UserID:       stories.Args.ProfileID,
 		UserImageUrl: stories.Args.ProfileImage,
@@ -173,9 +173,9 @@ func fetch(stories instagram.RecentActivityStories, mentionName string) {
 		return
 	}
 
-	if count >= 0 {
+	if count > 0 {
 		// skipping dupe
-		log.Debug("Skipping dupe")
+		log.Debug("Skipping dupe (got %v times)", count)
 		return
 	}
 
