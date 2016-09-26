@@ -64,9 +64,10 @@ message ChatMessageNewOrder {
 message ChatMessagePaymentFinished {
   uint64 pay_id = 1;
   bool success = 3;
-  uint64 amount = 4;
-  Currency currency = 5;
-  Direction direction = 6;
+  bool failure = 4;
+  uint64 amount = 5;
+  Currency currency = 6;
+  Direction direction = 7;
 }
 
 message ChatMessageOrderCancelled {
