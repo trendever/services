@@ -55,9 +55,13 @@ func (s shopServer) FindOrCreateShopForSupplier(
 	}
 
 	shopID, deleted, err := models.FindOrCreateShopForSupplier(&supplier, in.RecreateDeleted)
-	return &core.FindOrCreateShopForSupplierReply{
+
+	ret := &core.FindOrCreateShopForSupplierReply{
 		ShopId:  shopID,
 		Deleted: deleted,
-		Error:   err.Error(),
-	}, nil
+	}
+	if err != nil {
+		ret.Error = err.Error()
+	}
+	return ret, nil
 }
