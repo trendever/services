@@ -13,7 +13,7 @@ db:
   base:     postgres
 
 requestsPerTick: 10
-minimalTickLen:  10000
+minimalTickLen:  50000
 pool:
   timeoutMin: 500
   timeoutMax: 2000
