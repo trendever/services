@@ -47,7 +47,7 @@ func (s shopServer) FindOrCreateShopForSupplier(
 	reply = &core.FindOrCreateShopForSupplierReply{}
 
 	supplier := models.User{Model: gorm.Model{ID: uint(in.SupplierId)}}
-	err := db.New().First(supplier).Error
+	err := db.New().First(&supplier).Error
 	if err != nil {
 		return &core.FindOrCreateShopForSupplierReply{
 			Error: fmt.Sprintf("failed to load supplier: %v", err),
