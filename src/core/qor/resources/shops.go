@@ -128,7 +128,7 @@ func addShopResource(a *admin.Admin) {
 		"InstagramUsername", "Supplier.Name", "InstagramCaption", "InstagramFullname", "InstagramWebsite",
 	)
 	res.IndexAttrs(
-		"InstagramUsername", "InstagramCaption", "InstagramFullname", "Supplier", "Tags",
+		"InstagramUsername", "InstagramCaption", "InstagramFullname", "Supplier", "SupplierLastLogin", "Tags",
 	)
 
 	res.EditAttrs(

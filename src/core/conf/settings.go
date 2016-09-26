@@ -66,6 +66,7 @@ type Settings struct {
 		Push           string
 		Telegram       string
 		Checker        string
+		Trendcoin      string
 	}
 
 	DB db.Settings

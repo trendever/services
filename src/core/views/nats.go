@@ -1,37 +1,36 @@
-package messager
+package views
 
 import (
 	"core/models"
+	"fmt"
 	"proto/chat"
 	"proto/core"
+	"time"
+	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
-type chatRequest interface {
-	GetChat() *chat.Chat
-}
-
 func init() {
-	handlers[subscription{
-		subject: "chat.message.new",
-		group:   "core",
-	}] = newMessage
-	handlers[subscription{
-		subject: "core.notify.message",
-		group:   "core",
-	}] = notifySellerAboutUnreadedMessage
-}
-
-func touchLead(req chatRequest) error {
-	lead, err := models.GetLead(0, req.GetChat().Id)
-	if err != nil {
-		return err
-	}
-	return models.TouchLead(lead)
+	nats.Subscribe(&nats.Subscription{
+		Subject: "chat.message.new",
+		Group:   "core",
+		Handler: newMessage,
+	})
+	nats.Subscribe(&nats.Subscription{
+		Subject: "core.notify.message",
+		Group:   "core",
+		Handler: notifySellerAboutUnreadedMessage,
+	})
+	nats.Subscribe(&nats.Subscription{
+		Subject: "auth.login",
+		Group:   "core",
+		Handler: handleUserLogin,
+	})
 }
 
 func newMessage(req *chat.NewMessageRequest) {
-	log.Error(touchLead(req))
+	log.Error(models.TouchLead(req.Chat.Id))
 }
 
 func notifySellerAboutUnreadedMessage(msg *chat.Message) {
@@ -67,4 +66,20 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 			log.Error(n.NotifySellerAboutUnreadMessage(supplier, lead, msg))
 		}
 	}
+}
+
+func handleUserLogin(userID uint) {
+	err := db.New().Model(&models.User{}).
+		Where("id = ?", userID).
+		UpdateColumn("confirmed", true).Error
+	if err != nil {
+		log.Error(fmt.Errorf("failed to confirm user: %v", err))
+	}
+	err = db.New().Model(&models.Shop{}).
+		Where("supplier_id = ?", userID).
+		UpdateColumn("supplier_last_login", time.Now()).Error
+	if err != nil {
+		log.Error(fmt.Errorf("failed to update last login in related shops for user %v: %v", userID, err))
+	}
+
 }

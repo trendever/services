@@ -35,14 +35,19 @@ func (s shopCardServer) GetCards(_ context.Context, req *core.GetCardsRequest) (
 
 func (s shopCardServer) CreateCard(_ context.Context, req *core.CreateCardRequest) (*core.CreateCardReply, error) {
 
-	id, err := models.CreateCard(
+	card, err := models.CreateCard(
 		s.repo,
 		models.ShopCard{}.Decode(req.Card),
 	)
 
+	if err != nil {
+		return &core.CreateCardReply{}, err
+	}
+
 	return &core.CreateCardReply{
-		Id: uint64(id),
-	}, err
+		Id:   uint64(card.ID),
+		Name: card.Name,
+	}, nil
 }
 
 func (s shopCardServer) DeleteCard(_ context.Context, req *core.DeleteCardRequest) (*core.DeleteCardReply, error) {

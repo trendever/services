@@ -13,20 +13,12 @@ import (
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
+	"proto/trendcoin"
 	"utils/log"
 	"utils/rpc"
 )
 
 type callbackFunc func(*grpc.Server)
-
-//NatsMessage is nats message
-type NatsMessage struct {
-	Subj string
-	Data interface{}
-}
-
-//Messages is chan for nats messages
-var Messages = make(chan NatsMessage, 10)
 
 var (
 	server    *grpc.Server
@@ -35,13 +27,14 @@ var (
 
 // RPC Clients
 var (
-	MailServiceClient     mail.MailServiceClient
-	SmsServiceClient      sms.SmsServiceClient
-	ChatServiceClient     chat.ChatServiceClient
-	AuthServiceClient     auth.AuthServiceClient
-	PushServiceClient     push.PushServiceClient
-	TelegramServiceClient bot.TelegramServiceClient
-	CheckerServiceClient  checker.CheckerServiceClient
+	MailServiceClient      mail.MailServiceClient
+	SmsServiceClient       sms.SmsServiceClient
+	ChatServiceClient      chat.ChatServiceClient
+	AuthServiceClient      auth.AuthServiceClient
+	PushServiceClient      push.PushServiceClient
+	TelegramServiceClient  bot.TelegramServiceClient
+	CheckerServiceClient   checker.CheckerServiceClient
+	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
 )
 
 // Telegram channel destanations
@@ -92,6 +85,9 @@ func startClients() {
 
 	checkerConn := rpc.Connect(config.RPC.Checker)
 	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
+
+	trendcoinConn := rpc.Connect(config.RPC.Trendcoin)
+	TrendcoinServiceClient = trendcoin.NewTrendcoinServiceClient(trendcoinConn)
 }
 
 // GetBitly returns Bitly client
@@ -157,9 +153,4 @@ func NotifyByTelegram(channel, message string) (err error) {
 	}
 
 	return err
-}
-
-//Publish sends message to nats
-func Publish(subj string, data interface{}) {
-	Messages <- NatsMessage{Subj: subj, Data: data}
 }

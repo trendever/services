@@ -3,7 +3,6 @@ package project
 import (
 	"core/api"
 	"core/conf"
-	"core/messager"
 	"core/models"
 	"core/qor"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"syscall"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 // Service with service entry points
@@ -66,7 +66,7 @@ func (s *Service) Run(cli *cli.Context) {
 	go log.PanicLogger(func() {
 		// connect to database
 		db.Init(&conf.GetSettings().DB)
-		messager.Init()
+		nats.Init(conf.GetSettings().NatsURL)
 		if err := models.LoadOrCreateSystemUser(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))
 		}

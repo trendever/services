@@ -308,8 +308,8 @@ func GetFullLeadByID(id uint64) (*Lead, error) {
 }
 
 //TouchLead updates only chat_updated_at field, without call any callbacks
-func TouchLead(lead *Lead) error {
-	return db.New().Model(lead).UpdateColumn("chat_updated_at", time.Now()).Error
+func TouchLead(conversationID uint64) error {
+	return db.New().Model(&Lead{}).Where("conversation_id = ?", conversationID).UpdateColumn("chat_updated_at", time.Now()).Error
 }
 
 //GetLeadProducts returns products for the lead

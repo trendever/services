@@ -1,12 +1,18 @@
 package resources
 
 import (
+	"core/api"
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
+	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
+	"github.com/trendever/ajaxor"
+	"proto/trendcoin"
+	"utils/rpc"
 )
 
 func init() {
@@ -28,7 +34,7 @@ func addUserResource(a *admin.Admin) {
 
 	res.IndexAttrs(
 		"ID", "Name", "InstagramUsername", "InstagramCaption",
-		"Email", "Phone", "Confirmed",
+		"Email", "Phone", "Balance", "Confirmed",
 	)
 	res.ShowAttrs(
 		&admin.Section{
@@ -161,4 +167,143 @@ func addUserResource(a *admin.Admin) {
 				Where("shop.id IS NULL OR NOT EXISTS (SELECT 1 FROM products_product product WHERE product.shop_id = shop.id AND product.deleted_at IS NULL)")
 		},
 	})
+
+	type refillArg struct {
+		Amount  uint64
+		Comment string
+	}
+	refillArgRes := a.NewResource(&refillArg{})
+	res.Action(&admin.Action{
+		Name:     "Refill coins",
+		Resource: refillArgRes,
+		Modes:    []string{"show", "menu_item"},
+		Handle: func(argument *admin.ActionArgument) error {
+			arg, ok := argument.Argument.(*refillArg)
+			if !ok {
+				return errors.New("unxepected argument type")
+			}
+			transactions := []*trendcoin.TransactionData{}
+			mover := argument.Context.CurrentUser.(*models.User)
+			reason := fmt.Sprintf(
+				"User %v(%v) trigger refill action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
+			)
+			for _, record := range argument.FindSelectedRecords() {
+				user, ok := record.(models.User)
+				if !ok {
+					return errors.New("unxepected record type")
+				}
+				transactions = append(transactions, &trendcoin.TransactionData{
+					Destination:    uint64(user.ID),
+					Amount:         arg.Amount,
+					AllowEmptySide: true,
+					Reason:         reason,
+				})
+			}
+			return performTransactions(transactions...)
+		},
+	})
+	type writeOffArg struct {
+		Amount      uint64
+		AllowCredit bool
+		Comment     string
+	}
+	writeOffArgRes := a.NewResource(&writeOffArg{})
+	res.Action(&admin.Action{
+		Name:     "Write-off coins",
+		Resource: writeOffArgRes,
+		Modes:    []string{"show", "menu_item"},
+		Handle: func(argument *admin.ActionArgument) error {
+			arg, ok := argument.Argument.(*writeOffArg)
+			if !ok {
+				return errors.New("unxepected argument type")
+			}
+			transactions := []*trendcoin.TransactionData{}
+			mover := argument.Context.CurrentUser.(*models.User)
+			reason := fmt.Sprintf(
+				"User %v(%v) trigger write-off action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
+			)
+			for _, record := range argument.FindSelectedRecords() {
+				user, ok := record.(models.User)
+				if !ok {
+					return errors.New("unxepected record type")
+				}
+				transactions = append(transactions, &trendcoin.TransactionData{
+					Source:         uint64(user.ID),
+					Amount:         arg.Amount,
+					AllowCredit:    arg.AllowCredit,
+					AllowEmptySide: true,
+					Reason:         reason,
+				})
+			}
+			return performTransactions(transactions...)
+		},
+	})
+
+	type transferArg struct {
+		DestinationID uint64
+		Destination   models.User
+		Amount        uint64
+		AllowCredit   bool
+		Comment       string
+	}
+	transferArgRes := a.NewResource(&transferArg{})
+	// @TODO resource in context should have all this themes...
+	// we need somehow set it ajaxor probably
+	res.UseTheme("select2.min")
+	res.UseTheme("ajaxor")
+	ajaxor.Meta(transferArgRes, &admin.Meta{
+		Name: "Destination",
+		Type: "select_one",
+	})
+	res.Action(&admin.Action{
+		Name:     "Transfer coins",
+		Resource: transferArgRes,
+		Modes:    []string{"show", "menu_item"},
+		Handle: func(argument *admin.ActionArgument) error {
+			arg, ok := argument.Argument.(*transferArg)
+			fmt.Printf("transfer arg: %v\n", arg)
+			if !ok {
+				return errors.New("unxepected argument type")
+			}
+			transactions := []*trendcoin.TransactionData{}
+			mover := argument.Context.CurrentUser.(*models.User)
+			reason := fmt.Sprintf(
+				"User %v(%v) trigger transfer action in qor, comment: '%v'",
+				mover.ID, mover.GetName(), arg.Comment,
+			)
+			for _, record := range argument.FindSelectedRecords() {
+				user, ok := record.(models.User)
+				if !ok {
+					return errors.New("unxepected record type")
+				}
+				transactions = append(transactions, &trendcoin.TransactionData{
+					Source:      uint64(user.ID),
+					Destination: uint64(arg.Destination.ID),
+					Amount:      arg.Amount,
+					AllowCredit: arg.AllowCredit,
+					Reason:      reason,
+				})
+			}
+			return performTransactions(transactions...)
+		},
+	})
+}
+
+func performTransactions(transactions ...*trendcoin.TransactionData) error {
+	// @TODO add local checks after service tests
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	res, err := api.TrendcoinServiceClient.MakeTransactions(
+		ctx,
+		&trendcoin.MakeTransactionsRequest{Transactions: transactions},
+	)
+	if err != nil {
+		return err
+	}
+	if res.Error != "" {
+		return errors.New(res.Error)
+	}
+	return nil
 }
