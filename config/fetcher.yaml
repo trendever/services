@@ -11,8 +11,8 @@ db:
   base:     postgres
 
 instagram:
-  timeoutMin: 2000
-  timeoutMax: 20000
+  timeoutMin: 10s
+  timeoutMax: 15s
   users:
     - username: nmstrs1
       password: pass4ig

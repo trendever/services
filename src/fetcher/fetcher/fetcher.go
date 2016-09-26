@@ -92,10 +92,10 @@ func (ps *ProjectService) Run() error {
 	for _, api := range apis {
 
 		// random timeout
-		rndTimeout := generateTimeout(
-			settings.Instagram.TimeoutMin,
-			settings.Instagram.TimeoutMax,
-		)
+		rndTimeout, err := generateTimeout()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		go getActivity(api, rndTimeout)
 		//go directActivity(api, rndTimeout)
@@ -111,7 +111,7 @@ func (ps *ProjectService) Run() error {
 func getActivity(api *instagram.Instagram, rndTimeout time.Duration) {
 
 	// little log
-	log.Debug("Start getting with timeout: %v ms.", rndTimeout)
+	log.Debug("Start getting with timeout: %v", rndTimeout)
 
 	for {
 		// get recent activity
@@ -197,7 +197,7 @@ func parseText(text string) *textField {
 
 	switch {
 	case strings.Contains(text, "liked your photo"):
-		txt.textType = "liked_photo"
+		txt.textType = "likit already"
 	case strings.Contains(text, "started following you"):
 		txt.textType = "start_following"
 	case strings.Contains(text, "took a photo of you"):
@@ -214,6 +214,18 @@ func parseText(text string) *textField {
 }
 
 // get random timeout
-func generateTimeout(min, max int) time.Duration {
-	return time.Duration(min+rand.Intn(max-min)) * time.Millisecond
+func generateTimeout() (time.Duration, error) {
+
+	settings := conf.GetSettings()
+
+	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
+	if err != nil {
+		return time.Duration(0), err
+	}
+
+	return min + time.Duration(rand.Intn(int(max-min))), nil
 }
