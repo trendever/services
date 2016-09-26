@@ -66,6 +66,7 @@ SELECT product.id
 FROM
 	products_product product
 	LEFT JOIN products_shops shop ON product.shop_id = shop.id
+	LEFT JOIN users_user supplier ON shop.supplier_id = supplier.id
 	LEFT JOIN users_user mentioner ON product.mentioned_by_id = mentioner.id
 	LEFT JOIN elastic_product_meta index ON product.id = index.id
 WHERE
@@ -74,6 +75,8 @@ WHERE
 	OR product.deleted_at > index.source_updated_at
 	OR shop.updated_at > index.source_updated_at
 	OR shop.deleted_at > index.source_updated_at
+	OR supplier.updated_at > index.source_updated_at
+	OR supplier.deleted_at > index.source_updated_at
 	OR mentioner.updated_at > index.source_updated_at
 	OR mentioner.deleted_at > index.source_updated_at
 UNION
@@ -140,13 +143,15 @@ SELECT
 	product.id, product.updated_at, product.deleted_at,
 	product.code, product.title, product.instagram_image_caption, product.is_sale,
 	shop.id, shop.updated_at, shop.deleted_at,
-	shop.instagram_username, shop.instagram_fullname,
+	supplier.updated_at, supplier.deleted_at,
+	supplier.instagram_username, supplier.instagram_fullname,
 	mentioner.id, mentioner.updated_at, mentioner.deleted_at,
 	mentioner.name, mentioner.instagram_username, mentioner.instagram_fullname,
 	index.version
 FROM
 	products_product product
 	LEFT JOIN products_shops shop ON product.shop_id = shop.id
+	LEFT JOIN users_user supplier ON shop.supplier_id = supplier.id
 	LEFT JOIN users_user mentioner ON product.mentioned_by_id = mentioner.id
 	LEFT JOIN elastic_product_meta index ON product.id = index.id
 WHERE
@@ -156,7 +161,7 @@ WHERE
 	}
 	defer rows.Close()
 	products = make(map[uint64]*models.ElasticProduct)
-	times := make([]pq.NullTime, 6, 6)
+	times := make([]pq.NullTime, 8, 8)
 	var shop_id, mentioner_id, version sql.NullInt64
 	for rows.Next() {
 		p := &models.ElasticProduct{}
@@ -165,8 +170,9 @@ WHERE
 			&p.Meta.ID, &times[0], &times[1],
 			&p.Data.Code, &p.Data.Title, &p.Data.Caption, &p.Data.Sale,
 			&shop_id, &times[2], &times[3],
+			&times[4], &times[5],
 			&p.Data.Shop.Name, &p.Data.Shop.FullName,
-			&mentioner_id, &times[4], &times[5],
+			&mentioner_id, &times[6], &times[7],
 			&p.Data.Mentioner.Name, &alter_name, &p.Data.Mentioner.FullName,
 			&version,
 		)

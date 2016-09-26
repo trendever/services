@@ -244,7 +244,7 @@ func addProductResource(a *admin.Admin) {
 			if arg.User.ID == 0 {
 				return nil
 			}
-			shopID, err := models.FindOrCreateShopForSupplier(&arg.User)
+			shopID, _, err := models.FindOrCreateShopForSupplier(&arg.User, true)
 			if err != nil {
 				return err
 			}

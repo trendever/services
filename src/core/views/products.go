@@ -58,6 +58,8 @@ func (s productServer) GetProduct(ctx context.Context, request *core.GetProductR
 	objects := models.Products{}
 	res := query.
 		Preload("LikedBy", "users_products.deleted_at IS NULL AND type = ?", "liked").
+		Preload("Shop").
+		Preload("Shop.Supplier").
 		Limit(1). // make sure only one is returned
 		Find(&objects)
 

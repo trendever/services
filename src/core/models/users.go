@@ -30,7 +30,7 @@ type User struct {
 	// Just like InstagramCaption, but rw for qor
 	Caption string `gorm:"type:text"`
 	// Short status-like string
-	Slogan string
+	Slogan string `gorm:"type:text"`
 
 	OptOut bool
 
