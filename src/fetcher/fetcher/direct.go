@@ -37,5 +37,25 @@ func checkNewMessages(api *instagram.Instagram) error {
 		return err
 	}
 
+	for _, thread := range resp.Inbox.Threads {
+
+		err := processThread(api, thread.ThreadID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processThread(api *instagram.Instagram, threadID string) error {
+
+	resp, err := api.DirectThread(threadID, "")
+	if err != nil {
+		return err
+	}
+
+	_ = resp
+
 	return nil
 }
