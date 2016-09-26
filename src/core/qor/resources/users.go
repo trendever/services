@@ -34,13 +34,13 @@ func addUserResource(a *admin.Admin) {
 
 	res.IndexAttrs(
 		"ID", "Name", "InstagramUsername", "InstagramCaption",
-		"Email", "Phone", "Balance", "Confirmed",
+		"Email", "Phone", "Balance", "Confirmed", "LastLogin",
 	)
 	res.ShowAttrs(
 		&admin.Section{
 			Title: "Profile",
 			Rows: [][]string{
-				{"CreatedAt"},
+				{"CreatedAt", "LastLogin"},
 				{"Name"},
 				{"Email", "Phone"},
 				{"Website"},

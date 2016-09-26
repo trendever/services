@@ -4,6 +4,7 @@ import (
 	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"time"
 	"utils/db"
 	"utils/log"
 )
@@ -43,8 +44,11 @@ type User struct {
 	// ability to join any chat
 	SuperSeller bool `sql:"default:false"`
 
+	LastLogin time.Time
+
 	previousPhone string
 	// true if the user was logged in at least once
+	// @TODO remove it, we have LastLogin now
 	Confirmed bool `sql:"default:false"`
 
 	// trendcoin balance

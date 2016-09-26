@@ -27,6 +27,11 @@ func init() {
 		Group:   "core",
 		Handler: handleUserLogin,
 	})
+	nats.Subscribe(&nats.Subscription{
+		Subject: "api.new_session",
+		Group:   "core",
+		Handler: handleNewSession,
+	})
 }
 
 func newMessage(req *chat.NewMessageRequest) {
@@ -75,11 +80,20 @@ func handleUserLogin(userID uint) {
 	if err != nil {
 		log.Error(fmt.Errorf("failed to confirm user: %v", err))
 	}
+}
+
+func handleNewSession(userID uint) {
+	now := time.Now()
+	err := db.New().Model(&models.User{}).
+		Where("id = ?", userID).
+		UpdateColumn("last_login", now).Error
+	if err != nil {
+		log.Error(fmt.Errorf("failed to update last session for user %v: %v", userID, err))
+	}
 	err = db.New().Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
-		UpdateColumn("supplier_last_login", time.Now()).Error
+		UpdateColumn("supplier_last_login", now).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to update last login in related shops for user %v: %v", userID, err))
+		log.Error(fmt.Errorf("failed to update last session in related shops for user %v: %v", userID, err))
 	}
-
 }

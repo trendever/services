@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/nats-io/nats"
 	"sync"
+	"time"
 	"utils/log"
 )
 
@@ -20,13 +21,15 @@ var (
 )
 
 // may be called before Init(), so it's fine to call it in package init
-func Subscribe(sub *Subscription) {
+func Subscribe(subs ...*Subscription) {
 	lock.Lock()
-	subscriptions = append(subscriptions, sub)
-	if encoded != nil {
-		err := subscribe(sub)
-		if err != nil {
-			log.Error(fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err))
+	for _, sub := range subs {
+		subscriptions = append(subscriptions, sub)
+		if encoded != nil {
+			err := subscribe(sub)
+			if err != nil {
+				log.Error(fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err))
+			}
 		}
 	}
 	lock.Unlock()
@@ -44,21 +47,33 @@ func subscribe(sub *Subscription) (err error) {
 func Init(url string) {
 	lock.Lock()
 	defer lock.Unlock()
+	for {
+		err := connect(url)
+		if err == nil {
+			return
+		}
+		log.Error(err)
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func connect(url string) error {
 	conn, err := nats.Connect(url)
 	if err != nil {
-		log.Fatal(fmt.Errorf("connection to NATS failed: %v", err))
+		return fmt.Errorf("connection to NATS failed: %v", err)
 	}
 	encoded, err = nats.NewEncodedConn(conn, nats.JSON_ENCODER)
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create encoded NATS connection: %v", err))
+		return fmt.Errorf("failed to create encoded NATS connection: %v", err)
 	}
-
 	for _, sub := range subscriptions {
 		err := subscribe(sub)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err))
+			conn.Close()
+			return fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err)
 		}
 	}
+	return nil
 }
 
 func Publish(subj string, data interface{}) error {
