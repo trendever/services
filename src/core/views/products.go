@@ -32,7 +32,7 @@ func applyIDSearch(db *gorm.DB, request *core.GetProductRequest) (*gorm.DB, erro
 
 	// whether we want include deleted products
 	if request.WithDeleted {
-		db = db.Unscoped()
+		db = db.Unscoped().Order("deleted_at IS NOT NULL")
 	}
 
 	// here we are checking which field of oneof search_by we have
@@ -72,32 +72,25 @@ func (s productServer) GetProduct(ctx context.Context, request *core.GetProductR
 	}, nil
 }
 
-// ReadProduct checks product existense by id/code
+// ReadProduct checks product existence by id/code
 func (s productServer) ReadProduct(ctx context.Context, request *core.GetProductRequest) (*core.ProductReadResult, error) {
 	query, err := applyIDSearch(db.New(), request)
 	if err != nil {
 		return nil, err
 	}
 
-	var ids []int64
+	var reply core.ProductReadResult
 	res := query.
 		Limit(1). // make sure only one is returned
 		Model(&models.Product{}).
-		Pluck("id", &ids)
-
-	var id int64
+		Select("id, deleted_at IS NOT NULL AS deleted").
+		Scan(&reply)
 
 	if !res.RecordNotFound() && res.Error != nil {
 		return nil, res.Error
 	}
 
-	if !res.RecordNotFound() && len(ids) == 1 {
-		id = ids[0]
-	}
-
-	return &core.ProductReadResult{
-		Id: id,
-	}, nil
+	return &reply, nil
 }
 
 // search mutiple products

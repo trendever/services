@@ -173,11 +173,14 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existence
+	productID, deleted, err := productExists(mediaID) //@TODO: batch check for existence
 	if err != nil {
 		return -1, true, err
 	}
-	if alreadyExists {
+	if deleted {
+		return -1, false, errors.New("product was deleted")
+	}
+	if productID > 0 {
 		go func() {
 			ctx, cancel := rpc.DefaultContext()
 			defer cancel()
@@ -293,7 +296,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 }
 
 // check if product with this mediaId present.
-func productExists(mediaID string) (bool, int64, error) {
+func productExists(mediaID string) (id int64, deleted bool, err error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
@@ -303,10 +306,10 @@ func productExists(mediaID string) (bool, int64, error) {
 	})
 
 	if err != nil {
-		return false, 0, err
+		return 0, false, err
 	}
 
-	return res.Id > 0, res.Id, nil
+	return res.Id, res.Deleted, nil
 }
 
 // find core user with given instagramID; if not exists -- create one

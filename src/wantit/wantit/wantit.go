@@ -202,11 +202,15 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 
 	// get product via code
 	var productID int64
+	var deleted bool
 	code, found := findProductCode(productMedia.Caption.Text)
 	if found {
-		productID, err = productCoreID(code)
+		productID, deleted, err = productCoreID(code)
 		if err != nil {
 			return true, err
+		}
+		if deleted {
+			return false, errors.New("product was deleted")
 		}
 	}
 	// there is no code at all or it's unregistred
@@ -287,7 +291,7 @@ func findProductCode(comment string) (code string, found bool) {
 }
 
 // get core productId by mediaId
-func productCoreID(code string) (int64, error) {
+func productCoreID(code string) (id int64, deleted bool, err error) {
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
@@ -298,10 +302,10 @@ func productCoreID(code string) (int64, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
-	return res.Id, nil
+	return res.Id, res.Deleted, nil
 }
 
 // check if this lead alredy registered
