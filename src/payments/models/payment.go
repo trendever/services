@@ -114,6 +114,7 @@ func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
 	err := r.DB.
 		Model(&Session{}).
 		Where("payment_id = ?", payID).
+		Where("finished = true").
 		Count(&count).
 		Error
 
