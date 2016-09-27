@@ -77,10 +77,14 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	}
 
 	switch {
-	//User does request for leads without a customer role, and he hasn't linked shops, and he is not a super seller
-	//therefore we can't show for him anything
-	case len(or) == 0 && !user.SuperSeller:
-		return
+	case len(or) == 0:
+		//User does request for leads without a customer role, and he hasn't linked shops, and he is not a super seller
+		//therefore we can't show for him anything
+		if !user.SuperSeller {
+			return
+		}
+		// super seller
+		scope = scope.Where("state NOT IN (?)", ignoreForSeller)
 	case len(or) > 1:
 		scope = scope.Where("("+strings.Join(or, " OR ")+")", orArgs...)
 	case len(or) == 1:
@@ -94,7 +98,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	}
 
 	if fromUpdatedAt != 0 {
-		t := time.Unix(fromUpdatedAt/1e9, fromUpdatedAt%1e9)
+		t := time.Unix(0, fromUpdatedAt)
 		if direction {
 			scope = scope.Where("pl.chat_updated_at > ?", t.Format(time.RFC3339Nano))
 		} else {

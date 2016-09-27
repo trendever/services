@@ -57,6 +57,7 @@ message ProductSearchResult {
 
 message ProductReadResult {
   int64 id = 1;
+  bool deleted = 2;
 }
 
 message CreateProductRequest {
