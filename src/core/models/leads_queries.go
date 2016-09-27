@@ -84,7 +84,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 			return
 		}
 		// super seller
-		//scope = scope.Where()
+		scope = scope.Where("state NOT IN (?)", ignoreForSeller)
 	case len(or) > 1:
 		scope = scope.Where("("+strings.Join(or, " OR ")+")", orArgs...)
 	case len(or) == 1:
