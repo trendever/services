@@ -9,8 +9,9 @@ func RelatedTags(tags []int64, limit int) ([]Tag, error) {
 	var result []Tag
 	err := db.New().
 		Limit(limit).
+		Joins("JOIN products_tag_group grp ON (grp.id = products_tag.group_id AND grp.name != products_tag.name)").
 		Where(`
-		id IN (
+		products_tag.id IN (
 			SELECT tag_id FROM products_product_item_tags WHERE product_item_id IN (
 				SELECT tagged.id FROM (
 					SELECT product_item_id AS id FROM products_product_item_tags
