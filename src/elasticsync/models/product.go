@@ -2,6 +2,11 @@ package models
 
 import "time"
 
+// last index update time
+// it will be included as creation date in index settings
+// index will be recreated if old data is lower than this
+// unix time, ms
+const IndexUpdatedAt = 1475067569 * 1000
 const ProductIndex = `{
 "settings": {
 	"analysis": {
@@ -26,7 +31,8 @@ const ProductIndex = `{
 				]
 			}
 		}
-	}
+	},
+	"creation_date" : %v
 },
 "mappings": {
 	"product": {
@@ -80,25 +86,8 @@ const ProductIndex = `{
 					}
 				}
 			},
-			"tags": {
-				"properties": {
-					"id": {
-						"type": "long",
-						"include_in_all": false
-					},
-					"name": {
-						"type": "string",
-						"fields": {
-							"raw": {
-								"type": "string",
-								"index": "not_analyzed",
-								"include_in_all": false
-							}
-						}
-					}
-				}
-			},
 			"items": {
+				"type": "nested",
 				"properties": {
 					"name": {
 						"type": "string"
@@ -110,6 +99,24 @@ const ProductIndex = `{
 					"discount_price": {
 						"type": "long",
 						"include_in_all": false
+					},
+					"tags": {
+						"properties": {
+							"id": {
+								"type": "long",
+								"include_in_all": false
+							},
+							"name": {
+								"type": "string",
+								"fields": {
+									"raw": {
+										"type": "string",
+										"index": "not_analyzed",
+										"include_in_all": false
+									}
+								}
+							}
+						}
 					}
 				}
 			},
@@ -136,9 +143,11 @@ type ElasticTag struct {
 	Name string `json:"name,omitempty"`
 }
 type ElasticProductItem struct {
-	Name          string `json:"name,omitempty"`
-	Price         uint64 `json:"price"`
-	DiscountPrice uint64 `json:"discount_price"`
+	ID            uint64       `json:"-"`
+	Name          string       `json:"name,omitempty"`
+	Price         uint64       `json:"price"`
+	DiscountPrice uint64       `json:"discount_price"`
+	Tags          []ElasticTag `json:"tags,omitempty"`
 }
 type ElasticProductImage struct {
 	URL  string `json:"url,omitempty"`
@@ -161,9 +170,7 @@ type ElasticProductData struct {
 		Name     string `json:"name,omitempty"`
 		FullName string `json:"full_name,omitempty"`
 	} `json:"mentioner,omitempty"`
-	// tags from all items
-	Tags   []ElasticTag          `json:"tags,omitempty"`
-	Items  []ElasticProductItem  `json:"items,omitempty"`
+	Items  []*ElasticProductItem `json:"items,omitempty"`
 	Images []ElasticProductImage `json:"images,omitempty"`
 }
 

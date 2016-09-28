@@ -193,11 +193,11 @@ WHERE
 		}
 		products[p.Meta.ID] = p
 	}
-	err = LoadProductsTags(ids, products)
+	err = LoadProductsItems(ids, products)
 	if err != nil {
 		return
 	}
-	err = LoadProductsItems(ids, products)
+	err = LoadProductsTags(ids, products)
 	if err != nil {
 		return
 	}
@@ -219,11 +219,11 @@ func maxNullTime(arr []pq.NullTime) (max time.Time) {
 
 func LoadProductsTags(product_ids []uint64, products map[uint64]*models.ElasticProduct) error {
 	rows, err := db.New().
-		Select("tag.id, tag.name, tag.updated_at, tag.deleted_at, tag.hidden, related.product_id").
+		Select("tag.id, tag.name, tag.updated_at, tag.deleted_at, tag.hidden, related.product_id, related.product_item_id").
 		Table("products_product_item_tags related").
 		Joins("JOIN products_tag tag ON related.tag_id = tag.id").
 		Where("related.product_id in (?)", product_ids).
-		Order("related.product_id").
+		Order("related.product_id, related.product_item_id").
 		Rows()
 	if err != nil {
 		return err
@@ -236,29 +236,39 @@ func LoadProductsTags(product_ids []uint64, products map[uint64]*models.ElasticP
 		DeletedAt pq.NullTime
 		Hidden    bool
 		ProductID uint64
+		ItemID    uint64
 	}
 
-	var cur *models.ElasticProduct = products[product_ids[0]]
+	var prodCur *models.ElasticProduct = products[product_ids[0]]
+	// current item index
+	var itemCur int
 	for rows.Next() {
 		err := rows.Scan(
 			&tag.ID, &tag.Name,
 			&tag.UpdatedAt, &tag.DeletedAt,
-			&tag.Hidden, &tag.ProductID,
+			&tag.Hidden, &tag.ProductID, &tag.ItemID,
 		)
 		if err != nil {
 			return err
 		}
-		if tag.ProductID != cur.Meta.ID {
-			cur = products[tag.ProductID]
+		if tag.ProductID != prodCur.Meta.ID {
+			prodCur = products[tag.ProductID]
+			itemCur = 0
 		}
-		if cur.Meta.SourceUpdatedAt.Before(tag.DeletedAt.Time) {
-			cur.Meta.SourceUpdatedAt = tag.DeletedAt.Time
+		for tag.ItemID != prodCur.Data.Items[itemCur].ID {
+			itemCur++
+			if itemCur == len(prodCur.Data.Items) {
+				return fmt.Errorf("inconsistent data: missing item %v in product %v", tag.ItemID, prodCur.Data.ID)
+			}
 		}
-		if cur.Meta.SourceUpdatedAt.Before(tag.UpdatedAt.Time) {
-			cur.Meta.SourceUpdatedAt = tag.UpdatedAt.Time
+		if prodCur.Meta.SourceUpdatedAt.Before(tag.DeletedAt.Time) {
+			prodCur.Meta.SourceUpdatedAt = tag.DeletedAt.Time
+		}
+		if prodCur.Meta.SourceUpdatedAt.Before(tag.UpdatedAt.Time) {
+			prodCur.Meta.SourceUpdatedAt = tag.UpdatedAt.Time
 		}
 		if !tag.Hidden {
-			cur.Data.Tags = append(cur.Data.Tags, tag.ElasticTag)
+			prodCur.Data.Items[itemCur].Tags = append(prodCur.Data.Items[itemCur].Tags, tag.ElasticTag)
 		}
 	}
 	return nil
@@ -266,18 +276,17 @@ func LoadProductsTags(product_ids []uint64, products map[uint64]*models.ElasticP
 
 func LoadProductsItems(product_ids []uint64, products map[uint64]*models.ElasticProduct) error {
 	rows, err := db.New().
-		Select("product_id, updated_at, deleted_at, name, price, discount_price").
+		Select("id, product_id, updated_at, deleted_at, name, price, discount_price").
 		Table("products_product_item").
 		Where("product_id in (?)", product_ids).
-		Order("product_id").
+		Order("product_id, id").
 		Rows()
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	var item struct {
-		models.ElasticProductItem
+	var itemMeta struct {
 		UpdatedAt pq.NullTime
 		DeletedAt pq.NullTime
 		ProductID uint64
@@ -285,23 +294,24 @@ func LoadProductsItems(product_ids []uint64, products map[uint64]*models.Elastic
 
 	var cur *models.ElasticProduct = products[product_ids[0]]
 	for rows.Next() {
+		item := &models.ElasticProductItem{}
 		err = rows.Scan(
-			&item.ProductID, &item.UpdatedAt, &item.DeletedAt,
+			&item.ID, &itemMeta.ProductID, &itemMeta.UpdatedAt, &itemMeta.DeletedAt,
 			&item.Name, &item.Price, &item.DiscountPrice,
 		)
 		if err != nil {
 			return err
 		}
-		if item.ProductID != cur.Meta.ID {
-			cur = products[item.ProductID]
+		if itemMeta.ProductID != cur.Meta.ID {
+			cur = products[itemMeta.ProductID]
 		}
-		if cur.Meta.SourceUpdatedAt.Before(item.DeletedAt.Time) {
-			cur.Meta.SourceUpdatedAt = item.DeletedAt.Time
+		if cur.Meta.SourceUpdatedAt.Before(itemMeta.DeletedAt.Time) {
+			cur.Meta.SourceUpdatedAt = itemMeta.DeletedAt.Time
 		}
-		if cur.Meta.SourceUpdatedAt.Before(item.UpdatedAt.Time) {
-			cur.Meta.SourceUpdatedAt = item.UpdatedAt.Time
+		if cur.Meta.SourceUpdatedAt.Before(itemMeta.UpdatedAt.Time) {
+			cur.Meta.SourceUpdatedAt = itemMeta.UpdatedAt.Time
 		}
-		cur.Data.Items = append(cur.Data.Items, item.ElasticProductItem)
+		cur.Data.Items = append(cur.Data.Items, item)
 	}
 	return nil
 }
