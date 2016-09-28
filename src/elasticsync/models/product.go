@@ -6,7 +6,7 @@ import "time"
 // it will be included as creation date in index settings
 // index will be recreated if old data is lower than this
 // unix time, ms
-const IndexUpdatedAt = 1475067569 * 1000
+const IndexUpdatedAt = 1475081419 * 1000
 const ProductIndex = `{
 "settings": {
 	"analysis": {
@@ -57,6 +57,10 @@ const ProductIndex = `{
 			"shop": {
 				"properties": {
 					"id": {
+						"type": "long",
+						"include_in_all": false
+					},
+					"supplier": {
 						"type": "long",
 						"include_in_all": false
 					},
@@ -162,6 +166,7 @@ type ElasticProductData struct {
 	Sale    bool   `json:"sale,omitempty"`
 	Shop    struct {
 		ID       uint64 `json:"id"`
+		Supplier uint64 `json:"supplier"`
 		Name     string `json:"name,omitempty"`
 		FullName string `json:"full_name,omitempty"`
 	} `json:"shop,omitempty"`

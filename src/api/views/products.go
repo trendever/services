@@ -235,7 +235,8 @@ func GetSpecialProducts(c *soso.Context) {
 //
 //   any of options below will disable isSale filter
 //   * shop_id (optional uint) if presented search only in specified shop
-//   * mentioner_id (optional uint) if presented search only products with this mentioner
+//   * mentioner_id (optional uint) if presented search only products with this mentioner or liked by him
+//     Products where mentioner_id is supplier will be filtered
 func ElasticSearch(c *soso.Context) {
 	req := c.RequestMap
 	// Search parameters
@@ -261,7 +262,6 @@ func ElasticSearch(c *soso.Context) {
 
 	query := elastic.NewBoolQuery()
 
-	byOwner := false
 	if value, _ := req["mentioner_id"].(float64); value > 0 {
 		liked_ids, err := getLikedBy(uint64(value))
 		if err != nil {
@@ -278,13 +278,13 @@ func ElasticSearch(c *soso.Context) {
 		} else {
 			query.Filter(elastic.NewTermQuery("mentioner.id", uint64(value)))
 		}
-		byOwner = true
+		query.MustNot(elastic.NewTermQuery("shop.supplier", uint64(value)))
 	}
 	if value, _ := req["shop_id"].(float64); value > 0 {
 		query.Filter(elastic.NewTermQuery("shop.id", uint64(value)))
-		byOwner = true
 	}
-	if !byOwner {
+
+	if value, _ := req["include_not_on_sale"].(bool); !value {
 		query.Filter(elastic.NewTermQuery("sale", true))
 	}
 
