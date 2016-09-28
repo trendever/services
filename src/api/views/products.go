@@ -292,10 +292,12 @@ func ElasticSearch(c *soso.Context) {
 	if tags_in, ok := req["tags"].([]interface{}); ok {
 		tags = getIntArr(tags_in)
 	}
-	if tags != nil {
+	if len(tags) != 0 {
+		tagsBool := elastic.NewBoolQuery()
 		for _, tag := range tags {
-			query.Filter(elastic.NewTermQuery("tags.id", uint64(tag)))
+			tagsBool.Must(elastic.NewTermQuery("items.tags.id", uint64(tag)))
 		}
+		query.Filter(elastic.NewNestedQuery("items", tagsBool))
 	}
 
 	eCli := ewrapper.Cli()
