@@ -37,6 +37,8 @@ type Shop struct {
 	// Shop private tags; internal use only
 	Tags           []Tag `gorm:"many2many:products_shops_tags;"`
 	NotifySupplier bool
+
+	Notes string `gorm:"type:text"`
 }
 
 // TableName for this shop
