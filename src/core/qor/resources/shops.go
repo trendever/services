@@ -85,6 +85,9 @@ func addShopResource(a *admin.Admin) {
 		},
 	})
 
+	noteRes := res.Meta(&admin.Meta{Name: "Notes"}).Resource
+	noteRes.Meta(&admin.Meta{Name: "Text", Type: "text"})
+
 	res.Action(&admin.Action{
 		Name:  "Delete with products",
 		Modes: []string{"show", "menu_item"},
@@ -127,49 +130,40 @@ func addShopResource(a *admin.Admin) {
 
 	res.EditAttrs(
 		&admin.Section{
-			Title: "Instagram",
-			Rows: [][]string{
-				{"InstagramUsername"},
-				{"InstagramWebsite"},
-			},
-		},
-		&admin.Section{
 			Title: "Shop",
 			Rows: [][]string{
+				{"InstagramUsername", "InstagramWebsite"},
 				{"CreatedAt"},
 				{"Tags"},
 				{"Supplier", "Sellers"},
 				{"Caption"},
 				{"Slogan"},
 				{"ShippingRules"},
-				{"PaymentRules", "Cards"},
+				{"PaymentRules"},
+				{"Cards"},
 				{"NotifySupplier"},
 			},
 		},
+		"Notes",
 	)
 
 	res.ShowAttrs(
 		&admin.Section{
 			Title: "Shop",
 			Rows: [][]string{
-				{"InstagramUsername"},
-				{"InstagramWebsite"},
+				{"InstagramUsername", "InstagramWebsite"},
 				{"CreatedAt"},
 				{"Tags"},
 				{"Supplier", "Sellers"},
 				{"Caption"},
 				{"Slogan"},
 				{"ShippingRules"},
-				{"PaymentRules", "Cards"},
+				{"PaymentRules"},
+				{"Cards"},
 				{"NotifySupplier"},
 			},
 		},
-		&admin.Section{
-			Title: "Supplier",
-			Rows: [][]string{
-				{"Supplier"},
-			},
-		},
+		"Notes",
 	)
 
 	res.NewAttrs(res.EditAttrs())

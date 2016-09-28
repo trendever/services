@@ -38,7 +38,14 @@ type Shop struct {
 	Tags           []Tag `gorm:"many2many:products_shops_tags;"`
 	NotifySupplier bool
 
-	Notes string `gorm:"type:text"`
+	// it's better to keep them outside main struct to avoid load surplus data
+	Notes []ShopNote `gorm:"ForeignKey:ShopID"`
+}
+
+type ShopNote struct {
+	ID     uint64 `gorm:"primary_key"`
+	ShopID uint64
+	Text   string `gorm:"text"`
 }
 
 // TableName for this shop
