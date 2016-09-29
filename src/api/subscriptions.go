@@ -1,22 +1,36 @@
-package subscriber
+package main
 
 import (
 	"api/cache"
 	schat "api/chat"
 	"api/soso"
 	"proto/chat"
+	"utils/nats"
 )
 
 func init() {
-	//chat subscriptions
-	handlers["chat.message.new"] = newMessage
-	handlers["chat.message.readed"] = messageReaded
-	handlers["chat.message.appended"] = messageAppended
-	handlers["chat.member.join"] = newChatMember
-
-	handlers["core.product.flush"] = cache.FlushProduct
-	handlers["core.user.flush"] = cache.FlushUser
-	handlers["core.shop.flush"] = cache.FlushShop
+	nats.Subscribe(&nats.Subscription{
+		Subject: "chat.message.new",
+		Handler: newMessage,
+	}, &nats.Subscription{
+		Subject: "chat.message.readed",
+		Handler: messageReaded,
+	}, &nats.Subscription{
+		Subject: "chat.message.appended",
+		Handler: messageAppended,
+	}, &nats.Subscription{
+		Subject: "chat.member.join",
+		Handler: newChatMember,
+	}, &nats.Subscription{
+		Subject: "core.product.flush",
+		Handler: cache.FlushProduct,
+	}, &nats.Subscription{
+		Subject: "core.user.flush",
+		Handler: cache.FlushUser,
+	}, &nats.Subscription{
+		Subject: "core.shop.flush",
+		Handler: cache.FlushShop,
+	})
 }
 
 func newMessage(req *chat.NewMessageRequest) {

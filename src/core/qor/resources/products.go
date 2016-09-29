@@ -253,10 +253,10 @@ func addProductResource(a *admin.Admin) {
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
-			if arg.UserID == 0 {
+			if arg.User.ID == 0 {
 				return nil
 			}
-			shop_id, err := models.FindOrCreateShopForSupplier(&arg.User)
+			shopID, _, err := models.FindOrCreateShopForSupplier(&arg.User, true)
 			if err != nil {
 				return err
 			}
@@ -265,7 +265,7 @@ func addProductResource(a *admin.Admin) {
 				if !ok {
 					return errors.New("unxepected record type")
 				}
-				product.ShopID = uint(shop_id)
+				product.ShopID = uint(shopID)
 				err := db.New().Save(&product).Error
 				if err != nil {
 					return err

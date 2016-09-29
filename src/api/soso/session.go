@@ -4,9 +4,12 @@ import (
 	"github.com/igm/sockjs-go/sockjs"
 	"sync"
 	"utils/log"
+	"utils/nats"
 )
 
 var Sessions = NewSessionRepository()
+
+const NatsNewSessionSubject = "api.new_session"
 
 type Session sockjs.Session
 
@@ -45,6 +48,7 @@ func (s *SessionRepositoryImpl) Push(session Session, uid uint64) int {
 	if _, ok := s.sessions[session.ID()]; !ok {
 		s.users[uid] = append(sessions, session)
 		s.sessions[session.ID()] = uid
+		nats.Publish(NatsNewSessionSubject, uid)
 	}
 	log.Debug("Session %s for user %v pushed, total %v", session.ID(), uid, len(s.users[uid]))
 	return len(s.users[uid])

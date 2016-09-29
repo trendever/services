@@ -4,7 +4,7 @@ debug: true
 chunkSize: 2000
 
 db:
-  debug:    true
+  debug:    false
   user:     postgres
   password: 1234
   host:     db

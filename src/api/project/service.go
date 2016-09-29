@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
-	. "api/conf"
-	"api/views"
-
 	"api/cache"
+	"api/conf"
 	"api/soso"
-	"api/subscriber"
+	"api/views"
 	"github.com/igm/sockjs-go/sockjs"
 	"utils/elastic"
 	"utils/metrics"
+	"utils/nats"
 )
 
 var SosoObj = soso.Default()
@@ -29,11 +28,11 @@ func GetMainHandler() http.Handler {
 type ProjectService struct{}
 
 func (s *ProjectService) Run() error {
-	settings := GetSettings()
+	settings := conf.GetSettings()
 	metrics.Init(settings.Metrics.Addr, settings.Metrics.User, settings.Metrics.Password, settings.Metrics.DBName)
 	cache.Init()
 	SosoObj.HandleList(views.SocketRoutes)
-	subscriber.Init()
+	nats.Init(settings.NatsURL)
 	elastic.Init(&settings.Elastic)
 	http.Handle("/channel/", GetMainHandler())
 	return http.ListenAndServe(

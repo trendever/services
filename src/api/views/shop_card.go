@@ -126,6 +126,7 @@ func CreateCard(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"success": true,
 		"id":      res.Id,
+		"name":    res.Name,
 	})
 }
 

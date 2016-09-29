@@ -77,10 +77,14 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	}
 
 	switch {
-	//User does request for leads without a customer role, and he hasn't linked shops, and he is not a super seller
-	//therefore we can't show for him anything
-	case len(or) == 0 && !user.SuperSeller:
-		return
+	case len(or) == 0:
+		//User does request for leads without a customer role, and he hasn't linked shops, and he is not a super seller
+		//therefore we can't show for him anything
+		if !user.SuperSeller {
+			return
+		}
+		// super seller
+		scope = scope.Where("pl.customer_id = ? OR state NOT IN (?)", userID, ignoreForSeller)
 	case len(or) > 1:
 		scope = scope.Where("("+strings.Join(or, " OR ")+")", orArgs...)
 	case len(or) == 1:
@@ -94,7 +98,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	}
 
 	if fromUpdatedAt != 0 {
-		t := time.Unix(fromUpdatedAt/1e9, fromUpdatedAt%1e9)
+		t := time.Unix(0, fromUpdatedAt)
 		if direction {
 			scope = scope.Where("pl.chat_updated_at > ?", t.Format(time.RFC3339Nano))
 		} else {
@@ -308,8 +312,8 @@ func GetFullLeadByID(id uint64) (*Lead, error) {
 }
 
 //TouchLead updates only chat_updated_at field, without call any callbacks
-func TouchLead(lead *Lead) error {
-	return db.New().Model(lead).UpdateColumn("chat_updated_at", time.Now()).Error
+func TouchLead(conversationID uint64) error {
+	return db.New().Model(&Lead{}).Where("conversation_id = ?", conversationID).UpdateColumn("chat_updated_at", time.Now()).Error
 }
 
 //GetLeadProducts returns products for the lead

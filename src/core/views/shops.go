@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc"
 	"proto/core"
 	"utils/db"
-	"utils/log"
 )
 
 type shopServer struct {
@@ -19,79 +18,6 @@ func init() {
 	api.AddOnStartCallback(func(s *grpc.Server) {
 		core.RegisterShopServiceServer(s, shopServer{})
 	})
-}
-
-// getItemStubs returns an empty stubs of []models.ProductItem filled with ids.
-//  only ID field is filled in, so it's suitable for gorm.DB.Save()
-func getItemStubs(ids []int64) []models.ProductItem {
-
-	out := make([]models.ProductItem, len(ids))
-
-	for i, id := range ids {
-		out[i] = models.ProductItem{Model: gorm.Model{ID: uint(id)}}
-	}
-
-	return out
-}
-
-func (s shopServer) ReadShop(ctx context.Context, request *core.ReadShopRequest) (*core.ReadShopReply, error) {
-	shop := models.Shop{}
-
-	switch {
-	case request.GetInstagramId() > 0:
-		shop.InstagramID = request.GetInstagramId()
-	}
-
-	query := db.New().Where(&shop)
-
-	if request.WithDeleted {
-		query = query.Unscoped().Order("deleted_at desc").Limit(1)
-	}
-
-	query = query.Find(&shop)
-
-	if query.Error != nil && !query.RecordNotFound() {
-		return &core.ReadShopReply{}, query.Error
-	}
-
-	return &core.ReadShopReply{
-		Id:        int64(shop.ID),
-		IsDeleted: shop.DeletedAt != nil,
-	}, nil
-}
-
-func (s shopServer) CreateShop(ctx context.Context, request *core.CreateShopRequest) (*core.CreateShopReply, error) {
-
-	shop := decodeShop(request.Shop)
-
-	err := models.CreateNewShop(&shop)
-
-	return &core.CreateShopReply{
-		Id: int64(shop.ID),
-	}, err
-}
-
-func decodeShop(s *core.Shop) models.Shop {
-
-	// @CHECK: why was that necessary?
-	if s == nil {
-		log.Error(fmt.Errorf("Got nil ptr in decodeShop()"))
-		return models.Shop{}
-	}
-
-	return models.Shop{
-		Model: gorm.Model{
-			ID: uint(s.Id),
-		},
-
-		InstagramID:        s.InstagramId,
-		InstagramUsername:  s.InstagramUsername,
-		InstagramFullname:  s.InstagramFullname,
-		InstagramAvatarURL: s.InstagramAvatarUrl,
-		InstagramCaption:   s.InstagramCaption,
-		InstagramWebsite:   s.InstagramWebsite,
-		SupplierID:         uint(s.SupplierId),
-	}
 }
 
 // returns a public profile of the shop
@@ -113,4 +39,29 @@ func (s shopServer) GetShopProfile(_ context.Context, req *core.ShopProfileReque
 	reply.Shop = shop.Encode()
 
 	return
+}
+
+func (s shopServer) FindOrCreateShopForSupplier(
+	_ context.Context, in *core.FindOrCreateShopForSupplierRequest,
+) (reply *core.FindOrCreateShopForSupplierReply, _ error) {
+	reply = &core.FindOrCreateShopForSupplierReply{}
+
+	supplier := models.User{Model: gorm.Model{ID: uint(in.SupplierId)}}
+	err := db.New().First(&supplier).Error
+	if err != nil {
+		return &core.FindOrCreateShopForSupplierReply{
+			Error: fmt.Sprintf("failed to load supplier: %v", err),
+		}, nil
+	}
+
+	shopID, deleted, err := models.FindOrCreateShopForSupplier(&supplier, in.RecreateDeleted)
+
+	ret := &core.FindOrCreateShopForSupplierReply{
+		ShopId:  shopID,
+		Deleted: deleted,
+	}
+	if err != nil {
+		ret.Error = err.Error()
+	}
+	return ret, nil
 }

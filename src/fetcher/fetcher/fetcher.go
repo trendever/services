@@ -18,11 +18,10 @@ import (
 	"fetcher/views"
 )
 
-var (
-	modelsList = []interface{}{
-		&models.Activity{},
-	}
-)
+var modelsList = []interface{}{
+	&models.Activity{},
+	&models.Thread{},
+}
 
 type textField struct {
 	userName string
@@ -30,10 +29,11 @@ type textField struct {
 	comment  string
 }
 
+// ProjectService is fetcher service
 type ProjectService struct{}
 
-// migrate
-func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
+// AutoMigrate used models
+func (ps *ProjectService) AutoMigrate(cli *cli.Context) error {
 	// initialize database
 	db.Init(&conf.GetSettings().DB)
 
@@ -56,8 +56,8 @@ func (this *ProjectService) AutoMigrate(cli *cli.Context) error {
 	return nil
 }
 
-// run fetching
-func (this *ProjectService) Run() error {
+// Run fetching
+func (ps *ProjectService) Run() error {
 	db.Init(&conf.GetSettings().DB)
 
 	settings := conf.GetSettings()
@@ -92,33 +92,26 @@ func (this *ProjectService) Run() error {
 	for _, api := range apis {
 
 		// random timeout
-		rndTimeout := generateTimeout(
-			settings.Instagram.TimeoutMin,
-			settings.Instagram.TimeoutMax,
-		)
+		rndTimeout, err := generateTimeout()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		go getActivity(api, rndTimeout)
-
-		time.Sleep(500 * time.Millisecond)
+		//go directActivity(api, rndTimeout)
 	}
 
 	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			log.Warn("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
-
+	<-interrupt
+	log.Warn("Cleanup and terminating...")
 	return nil
 }
 
-// get activity
-func getActivity(api *instagram.Instagram, rndTimeout int) {
+// get activity: fetch and parse instagram feed
+func getActivity(api *instagram.Instagram, rndTimeout time.Duration) {
 
 	// little log
-	log.Debug("Start getting with timeout: %v ms.", rndTimeout)
+	log.Debug("Start getting with timeout: %v", rndTimeout)
 
 	for {
 		// get recent activity
@@ -140,17 +133,19 @@ func getActivity(api *instagram.Instagram, rndTimeout int) {
 		}
 
 		// sleep
-		time.Sleep(time.Duration(rndTimeout) * time.Millisecond)
+		time.Sleep(rndTimeout)
 	}
 }
 
 // fetch data and fill database model
 func fetch(stories instagram.RecentActivityStories, mentionName string) {
 
+	log.Debug("Fetching new story")
+
 	// parse text field
 	txt := parseText(stories.Args.Text)
 
-	act := &models.Activity{
+	act := models.Activity{
 		Pk:           stories.Pk, // instagram's post primary key from json
 		UserID:       stories.Args.ProfileID,
 		UserImageUrl: stories.Args.ProfileImage,
@@ -169,22 +164,28 @@ func fetch(stories instagram.RecentActivityStories, mentionName string) {
 	}
 
 	// write activity to DB
-	if ok := db.New().NewRecord(act); ok {
+	var count int
 
-		var count int
-
-		// check by pk if record exist
-		if err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error; err == nil && count <= 0 {
-			if err := db.New().Create(&act).Error; err != nil {
-				log.Error(err)
-			} else {
-				log.Debug("Add row: %v", act.Pk)
-			}
-		} else if err != nil {
-			// COUNT(*) error
-			log.Error(err)
-		}
+	// check by pk if record exist
+	err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error
+	if err != nil {
+		log.Error(err)
+		return
 	}
+
+	if count > 0 {
+		// skipping dupe
+		log.Debug("Skipping dupe (got %v times)", count)
+		return
+	}
+
+	// now -- create
+	err = db.New().Create(&act).Error
+	if err != nil {
+		log.Error(err)
+	}
+
+	log.Debug("Add row: %v", act.Pk)
 }
 
 // parse Args.Text field
@@ -196,7 +197,7 @@ func parseText(text string) *textField {
 
 	switch {
 	case strings.Contains(text, "liked your photo"):
-		txt.textType = "liked_photo"
+		txt.textType = "likit already"
 	case strings.Contains(text, "started following you"):
 		txt.textType = "start_following"
 	case strings.Contains(text, "took a photo of you"):
@@ -213,6 +214,18 @@ func parseText(text string) *textField {
 }
 
 // get random timeout
-func generateTimeout(min, max int) int {
-	return min + rand.Intn(max-min)
+func generateTimeout() (time.Duration, error) {
+
+	settings := conf.GetSettings()
+
+	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
+	if err != nil {
+		return time.Duration(0), err
+	}
+
+	return min + time.Duration(rand.Intn(int(max-min))), nil
 }

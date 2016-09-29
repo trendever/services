@@ -200,19 +200,17 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 
 	productMedia := medias.Items[0]
 
-	// check if self-mention
-	if mention.UserName == productMedia.User.Username {
-		log.Debug("Skipping @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
-		return false, nil
-	}
-
 	// get product via code
 	var productID int64
+	var deleted bool
 	code, found := findProductCode(productMedia.Caption.Text)
 	if found {
-		productID, err = productCoreID(code)
+		productID, deleted, err = productCoreID(code)
 		if err != nil {
 			return true, err
+		}
+		if deleted {
+			return false, errors.New("product was deleted")
 		}
 	}
 	// there is no code at all or it's unregistred
@@ -228,6 +226,12 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		if productID <= 0 {
 			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
 		}
+	}
+
+	// check if self-mention
+	if mention.UserName == productMedia.User.Username {
+		log.Debug("Skipping order creation: @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
+		return false, nil
 	}
 
 	// get customer core id
@@ -287,7 +291,7 @@ func findProductCode(comment string) (code string, found bool) {
 }
 
 // get core productId by mediaId
-func productCoreID(code string) (int64, error) {
+func productCoreID(code string) (id int64, deleted bool, err error) {
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
@@ -298,10 +302,10 @@ func productCoreID(code string) (int64, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
-	return res.Id, nil
+	return res.Id, res.Deleted, nil
 }
 
 // check if this lead alredy registered

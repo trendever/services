@@ -1,0 +1,58 @@
+service TrendcoinService {
+	rpc Balance (BalanceRequest) returns (BalanceReply) {}
+	// all requested transactions must end success or will be rollbacked
+	rpc MakeTransactions (MakeTransactionsRequest) returns (MakeTransactionsReply) {}
+	rpc TransactionLog (TransactionLogRequest) returns (TransactionLogReply) {}
+}
+
+message BalanceRequest {
+	uint64 user_id = 1;
+}
+
+message BalanceReply {
+	int64 balance = 1;
+	string error = 2;
+}
+
+message TransactionData {
+	uint64 source = 1;
+	// if destination account do not exists, it will be created
+	// be aware: there will be no checks for core user
+	uint64 destination = 2;
+	uint64 amount = 3;
+	string reason = 4;
+	// allows negative balance as a result
+	bool allow_credit = 5;
+	// allows empty "source" or "destination" field
+	bool allow_empty_side = 6;
+}
+
+message MakeTransactionsRequest {
+	repeated TransactionData transactions = 1;
+}
+
+message MakeTransactionsReply {
+	repeated uint64 transaction_ids = 1;
+	string error = 2;
+}
+
+message TransactionLogRequest {
+	uint64 user_id = 1;
+	// default limit is 20
+	uint64 limit = 2;
+	uint64 offset = 3;
+	// created_at bounds, unixnano, [after, before)
+	int64 before = 4;
+	int64 after = 5;
+}
+
+message Transaction {
+	uint64 id = 1;
+	int64 created_at = 2;
+	TransactionData data = 3;
+}
+
+message TransactionLogReply {
+	repeated Transaction transactions = 1;
+	string error = 2;
+}

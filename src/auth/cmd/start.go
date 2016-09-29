@@ -6,7 +6,6 @@ import (
 	"auth/server"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	protocol "proto/auth"
@@ -15,6 +14,7 @@ import (
 	"syscall"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -22,32 +22,29 @@ var cmdStart = &cobra.Command{
 	Use:   "start",
 	Short: "Starts service",
 	Run: func(cmd *cobra.Command, args []string) {
-		db.Init(&config.Get().DB)
-		port := viper.GetString("port")
-		host := viper.GetString("host")
-		log.Info("Starting auth microservice on the port: %s:%s", host, port)
-		s := rpc.Serve(fmt.Sprintf("%s:%s", host, port))
-		sms := protocol_sms.NewSmsServiceClient(rpc.Connect(viper.GetString("sms_server")))
-		core := protocol_core.NewUserServiceClient(rpc.Connect(viper.GetString("core_server")))
-		key := []byte(viper.GetString("key"))
+		conf := config.Get()
+		db.Init(&conf.DB)
+		nats.Init(conf.NatsURL)
+
+		addr := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
+		log.Info("Starting auth microservice on %s", addr)
+		s := rpc.Serve(addr)
+		sms := protocol_sms.NewSmsServiceClient(rpc.Connect(conf.SmsServer))
+		core := protocol_core.NewUserServiceClient(rpc.Connect(conf.CoreServer))
+		key := []byte(conf.Key)
 
 		if len(key) < 16 {
-			panic(fmt.Errorf("Bad key (key len should be at least 16 bytes, got %v bytes)", len(key)))
+			log.Fatal(fmt.Errorf("Bad key (key len should be at least 16 bytes, got %v bytes)", len(key)))
 		}
 
-		protocol.RegisterAuthServiceServer(s, server.NewAuthServer(core, sms, models.MakeNewUserPasswords(db.New()), viper.GetString("alg"), key))
-		// interrupt
+		protocol.RegisterAuthServiceServer(s, server.NewAuthServer(core, sms, models.MakeNewUserPasswords(db.New()), key))
+
 		interrupt := make(chan os.Signal)
 		signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 
-		// wait for terminating
-		for {
-			select {
-			case <-interrupt:
-				log.Warn("Cleanup and terminating...")
-				os.Exit(0)
-			}
-		}
+		<-interrupt
+		log.Warn("Cleanup and terminating...")
+		os.Exit(0)
 	},
 }
 

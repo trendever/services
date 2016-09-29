@@ -132,7 +132,7 @@ func addLeadResource(a *admin.Admin) {
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
-			if arg.ProductID == 0 {
+			if arg.Product.ID == 0 {
 				return nil
 			}
 			err := db.New().Model(&arg.Product).Related(&arg.Product.Items).Error

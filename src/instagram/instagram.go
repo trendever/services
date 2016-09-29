@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // Instagram defines client
@@ -236,6 +237,20 @@ func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
 	return &object, err
 }
 
+// Inbox returns usual normal chats
+func (ig *Instagram) Inbox(cursor string) (*InboxResponse, error) {
+
+	endpoint := "/direct_v2/inbox/?"
+	if cursor != "" {
+		endpoint += fmt.Sprintf("cursor=%v", url.QueryEscape(cursor))
+	}
+
+	var object InboxResponse
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+}
+
 // RankedRecipients returns @TODO wtf it returns?
 func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 	endpoint := "/direct_v2/ranked_recipients/?show_threads=true"
@@ -248,13 +263,45 @@ func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 }
 
 // DirectThread @TODO wtf returns
-func (ig *Instagram) DirectThread(threadID string) (*DirectThreadResponse, error) {
+func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadResponse, error) {
 
 	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
+	if cursor != "" {
+		endpoint += fmt.Sprintf("cursor=%v", url.QueryEscape(cursor))
+	}
 
 	var object DirectThreadResponse
 	err := ig.request("GET", endpoint, &object)
 
 	return &object, err
 
+}
+
+// possible direct thread actions
+const (
+	ActionApprove = "approve"
+	ActionDecline = "decline"
+	ActionBlock   = "block"
+)
+
+// DirectThreadAction allows to accept or decline private thread
+func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadActionResponse, error) {
+
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/%v/", threadID, action)
+
+	var object DirectThreadActionResponse
+	err := ig.request("POST", endpoint, &object)
+
+	return &object, err
+}
+
+// DirectThreadApproveAll allows to accept all the threads
+func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, error) {
+
+	endpoint := "/direct_v2/threads/approve_all/?"
+
+	var object DirectThreadApproveAllResponse
+	err := ig.request("POST", endpoint, &object)
+
+	return &object, err
 }

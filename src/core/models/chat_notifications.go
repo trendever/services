@@ -60,28 +60,15 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		}
 	}
 	err := res.Row().Scan(&count)
-	log.Debug("count = %v; %v", count, err)
 	if err != nil {
 		return fmt.Errorf("failed to determine whether user is new: %v", err)
 	}
 
-	if chat_init {
+	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+	if err == nil && chat_init {
 		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source)
-		if err != nil {
-			return err
-		}
 	}
-
-	content, _ := json.Marshal(product.Encode())
-	err = SendChatMessage(
-		uint64(lead.CustomerID),
-		lead.ConversationID,
-		&chat.MessagePart{Content: string(content), MimeType: "text/json"},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to send product json to chat: %v", err)
-	}
-	return SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+	return err
 }
 
 func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string) error {
@@ -92,7 +79,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		ProductID    uint
 	}
 	res := db.New().
-		Select("msg.text, msg.image_url, msg.position, tmpl.template_name, tmpl.product_id").
+		Select("msg.text, msg.data, msg.position, tmpl.template_name, tmpl.product_id").
 		Table("chat_template_messages msg").
 		Joins("JOIN chat_template_cases c ON c.id = msg.case_id").
 		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
@@ -150,6 +137,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			log.Warn("template '%v' returned empty result", tmpl.TemplateName)
 			continue
 		}
+		log.Debug("%v parts: %+v", len(parts), parts)
 
 		err = SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, parts...)
 		if err != nil {
