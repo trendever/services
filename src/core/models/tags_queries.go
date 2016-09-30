@@ -1,89 +1,30 @@
 package models
 
 import (
-	"fmt"
 	"utils/db"
 )
 
-// get all tags that each product from relatedProducts(tags) has
-// tags from tags slice are excluded
-// plus main tags
-func relatedTagIDs(tags []int64, limit int) ([]int64, error) {
-
-	related, err := relatedTagsIds(tags, limit)
-
-	return related, err
-}
-
-func relatedTagsIds(tags []int64, limit int) ([]int64, error) {
-
-	var related []int64
-
-	query := db.New()
-
-	// generate tag joins
-	var relname string
-	for i, tagID := range tags {
-		relname = fmt.Sprintf("tagrel_%v", i)
-		query = query.Joins(
-			fmt.Sprintf(
-				"INNER JOIN products_product_item_tags as %v ON (%v.product_item_id = it.id AND %v.tag_id = ?)",
-				relname, relname, relname),
-			tagID,
-		)
-	}
-
-	// final joins: only new and not hidden tags
-	query = query.
-		Joins("INNER JOIN products_product_item_tags as finrel"+
-			fmt.Sprintf(" ON (%v.product_item_id = finrel.product_item_id AND finrel.tag_id NOT IN (?))", relname),
-			tags,
-		).
-		Joins("INNER JOIN products_tag as pt ON (pt.id = finrel.tag_id AND hidden = false)").
-		Joins("INNER JOIN products_product as pr ON (pr.id = it.product_id AND is_sale = true AND pr.deleted_at is null)").
-		// filter out groups
-		Joins("INNER JOIN products_tag_group as grp ON (grp.id = pt.group_id AND grp.name != pt.name)")
-
-	rows, err := query.
-		Limit(limit).
-		Table("products_product_item as it").
-		Group("pt.id").
-		// sort by tag weight
-		Order("pt.position").
-		// smash copies
-		Select("DISTINCT pt.id,pt.position").
-		Rows()
-
-	if err != nil {
-		return nil, err
-	}
-
-	var id, position int64
-	for rows.Next() {
-		err = rows.Scan(&id, &position)
-		if err != nil {
-			return nil, err
-		}
-
-		related = append(related, id)
-	}
-
-	return related, err
-
-}
-
-// RelatedTags func returns main tags
+// return tags from items that have all passed tags. Passed tags themselves are excluded
 func RelatedTags(tags []int64, limit int) ([]Tag, error) {
-
-	ids, err := relatedTagIDs(tags, limit)
-	if err != nil {
-		return nil, err
-	}
-
 	var result []Tag
-	err = db.New().
+	err := db.New().
 		Limit(limit).
-		Where("id in (?)", ids).
+		Joins("JOIN products_tag_group grp ON (grp.id = products_tag.group_id AND grp.name != products_tag.name)").
+		Where(`
+		products_tag.id IN (
+			SELECT tag_id FROM products_product_item_tags WHERE product_item_id IN (
+				SELECT tagged.id FROM (
+					SELECT product_item_id AS id FROM products_product_item_tags
+					WHERE tag_id IN (?)
+					GROUP BY product_item_id HAVING COUNT(1) = ?
+				) AS tagged
+				JOIN products_product_item item
+				ON item.id = tagged.id AND item.deleted_at IS NULL
+				JOIN products_product product
+				ON product.id = item.product_id AND product.deleted_at IS NULL AND product.is_sale
+			) AND tag_id NOT IN (?)
+		)
+		`, tags, len(tags), tags).
 		Find(&result).
 		Error
 

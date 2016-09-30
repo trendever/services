@@ -41,6 +41,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login 
 	if err != nil {
 		return nil, err
 	}
+
 	return resp, nil
 }
 

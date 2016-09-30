@@ -18,6 +18,7 @@ import (
 
 	// views; must side effect to bind servers
 	_ "core/views"
+	"github.com/jinzhu/gorm"
 )
 
 var (
@@ -45,14 +46,18 @@ var (
 		&transition.StateChangeLog{},
 		&models.UsersProducts{},
 		&models.PushToken{},
+		&models.ShopNote{},
 	}
 )
 
 // Init starts the qor!
 func Init(engine *gin.Engine) {
-
+	db := db.New()
+	sorting.RegisterCallbacks(db)
+	validations.RegisterCallbacks(db)
+	db.Callback().Query().Register("qor:load_exterals", loadExternals)
 	Admin = admin.New(&qor.Config{
-		DB: db.New(),
+		DB: db,
 	})
 
 	Admin.SetSiteName(conf.AdminName)
@@ -64,12 +69,16 @@ func Init(engine *gin.Engine) {
 	ajaxor.Init(Admin)
 	filters.Init(Admin)
 
-	sorting.RegisterCallbacks(db.New())
-	validations.RegisterCallbacks(db.New())
-
 	// attach this qor instance to gin
 	mux := http.NewServeMux()
 
 	Admin.MountTo("/qor", mux)
 	engine.Any("/qor/*w", gin.WrapH(mux))
+}
+
+// invoke `LoadExternals` method
+func loadExternals(scope *gorm.Scope) {
+	if !scope.HasError() {
+		scope.CallMethod("LoadExternals")
+	}
 }

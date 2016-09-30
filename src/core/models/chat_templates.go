@@ -126,14 +126,12 @@ func (t *ChatTemplateMessage) Execute(ctx interface{}) (interface{}, error) {
 		return nil, err
 	}
 	parts := make([]*chat.MessagePart, 0, 2)
-	text = strings.Trim(text, " \t\n")
 	if text != "" {
 		parts = append(parts, &chat.MessagePart{
 			Content:  text,
 			MimeType: "text/plain",
 		})
 	}
-	data = strings.Trim(data, " \t\n")
 	if data != "" {
 		parts = append(parts, &chat.MessagePart{
 			Content:  data,

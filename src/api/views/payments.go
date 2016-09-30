@@ -134,12 +134,6 @@ func CreatePayment(c *soso.Context) {
 		return
 	}
 
-	ip, err := getIP(c.Session)
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
-
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
@@ -147,7 +141,7 @@ func CreatePayment(c *soso.Context) {
 		PayId:     uint64(payID),
 		LeadId:    uint64(leadID),
 		Direction: direction,
-		Ip:        ip,
+		Ip:        c.RemoteIP,
 	})
 
 	if err != nil { // RPC errors

@@ -195,16 +195,16 @@ func HasShopPermission(r CardRepository, userID, shopID uint) error {
 }
 
 // CreateCard creates a card for the shop
-func CreateCard(r CardRepository, card ShopCard) (uint, error) {
+func CreateCard(r CardRepository, card ShopCard) (*ShopCard, error) {
 
 	err := HasShopPermission(r, card.UserID, card.ShopID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	cc := creditcard.Card{Number: card.Number}
 	if !cc.ValidateNumber() {
-		return 0, errInvalidCard
+		return nil, errInvalidCard
 	}
 
 	// fill name if it's empty
@@ -214,8 +214,7 @@ func CreateCard(r CardRepository, card ShopCard) (uint, error) {
 	}
 
 	err = r.CreateCard(&card)
-
-	return card.ID, err
+	return &card, err
 }
 
 // DeleteCard deletes card with ID

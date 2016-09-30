@@ -24,7 +24,6 @@ func addShopResource(a *admin.Admin) {
 
 	// @TODO: make image URL editable
 	//res.Meta(&admin.Meta{Name: "Img", FieldName: "InstagramAvatarURL", Type: "image"})
-	res.Meta(&admin.Meta{Name: "InstagramCaption", Type: "text"})
 
 	ajaxor.Meta(res, &admin.Meta{
 		Name: "Supplier",
@@ -61,11 +60,6 @@ func addShopResource(a *admin.Admin) {
 		Type: "text",
 	})
 
-	res.Meta(&admin.Meta{
-		Name: "Caption",
-		Type: "text",
-	})
-
 	ajaxor.Meta(res, &admin.Meta{
 		Name: "Tags",
 		Type: "select_many",
@@ -90,6 +84,9 @@ func addShopResource(a *admin.Admin) {
 			return res.GetMeta("Tags").GetCollection(this, searchCtx)
 		},
 	})
+
+	noteRes := res.Meta(&admin.Meta{Name: "Notes"}).Resource
+	noteRes.Meta(&admin.Meta{Name: "Text", Type: "text"})
 
 	res.Action(&admin.Action{
 		Name:  "Delete with products",
@@ -125,36 +122,48 @@ func addShopResource(a *admin.Admin) {
 	})
 
 	res.SearchAttrs(
-		"InstagramUsername", "Supplier.Name", "InstagramCaption", "InstagramFullname", "InstagramWebsite",
+		"Supplier.InstagramUsername", "Supplier.Name", "Supplier.InstagramCaption", "Supplier.InstagramFullname", "Supplier.InstagramWebsite",
 	)
 	res.IndexAttrs(
-		"InstagramUsername", "InstagramCaption", "InstagramFullname", "Supplier", "Tags",
+		"ID", "InstagramUsername", "Supplier", "SupplierLastLogin", "Tags",
 	)
 
 	res.EditAttrs(
 		&admin.Section{
-			Title: "Instagram",
-			Rows: [][]string{
-				{"InstagramID"},
-				{"InstagramCaption"},
-				{"InstagramUsername"},
-				{"InstagramFullname"},
-				{"InstagramWebsite"},
-			},
-		},
-		&admin.Section{
 			Title: "Shop",
 			Rows: [][]string{
+				{"InstagramUsername", "InstagramWebsite"},
 				{"CreatedAt"},
 				{"Tags"},
 				{"Supplier", "Sellers"},
 				{"Caption"},
 				{"Slogan"},
 				{"ShippingRules"},
-				{"PaymentRules", "Cards"},
+				{"PaymentRules"},
+				{"Cards"},
 				{"NotifySupplier"},
 			},
 		},
+		"Notes",
+	)
+
+	res.ShowAttrs(
+		&admin.Section{
+			Title: "Shop",
+			Rows: [][]string{
+				{"InstagramUsername", "InstagramWebsite"},
+				{"CreatedAt"},
+				{"Tags"},
+				{"Supplier", "Sellers"},
+				{"Caption"},
+				{"Slogan"},
+				{"ShippingRules"},
+				{"PaymentRules"},
+				{"Cards"},
+				{"NotifySupplier"},
+			},
+		},
+		"Notes",
 	)
 
 	res.NewAttrs(res.EditAttrs())

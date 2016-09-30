@@ -4,6 +4,7 @@ import (
 	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"time"
 	"utils/db"
 	"utils/log"
 )
@@ -30,7 +31,7 @@ type User struct {
 	// Just like InstagramCaption, but rw for qor
 	Caption string `gorm:"type:text"`
 	// Short status-like string
-	Slogan string
+	Slogan string `gorm:"type:text"`
 
 	OptOut bool
 
@@ -43,9 +44,17 @@ type User struct {
 	// ability to join any chat
 	SuperSeller bool `sql:"default:false"`
 
+	LastLogin time.Time
+
 	previousPhone string
 	// true if the user was logged in at least once
+	// @TODO remove it, we have LastLogin now
 	Confirmed bool `sql:"default:false"`
+
+	// trendcoin balance
+	// may be loaded with call LoadExternals method
+	// Assigned to qor db has callbacks to do it
+	Balance int64 `sql:"-"`
 }
 
 // SystemUser is used if we need to send a message from system

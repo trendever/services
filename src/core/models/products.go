@@ -1,7 +1,7 @@
 package models
 
 import (
-	"core/api"
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
@@ -9,6 +9,7 @@ import (
 	"savetrend/tumbmap"
 	"time"
 	"utils/db"
+	"utils/nats"
 )
 
 const productTable = "products_product"
@@ -89,7 +90,7 @@ func (p Product) TableName() string {
 //gorm callbacks
 func (p *Product) BeforeUpdate() error {
 	err := db.New().Model(&p).Select("shop_id").Where("id = ?", p.ID).Row().Scan(&p.oldShop)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to load old shop for product %v: %v", p.ID, err)
 	}
 	return nil
@@ -102,12 +103,12 @@ func (p Product) AfterUpdate() error {
 			return err
 		}
 	}
-	go api.Publish("core.product.flush", p.ID)
+	go nats.Publish("core.product.flush", p.ID)
 	return nil
 }
 
 func (p Product) AfterDelete() {
-	go api.Publish("core.product.flush", p.ID)
+	go nats.Publish("core.product.flush", p.ID)
 }
 
 // this method should update all related data

@@ -37,6 +37,7 @@ func GetSettings() *Settings {
 	return settings
 }
 
+// Settings main config
 type Settings struct {
 	Debug     bool
 	RPC       string
@@ -45,11 +46,12 @@ type Settings struct {
 	SentryDSN string
 }
 
+// Instagram config part
 type Instagram struct {
-	TimeoutMin int
-	TimeoutMax int
+	TimeoutMin string
+	TimeoutMax string
 	Users      []struct {
 		Username string
 		Password string
-	} `yaml:"users"`
+	}
 }

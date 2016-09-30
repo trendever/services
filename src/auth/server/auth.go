@@ -17,26 +17,28 @@ import (
 	"text/template"
 	"time"
 	"utils/log"
+	"utils/nats"
 )
 
-//DefaultTokenExp is a default token ttl
-const DefaultTokenExp = time.Hour * 24 * 365
+const (
+	//DefaultTokenExp is a default token ttl
+	DefaultTokenExp  = time.Hour * 24 * 365
+	NatsLoginSubject = "auth.login"
+)
 
 type authServer struct {
 	core      core_protocol.UserServiceClient
 	sms       sms_protocol.SmsServiceClient
 	passwords models.UserPasswords
 	sharedKey interface{}
-	alg       string
 }
 
 //NewAuthServer makes new server
-func NewAuthServer(core core_protocol.UserServiceClient, sms sms_protocol.SmsServiceClient, passwords models.UserPasswords, alg string, sharedKey interface{}) auth_protocol.AuthServiceServer {
+func NewAuthServer(core core_protocol.UserServiceClient, sms sms_protocol.SmsServiceClient, passwords models.UserPasswords, sharedKey interface{}) auth_protocol.AuthServiceServer {
 	return &authServer{
 		core:      core,
 		sms:       sms,
 		passwords: passwords,
-		alg:       alg,
 		sharedKey: sharedKey,
 	}
 }
@@ -160,9 +162,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	}
 
 	s.passwords.Delete(pass)
-	if !resp.User.Confirmed {
-		go s.core.ConfirmUser(context.Background(), &core_protocol.ConfirmUserRequest{UserId: uint64(resp.Id)})
-	}
+	go nats.Publish(NatsLoginSubject, resp.Id)
 
 	return &auth_protocol.LoginReply{Token: token}, nil
 }

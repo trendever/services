@@ -173,11 +173,14 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	alreadyExists, productID, err := productExists(mediaID) //@TODO: batch check for existence
+	productID, deleted, err := productExists(mediaID) //@TODO: batch check for existence
 	if err != nil {
 		return -1, true, err
 	}
-	if alreadyExists {
+	if deleted {
+		return -1, false, errors.New("product was deleted")
+	}
+	if productID > 0 {
 		go func() {
 			ctx, cancel := rpc.DefaultContext()
 			defer cancel()
@@ -206,12 +209,14 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 	}
 
 	var (
-		productMedia    = medias.Items[0]
-		shopInstagramID int64
+		productMedia        = medias.Items[0]
+		supplierInstagramID int64
+		supplierUsername    string
 	)
 
 	if productMedia.Caption.UserID > 0 {
-		shopInstagramID = productMedia.Caption.UserID
+		supplierInstagramID = productMedia.Caption.UserID
+		supplierUsername = productMedia.Caption.User.Username
 	} else {
 		var shopInstagramName = productMedia.User.Username
 
@@ -222,18 +227,23 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 		for _, user := range candidats.Users {
 			if user.Username == shopInstagramName {
-				shopInstagramID = user.Pk
+				supplierInstagramID = user.Pk
+				supplierUsername = user.Username
 			}
 		}
 
-		if shopInstagramID == 0 {
+		if supplierInstagramID == 0 {
 			// something really weird search should (was) be stable. just skip the entry
 			return -1, false, fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
 		}
 
 	}
 
-	supplierID, err := shopID(shopInstagramID)
+	supplierID, err := userID(supplierInstagramID, supplierUsername)
+	if err != nil {
+		return -1, true, err
+	}
+	shopID, err := shopID(uint64(supplierID))
 	if err == errorShopIsDeleted {
 		// ignore deleted shops
 		return -1, false, err
@@ -241,12 +251,12 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	productID, err = createProduct(mediaID, &productMedia, supplierID, mentionerID)
+	productID, err = createProduct(mediaID, &productMedia, int64(shopID), mentionerID)
 	retry = err != nil
 	return productID, retry, err
 }
 
-func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, mentionerID int64) (id int64, err error) {
+func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID int64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
 		return -1, errors.New("Product media has no images!")
@@ -254,7 +264,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, menti
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	log.Debug("Creating producto! Supplier=%v Mentioner=%v", supplierID, mentionerID)
+	log.Debug("Creating producto! Supplier=%v Mentioner=%v", shopID, mentionerID)
 
 	img := media.ImageVersions2.Candidates[0]
 
@@ -264,7 +274,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, menti
 	}
 
 	request := &core.CreateProductRequest{Product: &core.Product{
-		SupplierId:            supplierID,
+		SupplierId:            int64(shopID),
 		MentionedId:           int64(mentionerID),
 		InstagramImageId:      mediaID,
 		InstagramImageCaption: media.Caption.Text,
@@ -286,7 +296,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, supplierID, menti
 }
 
 // check if product with this mediaId present.
-func productExists(mediaID string) (bool, int64, error) {
+func productExists(mediaID string) (id int64, deleted bool, err error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
@@ -296,10 +306,10 @@ func productExists(mediaID string) (bool, int64, error) {
 	})
 
 	if err != nil {
-		return false, 0, err
+		return 0, false, err
 	}
 
-	return res.Id > 0, res.Id, nil
+	return res.Id, res.Deleted, nil
 }
 
 // find core user with given instagramID; if not exists -- create one
@@ -380,74 +390,28 @@ func findUser(instagramUsername string) (*core.User, error) {
 	return res.User, err
 }
 
-// find shop; returns rpc err and id positive id if found
-func findShop(instagramID int64) (int64, error) {
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	res, err := api.ShopClient.ReadShop(ctx, &core.ReadShopRequest{
-		SearchBy:    &core.ReadShopRequest_InstagramId{InstagramId: uint64(instagramID)},
-		WithDeleted: true,
-	})
-
-	if err != nil {
-		return 0, err
+// finds an exiting instagram shop for supplier; if not exists -- creates one
+func shopID(supplierID uint64) (uint64, error) {
+	if supplierID == 0 {
+		return 0, errors.New("zero supplierID")
 	}
 
-	if res.IsDeleted {
-		return 0, errorShopIsDeleted
-	}
-
-	return res.Id, err
-}
-
-// finds an exiting instagram shop for this user (with instagramID=given); if not exists -- creates one
-func shopID(instagramID int64) (int64, error) {
-
-	if instagramID == 0 {
-		return 0, errors.New("zero instagramId in userId()")
-	}
-
-	// firstly, check if shop exists
-	id, err := findShop(instagramID)
-	if err != nil {
-		return 0, err
-	} else if id > 0 {
-		return id, err
-	}
-
-	// secondly, get this user profile
-	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get user %v info: %v", instagramID, err)
-	}
-
-	// upload avatar
-	avatarURL, err := uploadAvatar(userInfo.User.ProfilePicURL)
-	if err != nil {
-		return 0, fmt.Errorf("failed to aupload avatar: %v", err)
-	}
-
-	// carefully: creating of context should follow uploading avatar: it's responsible for timeouts
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	// create shop
-	res, err := api.ShopClient.CreateShop(ctx, &core.CreateShopRequest{
-		Shop: &core.Shop{
-			InstagramId:        uint64(instagramID),
-			InstagramUsername:  userInfo.User.Username,
-			InstagramFullname:  userInfo.User.FullName,
-			InstagramAvatarUrl: userInfo.User.ProfilePicURL,
-			InstagramCaption:   userInfo.User.Biography,
-			InstagramWebsite:   userInfo.User.ExternalURL,
-			AvatarUrl:          avatarURL,
-		},
-	})
-
+	res, err := api.ShopClient.FindOrCreateShopForSupplier(
+		ctx, &core.FindOrCreateShopForSupplierRequest{SupplierId: supplierID},
+	)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("RPC error: %v", err)
+	}
+	if res.Error != "" {
+		return 0, errors.New(res.Error)
+	}
+	if res.Deleted {
+		return 0, errorShopIsDeleted
 	}
 
-	return res.Id, nil
+	return res.ShopId, nil
 }

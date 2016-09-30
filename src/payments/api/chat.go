@@ -62,7 +62,9 @@ func (cn *chatNotifierImpl) SendSession(sess *models.Session) error {
 		PayId:     uint64(sess.Payment.ID),
 		Direction: payment.Direction(sess.Payment.Direction),
 
-		Success:  sess.Success,
+		Success: sess.Success,
+		Failure: !sess.Success,
+
 		Amount:   sess.Amount,
 		Currency: payment.Currency(sess.Payment.Currency),
 	})

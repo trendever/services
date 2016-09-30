@@ -114,6 +114,7 @@ func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
 	err := r.DB.
 		Model(&Session{}).
 		Where("payment_id = ?", payID).
+		Where("finished = true").
 		Count(&count).
 		Error
 
@@ -155,8 +156,8 @@ func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
 	var count int
 	err := r.DB.
 		Model(&Payment{}).
-		Where("lead_id = ? and cancelled = FALSE", leadID).
-		Joins("LEFT JOIN sessions as sess ON payments.id = sess.payment_id and sess.finished = FALSE").
+		Joins("LEFT JOIN sessions as sess ON payments.id = sess.payment_id").
+		Where("lead_id = ? and not cancelled and (finished ISNULL or not finished)", leadID).
 		Count(&count).
 		Error
 

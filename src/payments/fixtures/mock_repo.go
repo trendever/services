@@ -29,6 +29,17 @@ func (_m *MockRepo) EXPECT() *_MockRepoRecorder {
 	return _m.recorder
 }
 
+func (_m *MockRepo) CanCreateOrder(_param0 uint) (bool, error) {
+	ret := _m.ctrl.Call(_m, "CanCreateOrder", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockRepoRecorder) CanCreateOrder(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CanCreateOrder", arg0)
+}
+
 func (_m *MockRepo) CreatePay(_param0 *models.Payment) error {
 	ret := _m.ctrl.Call(_m, "CreatePay", _param0)
 	ret0, _ := ret[0].(error)

@@ -19,9 +19,6 @@ func addCancelReasonResource(a *admin.Admin) {
 		"Name",
 	)
 	res.IndexAttrs(
-		"ID", "Name",
+		"ID", "Name", "Template",
 	)
-	//tag.NewAttrs(tag.IndexAttrs())
-	//tag.EditAttrs(tag.IndexAttrs())
-	//tag.ShowAttrs(tag.IndexAttrs())
 }
