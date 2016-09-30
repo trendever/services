@@ -1,12 +1,9 @@
 package fetcher
 
 import (
-	"github.com/codegangsta/cli"
-	"instagram"
 	"math/rand"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 	"utils/db"
@@ -16,17 +13,25 @@ import (
 	"fetcher/conf"
 	"fetcher/models"
 	"fetcher/views"
+	"instagram"
+
+	"github.com/codegangsta/cli"
 )
 
 var modelsList = []interface{}{
 	&models.Activity{},
-	&models.Thread{},
+	&models.ThreadInfo{},
 }
 
 type textField struct {
 	userName string
 	textType string
 	comment  string
+}
+
+type worker struct {
+	api     *instagram.Instagram
+	timeout time.Duration
 }
 
 // ProjectService is fetcher service
@@ -62,6 +67,14 @@ func (ps *ProjectService) Run() error {
 
 	settings := conf.GetSettings()
 
+	// to prevent service restart too quickly and thus compromise bot
+	// also make sure config is ok and we don't get panic in future
+	startTimeout, err := generateTimeout(settings)
+	if err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(startTimeout)
+
 	// init api
 	api.Start()
 	views.Init()
@@ -92,13 +105,18 @@ func (ps *ProjectService) Run() error {
 	for _, api := range apis {
 
 		// random timeout
-		rndTimeout, err := generateTimeout()
+		rndTimeout, err := generateTimeout(settings)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		go getActivity(api, rndTimeout)
-		//go directActivity(api, rndTimeout)
+		fetcherWorker := &worker{
+			api:     api,
+			timeout: rndTimeout,
+		}
+
+		//	go fetcherWorker.getActivity()
+		go fetcherWorker.directActivity()
 	}
 
 	// wait for terminating
@@ -107,116 +125,8 @@ func (ps *ProjectService) Run() error {
 	return nil
 }
 
-// get activity: fetch and parse instagram feed
-func getActivity(api *instagram.Instagram, rndTimeout time.Duration) {
-
-	// little log
-	log.Debug("Start getting with timeout: %v", rndTimeout)
-
-	for {
-		// get recent activity
-		ract, err := api.GetRecentActivity()
-		if err != nil {
-			log.Warn("Got error %v while fetching recent activitity with user %v", err, api.GetUserName())
-			time.Sleep(time.Second)
-			continue
-		}
-
-		// fetch old stories
-		for _, story := range ract.OldStories {
-			fetch(story, api.GetUserName())
-		}
-
-		// fetch new stories
-		for _, story := range ract.NewStories {
-			fetch(story, api.GetUserName())
-		}
-
-		// sleep
-		time.Sleep(rndTimeout)
-	}
-}
-
-// fetch data and fill database model
-func fetch(stories instagram.RecentActivityStories, mentionName string) {
-
-	log.Debug("Fetching new story")
-
-	// parse text field
-	txt := parseText(stories.Args.Text)
-
-	act := models.Activity{
-		Pk:           stories.Pk, // instagram's post primary key from json
-		UserID:       stories.Args.ProfileID,
-		UserImageUrl: stories.Args.ProfileImage,
-
-		MentionedUsername: mentionName,
-
-		UserName: txt.userName,
-		Type:     txt.textType,
-		Comment:  txt.comment,
-	}
-
-	// check if Args.Media have items
-	if len(stories.Args.Media) > 0 {
-		act.MediaID = stories.Args.Media[0].ID
-		act.MediaUrl = stories.Args.Media[0].Image
-	}
-
-	// write activity to DB
-	var count int
-
-	// check by pk if record exist
-	err := db.New().Model(&act).Where("pk = ?", act.Pk).Count(&count).Error
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	if count > 0 {
-		// skipping dupe
-		log.Debug("Skipping dupe (got %v times)", count)
-		return
-	}
-
-	// now -- create
-	err = db.New().Create(&act).Error
-	if err != nil {
-		log.Error(err)
-	}
-
-	log.Debug("Add row: %v", act.Pk)
-}
-
-// parse Args.Text field
-func parseText(text string) *textField {
-
-	txt := &textField{
-		userName: strings.Fields(text)[0],
-	}
-
-	switch {
-	case strings.Contains(text, "liked your photo"):
-		txt.textType = "likit already"
-	case strings.Contains(text, "started following you"):
-		txt.textType = "start_following"
-	case strings.Contains(text, "took a photo of you"):
-		txt.textType = "took_photo"
-	case strings.Contains(text, "mentioned you in a comment:"):
-		txt.textType = "mentioned"
-		txt.comment = strings.Split(text, "mentioned you in a comment: ")[1]
-	case strings.Contains(text, "commented:"):
-		txt.textType = "commented"
-		txt.comment = strings.Split(text, "commented: ")[1]
-	}
-
-	return txt
-}
-
 // get random timeout
-func generateTimeout() (time.Duration, error) {
-
-	settings := conf.GetSettings()
+func generateTimeout(settings *conf.Settings) (time.Duration, error) {
 
 	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
 	if err != nil {
@@ -228,4 +138,35 @@ func generateTimeout() (time.Duration, error) {
 	}
 
 	return min + time.Duration(rand.Intn(int(max-min))), nil
+}
+
+// delay for next processing loop
+func (w *worker) next() {
+	time.Sleep(w.timeout)
+}
+
+func saveActivity(act *models.Activity) error {
+	// write activity to DB
+	var count int
+
+	// check by pk if record exist
+	err := db.New().Model(act).Where("pk = ?", act.Pk).Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		// skipping dupe
+		log.Debug("Skipping dupe (got %v times)", count)
+		return nil
+	}
+
+	// now -- create
+	err = db.New().Create(act).Error
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Add row: %v", act.Pk)
+	return nil
 }

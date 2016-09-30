@@ -4,22 +4,24 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// Activity is main fetcher element
 type Activity struct {
 	gorm.Model
 
 	// instagram's post primary key from json
 	Pk                string `gorm:"not null;unique"`
 	MediaID           string
-	MediaUrl          string
+	MediaURL          string
 	UserID            int64  // commentary owner ID
 	UserName          string // commentary owner username
-	UserImageUrl      string
+	UserImageURL      string
 	MentionedUsername string // mention tag. @saveit, for instance
 	Type              string
 	Comment           string
+	ThreadID          string `gorm:"index"` // optional field: direct thread ID
 }
 
-// set table name
-func (this *Activity) TableName() string {
+// TableName fixes this model table name
+func (a *Activity) TableName() string {
 	return "activities_activity"
 }

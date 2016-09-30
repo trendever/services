@@ -160,7 +160,7 @@ func registerOrders() {
 	}
 }
 
-func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{

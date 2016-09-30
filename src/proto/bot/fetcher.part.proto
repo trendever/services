@@ -1,6 +1,8 @@
 service FetcherService {
-  
-  rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesResult) {}
+
+  rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
+
+  rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
 }
 
 message RetrieveActivitiesRequest {
@@ -10,9 +12,16 @@ message RetrieveActivitiesRequest {
   int64 limit = 5;
 }
 
+message SendDirectRequest {
+  int64 id = 1;
+ string message = 2;
+}
 
-message RetrieveActivitiesResult {
+message RetrieveActivitiesReply {
   repeated Activity result = 1;
+}
+
+message SendDirectReply {
 }
 
 message Activity {
@@ -26,9 +35,11 @@ message Activity {
   string user_name = 6;
   string user_image_url = 7;
   string mentioned_username = 8;
-  
+
   string type = 9;
   string comment = 10;
 
-  int64 created_at = 11; 
+  int64 created_at = 11;
+
+  bool direct = 12;
 }
