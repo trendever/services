@@ -2,6 +2,8 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
+	"utils/db"
+	"utils/log"
 )
 
 // Activity is main fetcher element
@@ -22,6 +24,33 @@ type Activity struct {
 }
 
 // TableName fixes this model table name
-func (a *Activity) TableName() string {
+func (act *Activity) TableName() string {
 	return "activities_activity"
+}
+
+// Save activity to db if new
+func (act *Activity) Save() error {
+	// write activity to DB
+	var count int
+
+	// check by pk if record exist
+	err := db.New().Model(&Activity{}).Where("pk = ?", act.Pk).Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		// skipping dupe
+		log.Debug("Skipping dupe (got %v times)", count)
+		return nil
+	}
+
+	// now -- create
+	err = db.New().Create(act).Error
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Add row: %v", act.Pk)
+	return nil
 }

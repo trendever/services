@@ -89,9 +89,9 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 	// @TODO
 
 	// set notified
-	err := db.New().
+	err = db.New().
 		Model(&models.ThreadInfo{}).
-		Where("thread_id = ?", threadID).
+		Where("thread_id = ?", info.ThreadID).
 		Update("notified", true).
 		Error
 

@@ -13,8 +13,8 @@ message RetrieveActivitiesRequest {
 }
 
 message SendDirectRequest {
-  int64 id = 1;
- string message = 2;
+  int64 thread_id = 1;
+  string message = 2;
 }
 
 message RetrieveActivitiesReply {

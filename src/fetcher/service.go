@@ -11,8 +11,6 @@ import (
 
 func main() {
 
-	svc := fetcher.ProjectService{}
-
 	app := cli.NewApp()
 	app.Name = "Ig Inbox"
 	app.Usage = "instagram fetcher"
@@ -23,7 +21,7 @@ func main() {
 			Name:  "start",
 			Usage: "Run fetcher",
 			Action: func(c *cli.Context) {
-				if err := svc.Run(); err != nil {
+				if err := fetcher.Run(); err != nil {
 					log.Fatal(err)
 				}
 			},
@@ -37,7 +35,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) {
-				if err := svc.AutoMigrate(c); err != nil {
+				if err := fetcher.AutoMigrate(c); err != nil {
 					log.Fatal(err)
 				}
 			},

@@ -305,3 +305,18 @@ func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, 
 
 	return &object, err
 }
+
+//BroadcastText sends text to given chat
+func (ig *Instagram) BroadcastText(threadID, message string) (*Message, error) {
+
+	endpoint := "/direct_v2/threads/broadcast/text/"
+
+	var object Message
+	err := ig.postRequest(endpoint, map[string]string{
+		"text":       message,
+		"thread_ids": threadID,
+	}, &object)
+
+	return &object, err
+
+}

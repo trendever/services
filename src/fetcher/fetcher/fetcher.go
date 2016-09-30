@@ -29,16 +29,8 @@ type textField struct {
 	comment  string
 }
 
-type worker struct {
-	api     *instagram.Instagram
-	timeout time.Duration
-}
-
-// ProjectService is fetcher service
-type ProjectService struct{}
-
 // AutoMigrate used models
-func (ps *ProjectService) AutoMigrate(cli *cli.Context) error {
+func AutoMigrate(cli *cli.Context) error {
 	// initialize database
 	db.Init(&conf.GetSettings().DB)
 
@@ -61,8 +53,8 @@ func (ps *ProjectService) AutoMigrate(cli *cli.Context) error {
 	return nil
 }
 
-// Run fetching
-func (ps *ProjectService) Run() error {
+// Run main stuff
+func Run() error {
 	db.Init(&conf.GetSettings().DB)
 
 	settings := conf.GetSettings()
@@ -87,6 +79,8 @@ func (ps *ProjectService) Run() error {
 	// interrupt
 	interrupt := make(chan os.Signal)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	pool.Lock()
 
 	// open connection and append connections pool
 	for _, user := range settings.Instagram.Users {
@@ -119,6 +113,8 @@ func (ps *ProjectService) Run() error {
 		go fetcherWorker.directActivity()
 	}
 
+	pool.Unlock()
+
 	// wait for terminating
 	<-interrupt
 	log.Warn("Cleanup and terminating...")
@@ -138,35 +134,4 @@ func generateTimeout(settings *conf.Settings) (time.Duration, error) {
 	}
 
 	return min + time.Duration(rand.Intn(int(max-min))), nil
-}
-
-// delay for next processing loop
-func (w *worker) next() {
-	time.Sleep(w.timeout)
-}
-
-func saveActivity(act *models.Activity) error {
-	// write activity to DB
-	var count int
-
-	// check by pk if record exist
-	err := db.New().Model(act).Where("pk = ?", act.Pk).Count(&count).Error
-	if err != nil {
-		return err
-	}
-
-	if count > 0 {
-		// skipping dupe
-		log.Debug("Skipping dupe (got %v times)", count)
-		return nil
-	}
-
-	// now -- create
-	err = db.New().Create(act).Error
-	if err != nil {
-		return err
-	}
-
-	log.Debug("Add row: %v", act.Pk)
-	return nil
 }

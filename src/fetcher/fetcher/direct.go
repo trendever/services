@@ -105,7 +105,7 @@ func (w *worker) fillDirect(share *instagram.MediaShare, threadID, text string) 
 
 	log.Debug("Filling in new direct story")
 
-	return saveActivity(&models.Activity{
+	act := &models.Activity{
 		Pk:                fmt.Sprintf("%v", share.Pk),
 		UserID:            share.User.Pk,
 		UserImageURL:      share.User.ProfilePicURL,
@@ -116,5 +116,6 @@ func (w *worker) fillDirect(share *instagram.MediaShare, threadID, text string) 
 		MediaID:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          threadID,
-	})
+	}
+	return act.Save()
 }

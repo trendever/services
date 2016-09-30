@@ -44,7 +44,7 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 	// parse text field
 	txt := parseText(stories.Args.Text)
 
-	act := models.Activity{
+	act := &models.Activity{
 		Pk:           stories.Pk, // instagram's post primary key from json
 		UserID:       stories.Args.ProfileID,
 		UserImageURL: stories.Args.ProfileImage,
@@ -62,7 +62,7 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 		act.MediaURL = stories.Args.Media[0].Image
 	}
 
-	return saveActivity(&act)
+	return act.Save()
 }
 
 // parse Args.Text field
