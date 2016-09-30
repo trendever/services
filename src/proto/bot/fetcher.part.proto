@@ -13,8 +13,8 @@ message RetrieveActivitiesRequest {
 }
 
 message SendDirectRequest {
-  int64 thread_id = 1;
-  string message = 2;
+  string thread_id = 1;
+  string text = 2;
 }
 
 message RetrieveActivitiesReply {
@@ -41,5 +41,5 @@ message Activity {
 
   int64 created_at = 11;
 
-  bool direct = 12;
+  string direct_thread_id = 12;
 }

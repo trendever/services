@@ -8,8 +8,14 @@ import (
 	"utils/log"
 )
 
+type textField struct {
+	userName string
+	textType string
+	comment  string
+}
+
 // get activity: fetch and parse instagram feed
-func (w *worker) getActivity() {
+func (w *Worker) getActivity() {
 
 	// little log
 	log.Debug("Start getting with timeout: %v", w.timeout)

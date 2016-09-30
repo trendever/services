@@ -2,61 +2,15 @@ package fetcher
 
 import (
 	"math/rand"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
-	"utils/db"
 	"utils/log"
 
-	"fetcher/api"
 	"fetcher/conf"
-	"fetcher/models"
-	"fetcher/views"
 	"instagram"
-
-	"github.com/codegangsta/cli"
 )
 
-var modelsList = []interface{}{
-	&models.Activity{},
-	&models.ThreadInfo{},
-}
-
-type textField struct {
-	userName string
-	textType string
-	comment  string
-}
-
-// AutoMigrate used models
-func AutoMigrate(cli *cli.Context) error {
-	// initialize database
-	db.Init(&conf.GetSettings().DB)
-
-	if cli.Bool("drop") {
-		err := db.New().DropTableIfExists(modelsList...).Error
-		if err != nil {
-			return err
-		}
-
-		log.Warn("Drop Tables: success.")
-	}
-
-	err := db.New().AutoMigrate(modelsList...).Error
-	if err != nil {
-		return err
-	}
-
-	log.Info("Migration: success.")
-
-	return nil
-}
-
-// Run main stuff
-func Run() error {
-	db.Init(&conf.GetSettings().DB)
-
+// Start starts main fetching duty
+func Start() error {
 	settings := conf.GetSettings()
 
 	// to prevent service restart too quickly and thus compromise bot
@@ -67,20 +21,8 @@ func Run() error {
 	}
 	time.Sleep(startTimeout)
 
-	// init api
-	api.Start()
-	views.Init()
-
-	rand.Seed(time.Now().Unix())
-
 	// connections pool
 	var apis []*instagram.Instagram
-
-	// interrupt
-	interrupt := make(chan os.Signal)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	pool.Lock()
 
 	// open connection and append connections pool
 	for _, user := range settings.Instagram.Users {
@@ -104,20 +46,14 @@ func Run() error {
 			log.Fatal(err)
 		}
 
-		fetcherWorker := &worker{
+		fetcherWorker := &Worker{
 			api:     api,
 			timeout: rndTimeout,
 		}
 
-		//	go fetcherWorker.getActivity()
-		go fetcherWorker.directActivity()
+		fetcherWorker.start()
 	}
 
-	pool.Unlock()
-
-	// wait for terminating
-	<-interrupt
-	log.Warn("Cleanup and terminating...")
 	return nil
 }
 

@@ -2,8 +2,11 @@ package views
 
 import (
 	"fetcher/api"
+	"fetcher/fetcher"
 	"fetcher/models"
+
 	"golang.org/x/net/context"
+
 	"proto/bot"
 	"utils/db"
 	"utils/log"
@@ -85,8 +88,23 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 		return &bot.SendDirectReply{}, nil
 	}
 
-	// do notify
-	// @TODO
+	// find related activity to get bot username
+	var act models.Activity
+	err = db.New().Where("thread_id = ?", in.ThreadId).Find(&act).Error
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := fetcher.GetWorker(act.MentionedUsername)
+	if err != nil {
+		return nil, err
+	}
+
+	err = worker.SendDirectMsg(in.ThreadId, in.Text)
+	if err != nil {
+		log.Debug("Could not send shiet: %v", err)
+		return nil, err
+	}
 
 	// set notified
 	err = db.New().

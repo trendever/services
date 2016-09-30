@@ -9,7 +9,7 @@ import (
 )
 
 // direct activity: accept PM invites; read && parse them
-func (w *worker) directActivity() {
+func (w *Worker) directActivity() {
 
 	for {
 
@@ -22,7 +22,7 @@ func (w *worker) directActivity() {
 	}
 }
 
-func (w *worker) checkNewMessages() error {
+func (w *Worker) checkNewMessages() error {
 
 	// get non-pending shiet
 	// check which threads got updated since last time
@@ -49,7 +49,7 @@ func (w *worker) checkNewMessages() error {
 	return nil
 }
 
-func (w *worker) processThread(threadID string) error {
+func (w *Worker) processThread(threadID string) error {
 
 	info, err := models.GetThreadInfo(threadID)
 	if err != nil {
@@ -101,7 +101,7 @@ func (w *worker) processThread(threadID string) error {
 }
 
 // fill database model by direct message
-func (w *worker) fillDirect(share *instagram.MediaShare, threadID, text string) error {
+func (w *Worker) fillDirect(share *instagram.MediaShare, threadID, text string) error {
 
 	log.Debug("Filling in new direct story")
 
@@ -118,4 +118,11 @@ func (w *worker) fillDirect(share *instagram.MediaShare, threadID, text string) 
 		ThreadID:          threadID,
 	}
 	return act.Save()
+}
+
+// SendDirectMsg sends response to the chat
+func (w *Worker) SendDirectMsg(threadID, message string) error {
+
+	_, err := w.api.BroadcastText(threadID, message)
+	return err
 }
