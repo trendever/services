@@ -27,6 +27,7 @@ func (w *Worker) checkNewMessages() error {
 	// get non-pending shiet
 	// check which threads got updated since last time
 	// get them
+	// @TODO: use cursors here and in feeds, but must be sufficient for now because it runs pretty often
 	resp, err := w.api.Inbox("")
 	if err != nil {
 		return err

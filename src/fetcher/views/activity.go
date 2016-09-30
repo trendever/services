@@ -19,33 +19,6 @@ func Init() {
 
 type fetcherServer struct{}
 
-func encodeActivity(act *models.Activity) *bot.Activity {
-	return &bot.Activity{
-		Id:                int64(act.ID),
-		Pk:                act.Pk,
-		MediaId:           act.MediaID,
-		MediaUrl:          act.MediaURL,
-		UserId:            act.UserID,
-		UserImageUrl:      act.UserImageURL,
-		UserName:          act.UserName,
-		MentionedUsername: act.MentionedUsername,
-		Type:              act.Type,
-		Comment:           act.Comment,
-		CreatedAt:         act.CreatedAt.Unix(),
-	}
-}
-
-func encodeActivities(activities []models.Activity) []*bot.Activity {
-
-	out := make([]*bot.Activity, len(activities))
-
-	for i := range activities {
-		out[i] = encodeActivity(&activities[i])
-	}
-
-	return out
-}
-
 // Returns activity (oldest first) for User since Timestamp with type Type
 func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveActivitiesRequest) (*bot.RetrieveActivitiesReply, error) {
 
@@ -70,7 +43,7 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 	}
 
 	return &bot.RetrieveActivitiesReply{
-		Result: encodeActivities(result),
+		Result: models.EncodeActivities(result),
 	}, nil
 }
 

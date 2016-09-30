@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
+	"proto/bot"
 	"utils/db"
 	"utils/log"
 )
@@ -53,4 +54,34 @@ func (act *Activity) Save() error {
 
 	log.Debug("Add row: %v", act.Pk)
 	return nil
+}
+
+// Encode to protobuf
+func (act *Activity) Encode() *bot.Activity {
+	return &bot.Activity{
+		Id:                int64(act.ID),
+		Pk:                act.Pk,
+		MediaId:           act.MediaID,
+		MediaUrl:          act.MediaURL,
+		UserId:            act.UserID,
+		UserImageUrl:      act.UserImageURL,
+		UserName:          act.UserName,
+		MentionedUsername: act.MentionedUsername,
+		Type:              act.Type,
+		Comment:           act.Comment,
+		CreatedAt:         act.CreatedAt.Unix(),
+		DirectThreadId:    act.ThreadID,
+	}
+}
+
+//EncodeActivities encodes activity arr to protobuf
+func EncodeActivities(activities []Activity) []*bot.Activity {
+
+	out := make([]*bot.Activity, len(activities))
+
+	for i := range activities {
+		out[i] = (&activities[i]).Encode()
+	}
+
+	return out
 }
