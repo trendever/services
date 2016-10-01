@@ -473,7 +473,7 @@ func (s *Server) download(url string) (io.ReadCloser, error) {
 	}
 
 	if 200 != resp.StatusCode {
-		return nil, errors.New("Non-200 status code received")
+		return nil, fmt.Errorf("Non-200 status code received: %v", resp.StatusCode)
 	}
 
 	contentLength := resp.ContentLength
