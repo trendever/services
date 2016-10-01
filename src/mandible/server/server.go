@@ -219,7 +219,7 @@ func (s *Server) Configure(muxer *http.ServeMux) {
 		uploadFile, err := s.download(url)
 
 		if err != nil {
-			return nil, "", &UserError{LogMessage: err, UserFacingMessage: errors.New("Error downloading URL!")}
+			return nil, "", &UserError{LogMessage: err, UserFacingMessage: fmt.Errorf("Error downloading URL (%v)!", url)}
 		}
 
 		s.stats.Upload("url")
@@ -473,7 +473,7 @@ func (s *Server) download(url string) (io.ReadCloser, error) {
 	}
 
 	if 200 != resp.StatusCode {
-		return nil, errors.New("Non-200 status code received")
+		return nil, fmt.Errorf("Non-200 status code received: %v", resp.StatusCode)
 	}
 
 	contentLength := resp.ContentLength
