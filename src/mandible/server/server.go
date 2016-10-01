@@ -219,7 +219,7 @@ func (s *Server) Configure(muxer *http.ServeMux) {
 		uploadFile, err := s.download(url)
 
 		if err != nil {
-			return nil, "", &UserError{LogMessage: err, UserFacingMessage: errors.New("Error downloading URL!")}
+			return nil, "", &UserError{LogMessage: err, UserFacingMessage: fmt.Errorf("Error downloading URL (%v)!", url)}
 		}
 
 		s.stats.Upload("url")
