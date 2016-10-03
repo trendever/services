@@ -46,6 +46,7 @@ var (
 		&transition.StateChangeLog{},
 		&models.UsersProducts{},
 		&models.PushToken{},
+		&models.ShopNote{},
 	}
 )
 

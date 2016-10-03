@@ -1,43 +1,52 @@
 package models
 
 import (
+	"fmt"
 	"gopkg.in/olivere/elastic.v3"
+	"strconv"
 	"utils/db"
 	ewrapper "utils/elastic"
 	"utils/log"
 )
 
-var dbModels = []interface{}{
-	&ElasticProductMeta{},
-}
-
-var elasticIndexes = []struct {
-	name string
-	body string
+var indices = []struct {
+	name   string
+	body   string
+	dbMeta interface{}
 }{
 	{
-		name: "products",
-		body: ProductIndex,
+		name:   "products",
+		body:   ProductIndex,
+		dbMeta: &ElasticProductMeta{},
 	},
 }
 
 func Migrate(drop bool) {
 	db := db.New()
 	el := ewrapper.Cli()
-	if drop {
-		log.Warn("Droping tables")
-		db.DropTableIfExists(dbModels...)
-		log.Warn("Droping indexes")
-		for _, index := range elasticIndexes {
-			el.DeleteIndex(index.name).Do()
-		}
-	}
 
-	if err := db.AutoMigrate(dbModels...).Error; err != nil {
-		log.Fatal(err)
-	}
-	for _, index := range elasticIndexes {
-		_, err := el.CreateIndex(index.name).BodyString(index.body).Do()
+	for _, index := range indices {
+		var oldDate uint64
+		ret, err := el.IndexGetSettings(index.name).Do()
+		if err != nil {
+			e, ok := err.(*elastic.Error)
+			if !ok || e.Details.Type != "index_not_found_exception" {
+				log.Fatal(err)
+			}
+		} else {
+			oldDate, err = strconv.ParseUint(ret[index.name].Settings["index"].(map[string]interface{})["creation_date"].(string), 10, 64)
+		}
+
+		if drop || oldDate < IndexUpdatedAt {
+			db.DropTableIfExists(index.dbMeta)
+			for _, index := range indices {
+				el.DeleteIndex(index.name).Do()
+			}
+		}
+		if err = db.AutoMigrate(index.dbMeta).Error; err != nil {
+			log.Fatal(err)
+		}
+		_, err = el.CreateIndex(index.name).BodyString(fmt.Sprintf(index.body, IndexUpdatedAt)).Do()
 		if err != nil {
 			e, ok := err.(*elastic.Error)
 			if !ok || e.Details.Type != "index_already_exists_exception" {

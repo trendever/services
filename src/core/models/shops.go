@@ -37,6 +37,17 @@ type Shop struct {
 	// Shop private tags; internal use only
 	Tags           []Tag `gorm:"many2many:products_shops_tags;"`
 	NotifySupplier bool
+	// if true new leads will not be joined with existing one
+	SeparateLeads bool
+
+	// it's better to keep them outside main struct to avoid load surplus data
+	Notes []ShopNote `gorm:"ForeignKey:ShopID"`
+}
+
+type ShopNote struct {
+	ID     uint64 `gorm:"primary_key"`
+	ShopID uint64
+	Text   string `gorm:"text"`
 }
 
 // TableName for this shop
