@@ -70,7 +70,9 @@ func (w *Worker) processThread(threadID string) error {
 
 		log.Debug("Thread is from %v; got %v messages there", resp.Thread.Inviter.Username, len(resp.Thread.Items))
 
-		for _, message := range resp.Thread.Items {
+		// walk in reversed order
+		for i := len(resp.Thread.Items) - 1; i >= 0; i-- {
+			message := resp.Thread.Items[i]
 
 			if info.GreaterOrEqual(message.ItemID) {
 				log.Debug("Reached end of the new conversation (%v;%v;%v); exiting", threadID, message.ItemID, info.LastCheckedID)
