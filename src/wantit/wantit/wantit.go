@@ -165,7 +165,7 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
 		AfterId:     lastChecked,
-		Type:        "mentioned",
+		Type:        []string{"mentioned", "direct"},
 		MentionName: conf.GetSettings().Instagram.WantitUser,
 		Limit:       100, //@CHECK this number
 	})

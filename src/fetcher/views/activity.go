@@ -30,7 +30,10 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 
 	var searchActivity = models.Activity{
 		MentionedUsername: in.MentionName,
-		Type:              in.Type,
+	}
+
+	if len(in.Type) > 0 {
+		req = req.Where("type in (?)", in.Type)
 	}
 
 	if in.AfterId > 0 {

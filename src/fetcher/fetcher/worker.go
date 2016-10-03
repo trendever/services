@@ -26,7 +26,7 @@ func (w *Worker) next() {
 }
 
 func (w *Worker) start() {
-	//	go w.getActivity()
+	go w.getActivity()
 	go w.directActivity()
 
 	pool.Lock()
