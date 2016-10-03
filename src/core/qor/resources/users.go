@@ -16,12 +16,10 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addUserResource)
+	addResource(models.User{}, &admin.Config{Name: "Users"}, initUserResource)
 }
 
-func addUserResource(a *admin.Admin) {
-	res := a.AddResource(models.User{}, &admin.Config{Name: "Users"})
-
+func initUserResource(res *admin.Resource) {
 	res.Meta(&admin.Meta{
 		Name: "Caption",
 		Type: "text",
@@ -172,7 +170,7 @@ func addUserResource(a *admin.Admin) {
 		Amount  uint64
 		Comment string
 	}
-	refillArgRes := a.NewResource(&refillArg{})
+	refillArgRes := res.GetAdmin().NewResource(&refillArg{})
 	res.Action(&admin.Action{
 		Name:     "Refill coins",
 		Resource: refillArgRes,
@@ -208,7 +206,7 @@ func addUserResource(a *admin.Admin) {
 		AllowCredit bool
 		Comment     string
 	}
-	writeOffArgRes := a.NewResource(&writeOffArg{})
+	writeOffArgRes := res.GetAdmin().NewResource(&writeOffArg{})
 	res.Action(&admin.Action{
 		Name:     "Write-off coins",
 		Resource: writeOffArgRes,
@@ -248,7 +246,7 @@ func addUserResource(a *admin.Admin) {
 		AllowCredit   bool
 		Comment       string
 	}
-	transferArgRes := a.NewResource(&transferArg{})
+	transferArgRes := res.GetAdmin().NewResource(&transferArg{})
 	// @TODO resource in context should have all this themes...
 	// we need somehow set it ajaxor probably
 	res.UseTheme("select2.min")

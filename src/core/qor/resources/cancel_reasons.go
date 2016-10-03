@@ -6,15 +6,13 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addCancelReasonResource)
-}
-
-func addCancelReasonResource(a *admin.Admin) {
-	res := a.AddResource(&models.LeadCancelReason{}, &admin.Config{
+	addResource(&models.LeadCancelReason{}, &admin.Config{
 		Name: "LeadCancelReasons",
 		Menu: []string{"Products"},
-	})
+	}, reasonsInit)
+}
 
+func reasonsInit(res *admin.Resource) {
 	res.SearchAttrs(
 		"Name",
 	)

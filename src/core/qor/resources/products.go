@@ -14,16 +14,15 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addProductResource)
-}
-
-func addProductResource(a *admin.Admin) {
-	res := a.AddResource(models.Product{}, &admin.Config{
+	addResource(models.Product{}, &admin.Config{
 		Name: "Products",
 		Menu: []string{"Products"},
-	})
+	}, initProductResource)
 
-	itemRes := a.AddResource(models.ProductItem{}, &admin.Config{
+}
+
+func initProductResource(res *admin.Resource) {
+	itemRes := res.GetAdmin().AddResource(models.ProductItem{}, &admin.Config{
 		Name:      "ProductItem",
 		Invisible: true,
 	})
@@ -218,12 +217,18 @@ func addProductResource(a *admin.Admin) {
 		})
 	}
 
-	filters.MetaFilter(res, "Scout", "eq")
-	filters.MetaFilter(res, "ShopSearch", "eq")
-	filters.MetaFilter(res, "Tags", "eq")
+	res.Filter(&admin.Filter{
+		Label:  "Scout",
+		Name:   "MentionedBy",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
+	})
+	res.Filter(&admin.Filter{
+		Name:   "Shop",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Shops")},
+	})
 
 	res.Filter(&admin.Filter{
-		Name: "tags_id_eq",
+		Name: "Tag",
 		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
 			metaValue := arg.Value.Get("Value")
 			if metaValue == nil {
@@ -234,13 +239,14 @@ func addProductResource(a *admin.Admin) {
 				tagrel.product_id = products_product.id AND tagrel.tag_id = ?
 			`, metaValue.Value)
 		},
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Tags")},
 	})
 
 	type userArg struct {
 		UserID uint64
 		User   models.User
 	}
-	userArgRes := a.NewResource(&userArg{})
+	userArgRes := res.GetAdmin().NewResource(&userArg{})
 	ajaxor.Meta(userArgRes, &admin.Meta{
 		Name: "User",
 		Type: "select_one",

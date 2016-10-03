@@ -14,17 +14,12 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addShopResource)
+	addResource(models.Shop{}, &admin.Config{
+		Name: "Shops",
+	}, initShopResource)
 }
 
-func addShopResource(a *admin.Admin) {
-	res := a.AddResource(models.Shop{}, &admin.Config{
-		Name: "Shops",
-	})
-
-	// @TODO: make image URL editable
-	//res.Meta(&admin.Meta{Name: "Img", FieldName: "InstagramAvatarURL", Type: "image"})
-
+func initShopResource(res *admin.Resource) {
 	ajaxor.Meta(res, &admin.Meta{
 		Name: "Supplier",
 		Type: "select_one",
@@ -173,9 +168,8 @@ func addShopResource(a *admin.Admin) {
 	res.NewAttrs(res.EditAttrs())
 	res.ShowAttrs(res.EditAttrs())
 
-	filters.MetaFilter(res, "TagsSearch", "eq")
 	res.Filter(&admin.Filter{
-		Name: "tags_id_eq",
+		Name: "Tag",
 		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
 			metaValue := arg.Value.Get("Value")
 			if metaValue == nil {
@@ -186,6 +180,7 @@ func addShopResource(a *admin.Admin) {
 				tagrel.shop_id = id AND tagrel.tag_id = ?
 			`, metaValue.Value)
 		},
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Tags")},
 	})
 
 	filters.MetaFilter(res, "CreatedAt", "gt")
