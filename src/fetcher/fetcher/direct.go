@@ -73,9 +73,10 @@ func (w *Worker) processThread(threadID string) error {
 		// walk in reversed order
 		for i := len(resp.Thread.Items) - 1; i >= 0; i-- {
 			message := resp.Thread.Items[i]
+			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
 
 			if info.GreaterOrEqual(message.ItemID) {
-				log.Debug("Reached end of the new conversation (%v;%v;%v); exiting", threadID, message.ItemID, info.LastCheckedID)
+				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
 				return nil
 			}
 
