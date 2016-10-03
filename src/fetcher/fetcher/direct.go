@@ -71,7 +71,7 @@ func (w *Worker) processThread(threadID string) error {
 		for _, message := range resp.Thread.Items {
 
 			if info.GreaterOrEqual(message.ItemID) {
-				log.Debug("Reached end of the new conversation (%v;%v); exiting", threadID, message.ItemID)
+				log.Debug("Reached end of the new conversation (%v;%v;); exiting", threadID, message.ItemID, info.LastCheckedID)
 				return nil
 			}
 
