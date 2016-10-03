@@ -242,14 +242,16 @@ func GetUserLead(user *User, leadID uint64) (*Lead, error) {
 	return leads[0], nil
 }
 
-//FindActiveLead searches active lead for shop and customer
+// FindActiveLead searches active lead for shop and customer
+// returns nil result for shops with SeparateLeads
 func FindActiveLead(shopID, customerID uint64) (*Lead, error) {
 	lead := &Lead{}
 	scope := db.New().
 		Model(&Lead{}).
 		Preload("Customer").
+		Joins("JOIN products_shops shop ON shop.id = products_leads.shop_id AND NOT shop.separate_leads").
 		Where(
-			"shop_id = ? AND customer_id = ? AND state IN (?)",
+			"shop.id = ? AND products_leads.customer_id = ? AND products_leads.state IN (?)",
 			shopID,
 			customerID,
 			[]string{
