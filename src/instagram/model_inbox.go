@@ -127,17 +127,10 @@ type InboxResponse struct {
 			OldestCursor   string        `json:"oldest_cursor"`
 			LeftUsers      []interface{} `json:"left_users"`
 			Muted          bool          `json:"muted"`
-			Items          []struct {
-				UserID        int64  `json:"user_id"`
-				Text          string `json:"text"`
-				ItemType      string `json:"item_type"`
-				Timestamp     int64  `json:"timestamp"`
-				ItemID        string `json:"item_id"`
-				ClientContext string `json:"client_context"`
-			} `json:"items"`
-			ThreadType  string `json:"thread_type"`
-			ThreadTitle string `json:"thread_title"`
-			LastSeenAt  map[string]struct {
+			Items          ThreadItems   `json:"items"`
+			ThreadType     string        `json:"thread_type"`
+			ThreadTitle    string        `json:"thread_title"`
+			LastSeenAt     map[string]struct {
 				ItemID    string `json:"item_id"`
 				Timestamp string `json:"timestamp"`
 			} `json:"last_seen_at,omitempty"`
@@ -198,18 +191,10 @@ type DirectThreadResponse struct {
 		OldestCursor   string        `json:"oldest_cursor"`
 		LeftUsers      []interface{} `json:"left_users"`
 		Muted          bool          `json:"muted"`
-		Items          []struct {
-			UserID        int64       `json:"user_id"`
-			Text          string      `json:"text,omitempty"`
-			ItemType      string      `json:"item_type"`
-			Timestamp     int64       `json:"timestamp"`
-			ItemID        string      `json:"item_id"`
-			ClientContext string      `json:"client_context"`
-			MediaShare    *MediaShare `json:"media_share,omitempty"`
-		} `json:"items"`
-		ThreadType  string `json:"thread_type"`
-		ThreadTitle string `json:"thread_title"`
-		LastSeenAt  map[string]struct {
+		Items          ThreadItems   `json:"items"`
+		ThreadType     string        `json:"thread_type"`
+		ThreadTitle    string        `json:"thread_title"`
+		LastSeenAt     map[string]struct {
 			ItemID    string `json:"item_id"`
 			Timestamp string `json:"timestamp"`
 		} `json:"last_seen_at"`
@@ -317,3 +302,19 @@ type DirectThreadActionResponse struct {
 type DirectThreadApproveAllResponse struct {
 	Message
 }
+
+// ThreadItems contains messages from chat
+type ThreadItems []struct {
+	UserID        int64       `json:"user_id"`
+	Text          string      `json:"text,omitempty"`
+	ItemType      string      `json:"item_type"`
+	Timestamp     int64       `json:"timestamp"`
+	ItemID        string      `json:"item_id"`
+	ClientContext string      `json:"client_context"`
+	MediaShare    *MediaShare `json:"media_share,omitempty"`
+}
+
+// Sorting stuff
+func (a ThreadItems) Len() int           { return len(a) }
+func (a ThreadItems) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ThreadItems) Less(i, j int) bool { return a[i].ItemID < a[j].ItemID }

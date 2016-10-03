@@ -4,6 +4,7 @@ import (
 	"fetcher/models"
 	"fmt"
 	"instagram"
+	"sort"
 	"utils/db"
 	"utils/log"
 )
@@ -70,9 +71,8 @@ func (w *Worker) processThread(threadID string) error {
 
 		log.Debug("Thread is from %v; got %v messages there", resp.Thread.Inviter.Username, len(resp.Thread.Items))
 
-		// walk in reversed order
-		for i := len(resp.Thread.Items) - 1; i >= 0; i-- {
-			message := resp.Thread.Items[i]
+		sort.Sort(resp.Thread.Items)
+		for _, message := range resp.Thread.Items {
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
 
 			if info.GreaterOrEqual(message.ItemID) {
