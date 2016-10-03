@@ -317,4 +317,4 @@ type ThreadItems []struct {
 // Sorting stuff
 func (a ThreadItems) Len() int           { return len(a) }
 func (a ThreadItems) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ThreadItems) Less(i, j int) bool { return a[i].ItemID > a[j].ItemID }
+func (a ThreadItems) Less(i, j int) bool { return a[i].ItemID < a[j].ItemID }
