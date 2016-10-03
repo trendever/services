@@ -52,6 +52,9 @@ func (w *Worker) checkNewMessages() error {
 
 func (w *Worker) processThread(threadID string) error {
 
+	log.Debug("Processing thread %v", threadID)
+	defer log.Debug("Processing thread %v end", threadID)
+
 	info, err := models.GetThreadInfo(threadID)
 	if err != nil {
 		return err
@@ -78,6 +81,8 @@ func (w *Worker) processThread(threadID string) error {
 				if err := w.fillDirect(message.MediaShare, threadID, message.Text); err != nil {
 					return err
 				}
+			} else {
+				log.Debug("Message with id %v (type %v) does not contain mediaShare", message.ItemID, message.ItemType)
 			}
 
 			info.LastCheckedID = message.ItemID
@@ -86,12 +91,14 @@ func (w *Worker) processThread(threadID string) error {
 				Where("thread_id = ?", threadID).
 				Update("last_checked_id", info.LastCheckedID).
 				Error
+
 			if err != nil {
 				return err
 			}
 		}
 
 		if !resp.Thread.HasOlder {
+			log.Debug("Reached end of the thread %v", threadID)
 			break
 		}
 
