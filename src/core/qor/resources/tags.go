@@ -7,14 +7,13 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addTagResource)
-}
-
-func addTagResource(a *admin.Admin) {
-	tag := a.AddResource(&models.Tag{}, &admin.Config{
+	addResource(&models.Tag{}, &admin.Config{
 		Name: "Tags",
 		Menu: []string{"Products"},
-	})
+	}, initTagResource)
+}
+
+func initTagResource(tag *admin.Resource) {
 
 	ajaxor.Meta(tag, &admin.Meta{
 		Name: "Group",
@@ -31,7 +30,7 @@ func addTagResource(a *admin.Admin) {
 	tag.EditAttrs(tag.IndexAttrs())
 	tag.ShowAttrs(tag.IndexAttrs())
 
-	grp := a.AddResource(&models.TagGroup{}, &admin.Config{
+	grp := tag.GetAdmin().AddResource(&models.TagGroup{}, &admin.Config{
 		Name: "Product Groups",
 		Menu: []string{"Products"},
 	})

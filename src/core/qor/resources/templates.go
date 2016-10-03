@@ -9,15 +9,25 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addTemplateResource)
-}
-
-func addTemplateResource(a *admin.Admin) {
-
-	sms := a.AddResource(&models.SMSTemplate{}, &admin.Config{
+	addResource(&models.SMSTemplate{}, &admin.Config{
 		Name: "SMS Templates",
 		Menu: []string{"Settings"},
-	})
+	}, initSMSTemplateResource)
+	addResource(&models.EmailTemplate{}, &admin.Config{
+		Name: "Email templates",
+		Menu: []string{"Settings"},
+	}, initEmailTemplateResource)
+	addResource(&models.EmailTemplate{}, &admin.Config{
+		Name: "Email templates",
+		Menu: []string{"Settings"},
+	}, initPushTemplateResource)
+	addResource(&models.ChatTemplate{}, &admin.Config{
+		Name: "Chat templates",
+		Menu: []string{"Settings"},
+	}, initChatTemplateResource)
+}
+
+func initSMSTemplateResource(sms *admin.Resource) {
 	sms.Meta(&admin.Meta{
 		Name:       "TemplateID",
 		Type:       "select_one",
@@ -49,11 +59,9 @@ func addTemplateResource(a *admin.Admin) {
 	}
 	sms.NewAttrs(attrs)
 	sms.EditAttrs(attrs)
+}
 
-	email := a.AddResource(&models.EmailTemplate{}, &admin.Config{
-		Name: "Email templates",
-		Menu: []string{"Settings"},
-	})
+func initEmailTemplateResource(email *admin.Resource) {
 	// body textarea
 	email.Meta(&admin.Meta{
 		Name: "Body",
@@ -70,7 +78,7 @@ func addTemplateResource(a *admin.Admin) {
 	email.SearchAttrs(
 		"TemplateName", "TemplateName", "Subject",
 	)
-	attrs = []*admin.Section{
+	attrs := []*admin.Section{
 		{
 			Title: "Template settings",
 			Rows: [][]string{
@@ -87,11 +95,9 @@ func addTemplateResource(a *admin.Admin) {
 	}
 	email.NewAttrs(attrs)
 	email.EditAttrs(attrs)
+}
 
-	push := a.AddResource(&models.PushTemplate{}, &admin.Config{
-		Name: "Push Templates",
-		Menu: []string{"Settings"},
-	})
+func initPushTemplateResource(push *admin.Resource) {
 	push.Meta(&admin.Meta{
 		Name:       "TemplateID",
 		Type:       "select_one",
@@ -107,7 +113,7 @@ func addTemplateResource(a *admin.Admin) {
 	push.SearchAttrs(
 		"TemplateName", "TemplateID",
 	)
-	attrs = []*admin.Section{
+	attrs := []*admin.Section{
 		{
 			Title: "Template settings",
 			Rows: [][]string{
@@ -124,11 +130,9 @@ func addTemplateResource(a *admin.Admin) {
 	}
 	push.NewAttrs(attrs)
 	push.EditAttrs(attrs)
+}
 
-	chat := a.AddResource(&models.ChatTemplate{}, &admin.Config{
-		Name: "Chat templates",
-		Menu: []string{"Settings"},
-	})
+func initChatTemplateResource(chat *admin.Resource) {
 	chat.Meta(&admin.Meta{
 		Name:       "Group",
 		Type:       "select_one",
@@ -171,7 +175,7 @@ func addTemplateResource(a *admin.Admin) {
 	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product")
 	chat.SearchAttrs("TemplateName", "Group", "IsDefault", "ProductID")
 
-	attrs = []*admin.Section{
+	attrs := []*admin.Section{
 		{
 			Rows: [][]string{
 				{"TemplateName", "Group"},

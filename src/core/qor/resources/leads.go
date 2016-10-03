@@ -15,7 +15,10 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addLeadResource)
+	addResource(&models.Lead{}, &admin.Config{
+		Name: "Orders",
+		Menu: []string{"Products"},
+	}, initLeadResource)
 }
 
 type leadEvent struct {
@@ -28,11 +31,7 @@ type ProductArg struct {
 	Product   models.Product
 }
 
-func addLeadResource(a *admin.Admin) {
-	res := a.AddResource(&models.Lead{}, &admin.Config{
-		Name: "Orders",
-		Menu: []string{"Products"},
-	})
+func initLeadResource(res *admin.Resource) {
 
 	res.Meta(&admin.Meta{
 		Name: "State", Type: "select_one",
@@ -54,35 +53,11 @@ func addLeadResource(a *admin.Admin) {
 		Type: "select_many",
 	})
 
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "CustomerSearch",
-		Label:     "Customer",
-		FieldName: "Customer",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_leads as lead ON lead.customer_id = users_user.id AND lead.deleted_at IS NULL").
-				Group("users_user.id").
-				Having("COUNT(lead.id) > 0").
-				Order("COUNT(lead.id) DESC"),
-			)
-
-			return res.GetMeta("Customer").Config.(interface {
-				GetCollection(value interface{}, context *admin.Context) [][]string
-			}).GetCollection(this, &admin.Context{Context: ctx})
-		},
-	})
-
-	filters.MetaFilter(res, "CustomerSearch", "eq")
-
 	res.SearchAttrs(
 		"ID", "Name", "Source", "Customer.Name", "Comment",
 	)
 	res.IndexAttrs(
-		"ID", "CreatedAt", "Customer", "Name", "Source", "ProductItems", "State", "CancelReason",
+		"ID", "CreatedAt", "Customer", "Shop", "Name", "Source", "ProductItems", "State", "CancelReason",
 	)
 	res.ShowAttrs(
 		&admin.Section{
@@ -117,9 +92,9 @@ func addLeadResource(a *admin.Admin) {
 		})
 	}
 
-	addTransitionActions(a, res)
+	addTransitionActions(res.GetAdmin(), res)
 
-	argRes := a.NewResource(&ProductArg{})
+	argRes := res.GetAdmin().NewResource(&ProductArg{})
 	ajaxor.Meta(argRes, &admin.Meta{
 		Name: "Product",
 		Type: "select_one",
@@ -156,7 +131,17 @@ func addLeadResource(a *admin.Admin) {
 	})
 
 	res.Filter(&admin.Filter{
-		Name: "products_filter",
+		Name:   "Customer",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
+	})
+
+	res.Filter(&admin.Filter{
+		Name:   "Shop",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Shops")},
+	})
+
+	res.Filter(&admin.Filter{
+		Name: "Products",
 		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
 			metaValue := arg.Value.Get("Value")
 			if metaValue == nil {
@@ -171,10 +156,8 @@ func addLeadResource(a *admin.Admin) {
 				)`,
 				metaValue.Value)
 		},
-		Type: "custom",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Products")},
 	})
-
-	filters.AddFilter(res, argRes.GetMeta("Product"), "products_filter", "custom", "wat")
 }
 
 // and typical actions for changing order state
@@ -355,16 +338,14 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 		},
 	})
 
+	// @TODO
 	// filters
 	filters.MetaFilter(res, "CreatedAt", "gt")
 	filters.MetaFilter(res, "CreatedAt", "lt")
-	filters.MetaFilter(res, "ShopSearch", "eq")
 
 	// @QORBUG
 	// workaround due to bug in qor
 	for op, act := range map[string]string{"gt": ">", "lt": "<"} {
-		var actcp = act
-
 		res.Filter(&admin.Filter{
 			Name: "created_at_" + op,
 			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
@@ -372,8 +353,9 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 				if metaValue == nil {
 					return scope
 				}
-				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", actcp), metaValue.Value)
+				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", act), metaValue.Value)
 			},
+			Type: "date",
 		})
 	}
 
