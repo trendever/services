@@ -160,12 +160,12 @@ func registerOrders() {
 	}
 }
 
-func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
 		AfterId:     lastChecked,
-		Type:        "mentioned",
+		Type:        []string{"mentioned", "direct"},
 		MentionName: conf.GetSettings().Instagram.WantitUser,
 		Limit:       100, //@CHECK this number
 	})

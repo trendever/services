@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -46,11 +47,11 @@ func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login 
 }
 
 // Request with five attempts re-login. Re-login if getting error 'login_required'.
-func (ig *Instagram) tryRequest(method, endpoint string) ([]byte, error) {
+func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 
 	for attempt := 0; attempt < 5; attempt++ {
 
-		resp, err := ig.requestMain(method, endpoint, nil, false)
+		resp, err := ig.requestMain(method, endpoint, bytes.NewReader([]byte(body)), false)
 		if err != nil {
 			return nil, err
 		}
@@ -88,14 +89,29 @@ func (ig *Instagram) tryRequest(method, endpoint string) ([]byte, error) {
 
 func (ig *Instagram) request(method, endpoint string, result interface{}) error {
 
-	body, err := ig.tryRequest(method, endpoint)
+	body, err := ig.tryRequest(method, endpoint, "")
 	if err != nil {
 		return err
 	}
 
 	err = json.Unmarshal(body, result)
 	return err
+}
 
+func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
+
+	vals := url.Values{}
+	for k, v := range params {
+		vals.Add(k, v)
+	}
+
+	body, err := ig.tryRequest("", endpoint, vals.Encode())
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, result)
+	return err
 }
 
 func (ig *Instagram) loginRequest(method, endpoint, body string, result interface{}) ([]*http.Cookie, error) {

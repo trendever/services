@@ -164,6 +164,148 @@ type InboxResponse struct {
 // DirectThreadResponse contains the whole thread
 type DirectThreadResponse struct {
 	Message
+	Thread struct {
+		Named bool `json:"named"`
+		Users []struct {
+			Username                   string `json:"username"`
+			HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
+			FriendshipStatus           struct {
+				Following       bool `json:"following"`
+				IncomingRequest bool `json:"incoming_request"`
+				OutgoingRequest bool `json:"outgoing_request"`
+				Blocking        bool `json:"blocking"`
+				IsPrivate       bool `json:"is_private"`
+			} `json:"friendship_status"`
+			ProfilePicURL string `json:"profile_pic_url"`
+			FullName      string `json:"full_name"`
+			Pk            int64  `json:"pk"`
+			IsVerified    bool   `json:"is_verified"`
+			IsPrivate     bool   `json:"is_private"`
+		} `json:"users"`
+		HasNewer       bool   `json:"has_newer"`
+		ThreadID       string `json:"thread_id"`
+		ImageVersions2 struct {
+			Candidates []struct {
+				URL    string `json:"url"`
+				Width  int    `json:"width"`
+				Height int    `json:"height"`
+			} `json:"candidates"`
+		} `json:"image_versions2"`
+		LastActivityAt int64         `json:"last_activity_at"`
+		NewestCursor   string        `json:"newest_cursor"`
+		Canonical      bool          `json:"canonical"`
+		HasOlder       bool          `json:"has_older"`
+		OldestCursor   string        `json:"oldest_cursor"`
+		LeftUsers      []interface{} `json:"left_users"`
+		Muted          bool          `json:"muted"`
+		Items          []struct {
+			UserID        int64       `json:"user_id"`
+			Text          string      `json:"text,omitempty"`
+			ItemType      string      `json:"item_type"`
+			Timestamp     int64       `json:"timestamp"`
+			ItemID        string      `json:"item_id"`
+			ClientContext string      `json:"client_context"`
+			MediaShare    *MediaShare `json:"media_share,omitempty"`
+		} `json:"items"`
+		ThreadType  string `json:"thread_type"`
+		ThreadTitle string `json:"thread_title"`
+		LastSeenAt  map[string]struct {
+			ItemID    string `json:"item_id"`
+			Timestamp string `json:"timestamp"`
+		} `json:"last_seen_at"`
+		Inviter struct {
+			Username                   string `json:"username"`
+			HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
+			ProfilePicURL              string `json:"profile_pic_url"`
+			FullName                   string `json:"full_name"`
+			Pk                         int64  `json:"pk"`
+			IsVerified                 bool   `json:"is_verified"`
+			IsPrivate                  bool   `json:"is_private"`
+		} `json:"inviter"`
+		Pending bool `json:"pending"`
+	} `json:"thread"`
+}
+
+// MediaShare contains shared stuff
+type MediaShare struct {
+	TakenAt         int    `json:"taken_at"`
+	Pk              int64  `json:"pk"`
+	ID              string `json:"id"`
+	DeviceTimestamp int64  `json:"device_timestamp"`
+	MediaType       int    `json:"media_type"`
+	Code            string `json:"code"`
+	ClientCacheKey  string `json:"client_cache_key"`
+	FilterType      int    `json:"filter_type"`
+	ImageVersions2  struct {
+		Candidates []struct {
+			URL    string `json:"url"`
+			Width  int    `json:"width"`
+			Height int    `json:"height"`
+		} `json:"candidates"`
+	} `json:"image_versions2"`
+	OriginalWidth  int `json:"original_width"`
+	OriginalHeight int `json:"original_height"`
+	User           struct {
+		Username                   string `json:"username"`
+		HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
+		IsUnpublished              bool   `json:"is_unpublished"`
+		ProfilePicURL              string `json:"profile_pic_url"`
+		FullName                   string `json:"full_name"`
+		Pk                         int64  `json:"pk"`
+		IsPrivate                  bool   `json:"is_private"`
+	} `json:"user"`
+	OrganicTrackingToken         string        `json:"organic_tracking_token"`
+	LikeCount                    int           `json:"like_count"`
+	Likers                       []interface{} `json:"likers"`
+	HasLiked                     bool          `json:"has_liked"`
+	HasMoreComments              bool          `json:"has_more_comments"`
+	MaxNumVisiblePreviewComments int           `json:"max_num_visible_preview_comments"`
+	Comments                     []struct {
+		Status       string `json:"status"`
+		UserID       int64  `json:"user_id"`
+		CreatedAtUtc int    `json:"created_at_utc"`
+		CreatedAt    int    `json:"created_at"`
+		BitFlags     int    `json:"bit_flags"`
+		User         struct {
+			Username      string `json:"username"`
+			ProfilePicURL string `json:"profile_pic_url"`
+			ProfilePicID  string `json:"profile_pic_id"`
+			FullName      string `json:"full_name"`
+			Pk            int64  `json:"pk"`
+			IsVerified    bool   `json:"is_verified"`
+			IsPrivate     bool   `json:"is_private"`
+		} `json:"user"`
+		ContentType    string `json:"content_type"`
+		Text           string `json:"text"`
+		MediaID        int64  `json:"media_id"`
+		Pk             int64  `json:"pk"`
+		HasTranslation bool   `json:"has_translation"`
+		Type           int    `json:"type"`
+	} `json:"comments"`
+	CommentCount int `json:"comment_count"`
+	Caption      struct {
+		Status       string `json:"status"`
+		UserID       int64  `json:"user_id"`
+		CreatedAtUtc int    `json:"created_at_utc"`
+		CreatedAt    int    `json:"created_at"`
+		BitFlags     int    `json:"bit_flags"`
+		User         struct {
+			Username                   string `json:"username"`
+			HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
+			IsUnpublished              bool   `json:"is_unpublished"`
+			ProfilePicURL              string `json:"profile_pic_url"`
+			FullName                   string `json:"full_name"`
+			Pk                         int64  `json:"pk"`
+			IsPrivate                  bool   `json:"is_private"`
+		} `json:"user"`
+		ContentType string `json:"content_type"`
+		Text        string `json:"text"`
+		MediaID     int64  `json:"media_id"`
+		Pk          int64  `json:"pk"`
+		Type        int    `json:"type"`
+	} `json:"caption"`
+	CaptionIsEdited bool `json:"caption_is_edited"`
+	PhotoOfYou      bool `json:"photo_of_you"`
 }
 
 // DirectThreadActionResponse if the request is ok
