@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"utils/log"
 )
 
 // Request for Login method. Needs to get the authorization cookies.
@@ -61,6 +62,8 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		log.Debug("Instagram Response: %v", string(jsonBody))
 
 		var message *Message
 		err = json.Unmarshal(jsonBody, &message)

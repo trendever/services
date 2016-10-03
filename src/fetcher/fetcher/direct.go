@@ -68,7 +68,7 @@ func (w *Worker) processThread(threadID string) error {
 			return err
 		}
 
-		log.Debug("Thread is from %v", resp.Thread.Inviter.Username)
+		log.Debug("Thread is from %v; got %v messages there", resp.Thread.Inviter.Username, len(resp.Thread.Items))
 
 		for _, message := range resp.Thread.Items {
 
