@@ -10,6 +10,7 @@ import (
 	"utils/log"
 
 	"core/models"
+	"core/qor/filters"
 )
 
 func init() {
@@ -182,20 +183,5 @@ func initShopResource(res *admin.Resource) {
 		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Tags")},
 	})
 
-	res.UseTheme("filter-workaround")
-	for name, act := range map[string]string{"from": ">", "to": "<"} {
-		op := act
-		res.Filter(&admin.Filter{
-			Name:  "created_at_" + name,
-			Label: "Created At " + name,
-			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
-				metaValue := arg.Value.Get("Value")
-				if metaValue == nil {
-					return scope
-				}
-				return scope.Where(fmt.Sprintf("products_shops.created_at %v ?", op), metaValue.Value)
-			},
-			Type: "date",
-		})
-	}
+	filters.SetDateFilters(res, "CreatedAt")
 }

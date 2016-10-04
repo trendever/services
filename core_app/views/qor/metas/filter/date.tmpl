@@ -1,15 +1,13 @@
-<!-- <input class="qor-action--label qor-field__input" style="width: 120px;"  data-toggle="datepicker" type="text" name="{{.InputNamePrefix}}.Value" placeholder="{{ .Filter.Label }}"> -->
-
 <div class="qor-field__input qor-field__datetimepicker">
-	<input class="mdl-textfield__input qor-datetimepicker__input ui-timepicker-input" placeholder="{{ .Filter.Label }}" onchange="onFilterChangeValue(this)" name="{{.InputNamePrefix}}.Value" autocomplete="off" type="text">
+	<input class="mdl-textfield__input qor-datetimepicker__input ui-timepicker-input" id="{{ .Filter.Name }}" placeholder="{{ .Filter.Label }}" value="{{ printf "%s.Value" .InputNamePrefix | .Context.Request.FormValue }}" onchange="onFilterChangeValue(this)" name="{{.InputNamePrefix}}.Value" autocomplete="off" type="text">
 
 	<div>
 	<button data-toggle="qor.datepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__datepicker" type="button" data-upgraded=",MaterialButton">
 		<i class="material-icons">date_range</i>
 	</button>
 
-	<button data-toggle="qor.timepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__timepicker" type="button" data-upgraded=",MaterialButton">
-		<i class="material-icons">access_time</i>
+	<button class="mdl-button mdl-js-button mdl-button--icon qor-action__timepicker" type="button" data-upgraded=",MaterialButton" onclick="$('#{{ .Filter.Name }}').trigger('change')">
+		<i class="material-icons">forward</i>
 	</button>
 	</div>
 </div>
