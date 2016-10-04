@@ -47,3 +47,13 @@ func GetThreadInfo(threadID string) (ThreadInfo, error) {
 
 	return res, err
 }
+
+// SaveLastCheckedID updates threadInfo with lastCheckedID=messageID
+func SaveLastCheckedID(threadID, messageID string) error {
+	// save LastCheckedID
+	return db.New().
+		Model(&ThreadInfo{}).
+		Where("thread_id = ?", threadID).
+		Update("last_checked_id", messageID).
+		Error
+}

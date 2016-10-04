@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"instagram"
 	"sort"
-	"utils/db"
 	"utils/log"
 )
 
@@ -62,8 +61,10 @@ func (w *Worker) processThread(threadID string) error {
 	}
 
 	cursor := ""
+	lastCrawledID := ""
 
-	for {
+outer:
+	for { // range over thread pages
 		resp, err := w.api.DirectThread(threadID, cursor)
 		if err != nil {
 			return err
@@ -74,35 +75,22 @@ func (w *Worker) processThread(threadID string) error {
 		msgs := resp.Thread.Items
 		sort.Sort(msgs)
 
-		log.Debug("Msgs: %#v", msgs)
-
-		for _, message := range msgs {
+		for _, message := range msgs { // range over page messages
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
+			lastCrawledID = message.ItemID
 
 			if info.LaterThan(message.ItemID) {
 				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
-				return nil
+				break outer
 			}
 
+			// only use messages that are cojoined with media link
 			if message.ItemType == "media_share" && message.MediaShare != nil {
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
 				if err := w.fillDirect(message.MediaShare, threadID, message.Text); err != nil {
 					return err
 				}
-			} else {
-				log.Debug("Message with id %v (type %v) does not contain mediaShare", message.ItemID, message.ItemType)
-			}
-
-			info.LastCheckedID = message.ItemID
-			err := db.New().
-				Model(&models.ThreadInfo{}).
-				Where("thread_id = ?", threadID).
-				Update("last_checked_id", info.LastCheckedID).
-				Error
-
-			if err != nil {
-				return err
 			}
 		}
 
@@ -114,7 +102,7 @@ func (w *Worker) processThread(threadID string) error {
 		cursor = resp.Thread.OldestCursor
 	}
 
-	return nil
+	return models.SaveLastCheckedID(threadID, lastCrawledID)
 }
 
 // fill database model by direct message
