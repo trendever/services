@@ -88,7 +88,7 @@ outer:
 			if message.ItemType == "media_share" && message.MediaShare != nil {
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
-				if err := w.fillDirect(message.MediaShare, message.ItemID, threadID, message.Text); err != nil {
+				if err := w.fillDirect(&message, &resp.Thread); err != nil {
 					return err
 				}
 			}
@@ -106,21 +106,36 @@ outer:
 }
 
 // fill database model by direct message
-func (w *Worker) fillDirect(share *instagram.MediaShare, messageID, threadID, text string) error {
+func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread) error {
+
+	share := item.MediaShare
+
+	// find username
+	var username = ""
+	for _, user := range thread.Users {
+		if user.Pk == item.UserID {
+			username = user.Username
+			break
+		}
+	}
+
+	if username == "" {
+		return fmt.Errorf("Wut? Could not find username for userID=%v in thread=%v", item.UserID, thread.ThreadID)
+	}
 
 	log.Debug("Filling in new direct story")
 
 	act := &models.Activity{
-		Pk:                messageID,
-		UserID:            share.User.Pk,
+		Pk:                item.ItemID,
+		UserID:            item.UserID,
+		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
 		MentionedUsername: w.api.GetUserName(),
-		UserName:          share.User.Username,
 		Type:              "direct",
-		Comment:           text,
+		Comment:           item.Text,
 		MediaID:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
-		ThreadID:          threadID,
+		ThreadID:          thread.ThreadID,
 	}
 	return act.Save()
 }
