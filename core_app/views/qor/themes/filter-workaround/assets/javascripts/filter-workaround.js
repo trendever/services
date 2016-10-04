@@ -36,7 +36,7 @@ function decodeSearch(search) {
 					return;
 				}
 				value = n[1];
-				param.push(n[0]);
+				param.push($.trim(decodeURIComponent(n[0])));
 				
 				if (value) {
 					value = $.trim(decodeURIComponent(value));

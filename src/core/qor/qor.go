@@ -3,7 +3,7 @@ package qor
 import (
 	"core/conf"
 	"core/models"
-	"core/qor/filters"
+	//"core/qor/filters"
 	"core/qor/resources"
 	"net/http"
 	"utils/db"
@@ -67,7 +67,7 @@ func Init(engine *gin.Engine) {
 
 	resources.Init(Admin)
 	ajaxor.Init(Admin)
-	filters.Init(Admin)
+	//filters.Init(Admin)
 
 	// attach this qor instance to gin
 	mux := http.NewServeMux()
