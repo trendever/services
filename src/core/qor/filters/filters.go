@@ -112,7 +112,6 @@ func MetaFilter(resource *admin.Resource, metaName, operation string) {
 	// load custom javascripts
 	resource.UseTheme("filter-workaround")
 	resource.UseTheme("jquery.query-object")
-	resource.UseTheme("qor-datepicker-fix")
 }
 
 func AddFilter(res *admin.Resource, meta *admin.Meta, filterName, metaType, placeholder string) {

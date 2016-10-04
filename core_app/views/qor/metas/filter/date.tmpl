@@ -1,4 +1,15 @@
-<div class="qor-actions qor-bottomsheet__filter" data-toggle="qor.filter">
-	<input class="qor-action--label qor-field__input" style="width: 120px; height: 25px;"  data-toggle="qor.datepicker-fix" type="text" name="{{.InputNamePrefix}}.Value" onchange="alert(this.value)" oninput="alert('wtf')" placeholder="{{ .Filter.Label }}">
-</div>
+<!-- <input class="qor-action--label qor-field__input" style="width: 120px;"  data-toggle="datepicker" type="text" name="{{.InputNamePrefix}}.Value" placeholder="{{ .Filter.Label }}"> -->
 
+<div class="qor-field__input qor-field__datetimepicker">
+	<input class="mdl-textfield__input qor-datetimepicker__input ui-timepicker-input" placeholder="{{ .Filter.Label }}" onchange="onFilterChangeValue(this)" name="{{.InputNamePrefix}}.Value" autocomplete="off" type="text">
+
+	<div>
+	<button data-toggle="qor.datepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__datepicker" type="button" data-upgraded=",MaterialButton">
+		<i class="material-icons">date_range</i>
+	</button>
+
+	<button data-toggle="qor.timepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__timepicker" type="button" data-upgraded=",MaterialButton">
+		<i class="material-icons">access_time</i>
+	</button>
+	</div>
+</div>
