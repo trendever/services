@@ -249,7 +249,16 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	err = createOrder(mention, &productMedia, customer.Id, productID)
-	return err != nil, err
+	if err != nil {
+		return true, err
+	}
+
+	err = notifyChat(mention)
+	if err != nil {
+		log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+	}
+
+	return false, nil
 }
 
 func saveProduct(mention *bot.Activity) (id int64, retry bool, err error) {
@@ -277,6 +286,23 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 		Comment:       mention.Comment,
 		InstagramPk:   mention.Pk,
 		InstagramLink: fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
+	})
+
+	return err
+}
+
+func notifyChat(mention *bot.Activity) error {
+
+	if mention.DirectThreadId == "" {
+		return nil
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
+		ThreadId: mention.DirectThreadId,
+		Text:     "Notified",
 	})
 
 	return err
