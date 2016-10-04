@@ -314,7 +314,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (*Message, error) {
 	var object Message
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":       message,
-		"thread_ids": threadID,
+		"thread_ids": fmt.Sprintf("[%v]", threadID),
 	}, &object)
 
 	return &object, err
