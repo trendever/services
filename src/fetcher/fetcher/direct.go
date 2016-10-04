@@ -88,7 +88,7 @@ outer:
 			if message.ItemType == "media_share" && message.MediaShare != nil {
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
-				if err := w.fillDirect(message.MediaShare, threadID, message.Text); err != nil {
+				if err := w.fillDirect(message.MediaShare, message.ItemID, threadID, message.Text); err != nil {
 					return err
 				}
 			}
@@ -106,12 +106,12 @@ outer:
 }
 
 // fill database model by direct message
-func (w *Worker) fillDirect(share *instagram.MediaShare, threadID, text string) error {
+func (w *Worker) fillDirect(share *instagram.MediaShare, messageID, threadID, text string) error {
 
 	log.Debug("Filling in new direct story")
 
 	act := &models.Activity{
-		Pk:                fmt.Sprintf("%v", share.Pk),
+		Pk:                messageID,
 		UserID:            share.User.Pk,
 		UserImageURL:      share.User.ProfilePicURL,
 		MentionedUsername: w.api.GetUserName(),
