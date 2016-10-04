@@ -79,7 +79,7 @@ func (w *Worker) processThread(threadID string) error {
 		for _, message := range msgs {
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
 
-			if info.GreaterOrEqual(message.ItemID) {
+			if info.LaterThan(message.ItemID) {
 				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
 				return nil
 			}

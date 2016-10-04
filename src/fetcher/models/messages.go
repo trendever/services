@@ -11,8 +11,14 @@ type ThreadInfo struct {
 	Notified      bool
 }
 
-// GreaterOrEqual returns true if this thread info has ID greater than some other (given)
-func (info *ThreadInfo) GreaterOrEqual(otherID string) bool {
+// LaterThan tells if info.LastCheckedID mark is placed later than otherID (so, info.LastCheckedID should have ID that is less than otherID)
+func (info *ThreadInfo) LaterThan(otherID string) bool {
+
+	// info		other		result
+	// ""			"5"			false
+	// "100"  "0"			true
+	// "150"	"100"		true
+
 	diff := len(info.LastCheckedID) - len(otherID)
 
 	switch {
