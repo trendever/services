@@ -166,9 +166,13 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 }
 
 // processProductMedia returns id of product or error and retry flag
-func processProductMedia(mediaID string, mention *bot.Activity) (productID int64, retry bool, err error) {
+// returns:
+//  * productID int64
+//  * retry bool
+//  * err error
+func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, error) {
 
-	mentionerID, err := userID(mention.UserId, mention.UserName)
+	mentionerID, mentioner, err := userID(mention.UserId, mention.UserName)
 	if err != nil {
 		return -1, true, err
 	}
@@ -239,7 +243,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 
 	}
 
-	supplierID, err := userID(supplierInstagramID, supplierUsername)
+	supplierID, _, err := userID(supplierInstagramID, supplierUsername)
 	if err != nil {
 		return -1, true, err
 	}
@@ -251,12 +255,22 @@ func processProductMedia(mediaID string, mention *bot.Activity) (productID int64
 		return -1, true, err
 	}
 
-	productID, err = createProduct(mediaID, &productMedia, int64(shopID), mentionerID)
-	retry = err != nil
-	return productID, retry, err
+	productID, err = createProduct(mediaID, &productMedia, shopID, mentionerID)
+	if err != nil {
+		return -1, true, err
+	}
+
+	if !mentioner.Confirmed && mention.DirectThreadId != "" {
+		err = notifyChat(mention)
+		if err != nil {
+			log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+		}
+	}
+
+	return productID, false, nil
 }
 
-func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID int64) (id int64, err error) {
+func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, err error) {
 
 	if len(media.ImageVersions2.Candidates) < 1 {
 		return -1, errors.New("Product media has no images!")
@@ -313,24 +327,24 @@ func productExists(mediaID string) (id int64, deleted bool, err error) {
 }
 
 // find core user with given instagramID; if not exists -- create one
-func userID(instagramID int64, instagramUsername string) (int64, error) {
+func userID(instagramID int64, instagramUsername string) (uint64, *core.User, error) {
 
 	if instagramID == 0 {
-		return 0, errors.New("zero instagramId in userId()")
+		return 0, nil, errors.New("zero instagramId in userId()")
 	}
 
 	// firstly, check if user exists
 	user, err := findUser(instagramUsername)
 	if err == nil && user != nil && user.Id > 0 {
-		return user.Id, nil
+		return uint64(user.Id), user, nil
 	} else if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	// secondly, get this user profile
 	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -341,7 +355,7 @@ func userID(instagramID int64, instagramUsername string) (int64, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if res.User.Id == 0 {
@@ -350,7 +364,7 @@ func userID(instagramID int64, instagramUsername string) (int64, error) {
 		// upload avatar
 		avatarURL, err := uploadAvatar(userInfo.User.ProfilePicURL)
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 
 		// do create
@@ -368,11 +382,11 @@ func userID(instagramID int64, instagramUsername string) (int64, error) {
 		})
 
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 	}
 
-	return res.Id, nil
+	return uint64(res.User.Id), res.User, nil
 }
 
 // find user; returns rpc err and positive id if found
@@ -414,4 +428,21 @@ func shopID(supplierID uint64) (uint64, error) {
 	}
 
 	return res.ShopId, nil
+}
+
+func notifyChat(mention *bot.Activity) error {
+
+	if mention.DirectThreadId == "" {
+		return nil
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
+		ThreadId: mention.DirectThreadId,
+		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+	})
+
+	return err
 }

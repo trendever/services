@@ -40,14 +40,15 @@ func GetSettings() *Settings {
 
 // Settings service configuration
 type Settings struct {
-	Debug           bool
-	CoreServer      string
-	FetcherServer   string
-	Instagram       Instagram
-	SaveTrendServer string
-	SentryDSN       string
-	MandibleURL     string
-	LastCheckedFile string
+	Debug                  bool
+	CoreServer             string
+	FetcherServer          string
+	Instagram              Instagram
+	SaveTrendServer        string
+	SentryDSN              string
+	MandibleURL            string
+	LastCheckedFile        string
+	DirectNotificationText string
 }
 
 // Instagram config

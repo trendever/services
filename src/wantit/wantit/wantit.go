@@ -253,9 +253,11 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		return true, err
 	}
 
-	err = notifyChat(mention)
-	if err != nil {
-		log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+	if !customer.Confirmed && mention.DirectThreadId != "" {
+		err = notifyChat(mention)
+		if err != nil {
+			log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+		}
 	}
 
 	return false, nil
@@ -302,7 +304,7 @@ func notifyChat(mention *bot.Activity) error {
 
 	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
 		ThreadId: mention.DirectThreadId,
-		Text:     "Notified",
+		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err

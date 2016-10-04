@@ -7,6 +7,7 @@ fetcherServer: fetcher:3006
 productUrlFormat: 'https://localhost:8040/product/%d'
 mandibleURL: 'http://mandible:8089/'
 lastCheckedFile: 'savetrend.last'
+directNotificationText: "%v, спасибо за @savetrend, теперь скачай приложение Trendever - там в профиле сохранилось это фото."
 
 instagram:
   timeoutMin: 500

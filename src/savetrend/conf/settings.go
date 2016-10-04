@@ -38,14 +38,15 @@ func GetSettings() *Settings {
 }
 
 type Settings struct {
-	Debug           bool
-	Rpc             string
-	CoreServer      string
-	FetcherServer   string
-	Instagram       Instagram
-	SentryDSN       string
-	MandibleURL     string
-	LastCheckedFile string
+	Debug                  bool
+	Rpc                    string
+	CoreServer             string
+	FetcherServer          string
+	Instagram              Instagram
+	SentryDSN              string
+	MandibleURL            string
+	LastCheckedFile        string
+	DirectNotificationText string
 }
 
 type Instagram struct {
