@@ -71,8 +71,12 @@ func (w *Worker) processThread(threadID string) error {
 
 		log.Debug("Thread is from %v; got %v messages there", resp.Thread.Inviter.Username, len(resp.Thread.Items))
 
-		sort.Sort(resp.Thread.Items)
-		for _, message := range resp.Thread.Items {
+		msgs := resp.Thread.Items
+		sort.Sort(msgs)
+
+		log.Debug("Msgs: %#v", msgs)
+
+		for _, message := range msgs {
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
 
 			if info.GreaterOrEqual(message.ItemID) {
