@@ -63,7 +63,7 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			return nil, err
 		}
 
-		log.Debug("Instagram Response: %v", string(jsonBody))
+		log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
 
 		var message *Message
 		err = json.Unmarshal(jsonBody, &message)
