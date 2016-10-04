@@ -9,7 +9,6 @@ import (
 	"github.com/trendever/ajaxor"
 
 	"core/models"
-	"core/qor/filters"
 	"utils/db"
 )
 
@@ -198,22 +197,20 @@ func initProductResource(res *admin.Resource) {
 
 	itemRes.SearchAttrs("Name", "Tags")
 
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
-
-	// workaround due to bug in qor
-	// @QORBUG
-	for op, act := range map[string]string{"gt": ">", "lt": "<"} {
-		var actcp = act
+	res.UseTheme("filter-workaround")
+	for name, act := range map[string]string{"from": ">", "to": "<"} {
+		op := act
 		res.Filter(&admin.Filter{
-			Name: "created_at_" + op,
+			Name:  "created_at_" + name,
+			Label: "Created At " + name,
 			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
 				metaValue := arg.Value.Get("Value")
 				if metaValue == nil {
 					return scope
 				}
-				return scope.Where(fmt.Sprintf("products_product.created_at %v ?", actcp), metaValue.Value)
+				return scope.Where(fmt.Sprintf("products_product.created_at %v ?", op), metaValue.Value)
 			},
+			Type: "date",
 		})
 	}
 

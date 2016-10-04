@@ -3,7 +3,6 @@ package resources
 import (
 	"core/conf"
 	"core/models"
-	"core/qor/filters"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -129,6 +128,23 @@ func initLeadResource(res *admin.Resource) {
 		Resource: argRes,
 		Modes:    []string{"show", "menu_item"},
 	})
+
+	res.UseTheme("filter-workaround")
+	for name, act := range map[string]string{"from": ">", "to": "<"} {
+		op := act
+		res.Filter(&admin.Filter{
+			Name:  "created_at_" + name,
+			Label: "Created At " + name,
+			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+				metaValue := arg.Value.Get("Value")
+				if metaValue == nil {
+					return scope
+				}
+				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", op), metaValue.Value)
+			},
+			Type: "date",
+		})
+	}
 
 	res.Filter(&admin.Filter{
 		Name:   "Customer",
@@ -337,26 +353,4 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			}).GetCollection(this, &admin.Context{Context: ctx})
 		},
 	})
-
-	// @TODO
-	// filters
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
-
-	// @QORBUG
-	// workaround due to bug in qor
-	for op, act := range map[string]string{"gt": ">", "lt": "<"} {
-		res.Filter(&admin.Filter{
-			Name: "created_at_" + op,
-			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
-				metaValue := arg.Value.Get("Value")
-				if metaValue == nil {
-					return scope
-				}
-				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", act), metaValue.Value)
-			},
-			Type: "date",
-		})
-	}
-
 }

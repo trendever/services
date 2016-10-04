@@ -4,7 +4,6 @@ import (
 	"core/api"
 	"core/conf"
 	"core/models"
-	"core/qor/filters"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -62,9 +61,6 @@ func initUserResource(res *admin.Resource) {
 	}
 
 	res.EditAttrs(res.ShowAttrs(), "-CreatedAt", "-Confirmed")
-
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
 
 	res.Scope(&admin.Scope{
 		Name: "Only confirmed users",
@@ -165,6 +161,23 @@ func initUserResource(res *admin.Resource) {
 				Where("shop.id IS NULL OR NOT EXISTS (SELECT 1 FROM products_product product WHERE product.shop_id = shop.id AND product.deleted_at IS NULL)")
 		},
 	})
+
+	res.UseTheme("filter-workaround")
+	for name, act := range map[string]string{"from": ">", "to": "<"} {
+		op := act
+		res.Filter(&admin.Filter{
+			Name:  "created_at_" + name,
+			Label: "Created At " + name,
+			Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+				metaValue := arg.Value.Get("Value")
+				if metaValue == nil {
+					return scope
+				}
+				return scope.Where(fmt.Sprintf("users_user.created_at %v ?", op), metaValue.Value)
+			},
+			Type: "date",
+		})
+	}
 
 	type refillArg struct {
 		Amount  uint64
