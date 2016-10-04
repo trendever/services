@@ -108,7 +108,7 @@ func (ig *Instagram) postRequest(endpoint string, params map[string]string, resu
 		vals.Add(k, v)
 	}
 
-	body, err := ig.tryRequest("", endpoint, vals.Encode())
+	body, err := ig.tryRequest("POST", endpoint, vals.Encode())
 	if err != nil {
 		return err
 	}
