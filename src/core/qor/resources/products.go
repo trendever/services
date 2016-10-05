@@ -37,65 +37,6 @@ func initProductResource(res *admin.Resource) {
 	res.Meta(&admin.Meta{Name: "InstagramImageCaption", Type: "text"})
 	res.Meta(&admin.Meta{Name: "CreatedAt", Type: "date"})
 
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Shop",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "MentionedBy",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Tags",
-		Type: "select_many",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "Scout",
-		FieldName: "MentionedBy",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_product as pr" +
-					" ON pr.mentioned_by_id = users_user.id AND pr.deleted_at IS NULL AND users_user.is_scout = true").
-				Group("users_user.id").
-				Having("COUNT(pr.id) > 0").
-				Order("COUNT(pr.id) DESC"),
-			)
-
-			return res.GetMeta("MentionedBy").Config.(interface {
-				GetCollection(value interface{}, context *admin.Context) [][]string
-			}).GetCollection(this, &admin.Context{Context: ctx})
-		},
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "ShopSearch",
-		Label:     "Shop",
-		FieldName: "Shop",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_product as pr ON pr.shop_id = products_shops.id AND pr.deleted_at IS NULL").
-				Group("products_shops.id").
-				Having("COUNT(pr.id) > 0").
-				Order("COUNT(pr.id) DESC"),
-			)
-
-			return res.GetMeta("Shop").Config.(interface {
-				GetCollection(value interface{}, context *admin.Context) [][]string
-			}).GetCollection(this, &admin.Context{Context: ctx})
-		},
-	})
-
 	res.SearchAttrs(
 		"Code", "Title", "InstagramLink", "Shop", "MentionedBy",
 	)
@@ -210,7 +151,7 @@ func initProductResource(res *admin.Resource) {
 	})
 
 	res.Filter(&admin.Filter{
-		Name: "Tag",
+		Name: "Tags",
 		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
 			metaValue := arg.Value.Get("Value")
 			if metaValue == nil {
@@ -229,9 +170,9 @@ func initProductResource(res *admin.Resource) {
 		User   models.User
 	}
 	userArgRes := res.GetAdmin().NewResource(&userArg{})
-	ajaxor.Meta(userArgRes, &admin.Meta{
-		Name: "User",
-		Type: "select_one",
+	userArgRes.Meta(&admin.Meta{
+		Name:   "User",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
 	})
 
 	res.Action(&admin.Action{

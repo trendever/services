@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 	"utils/db"
 	"utils/log"
 )
@@ -25,31 +24,11 @@ type leadEvent struct {
 	Handler  func(*admin.ActionArgument, *gorm.DB, interface{}) error
 }
 
-type ProductArg struct {
-	ProductID uint64
-	Product   models.Product
-}
-
 func initLeadResource(res *admin.Resource) {
 
 	res.Meta(&admin.Meta{
 		Name: "State", Type: "select_one",
 		Collection: models.GetLeadStates(),
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Customer",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Shop",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "ProductItems",
-		Type: "select_many",
 	})
 
 	res.SearchAttrs(
@@ -93,16 +72,16 @@ func initLeadResource(res *admin.Resource) {
 
 	addTransitionActions(res.GetAdmin(), res)
 
-	argRes := res.GetAdmin().NewResource(&ProductArg{})
-	ajaxor.Meta(argRes, &admin.Meta{
-		Name: "Product",
-		Type: "select_one",
-	})
+	type productArg struct {
+		ProductID uint64
+		Product   models.Product
+	}
+	argRes := res.GetAdmin().NewResource(&productArg{})
 
 	res.Action(&admin.Action{
 		Name: "Add product",
 		Handle: func(argument *admin.ActionArgument) error {
-			arg, ok := argument.Argument.(*ProductArg)
+			arg, ok := argument.Argument.(*productArg)
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
@@ -168,32 +147,7 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 	}
 
 	// helper map that allows to add custom action resources and handlers without unneeded copy&paste
-	events := map[string]leadEvent{
-	//models.LeadEventGotEmail: leadEvent{
-	//	Resource: a.NewResource(&gotEmailArgument{}),
-	//	Handler: func(arg *admin.ActionArgument, db *gorm.DB, record interface{}) error {
-	//		lead := record.(*models.Lead)
-	//		argument := arg.Argument.(*gotEmailArgument)
-	//
-	//		// get user (qor won't preload it to lead)
-	//		user, err := models.FindUserByID(lead.CustomerID)
-	//		if err != nil {
-	//			log.Error(err)
-	//			return err
-	//		}
-	//
-	//		log.Printf("Editing user email %v", user)
-	//		user.Email = argument.Email
-	//
-	//		err = db.Save(&user).Error
-	//		if err != nil {
-	//			return err
-	//		}
-	//
-	//		return nil
-	//	},
-	//},
-	}
+	events := map[string]leadEvent{}
 
 	// Add actions that trigger LeadState events
 	for i := range models.GetLeadEvents() {
@@ -316,26 +270,4 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			},
 		})
 	}
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "ShopSearch",
-		Label:     "Shop",
-		FieldName: "Shop",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_leads as pl ON pl.shop_id = products_shops.id AND pl.deleted_at IS NULL").
-				Group("products_shops.id").
-				Having("COUNT(pl.id) > 0").
-				Order("COUNT(pl.id) DESC"),
-			)
-
-			return res.GetMeta("Shop").Config.(interface {
-				GetCollection(value interface{}, context *admin.Context) [][]string
-			}).GetCollection(this, &admin.Context{Context: ctx})
-		},
-	})
 }

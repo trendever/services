@@ -10,7 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 	"proto/trendcoin"
 	"utils/rpc"
 )
@@ -23,6 +22,13 @@ func initUserResource(res *admin.Resource) {
 	res.Meta(&admin.Meta{
 		Name: "Caption",
 		Type: "text",
+	})
+
+	res.Meta(&admin.Meta{
+		Name: "Name",
+		Valuer: func(value interface{}, _ *qor.Context) interface{} {
+			return value.(*models.User).DisplayName()
+		},
 	})
 
 	res.SearchAttrs(
@@ -246,13 +252,9 @@ func initUserResource(res *admin.Resource) {
 		Comment       string
 	}
 	transferArgRes := res.GetAdmin().NewResource(&transferArg{})
-	// @TODO resource in context should have all this themes...
-	// we need somehow set it ajaxor probably
-	res.UseTheme("select2.min")
-	res.UseTheme("ajaxor")
-	ajaxor.Meta(transferArgRes, &admin.Meta{
-		Name: "Destination",
-		Type: "select_one",
+	transferArgRes.Meta(&admin.Meta{
+		Name:   "Destination",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
 	})
 	res.Action(&admin.Action{
 		Name:     "Transfer coins",
