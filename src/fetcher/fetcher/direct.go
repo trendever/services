@@ -27,38 +27,62 @@ func (w *Worker) checkNewMessages() error {
 	// get non-pending shiet
 	// check which threads got updated since last time
 	// get them
-	// @TODO: use cursors here and in feeds, but must be sufficient for now because it runs pretty often
-	resp, err := w.api.Inbox("")
-	if err != nil {
-		return err
-	}
 
-	if resp.PendingRequestsTotal > 0 {
-		_, err := w.api.DirectThreadApproveAll()
-		// do nothing else now
-		return err
-	}
+	cursor := ""
 
-	for _, thread := range resp.Inbox.Threads {
-
-		err := w.processThread(thread.ThreadID)
+outer:
+	for {
+		resp, err := w.api.Inbox(cursor)
 		if err != nil {
 			return err
 		}
+
+		if resp.PendingRequestsTotal > 0 {
+			_, err := w.api.DirectThreadApproveAll()
+			// do nothing else now
+			return err
+		}
+
+		for _, thread := range resp.Inbox.Threads {
+
+			info, err := models.GetThreadInfo(thread.ThreadID)
+			if err != nil {
+				return err
+			}
+
+			// check if getting shiet is necessary
+			if len(thread.Items) != 1 {
+				return fmt.Errorf("Thread (id=%v) got %v msgs, should be 1!", thread.ThreadID, len(thread.Items))
+			}
+			if thread.Items[0].ItemID == info.LastCheckedID {
+				// thread is already crawled; no need to check more
+				log.Debug("Skipping not changed threads")
+				break outer
+			}
+
+			err = w.processThread(&info)
+			if err != nil {
+				return err
+			}
+		}
+
+		if resp.Inbox.HasOlder {
+			cursor = resp.Inbox.OldestCursor
+			continue
+		}
+
+		break
 	}
 
 	return nil
 }
 
-func (w *Worker) processThread(threadID string) error {
+func (w *Worker) processThread(info *models.ThreadInfo) error {
+
+	var threadID = info.ThreadID
 
 	log.Debug("Processing thread %v", threadID)
 	defer log.Debug("Processing thread %v end", threadID)
-
-	info, err := models.GetThreadInfo(threadID)
-	if err != nil {
-		return err
-	}
 
 	cursor := ""
 	lastCrawledID := ""

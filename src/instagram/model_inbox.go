@@ -46,6 +46,7 @@ type InboxResponse struct {
 	Inbox                struct {
 		UnseenCount   int      `json:"unseen_count"`
 		HasOlder      bool     `json:"has_older"`
+		OldestCursor  string   `json:"oldest_cursor"`
 		UnseenCountTs int64    `json:"unseen_count_ts"`
 		Threads       []Thread `json:"threads"`
 	} `json:"inbox"`
