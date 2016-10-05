@@ -687,12 +687,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/trendever/ajaxor",
-			"repository": "https://github.com/trendever/ajaxor",
-			"revision": "2ad965d3e1330d8f1133efbeb8a7a6605ae347fb",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/ttacon/builder",
 			"repository": "https://github.com/ttacon/builder",
 			"revision": "7f152c3cf4714fd6318739f8f3dbcd14c2a18b39",
@@ -1003,13 +997,6 @@
 			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
 			"branch": "master",
 			"path": "/pubsub"
-		},
-		{
-			"importpath": "google.golang.org/genproto/protobuf",
-			"repository": "https://github.com/google/go-genproto",
-			"revision": "44808ed2d86e258615bb701d395cbbfe6686a3e6",
-			"branch": "master",
-			"path": "/protobuf"
 		},
 		{
 			"importpath": "google.golang.org/grpc",

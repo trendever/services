@@ -5,7 +5,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 
 	"core/models"
 	"core/qor/filters"
@@ -121,12 +120,6 @@ func initProductResource(res *admin.Resource) {
 				ON mentioned_by.id = products_product.mentioned_by_id`).
 				Where("mentioned_by.is_scout = ?", true)
 		},
-	})
-
-	// embed productItem stuff
-	ajaxor.Meta(itemRes, &admin.Meta{
-		Name: "Tags",
-		Type: "select_many",
 	})
 
 	itemRes.EditAttrs(
