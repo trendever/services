@@ -3,7 +3,6 @@ package resources
 import (
 	"core/models"
 	"github.com/qor/admin"
-	"github.com/trendever/ajaxor"
 )
 
 func init() {
@@ -14,17 +13,11 @@ func init() {
 }
 
 func initTagResource(tag *admin.Resource) {
-
-	ajaxor.Meta(tag, &admin.Meta{
-		Name: "Group",
-		Type: "select_one",
-	})
-
 	tag.SearchAttrs(
 		"Name",
 	)
 	tag.IndexAttrs(
-		"Name", "Main", "Hidden", "Group",
+		"ID", "Name", "Main", "Hidden", "Group",
 	)
 	tag.NewAttrs(tag.IndexAttrs())
 	tag.EditAttrs(tag.IndexAttrs())
@@ -36,5 +29,4 @@ func initTagResource(tag *admin.Resource) {
 	})
 
 	grp.SearchAttrs("Name")
-
 }

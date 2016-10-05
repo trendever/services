@@ -80,10 +80,10 @@ func (u User) getName() string {
 	switch {
 	case u.Name != "":
 		return u.Name
-	case u.InstagramFullname != "" && u.InstagramUsername != u.InstagramFullname:
-		return fmt.Sprintf("%v (@%v)", u.InstagramFullname, u.InstagramUsername)
 	case u.InstagramUsername != "":
 		return fmt.Sprintf("@%s", u.InstagramUsername)
+	case u.InstagramFullname != "" && u.InstagramUsername != u.InstagramFullname:
+		return fmt.Sprintf("%v (@%v)", u.InstagramFullname, u.InstagramUsername)
 	default:
 		return ""
 	}

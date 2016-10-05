@@ -21,7 +21,7 @@ var NotifyUserCreated func(u *User)
 func (u *User) BeforeSave(db *gorm.DB) {
 	u.validatePhone(db)
 	u.fetchPreviousPhone(db)
-	u.Name = strings.Trim(u.Name, " \t\n")
+	u.Name = strings.Trim(u.Name, " \t\n@")
 	u.InstagramUsername = strings.ToLower(strings.Trim(u.InstagramUsername, " \n\t"))
 	if u.InstagramUsername == "" {
 		u.InstagramID = 0
