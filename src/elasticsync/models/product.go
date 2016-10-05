@@ -6,9 +6,10 @@ import "time"
 // it will be included as creation date in index settings
 // index will be recreated if old data is lower than this
 // unix time, ms
-const IndexUpdatedAt = 1475081419 * 1000
+const IndexUpdatedAt = 1475677155 * 1000
 const ProductIndex = `{
 "settings": {
+	"number_of_shards": 1,
 	"analysis": {
 		"filter": {
 			"ru_stop": {
@@ -18,16 +19,30 @@ const ProductIndex = `{
 			"ru_stemmer": {
 				"type": "stemmer",
 				"language": "russian"
+			},
+			"autocomplete_filter": {
+				"type": "edge_ngram",
+				"min_gram": 1,
+				"max_gram": 40
 			}
 		},
 		"analyzer": {
-			"default": {
+			"search": {
 				"char_filter": ["html_strip"],
 				"tokenizer": "standard",
 				"filter": [
 					"lowercase",
 					"ru_stop",
 					"ru_stemmer"
+				]
+			},
+			"default": {
+				"type": "custom",
+				"char_filter": ["html_strip"],
+				"tokenizer": "standard",
+				"filter": [
+					"lowercase",
+					"autocomplete_filter"
 				]
 			}
 		}
@@ -42,8 +57,7 @@ const ProductIndex = `{
 				"include_in_all": false
 			},
 			"code": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "string"
 			},
 			"title": {
 				"type": "string"
@@ -69,8 +83,7 @@ const ProductIndex = `{
 						"index": "not_analyzed"
 					},
 					"full_name": {
-						"type": "string",
-						"index": "not_analyzed"
+						"type": "string"
 					}
 				}
 			},
@@ -85,8 +98,7 @@ const ProductIndex = `{
 						"index": "not_analyzed"
 					},
 					"full_name": {
-						"type": "string",
-						"index": "not_analyzed"
+						"type": "string"
 					}
 				}
 			},
