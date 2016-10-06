@@ -177,8 +177,8 @@ $(function () {
         // if clicking item's menu actions
          if ((openData.method && openData.method.toUpperCase() != "GET") || $(e.target).parents(".qor-button--actions").size() || (!$(e.target).data('url') && $(e.target).is('a')) || (isInTable && isBottomsheetsOpened())) {
 //         if ($(e.target).closest('.qor-table__actions').length
-            || (!$(e.target).data('url') && $(e.target).is('a'))
-            || (isInTable && isBottomsheetsOpened())) {
+//             || (!$(e.target).data('url') && $(e.target).is('a'))
+//             || (isInTable && isBottomsheetsOpened())) {
             return;
         }
 
