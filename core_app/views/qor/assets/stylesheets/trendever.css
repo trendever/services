@@ -12,22 +12,3 @@
   max-height: 180px !important;
   padding-bottom: 8px;
 }
-
-/* fix checkbox stuff */
-.qor-page__body.qor-page__show .mdl-checkbox.mdl-js-checkbox {
-    padding-left: 0;
-}
-
-.qor-page__body.qor-page__show .qor-field__label.mdl-checkbox__label, .qor-page__body.qor-page__show .qor-field__show {
-    display: inline-block;
-    margin-right: 8px;
-    font-size: 12px;
-}
-
-.qor-page__body.qor-page__show .mdl-checkbox__focus-helper, .qor-page__body.qor-page__show .mdl-checkbox__box-outline, .qor-page__body.qor-page__show .mdl-checkbox__tick-outline {
-    display: none;
-}
-
-.qor-page__header {
-   height: auto !important;
-}
