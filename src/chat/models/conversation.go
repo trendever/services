@@ -280,7 +280,7 @@ func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, erro
 	err := c.db.
 		Select("COUNT(DISTINCT c.id)").
 		Table("members u").
-		Joins("JOIN conversations c ON u.conversation_id = c.id").
+		Joins("JOIN conversations c ON u.conversation_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN messages m ON m.conversation_id = c.id").
 		Where("u.user_id = ?", userID).
 		Where("u.last_message_id < m.id").
