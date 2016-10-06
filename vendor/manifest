@@ -556,7 +556,7 @@
 		{
 			"importpath": "github.com/qor/admin",
 			"repository": "https://github.com/qor/admin",
-			"revision": "107acd5480b58a46a1b78099db6ee681331f7e9e",
+			"revision": "a1822ea07e48f17809f8dba17a8095e1e0a0a23c",
 			"branch": "master"
 		},
 		{
@@ -568,19 +568,19 @@
 		{
 			"importpath": "github.com/qor/media_library",
 			"repository": "https://github.com/qor/media_library",
-			"revision": "e33e1af89792ab6aed3ac89b0dd08663ba8d34da",
+			"revision": "cdd3a7756fbcb94aaa97949b400db2dab3c01fe4",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/publish",
 			"repository": "https://github.com/qor/publish",
-			"revision": "fe11be6a402dd0f605c426bf2d61c7199cb60cd9",
+			"revision": "81f404d3b667568abaff103241bda0e23c0cc069",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/qor",
 			"repository": "https://github.com/qor/qor",
-			"revision": "7538a4488d04f9c0f472a5318598bc600895b9a8",
+			"revision": "f6fead45f5408743da7c431d5269b7d01f90237b",
 			"branch": "master"
 		},
 		{
@@ -604,7 +604,7 @@
 		{
 			"importpath": "github.com/qor/sorting",
 			"repository": "https://github.com/qor/sorting",
-			"revision": "0814b9242568f959f8b2f13f01392b7f5b20d1ab",
+			"revision": "7b7473a5a531435f4426c212e2f55fa55e632910",
 			"branch": "master"
 		},
 		{
@@ -622,7 +622,7 @@
 		{
 			"importpath": "github.com/qor/worker",
 			"repository": "https://github.com/qor/worker",
-			"revision": "20258b27e53fe51012fd1aed769e86a8dac35d0e",
+			"revision": "6b4621af4fcc8b00c18523650b014fd3aa467b2c",
 			"branch": "master"
 		},
 		{

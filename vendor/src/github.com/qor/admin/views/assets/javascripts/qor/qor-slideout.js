@@ -379,7 +379,7 @@
     },
 
     open: function (options) {
-      this.load(options.url,options.data);
+      this.load(options.url, options.data);
     },
 
     show: function () {
@@ -396,6 +396,7 @@
       if (showEvent.isDefaultPrevented()) {
         return;
       }
+
 
       if (this.slideoutType == 'mini') {
         $slideout.addClass(CLASS_MINI);

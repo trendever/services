@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/qor/qor"
+	"github.com/qor/qor/utils"
 )
 
 var metaConfigorMaps = map[string]func(*Meta){
@@ -18,12 +19,12 @@ var metaConfigorMaps = map[string]func(*Meta){
 					if date.IsZero() {
 						return ""
 					}
-					return date.Format("2006-01-02")
+					return utils.FormatTime(*date, "2006-01-02", context)
 				case time.Time:
 					if date.IsZero() {
 						return ""
 					}
-					return date.Format("2006-01-02")
+					return utils.FormatTime(date, "2006-01-02", context)
 				default:
 					return date
 				}
@@ -42,12 +43,12 @@ var metaConfigorMaps = map[string]func(*Meta){
 					if date.IsZero() {
 						return ""
 					}
-					return date.Format("2006-01-02 15:04")
+					return utils.FormatTime(*date, "2006-01-02 15:04", context)
 				case time.Time:
 					if date.IsZero() {
 						return ""
 					}
-					return date.Format("2006-01-02 15:04")
+					return utils.FormatTime(date, "2006-01-02 15:04", context)
 				default:
 					return date
 				}

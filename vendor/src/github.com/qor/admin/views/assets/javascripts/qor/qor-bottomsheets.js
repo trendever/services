@@ -18,8 +18,6 @@
   var EVENT_CLICK = 'click.' + NAMESPACE;
   var EVENT_SUBMIT = 'submit.' + NAMESPACE;
   var EVENT_RELOAD = 'reload.' + NAMESPACE;
-  var EVENT_SHOW = 'show.' + NAMESPACE;
-  var EVENT_SHOWN = 'shown.' + NAMESPACE;
   var EVENT_HIDE = 'hide.' + NAMESPACE;
   var EVENT_HIDDEN = 'hidden.' + NAMESPACE;
   var EVENT_KEYUP = 'keyup.' + NAMESPACE;
@@ -88,7 +86,7 @@
 
     unbuild: function () {
       this.$body = null;
-      this.bottomsheets.remove();
+      this.$bottomsheets.remove();
     },
 
     bind: function () {
@@ -171,10 +169,9 @@
     },
 
     reload: function (url) {
-      var $content = this.$bottomsheets.find(CLASS_BODY_CONTENT),
-          $loading = $(QorBottomSheets.TEMPLATE_LOADING).appendTo($content.html(''));
+      var $content = this.$bottomsheets.find(CLASS_BODY_CONTENT);
 
-      window.componentHandler.upgradeElement($loading.children()[0]);
+      this.addLoading($content);
       this.fetchPage(url);
     },
 
@@ -230,6 +227,12 @@
       if (this.$bottomsheets.find(CLASS_BODY_HEAD).children(CLASS_BOTTOMSHEETS_FILTER).length) {
         this.$body.addClass('has-header').find(CLASS_BODY_HEAD).show();
       }
+    },
+
+    addLoading: function ($element) {
+      $element.html('');
+      var $loading = $(QorBottomSheets.TEMPLATE_LOADING).appendTo($element);
+      window.componentHandler.upgradeElement($loading.children()[0]);
     },
 
     submit: function (e) {
@@ -325,13 +328,20 @@
       var actionData = data.actionData;
       var selectModal = this.resourseData.selectModal;
       var hasSearch = selectModal && $('.qor-search-container').length;
+      var ingoreSubmit = this.resourseData.ingoreSubmit;
+      var $bottomsheets = this.$bottomsheets;
+      var $header = this.$header;
+      var $body = this.$body;
 
       if (!url) {
         return;
       }
 
+      this.show();
+      this.addLoading($body);
+
       this.filterURL = url;
-      this.$body.removeClass('has-header has-hint');
+      $body.removeClass('has-header has-hint');
 
       data = $.isPlainObject(data) ? data : {};
 
@@ -355,41 +365,45 @@
                 return;
               }
 
+              if (ingoreSubmit) {
+                $content.find(CLASS_BODY_HEAD).remove();
+              }
+
               $content.find('.qor-button--cancel').attr('data-dismiss', 'bottomsheets');
 
-              this.$body.html($content.html());
+              $body.html($content.html());
               this.$title.html($response.find(options.title).html());
 
+
+
               if (selectModal) {
-                this.$body.find('.qor-button--new').data('ingoreSubmit',true).data('selectId',this.resourseData.selectId);
+                $body.find('.qor-button--new').data('ingoreSubmit',true).data('selectId',this.resourseData.selectId);
                 if (selectModal != 'one' && this.resourseData.maxItem != '1') {
-                  this.$body.addClass('has-hint');
+                  $body.addClass('has-hint');
                 }
               }
 
-              this.$header.find('.qor-button--new').remove();
-              this.$title.after(this.$body.find('.qor-button--new'));
+              $header.find('.qor-button--new').remove();
+              this.$title.after($body.find('.qor-button--new'));
 
               if (hasSearch) {
-                this.$header.find('.qor-bottomsheets__search').remove();
-                this.$header.prepend(QorBottomSheets.TEMPLATE_SEARCH);
+                $header.find('.qor-bottomsheets__search').remove();
+                $header.prepend(QorBottomSheets.TEMPLATE_SEARCH);
               }
 
               if (actionData && actionData.length) {
                 this.bindActionData(actionData);
               }
 
-              this.$bottomsheets.one(EVENT_SHOWN, function () {
-                // Enable all Qor components within the bottomSheets
-                $(this).trigger('enable');
-              }).one(EVENT_HIDDEN, function () {
-                // Destroy all Qor components within the bottomSheets
+              $bottomsheets.trigger('enable');
+
+              $bottomsheets.one(EVENT_HIDDEN, function () {
                 $(this).trigger('disable');
               });
 
-              this.show();
+
               this.addHeaderClass();
-              this.$bottomsheets.data(data);
+              $bottomsheets.data(data);
 
               // handle after opened callback
               if (callback && $.isFunction(callback)) {
@@ -397,16 +411,16 @@
               }
 
               // callback for after bottomSheets loaded HTML
-              if (options.afterShow){
-                var qorBottomsheetsAfterShow = $.fn.qorBottomsheetsAfterShow;
+              // if (options.afterShow){
+              //   var qorBottomsheetsAfterShow = $.fn.qorBottomsheetsAfterShow;
 
-                for (var name in qorBottomsheetsAfterShow) {
-                  if (qorBottomsheetsAfterShow.hasOwnProperty(name) && $.isFunction(qorBottomsheetsAfterShow[name])) {
-                    qorBottomsheetsAfterShow[name].call(this, url, response);
-                  }
-                }
+              //   for (var name in qorBottomsheetsAfterShow) {
+              //     if (qorBottomsheetsAfterShow.hasOwnProperty(name) && $.isFunction(qorBottomsheetsAfterShow[name])) {
+              //       qorBottomsheetsAfterShow[name].call(this, url, response);
+              //     }
+              //   }
 
-              }
+              // }
 
             } else {
               if (data.returnUrl) {
@@ -421,6 +435,7 @@
 
 
           error: $.proxy (function (response) {
+            this.hide();
             var errors;
             if ($('.qor-error span').size() > 0) {
               errors = $('.qor-error span').map(function () {
@@ -445,23 +460,9 @@
     },
 
     show: function () {
-      var $bottomsheets = this.$bottomsheets;
-      var showEvent;
-
-      showEvent = $.Event(EVENT_SHOW);
-      $bottomsheets.trigger(showEvent);
-
-      if (showEvent.isDefaultPrevented()) {
-        return;
-      }
-
-      $bottomsheets.addClass(CLASS_IS_SHOWN).get(0).offsetWidth;
-      $bottomsheets.
-        trigger(EVENT_SHOWN).
-        addClass(CLASS_IS_SLIDED);
-
+      this.$bottomsheets.addClass(CLASS_IS_SHOWN).get(0).offsetHeight;
+      this.$bottomsheets.addClass(CLASS_IS_SLIDED);
       $('body').addClass(CLASS_OPEN);
-
     },
 
     hide: function () {
@@ -516,7 +517,7 @@
     content: false
   };
 
-  QorBottomSheets.TEMPLATE_LOADING = '<div><div class="mdl-spinner mdl-js-spinner is-active qor-layout__bottomsheet-spinner"></div></div>';
+  QorBottomSheets.TEMPLATE_LOADING = '<div style="text-align: center; margin-top: 30px;"><div class="mdl-spinner mdl-js-spinner is-active qor-layout__bottomsheet-spinner"></div></div>';
   QorBottomSheets.TEMPLATE_SEARCH = (
     '<div class="qor-bottomsheets__search">' +
       '<input autocomplete="off" type="text" class="mdl-textfield__input qor-bottomsheets__search-input" placeholder="Search" />' +

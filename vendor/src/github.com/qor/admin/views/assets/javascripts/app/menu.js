@@ -40,8 +40,4 @@ $(function () {
     $('header.mdl-layout__header').addClass('has-action');
   }
 
-  if ($('.qor-page .qor-page__header').height() > 48) {
-    $('.qor-page').css('padding-top',$('.qor-page .qor-page__header').height());
-  }
-
 });

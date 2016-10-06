@@ -855,7 +855,9 @@ func (context *Context) pageTitle() template.HTML {
 	}
 
 	if context.Action == "action" {
-		return context.t(fmt.Sprintf("%v.actions.%v", context.Resource.ToParam(), context.Result.(*Action).Label), context.Result.(*Action).Label)
+		if action, ok := context.Result.(*Action); ok {
+			return context.t(fmt.Sprintf("%v.actions.%v", context.Resource.ToParam(), action.Label), action.Label)
+		}
 	}
 
 	var (

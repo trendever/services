@@ -22,12 +22,13 @@ type Context struct {
 	Admin    *Admin
 	Content  template.HTML
 	Action   string
+	Settings map[string]interface{}
 	Result   interface{}
 }
 
 // NewContext new admin context
 func (admin *Admin) NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	return &Context{Context: &qor.Context{Config: admin.Config, Request: r, Writer: w}, Admin: admin}
+	return &Context{Context: &qor.Context{Config: admin.Config, Request: r, Writer: w}, Admin: admin, Settings: map[string]interface{}{}}
 }
 
 func (context *Context) clone() *Context {
@@ -39,8 +40,19 @@ func (context *Context) clone() *Context {
 		Admin:    context.Admin,
 		Result:   context.Result,
 		Content:  context.Content,
+		Settings: context.Settings,
 		Action:   context.Action,
 	}
+}
+
+// Get get context's Settings
+func (context *Context) Get(key string) interface{} {
+	return context.Settings[key]
+}
+
+// Set set context's Settings
+func (context *Context) Set(key string, value interface{}) {
+	context.Settings[key] = value
 }
 
 func (context *Context) resourcePath() string {

@@ -126,7 +126,10 @@ func (selectOneConfig *SelectOneConfig) prepareDataSource(field *gorm.StructFiel
 			for fieldType.Kind() == reflect.Ptr || fieldType.Kind() == reflect.Slice {
 				fieldType = fieldType.Elem()
 			}
-			selectOneConfig.RemoteDataResource = res.GetAdmin().NewResource(reflect.New(fieldType).Interface())
+			selectOneConfig.RemoteDataResource = res.GetAdmin().GetResource(fieldType.Name())
+			if selectOneConfig.RemoteDataResource == nil {
+				selectOneConfig.RemoteDataResource = res.GetAdmin().NewResource(reflect.New(fieldType).Interface())
+			}
 		}
 
 		if selectOneConfig.SelectMode == "" {

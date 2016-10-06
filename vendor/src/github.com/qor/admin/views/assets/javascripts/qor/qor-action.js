@@ -17,6 +17,7 @@
   var EVENT_ENABLE = 'enable.' + NAMESPACE;
   var EVENT_DISABLE = 'disable.' + NAMESPACE;
   var EVENT_CLICK = 'click.' + NAMESPACE;
+  var EVENT_UNDO = 'undo.' + NAMESPACE;
   var ACTION_FORMS = '.qor-action-forms';
   var ACTION_HEADER = '.qor-page__header';
   var ACTION_BODY = '.qor-page__body';
@@ -25,11 +26,11 @@
   var ACTION_SELECTORS = '.qor-actions';
   var ACTION_LINK = 'a.qor-action--button';
   var MENU_ACTIONS = '.qor-table__actions a[data-url]';
-  var BULK_ACTIONS_TOGGLE = '[data-toggle="qor.action.bulk"]';
   var BUTTON_BULKS = '.qor-action-bulk-buttons';
   var QOR_TABLE = '.qor-table-container';
   var QOR_TABLE_BULK = '.qor-table--bulking';
   var QOR_SEARCH = '.qor-search-container';
+  var CLASS_IS_UNDO = 'is_undo';
   var QOR_SLIDEOUT = '.qor-slideout';
 
   var ACTION_FORM_DATA = 'primary_values[]';
@@ -58,7 +59,12 @@
     },
 
     unbind: function () {
-      this.$element.off(EVENT_CLICK, this.check);
+      this.$element.off(EVENT_CLICK, this.click);
+
+      $(document)
+        .off(EVENT_CLICK, '.qor-table--bulking tr', this.click)
+        .off(EVENT_CLICK, ACTION_LINK, this.actionLink);
+
     },
 
     initActions: function () {
@@ -85,9 +91,7 @@
           }
         });
       }
-
       this.ajaxForm.formData = formData;
-
       return this.ajaxForm;
     },
 
@@ -99,12 +103,15 @@
     },
 
     actionSubmit: function (e) {
-      this.submit(e);
+      var $target = $(e.target);
+      this.$actionButton = $target;
+      this.submit();
       return false;
     },
 
     click: function (e) {
       var $target = $(e.target);
+      this.$actionButton = $target;
 
       if ($target.data().ajaxForm) {
         this.collectFormData();
@@ -177,13 +184,18 @@
       return Mustache.render(flashMessageTmpl, data);
     },
 
-    submit: function (e) {
-      var self = this;
-      var $parent;
-      var $element = this.$element;
-
-      var ajaxForm = this.ajaxForm || {};
-      var properties = ajaxForm.properties || $(e.target).data();
+    submit: function () {
+      var _this = this,
+          $parent,
+          $element = this.$element,
+          $actionButton = this.$actionButton,
+          ajaxForm = this.ajaxForm || {},
+          properties = ajaxForm.properties || $actionButton.data(),
+          url = properties.url,
+          undoUrl = properties.undoUrl,
+          isUndo = $actionButton.hasClass(CLASS_IS_UNDO),
+          isInSlideout = $actionButton.closest(QOR_SLIDEOUT).length,
+          needDisableButtons = $element && !isInSlideout;
 
       if (properties.fromIndex && (!ajaxForm.formData || !ajaxForm.formData.length)){
         window.alert(ajaxForm.properties.errorNoItem);
@@ -211,40 +223,56 @@
         return;
       }
 
-      $.ajax(properties.url, {
+      if (isUndo) {
+        url = properties.undoUrl;
+      }
+
+      $.ajax(url, {
         method: properties.method,
         data: ajaxForm.formData,
         dataType: properties.datatype,
         beforeSend: function () {
-          if ($element) {
-            $element.find(ACTION_BUTTON).attr('disabled', true);
+          if (undoUrl) {
+            $actionButton.prop('disabled', true);
+          } else if (needDisableButtons){
+            _this.switchButtons($element, 1);
           }
+
         },
         success: function (data) {
+          // has undo action
+          if (undoUrl) {
+            $element.triggerHandler(EVENT_UNDO, [$actionButton, isUndo, data]);
+            isUndo ? $actionButton.removeClass(CLASS_IS_UNDO) : $actionButton.addClass(CLASS_IS_UNDO);
+            $actionButton.prop('disabled', false);
+            return;
+          }
+
           if (properties.fromIndex || properties.fromMenu){
             window.location.reload();
             return;
           } else {
-            if ($element) {
-              $element.find(ACTION_BUTTON).attr('disabled', false);
-            }
-            if ($(QOR_SLIDEOUT).is(':visible')){
-              $parent = $(QOR_SLIDEOUT);
-            } else {
-              $parent = $(MDL_BODY);
-            }
             $('.qor-alert').remove();
-            $parent.find(ACTION_BODY).prepend(self.renderFlashMessage(data));
+            needDisableButtons && _this.switchButtons($element);
+            isInSlideout ? $parent = $(QOR_SLIDEOUT) : $parent = $(MDL_BODY);
+            $parent.find(ACTION_BODY).prepend(_this.renderFlashMessage(data));
           }
 
         },
         error: function (xhr, textStatus, errorThrown) {
-          if ($element) {
-            $element.find(ACTION_BUTTON).attr('disabled', false);
+          if (undoUrl) {
+            $actionButton.prop('disabled', false);
+          } else if (needDisableButtons){
+            _this.switchButtons($element);
           }
           window.alert([textStatus, errorThrown].join(': '));
         }
       });
+    },
+
+    switchButtons: function ($element, disbale) {
+      var needDisbale = disbale ? true : false;
+      $element.find(ACTION_BUTTON).prop('disabled', needDisbale);
     },
 
     destroy: function () {
@@ -362,13 +390,14 @@
 
   $(function () {
     var options = {};
+    var selector = '[data-toggle="qor.action.bulk"]';
 
     $(document).
       on(EVENT_DISABLE, function (e) {
-        QorAction.plugin.call($(BULK_ACTIONS_TOGGLE, e.target), 'destroy');
+        QorAction.plugin.call($(selector, e.target), 'destroy');
       }).
       on(EVENT_ENABLE, function (e) {
-        QorAction.plugin.call($(BULK_ACTIONS_TOGGLE, e.target), options);
+        QorAction.plugin.call($(selector, e.target), options);
       }).
       on(EVENT_CLICK, MENU_ACTIONS, function (e) {
         (new QorAction()).actionSubmit(e);

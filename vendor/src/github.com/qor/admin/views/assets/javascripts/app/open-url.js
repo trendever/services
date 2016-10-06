@@ -53,13 +53,13 @@ $(function () {
         var $this = $(this),
             isNewButton = $this.hasClass('qor-button--new'),
             isEditButton = $this.hasClass('qor-button--edit'),
-            isInTable = $this.is('.qor-table tr[data-url]') || $this.closest('.qor-js-table').size(),
+            isInTable = $this.is('.qor-table tr[data-url]') || $this.closest('.qor-js-table').length,
             isActionButton = $this.hasClass('qor-action-button') || $this.hasClass('qor-action--button'),
             openData = $this.data(),
             actionData;
 
         // if clicking item's menu actions
-        if ($(e.target).parents(".qor-button--actions").size() || (!$(e.target).data('url') && $(e.target).is('a')) || (isInTable && isBottomsheetsOpened())) {
+        if ($(e.target).closest('.qor-table__actions').length || (!$(e.target).data('url') && $(e.target).is('a')) || (isInTable && isBottomsheetsOpened())) {
             return;
         }
 
