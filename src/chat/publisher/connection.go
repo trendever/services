@@ -16,12 +16,15 @@ const (
 	//EventNotifySeller is a notification about a not answered message
 	EventNotifySeller  = "core.notify.message"
 	EventStatusMessage = "chat.status"
+
+	EventDeleteConversation = "chat.conversation.delete"
 )
 
 var cn *nats.Conn
 var c *nats.EncodedConn
 var chats models.ConversationRepository
 
+// @TODO move to utils/nats
 // Init nats
 func Init(repo models.ConversationRepository) {
 	chats = repo
@@ -36,6 +39,7 @@ func Init(repo models.ConversationRepository) {
 	}
 
 	c.Subscribe(EventStatusMessage, addMessageStatus)
+	c.Subscribe(EventDeleteConversation, repo.DeleteConversation)
 }
 
 // Publish emits event

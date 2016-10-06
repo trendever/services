@@ -5,6 +5,7 @@ import (
 	"time"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 //BeforeSave is a gorm callback
@@ -16,6 +17,10 @@ func (l *Lead) BeforeSave() {
 
 func (l *Lead) BeforeCreate() {
 	l.ChatUpdatedAt = time.Now()
+}
+
+func (l *Lead) AfterDelete() {
+	go nats.Publish("chat.conversation.delete", l.ConversationID)
 }
 
 //AfterSave is gorm callback
