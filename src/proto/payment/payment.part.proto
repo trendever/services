@@ -46,6 +46,9 @@ message CancelOrderRequest {
   // parameters to check permissions
   uint64 lead_id = 3;
   Direction direction = 4;
+
+  // userID just to log it
+  uint64 user_id = 5;
 }
 
 message CancelOrderReply {
@@ -72,6 +75,7 @@ message ChatMessagePaymentFinished {
 
 message ChatMessageOrderCancelled {
   uint64 pay_id = 1;
+  uint64 user_id = 2;
 }
 
 enum Currency {

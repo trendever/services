@@ -32,7 +32,7 @@ type ChatNotifier interface {
 	SendSession(sess *models.Session) error
 
 	// use when we want to cancel order
-	SendCancelOrder(pay *models.Payment) error
+	SendCancelOrder(pay *models.Payment, who uint64) error
 }
 
 type chatNotifierImpl struct {
@@ -103,11 +103,12 @@ func (cn *chatNotifierImpl) SendSession(sess *models.Session) error {
 }
 
 // SendPayment notifies chat about new payment order
-func (cn *chatNotifierImpl) SendCancelOrder(pay *models.Payment) error {
+func (cn *chatNotifierImpl) SendCancelOrder(pay *models.Payment, who uint64) error {
 
 	// Step1: notify chat about message
 	message, err := json.Marshal(&payment.ChatMessageOrderCancelled{
-		PayId: uint64(pay.ID),
+		PayId:  uint64(pay.ID),
+		UserId: who,
 	})
 	if err != nil {
 		return err
@@ -124,7 +125,7 @@ func (cn *chatNotifierImpl) SendCancelOrder(pay *models.Payment) error {
 	}
 
 	_, err = cn.sendStatusMessage(
-		pay.UserID,
+		who,
 		pay.ConversationID,
 		string(message),
 		cancelOrder,
