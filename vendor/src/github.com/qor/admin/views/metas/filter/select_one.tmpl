@@ -11,7 +11,7 @@
 {{end}}
 
 {{$value := .Filter.Config.FilterValue .Filter .Context}}
-<select data-toggle="qor.chooser" {{if .Filter.Config.RemoteDataResource}}{{if $value}}chooser-selected="true"{{end}}{{end}} data-placeholder="{{t (printf "%v.filter.%v" .Resource.ToParam .Filter.Label) .Filter.Label}}" name="{{.InputNamePrefix}}.Value" data-allow-clear="true" {{if .Filter.Config.RemoteDataResource}}data-remote-data-url="{{url_for .Filter.Config.RemoteDataResource}}"{{end}}>
+<select data-toggle="qor.chooser" {{if $value}}chooser-selected="true"{{end}} data-placeholder="{{t (printf "%v.filter.%v" .Resource.ToParam .Filter.Label) .Filter.Label}}" name="{{.InputNamePrefix}}.Value" data-allow-clear="true" {{if .Filter.Config.RemoteDataResource}}data-remote-data-url="{{url_for .Filter.Config.RemoteDataResource}}"{{end}}>
   {{if .Filter.Config.RemoteDataResource}}
     {{if $value}}
       <option value="{{primary_key_of $value}}" selected>{{stringify $value}}</option>

@@ -79,13 +79,13 @@
           var tmpl = $this.parents('.qor-field').find('[name="select2-selection-template"]');
           return QorChooser.formatResult(data, tmpl);
         };
-
-        $this.on('select2:select', function (evt) {
-          $(evt.target).attr('chooser-selected','true');
-        }).on('select2:unselect', function (evt) {
-          $(evt.target).attr('chooser-selected','');
-        });
       }
+
+      $this.on('select2:select', function (evt) {
+        $(evt.target).attr('chooser-selected','true');
+      }).on('select2:unselect', function (evt) {
+        $(evt.target).attr('chooser-selected','');
+      });
 
       $this.select2(option);
     },

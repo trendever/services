@@ -147,6 +147,8 @@
     position: relative;
     margin: 0;
     padding: 20px 0;
+    min-height: 65px;
+    box-sizing: border-box;
     margin-left: 54px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     background-color: #fff;
@@ -166,6 +168,9 @@
   position: relative;
   box-sizing: border-box;
   z-index: $zindex-bottomsheets;
+  .qor-page__header+.qor-page__body{
+    padding-top: 0;
+  }
   .qor-page__body{
     overflow-y: auto;
     overflow-x: hidden;
@@ -180,7 +185,7 @@
   .qor-form-container{
     margin-top: 0;
     .qor-form{
-      padding: 0 20px 0 41px;
+      padding: 0 20px 0 0;
     }
   }
   .qor-button--new{

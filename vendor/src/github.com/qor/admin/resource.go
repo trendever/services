@@ -10,7 +10,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/jinzhu/inflection"
-	"github.com/jinzhu/now"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/qor/qor/utils"
@@ -361,7 +360,7 @@ func (res *Resource) SearchAttrs(columns ...string) []string {
 		if len(columns) > 0 {
 			res.searchAttrs = &columns
 			res.SearchHandler = func(keyword string, context *qor.Context) *gorm.DB {
-				return defaultFieldFilter(res, columns, keyword, context.GetDB())
+				return defaultFieldFilter(res, columns, keyword, context.GetDB(), context)
 			}
 		}
 	}
@@ -505,7 +504,7 @@ func (res *Resource) configure() {
 	}
 }
 
-func defaultFieldFilter(res *Resource, columns []string, keyword string, db *gorm.DB) *gorm.DB {
+func defaultFieldFilter(res *Resource, columns []string, keyword string, db *gorm.DB, context *qor.Context) *gorm.DB {
 	var (
 		joinConditionsMap  = map[string][]string{}
 		conditions         []string
@@ -569,7 +568,7 @@ func defaultFieldFilter(res *Resource, columns []string, keyword string, db *gor
 				case reflect.Struct:
 					// time ?
 					if _, ok := field.Field.Interface().(time.Time); ok {
-						if parsedTime, err := now.Parse(keyword); err == nil {
+						if parsedTime, err := utils.ParseTime(keyword, context); err == nil {
 							conditions = append(conditions, fmt.Sprintf("%v.%v = ?", tableName, scope.Quote(field.DBName)))
 							keywords = append(keywords, parsedTime)
 						}
@@ -577,7 +576,7 @@ func defaultFieldFilter(res *Resource, columns []string, keyword string, db *gor
 				case reflect.Ptr:
 					// time ?
 					if _, ok := field.Field.Interface().(*time.Time); ok {
-						if parsedTime, err := now.Parse(keyword); err == nil {
+						if parsedTime, err := utils.ParseTime(keyword, context); err == nil {
 							conditions = append(conditions, fmt.Sprintf("%v.%v = ?", tableName, scope.Quote(field.DBName)))
 							keywords = append(keywords, parsedTime)
 						}

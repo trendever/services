@@ -6,8 +6,10 @@ window.Mustache.tags = ['[[', ']]'];
 
 $(document).ajaxComplete(function( event, xhr, settings ) {
     if (settings.type == "POST" || settings.type == "PUT") {
-        $.fn.qorSlideoutBeforeHide = null;
-        window.onbeforeunload = null;
+        if ($.fn.qorSlideoutBeforeHide) {
+            $.fn.qorSlideoutBeforeHide = null;
+            window.onbeforeunload = null;
+        }
     }
 
 });

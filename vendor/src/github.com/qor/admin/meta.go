@@ -199,16 +199,16 @@ func (meta *Meta) updateMeta() {
 		for fieldType.Kind() == reflect.Ptr {
 			fieldType = fieldType.Elem()
 		}
+	}
 
+	// Set Meta Type
+	if meta.Type == "" && hasColumn {
 		if _, ok := reflect.New(fieldType).Interface().(sql.Scanner); ok {
 			if fieldType.Kind() == reflect.Struct {
 				fieldType = reflect.Indirect(reflect.New(fieldType)).Field(0).Type()
 			}
 		}
-	}
 
-	// Set Meta Type
-	if meta.Type == "" && hasColumn {
 		if relationship := meta.FieldStruct.Relationship; relationship != nil {
 			if relationship.Kind == "has_one" {
 				meta.Type = "single_edit"
@@ -266,9 +266,7 @@ func (meta *Meta) updateMeta() {
 				var result interface{}
 
 				if fieldType.Kind() == reflect.Struct {
-					if _, ok := reflect.New(fieldType).Interface().(sql.Scanner); !ok {
-						result = reflect.New(fieldType).Interface()
-					}
+					result = reflect.New(fieldType).Interface()
 				} else if fieldType.Kind() == reflect.Slice {
 					refelectType := fieldType.Elem()
 					for refelectType.Kind() == reflect.Ptr {
