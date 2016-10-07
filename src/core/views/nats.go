@@ -102,7 +102,7 @@ func handleNewSession(userID uint) {
 }
 
 // notifies API about new lead
-func notifyAPI(lead *models.Lead) {
+func notifyAPI(lead *models.Lead, channel, event string) {
 
 	log.Debug("Notifying API about new lead (%v)", lead.ID)
 
@@ -111,10 +111,12 @@ func notifyAPI(lead *models.Lead) {
 		log.Error(err)
 	}
 
-	err = nats.Publish("core.lead.created", &core.NewLeadMessage{
+	err = nats.Publish(channel, &core.LeadEventMessage{
 		LeadId: uint64(lead.ID),
 		Users:  users,
+		Event:  event,
 	})
+
 	if err != nil {
 		log.Error(err)
 	}

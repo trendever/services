@@ -123,9 +123,10 @@ message LeadInfo {
     string status_comment = 16;
 }
 
-message NewLeadMessage {
+message LeadEventMessage {
   uint64 lead_id = 1;
-  repeated uint64 users = 2;
+  string event = 2;
+  repeated uint64 users = 3;
 }
 
 message SetLeadStatusRequest {

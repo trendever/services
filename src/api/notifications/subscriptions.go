@@ -44,9 +44,15 @@ func init() {
 			Subject: "core.shop.flush",
 			Handler: cache.FlushShop,
 		},
+
+		// core lead events
 		&nats.Subscription{
 			Subject: "core.lead.created",
-			Handler: newLeadCreated,
+			Handler: onLeadEvent,
+		},
+		&nats.Subscription{
+			Subject: "core.lead.event",
+			Handler: onLeadEvent,
 		},
 	)
 }
@@ -95,16 +101,17 @@ func newChatMember(req *chat.NewChatMemberRequest) {
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
 }
 
-func newLeadCreated(req *core.NewLeadMessage) {
+func onLeadEvent(req *core.LeadEventMessage) {
 
 	log.Debug("Recieved new leadCreated message for %v", req.Users)
 
 	r := map[string]interface{}{
 		"lead":           req.LeadId,
+		"event":          req.Event,
 		"users_can_join": len(req.Users),
 	}
 
-	ctx := soso.NewRemoteContext("lead", "created", r)
+	ctx := soso.NewRemoteContext("lead", "event", r)
 	broadcast(req.Users, ctx)
 }
 

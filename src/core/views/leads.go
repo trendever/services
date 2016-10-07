@@ -58,7 +58,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 
 		// send this message only on new lead
-		go notifyAPI(lead)
+		go notifyAPI(lead, "core.lead.created", "CREATE")
 	} else {
 		lead = existsLead
 	}
@@ -244,7 +244,11 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 			}()
 		}
 	}
+
+	// notify stuff
 	go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
+	go notifyAPI(lead, "core.lead.event", req.Event.String())
+
 	return &core.SetLeadStatusReply{Lead: lead.Encode()}, nil
 }
 
