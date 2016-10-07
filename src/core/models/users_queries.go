@@ -31,11 +31,11 @@ func FindUserIDByInstagramName(name string) (uint, error) {
 // GetSuperSellersIDs returns all supersellers
 func GetSuperSellersIDs() ([]uint, error) {
 	var out []uint
-	err := db.New().Model(&User{}).Where("supper_seller = TRUE").Pluck("id", &out).Error
+	err := db.New().Model(&User{}).Where("super_seller = TRUE").Pluck("id", &out).Error
 	return out, err
 }
 
-// returns first user which match any of arguments
+// FindUserMatchAny returns first user which match any of arguments
 func FindUserMatchAny(ID, instagramID uint64, name, instagramName, email, phone string) (user *User, found bool, err error) {
 	scope := db.New()
 	ok := false
