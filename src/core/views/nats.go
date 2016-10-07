@@ -104,6 +104,8 @@ func handleNewSession(userID uint) {
 // notifies API about new lead
 func notifyAPI(lead *models.Lead) {
 
+	log.Debug("Notifying API about new lead (%v)", lead.ID)
+
 	users, err := models.GetUsersForLead(lead)
 	if err != nil {
 		log.Error(err)

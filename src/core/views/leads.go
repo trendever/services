@@ -56,6 +56,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 			log.Error(err)
 			return nil, err
 		}
+
+		// send this message only on new lead
+		go notifyAPI(lead)
 	} else {
 		lead = existsLead
 	}
@@ -81,7 +84,6 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	}
 
 	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
-	go notifyAPI(lead)
 
 	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
 		//Event CREATE performs chat creation
