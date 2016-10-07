@@ -356,15 +356,15 @@ func GetLeadProducts(lead *Lead) ([]*Product, error) {
 // GetUsersForLead returns every userID that can possibly join this chat
 func GetUsersForLead(lead *Lead) ([]uint64, error) {
 
+	var users = map[uint]bool{}
+
 	shop, err := GetShopByID(lead.ShopID)
 	if err != nil {
 		return nil, err
 	}
 
-	var out = []uint64{
-		uint64(lead.CustomerID),
-		uint64(shop.SupplierID),
-	}
+	users[lead.CustomerID] = true
+	users[shop.SupplierID] = true
 
 	sellers, err := GetSellersByShopID(lead.ShopID)
 	if err != nil {
@@ -372,7 +372,7 @@ func GetUsersForLead(lead *Lead) ([]uint64, error) {
 	}
 
 	for _, seller := range sellers {
-		out = append(out, uint64(seller.ID))
+		users[seller.ID] = true
 	}
 
 	superSellers, err := GetSuperSellersIDs()
@@ -381,7 +381,12 @@ func GetUsersForLead(lead *Lead) ([]uint64, error) {
 	}
 
 	for _, seller := range superSellers {
-		out = append(out, uint64(seller))
+		users[seller] = true
+	}
+
+	var out = make([]uint64, 0, len(users))
+	for k := range users {
+		out = append(out, uint64(k))
 	}
 
 	return out, nil
