@@ -4,6 +4,7 @@ import (
 	"api/cache"
 	schat "api/chat"
 	"api/soso"
+	"utils/log"
 	"utils/nats"
 
 	"proto/chat"
@@ -95,6 +96,8 @@ func newChatMember(req *chat.NewChatMemberRequest) {
 }
 
 func newLeadCreated(req *core.NewLeadMessage) {
+
+	log.Debug("Recieved new leadCreated message for %v", req.Users)
 
 	r := map[string]interface{}{
 		"lead":           req.LeadId,
