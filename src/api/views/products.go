@@ -280,11 +280,10 @@ func ElasticSearch(c *soso.Context) {
 		}
 		query.MustNot(elastic.NewTermQuery("shop.supplier", uint64(value)))
 	}
+
 	if value, _ := req["shop_id"].(float64); value > 0 {
 		query.Filter(elastic.NewTermQuery("shop.id", uint64(value)))
-	}
-
-	if value, _ := req["include_not_on_sale"].(bool); !value {
+	} else if value, _ := req["include_not_on_sale"].(bool); !value {
 		query.Filter(elastic.NewTermQuery("sale", true))
 	}
 
