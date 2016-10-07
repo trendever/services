@@ -1,15 +1,13 @@
 package views
 
 import (
-	"api/soso"
-	"errors"
-	"net/http"
-
 	"api/api"
 	"api/chat"
 	"api/models"
+	"api/soso"
+	"errors"
 	"fmt"
-	pchat "proto/chat"
+	"net/http"
 	"proto/core"
 	"strings"
 	"utils/log"
@@ -295,25 +293,25 @@ func GetUserLead(c *soso.Context) {
 		LeadInfo: *resp.Lead,
 	}
 
-	var messages *pchat.ChatHistoryReply
+	ret := map[string]interface{}{
+		"lead": lead,
+	}
 	if lead.LeadInfo.ConversationId != 0 {
 		lead.Chat, err = getChat(lead.LeadInfo.ConversationId, c.Token.UID)
 		if err != nil {
 			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 			return
 		}
-		messages, err = chat.GetMessages(lead.LeadInfo.ConversationId, c.Token.UID, 0, 12)
+		messages, err := chat.GetMessages(lead.LeadInfo.ConversationId, c.Token.UID, 0, 12)
 		if err != nil {
 			c.ErrorResponse(http.StatusNotFound, soso.LevelError, err)
 			return
 		}
+		ret["messages"] = messages.Messages
+		ret["error"] = messages.Error
 	}
 
-	c.SuccessResponse(map[string]interface{}{
-		"lead":     lead,
-		"messages": messages.Messages,
-		"error":    messages.Error,
-	})
+	c.SuccessResponse(ret)
 }
 
 func getUserLeads(uid uint64, roles []core.LeadUserRole, limit uint64, direction bool, from_updated_at int64) (*models.Leads, error) {
