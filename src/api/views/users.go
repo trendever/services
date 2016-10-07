@@ -55,6 +55,10 @@ func GetUserProfile(c *soso.Context) {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
 	}
+	if resp.Id == 0 {
+		c.ErrorResponse(http.StatusNotFound, soso.LevelError, errors.New("user not found"))
+		return
+	}
 	c.SuccessResponse(map[string]interface{}{
 		"profile": resp.User,
 	})
