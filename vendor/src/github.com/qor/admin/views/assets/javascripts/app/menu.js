@@ -37,6 +37,7 @@ $(function () {
 
   if ($('.qor-page').find('.qor-page__header').size()){
     $('.qor-page').addClass("has-header");
+    $('header.mdl-layout__header').addClass('has-action');
   }
 
 });

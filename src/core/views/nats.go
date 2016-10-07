@@ -92,8 +92,31 @@ func handleNewSession(userID uint) {
 	}
 	err = db.New().Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
-		UpdateColumn("supplier_last_login", now).Error
+		UpdateColumns(map[string]interface{}{
+			"supplier_last_login": now,
+			"notify_supplier":     true,
+		}).Error
 	if err != nil {
 		log.Error(fmt.Errorf("failed to update last session in related shops for user %v: %v", userID, err))
 	}
+}
+
+// notifies API about new lead
+func notifyAPI(lead *models.Lead) {
+
+	log.Debug("Notifying API about new lead (%v)", lead.ID)
+
+	users, err := models.GetUsersForLead(lead)
+	if err != nil {
+		log.Error(err)
+	}
+
+	err = nats.Publish("core.lead.created", &core.NewLeadMessage{
+		LeadId: uint64(lead.ID),
+		Users:  users,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+
 }

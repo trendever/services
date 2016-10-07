@@ -17,16 +17,20 @@
   var EVENT_ENABLE = 'enable.' + NAMESPACE;
   var EVENT_DISABLE = 'disable.' + NAMESPACE;
   var EVENT_CLICK = 'click.' + NAMESPACE;
+  var EVENT_UNDO = 'undo.' + NAMESPACE;
   var ACTION_FORMS = '.qor-action-forms';
   var ACTION_HEADER = '.qor-page__header';
   var ACTION_BODY = '.qor-page__body';
   var ACTION_BUTTON = '.qor-action-button';
   var MDL_BODY = '.mdl-layout__content';
   var ACTION_SELECTORS = '.qor-actions';
+  var ACTION_LINK = 'a.qor-action--button';
+  var MENU_ACTIONS = '.qor-table__actions a[data-url]';
   var BUTTON_BULKS = '.qor-action-bulk-buttons';
   var QOR_TABLE = '.qor-table-container';
   var QOR_TABLE_BULK = '.qor-table--bulking';
   var QOR_SEARCH = '.qor-search-container';
+  var CLASS_IS_UNDO = 'is_undo';
   var QOR_SLIDEOUT = '.qor-slideout';
 
   var ACTION_FORM_DATA = 'primary_values[]';
@@ -44,15 +48,32 @@
 
     init: function () {
       this.bind();
+      this.initActions();
     },
 
     bind: function () {
       this.$element.on(EVENT_CLICK, $.proxy(this.click, this));
-      $(document).on(EVENT_CLICK, '.qor-table--bulking tr', this.click);
+      $(document)
+        .on(EVENT_CLICK, '.qor-table--bulking tr', this.click)
+        .on(EVENT_CLICK, ACTION_LINK, this.actionLink);
     },
 
     unbind: function () {
-      this.$element.off(EVENT_CLICK, this.check);
+      this.$element.off(EVENT_CLICK, this.click);
+
+      $(document)
+        .off(EVENT_CLICK, '.qor-table--bulking tr', this.click)
+        .off(EVENT_CLICK, ACTION_LINK, this.actionLink);
+
+    },
+
+    initActions: function () {
+      this.tables = $(QOR_TABLE).find('table').size();
+
+      if (!this.tables) {
+        $(BUTTON_BULKS).find('button').attr('disabled', true);
+        $(ACTION_LINK).attr('disabled', true);
+      }
     },
 
     collectFormData: function () {
@@ -69,16 +90,28 @@
             });
           }
         });
-        this.ajaxForm.formData = formData;
-      } else {
-        this.ajaxForm.formData = [];
       }
-
+      this.ajaxForm.formData = formData;
       return this.ajaxForm;
     },
 
-    click : function (e) {
+    actionLink: function () {
+      // if not in index page
+      if (!$(QOR_TABLE).find('table').size()) {
+        return false;
+      }
+    },
+
+    actionSubmit: function (e) {
       var $target = $(e.target);
+      this.$actionButton = $target;
+      this.submit();
+      return false;
+    },
+
+    click: function (e) {
+      var $target = $(e.target);
+      this.$actionButton = $target;
 
       if ($target.data().ajaxForm) {
         this.collectFormData();
@@ -86,6 +119,7 @@
         this.submit();
         return false;
       }
+
 
       if ($target.is('.qor-action--bulk')) {
         this.$wrap.removeClass('hidden');
@@ -112,6 +146,7 @@
 
         // Manual make checkbox checked or not
         if ($firstTd.find('.mdl-checkbox__input').get(0)) {
+          var hasPopoverForm = $('body').hasClass('qor-bottomsheets-open') || $('body').hasClass('qor-slideout-open');
           var $checkbox = $firstTd.find('.mdl-js-checkbox');
           var slideroutActionForm = $('[data-toggle="qor-action-slideout"]').find('form');
           var formValueInput = slideroutActionForm.find('.js-primary-value');
@@ -125,7 +160,7 @@
 
           $firstTd.find('input').prop('checked', isChecked);
 
-          if (slideroutActionForm.size() && $('.qor-slideout').is(':visible')){
+          if (slideroutActionForm.size() && hasPopoverForm){
 
             if (isChecked && !$alreadyHaveValue.size()){
               slideroutActionForm.prepend('<input class="js-primary-value" type="hidden" name="primary_values[]" value="' + primaryValue + '" />');
@@ -150,45 +185,94 @@
     },
 
     submit: function () {
-      var self = this;
-      var $parent;
+      var _this = this,
+          $parent,
+          $element = this.$element,
+          $actionButton = this.$actionButton,
+          ajaxForm = this.ajaxForm || {},
+          properties = ajaxForm.properties || $actionButton.data(),
+          url = properties.url,
+          undoUrl = properties.undoUrl,
+          isUndo = $actionButton.hasClass(CLASS_IS_UNDO),
+          isInSlideout = $actionButton.closest(QOR_SLIDEOUT).length,
+          needDisableButtons = $element && !isInSlideout;
 
-      var ajaxForm = this.ajaxForm;
-      var properties = ajaxForm.properties;
-
-      if (!ajaxForm.formData.length && properties.fromIndex){
-        window.alert(ajaxForm.properties.errorNoProduct);
+      if (properties.fromIndex && (!ajaxForm.formData || !ajaxForm.formData.length)){
+        window.alert(ajaxForm.properties.errorNoItem);
         return;
       }
 
-      $.ajax(properties.url, {
+      if (properties.confirm && properties.ajaxForm && !properties.fromIndex) {
+          if (window.confirm(properties.confirm)) {
+            properties = $.extend({}, properties, {
+              _method: properties.method
+            });
+
+            $.post(properties.url, properties, function () {
+              window.location.reload();
+            });
+
+            return;
+
+          } else {
+            return;
+          }
+      }
+
+      if (properties.confirm && !window.confirm(properties.confirm)) {
+        return;
+      }
+
+      if (isUndo) {
+        url = properties.undoUrl;
+      }
+
+      $.ajax(url, {
         method: properties.method,
         data: ajaxForm.formData,
         dataType: properties.datatype,
         beforeSend: function () {
-          self.$element.find(ACTION_BUTTON).attr('disabled', true);
+          if (undoUrl) {
+            $actionButton.prop('disabled', true);
+          } else if (needDisableButtons){
+            _this.switchButtons($element, 1);
+          }
+
         },
         success: function (data) {
+          // has undo action
+          if (undoUrl) {
+            $element.triggerHandler(EVENT_UNDO, [$actionButton, isUndo, data]);
+            isUndo ? $actionButton.removeClass(CLASS_IS_UNDO) : $actionButton.addClass(CLASS_IS_UNDO);
+            $actionButton.prop('disabled', false);
+            return;
+          }
 
-          if (properties.fromIndex){
+          if (properties.fromIndex || properties.fromMenu){
             window.location.reload();
+            return;
           } else {
-            self.$element.find(ACTION_BUTTON).attr('disabled', false);
-            if ($(QOR_SLIDEOUT).is(':visible')){
-              $parent = $(QOR_SLIDEOUT);
-            } else {
-              $parent = $(MDL_BODY);
-            }
             $('.qor-alert').remove();
-            $parent.find(ACTION_BODY).prepend(self.renderFlashMessage(data));
+            needDisableButtons && _this.switchButtons($element);
+            isInSlideout ? $parent = $(QOR_SLIDEOUT) : $parent = $(MDL_BODY);
+            $parent.find(ACTION_BODY).prepend(_this.renderFlashMessage(data));
           }
 
         },
         error: function (xhr, textStatus, errorThrown) {
-          self.$element.find(ACTION_BUTTON).attr('disabled', false);
+          if (undoUrl) {
+            $actionButton.prop('disabled', false);
+          } else if (needDisableButtons){
+            _this.switchButtons($element);
+          }
           window.alert([textStatus, errorThrown].join(': '));
         }
       });
+    },
+
+    switchButtons: function ($element, disbale) {
+      var needDisbale = disbale ? true : false;
+      $element.find(ACTION_BUTTON).prop('disabled', needDisbale);
     },
 
     destroy: function () {
@@ -210,37 +294,43 @@
       $('.qor-page__body .mdl-data-table__select').each(function (i, e) { $(e).parents('td').remove(); });
       $('.qor-page__body .mdl-data-table__select').each(function (i, e) { $(e).parents('th').remove(); });
       $('.qor-table-container tr.is-selected').removeClass('is-selected');
-
       $('.qor-page__body table').addClass('mdl-data-table--selectable');
-      window.newQorMaterialDataTable = new window.MaterialDataTable($('.qor-page__body table').get(0));
 
-      // The fixed head have checkbox but the visiual one doesn't, clone the head with checkbox from the fixed one
+      // init google material
+      new window.MaterialDataTable($('.qor-page__body table').get(0));
       $('thead.is-hidden tr th:not(".mdl-data-table__cell--non-numeric")').clone().prependTo($('thead:not(".is-hidden") tr'));
 
-      // The clone one doesn't bind event, so binding event manual
-      var $fixedHeadCheckBox = $('thead:not(".is-fixed") .mdl-checkbox__input').parents('label');
-      $fixedHeadCheckBox.find('span').remove();
-      window.newQorMaterialCheckbox = new window.MaterialCheckbox($fixedHeadCheckBox.get(0));
+      var $fixedHeadCheckBox = $('thead:not(".is-fixed") .mdl-checkbox__input');
+      var isMediaLibrary = $('.qor-table--medialibrary').size();
+      var hasPopoverForm = $('body').hasClass('qor-bottomsheets-open') || $('body').hasClass('qor-slideout-open');
+
+      isMediaLibrary && ($fixedHeadCheckBox = $('thead .mdl-checkbox__input'));
+
       $fixedHeadCheckBox.on('click', function () {
-        $('thead.is-fixed tr th').eq(0).find('label').click();
-        $(this).toggleClass('is-checked');
+
+        if (!isMediaLibrary) {
+          $('thead.is-fixed tr th').eq(0).find('label').click();
+          $(this).closest('label').toggleClass('is-checked');
+        }
 
         var slideroutActionForm = $('[data-toggle="qor-action-slideout"]').find('form');
         var slideroutActionFormPrimaryValues = slideroutActionForm.find('.js-primary-value');
 
-        slideroutActionFormPrimaryValues.remove();
-        if ($(this).hasClass('is-checked') && slideroutActionForm.size() && $('.qor-slideout').is(':visible')){
-          var allPrimaryValues = $('.qor-table--bulking tbody tr');
-          allPrimaryValues.each(function () {
-            var primaryValue = $(this).data('primary-key');
-            if (primaryValue){
-              slideroutActionForm.prepend('<input class="js-primary-value" type="hidden" name="primary_values[]" value="' + primaryValue + '" />');
-            }
-          });
+        if (slideroutActionForm.size() && hasPopoverForm){
 
+          if ($(this).is(':checked')) {
+            var allPrimaryValues = $('.qor-table--bulking tbody tr');
+            allPrimaryValues.each(function () {
+              var primaryValue = $(this).data('primary-key');
+              if (primaryValue){
+                slideroutActionForm.prepend('<input class="js-primary-value" type="hidden" name="primary_values[]" value="' + primaryValue + '" />');
+              }
+            });
+          } else {
+            slideroutActionFormPrimaryValues.remove();
+          }
         }
 
-        return false;
       });
     }
 
@@ -299,8 +389,8 @@
   };
 
   $(function () {
-    var selector = '[data-toggle="qor.action.bulk"]';
     var options = {};
+    var selector = '[data-toggle="qor.action.bulk"]';
 
     $(document).
       on(EVENT_DISABLE, function (e) {
@@ -308,6 +398,10 @@
       }).
       on(EVENT_ENABLE, function (e) {
         QorAction.plugin.call($(selector, e.target), options);
+      }).
+      on(EVENT_CLICK, MENU_ACTIONS, function (e) {
+        (new QorAction()).actionSubmit(e);
+        return false;
       }).
       triggerHandler(EVENT_ENABLE);
   });

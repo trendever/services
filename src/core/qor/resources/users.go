@@ -10,21 +10,25 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 	"proto/trendcoin"
 	"utils/rpc"
 )
 
 func init() {
-	addOnQorInitCallback(addUserResource)
+	addResource(models.User{}, &admin.Config{Name: "Users"}, initUserResource)
 }
 
-func addUserResource(a *admin.Admin) {
-	res := a.AddResource(models.User{}, &admin.Config{Name: "Users"})
-
+func initUserResource(res *admin.Resource) {
 	res.Meta(&admin.Meta{
 		Name: "Caption",
 		Type: "text",
+	})
+
+	res.Meta(&admin.Meta{
+		Name: "Name",
+		Valuer: func(value interface{}, _ *qor.Context) interface{} {
+			return value.(*models.User).DisplayName()
+		},
 	})
 
 	res.SearchAttrs(
@@ -64,9 +68,6 @@ func addUserResource(a *admin.Admin) {
 	}
 
 	res.EditAttrs(res.ShowAttrs(), "-CreatedAt", "-Confirmed")
-
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
 
 	res.Scope(&admin.Scope{
 		Name: "Only confirmed users",
@@ -168,11 +169,13 @@ func addUserResource(a *admin.Admin) {
 		},
 	})
 
+	filters.SetDateFilters(res, "CreatedAt")
+
 	type refillArg struct {
 		Amount  uint64
 		Comment string
 	}
-	refillArgRes := a.NewResource(&refillArg{})
+	refillArgRes := res.GetAdmin().NewResource(&refillArg{})
 	res.Action(&admin.Action{
 		Name:     "Refill coins",
 		Resource: refillArgRes,
@@ -208,7 +211,7 @@ func addUserResource(a *admin.Admin) {
 		AllowCredit bool
 		Comment     string
 	}
-	writeOffArgRes := a.NewResource(&writeOffArg{})
+	writeOffArgRes := res.GetAdmin().NewResource(&writeOffArg{})
 	res.Action(&admin.Action{
 		Name:     "Write-off coins",
 		Resource: writeOffArgRes,
@@ -248,14 +251,10 @@ func addUserResource(a *admin.Admin) {
 		AllowCredit   bool
 		Comment       string
 	}
-	transferArgRes := a.NewResource(&transferArg{})
-	// @TODO resource in context should have all this themes...
-	// we need somehow set it ajaxor probably
-	res.UseTheme("select2.min")
-	res.UseTheme("ajaxor")
-	ajaxor.Meta(transferArgRes, &admin.Meta{
-		Name: "Destination",
-		Type: "select_one",
+	transferArgRes := res.GetAdmin().NewResource(&transferArg{})
+	transferArgRes.Meta(&admin.Meta{
+		Name:   "Destination",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
 	})
 	res.Action(&admin.Action{
 		Name:     "Transfer coins",

@@ -3,39 +3,30 @@ package resources
 import (
 	"core/models"
 	"github.com/qor/admin"
-	"github.com/trendever/ajaxor"
 )
 
 func init() {
-	addOnQorInitCallback(addTagResource)
-}
-
-func addTagResource(a *admin.Admin) {
-	tag := a.AddResource(&models.Tag{}, &admin.Config{
+	addResource(&models.Tag{}, &admin.Config{
 		Name: "Tags",
 		Menu: []string{"Products"},
-	})
+	}, initTagResource)
+}
 
-	ajaxor.Meta(tag, &admin.Meta{
-		Name: "Group",
-		Type: "select_one",
-	})
-
+func initTagResource(tag *admin.Resource) {
 	tag.SearchAttrs(
 		"Name",
 	)
 	tag.IndexAttrs(
-		"Name", "Main", "Hidden", "Group",
+		"ID", "Name", "Main", "Hidden", "Group",
 	)
 	tag.NewAttrs(tag.IndexAttrs())
 	tag.EditAttrs(tag.IndexAttrs())
 	tag.ShowAttrs(tag.IndexAttrs())
 
-	grp := a.AddResource(&models.TagGroup{}, &admin.Config{
+	grp := tag.GetAdmin().AddResource(&models.TagGroup{}, &admin.Config{
 		Name: "Product Groups",
 		Menu: []string{"Products"},
 	})
 
 	grp.SearchAttrs("Name")
-
 }

@@ -1,14 +1,10 @@
 <div class="qor-field">
-  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="{{.InputId}}">
+  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" {{if .InputId}}for="{{.InputId}}"{{end}}>
     <span class="qor-field__label mdl-checkbox__label">{{meta_label .Meta}}</span>
 
     <span class="qor-field__edit">
-      <input type="checkbox" id="{{.InputId}}" name="{{.InputName}}" class="mdl-checkbox__input" value="true" type="checkbox" {{if .Value}}checked{{end}} {{if not (has_update_permission .Meta)}}disabled{{end}}>
+      <input type="checkbox" {{if .InputId}}id="{{.InputId}}"{{end}} name="{{.InputName}}" class="mdl-checkbox__input" value="true" type="checkbox" {{if .Value}}checked{{end}}{{if (eq .Context.Action "show") or not (has_update_permission .Meta)}} disabled{{end}}>
       <input type="hidden" name="{{.InputName}}" value="false">
-    </span>
-
-    <span class="qor-field__show">
-      {{.Value}}
     </span>
   </label>
 </div>

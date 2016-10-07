@@ -199,6 +199,7 @@ func CancelOrder(c *soso.Context) {
 		PayId:     uint64(payID),
 		LeadId:    uint64(leadID),
 		Direction: direction,
+		UserId:    c.Token.UID,
 	})
 
 	if err != nil { // RPC errors

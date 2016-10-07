@@ -100,12 +100,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/bradfitz/http2",
-			"repository": "https://github.com/bradfitz/http2",
-			"revision": "aa7658c0e9902e929a9ed0996ef949e59fc0f3ab",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/bsm/ratelimit",
 			"repository": "https://github.com/bsm/ratelimit",
 			"revision": "cf024e72f03fcbd6d7464850ef70cd3f77d5c64a",
@@ -328,7 +322,7 @@
 		{
 			"importpath": "github.com/jinzhu/inflection",
 			"repository": "https://github.com/jinzhu/inflection",
-			"revision": "8f4d3a0d04ce0b7c0cf3126fb98524246d00d102",
+			"revision": "74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff",
 			"branch": "master"
 		},
 		{
@@ -562,7 +556,7 @@
 		{
 			"importpath": "github.com/qor/admin",
 			"repository": "https://github.com/qor/admin",
-			"revision": "ea08a13048be73a47777515eecdc9aec32c7f085",
+			"revision": "a1822ea07e48f17809f8dba17a8095e1e0a0a23c",
 			"branch": "master"
 		},
 		{
@@ -574,19 +568,19 @@
 		{
 			"importpath": "github.com/qor/media_library",
 			"repository": "https://github.com/qor/media_library",
-			"revision": "141db2bae1d68597da4f22896d35809f3fb0a275",
+			"revision": "cdd3a7756fbcb94aaa97949b400db2dab3c01fe4",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/publish",
 			"repository": "https://github.com/qor/publish",
-			"revision": "fe11be6a402dd0f605c426bf2d61c7199cb60cd9",
+			"revision": "81f404d3b667568abaff103241bda0e23c0cc069",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/qor",
 			"repository": "https://github.com/qor/qor",
-			"revision": "0a25bf545c83337fbf750d24c555e700d427e262",
+			"revision": "f6fead45f5408743da7c431d5269b7d01f90237b",
 			"branch": "master"
 		},
 		{
@@ -604,13 +598,13 @@
 		{
 			"importpath": "github.com/qor/serializable_meta",
 			"repository": "https://github.com/qor/serializable_meta",
-			"revision": "947c56768f6fbc4ccb1946813a64469daf9accbd",
+			"revision": "0f4aea1a3d8a100587260327a955c80efad56623",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/qor/sorting",
 			"repository": "https://github.com/qor/sorting",
-			"revision": "dd210d46f97fc0940dd0060bf8caef4c303472d3",
+			"revision": "7b7473a5a531435f4426c212e2f55fa55e632910",
 			"branch": "master"
 		},
 		{
@@ -628,7 +622,7 @@
 		{
 			"importpath": "github.com/qor/worker",
 			"repository": "https://github.com/qor/worker",
-			"revision": "20258b27e53fe51012fd1aed769e86a8dac35d0e",
+			"revision": "6b4621af4fcc8b00c18523650b014fd3aa467b2c",
 			"branch": "master"
 		},
 		{
@@ -690,12 +684,6 @@
 			"importpath": "github.com/timehop/go-bitly",
 			"repository": "https://github.com/timehop/go-bitly",
 			"revision": "092ab9dea527d471ccad9fc8c67333e75bfeb02b",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/trendever/ajaxor",
-			"repository": "https://github.com/trendever/ajaxor",
-			"revision": "abeefbebf3ef6209b89a13f9d6cf61b43b946619",
 			"branch": "master"
 		},
 		{
@@ -848,7 +836,7 @@
 		{
 			"importpath": "golang.org/x/net/http2",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "3797cd8864994d713d909eda5e61ede8683fdc12",
+			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
 			"branch": "master",
 			"path": "/http2"
 		},
@@ -862,7 +850,7 @@
 		{
 			"importpath": "golang.org/x/net/lex/httplex",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "3797cd8864994d713d909eda5e61ede8683fdc12",
+			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
 			"branch": "master",
 			"path": "/lex/httplex"
 		},
@@ -1009,13 +997,6 @@
 			"revision": "12aa462581208c155e498dc13e14cabe6da24dc3",
 			"branch": "master",
 			"path": "/pubsub"
-		},
-		{
-			"importpath": "google.golang.org/genproto/protobuf",
-			"repository": "https://github.com/google/go-genproto",
-			"revision": "44808ed2d86e258615bb701d395cbbfe6686a3e6",
-			"branch": "master",
-			"path": "/protobuf"
 		},
 		{
 			"importpath": "google.golang.org/grpc",

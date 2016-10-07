@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"image"
 	"io"
 	"mime/multipart"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -69,17 +70,21 @@ func (b *Base) Scan(data interface{}) (err error) {
 			b.FileHeader, b.FileName = file, file.Filename
 		}
 	case []byte:
-		if err = json.Unmarshal(values, b); err == nil {
-			var doCrop struct{ Crop bool }
-			if err = json.Unmarshal(values, &doCrop); err == nil && doCrop.Crop {
-				b.Crop = true
+		if string(values) != "" {
+			if err = json.Unmarshal(values, b); err == nil {
+				var doCrop struct{ Crop bool }
+				if err = json.Unmarshal(values, &doCrop); err == nil && doCrop.Crop {
+					b.Crop = true
+				}
 			}
 		}
 	case string:
-		b.Scan([]byte(values))
+		return b.Scan([]byte(values))
 	case []string:
 		for _, str := range values {
-			b.Scan(str)
+			if err := b.Scan(str); err != nil {
+				return err
+			}
 		}
 	default:
 		err = errors.New("unsupported driver -> Scan pair for MediaLibrary")
@@ -102,6 +107,10 @@ func (b Base) Value() (driver.Value, error) {
 
 	results, err := json.Marshal(b)
 	return string(results), err
+}
+
+func (b Base) Ext() string {
+	return strings.ToLower(path.Ext(b.Url))
 }
 
 // URL return file's url with given style
@@ -136,6 +145,8 @@ func (b Base) GetURLTemplate(option *Option) (path string) {
 	return
 }
 
+var urlReplacer = regexp.MustCompile("(\\s|\\+)+")
+
 func getFuncMap(scope *gorm.Scope, field *gorm.Field, filename string) template.FuncMap {
 	hash := func() string { return strings.Replace(time.Now().Format("20060102150506.000000000"), ".", "", -1) }
 	return template.FuncMap{
@@ -146,7 +157,7 @@ func getFuncMap(scope *gorm.Scope, field *gorm.Field, filename string) template.
 		"basename":    func() string { return strings.TrimSuffix(path.Base(filename), path.Ext(filename)) },
 		"hash":        hash,
 		"filename_with_hash": func() string {
-			return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(filename, path.Ext(filename)), hash(), path.Ext(filename))
+			return urlReplacer.ReplaceAllString(fmt.Sprintf("%v.%v%v", strings.TrimSuffix(filename, path.Ext(filename)), hash(), path.Ext(filename)), "-")
 		},
 		"extension": func() string { return strings.TrimPrefix(path.Ext(filename), ".") },
 	}
@@ -196,7 +207,7 @@ func (b Base) Retrieve(url string) (*os.File, error) {
 	return nil, errors.New("not implemented")
 }
 
-// GetSizes get configed sizes
+// GetSizes get configured sizes, it will be used to crop images accordingly
 func (b Base) GetSizes() map[string]Size {
 	return map[string]Size{}
 }

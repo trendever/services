@@ -56,6 +56,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 			log.Error(err)
 			return nil, err
 		}
+
+		// send this message only on new lead
+		go notifyAPI(lead)
 	} else {
 		lead = existsLead
 	}
@@ -96,8 +99,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	}
 
-	// @CHECK Why may lead.ConversationID == 0 happend?
-	// Doesn't this mean that everything went really bad?
+	// If chat is down, conversation is not created (yet)
+	// Later CREATE lead event (see below) can be triggered to fix it
+	// So, everything is partly fine now
 	if lead.ConversationID != 0 {
 		go func() {
 			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil))

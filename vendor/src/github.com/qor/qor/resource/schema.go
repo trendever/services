@@ -21,17 +21,21 @@ func convertMapToMetaValues(values map[string]interface{}, metaors []Metaor) (*M
 	for key, value := range values {
 		var metaValue *MetaValue
 		metaor := metaorMap[key]
+		var childMeta []Metaor
+		if metaor != nil {
+			childMeta = metaor.GetMetas()
+		}
 
 		switch result := value.(type) {
 		case map[string]interface{}:
-			if children, err := convertMapToMetaValues(result, metaor.GetMetas()); err == nil {
+			if children, err := convertMapToMetaValues(result, childMeta); err == nil {
 				metaValue = &MetaValue{Name: key, Meta: metaor, MetaValues: children}
 			}
 		case []interface{}:
-			for _, r := range result {
+			for idx, r := range result {
 				if mr, ok := r.(map[string]interface{}); ok {
-					if children, err := convertMapToMetaValues(mr, metaor.GetMetas()); err == nil {
-						metaValue := &MetaValue{Name: key, Meta: metaor, MetaValues: children}
+					if children, err := convertMapToMetaValues(mr, childMeta); err == nil {
+						metaValue := &MetaValue{Name: key, Meta: metaor, MetaValues: children, Index: idx}
 						metaValues.Values = append(metaValues.Values, metaValue)
 					}
 				} else {
@@ -75,6 +79,7 @@ func ConvertFormToMetaValues(request *http.Request, metaors []Metaor, prefix str
 	metaValues := &MetaValues{}
 	metaorsMap := map[string]Metaor{}
 	convertedNextLevel := map[string]bool{}
+	nestedStructIndex := map[string]int{}
 	for _, metaor := range metaors {
 		metaorsMap[metaor.GetName()] = metaor
 	}
@@ -98,7 +103,13 @@ func ConvertFormToMetaValues(request *http.Request, metaors []Metaor, prefix str
 					}
 
 					if children, err := ConvertFormToMetaValues(request, metaors, prefix+name+"."); err == nil {
-						metaValue = &MetaValue{Name: matches[2], Meta: metaor, MetaValues: children}
+						nestedName := prefix + matches[2]
+						if _, ok := nestedStructIndex[nestedName]; ok {
+							nestedStructIndex[nestedName] += 1
+						} else {
+							nestedStructIndex[nestedName] = 0
+						}
+						metaValue = &MetaValue{Name: matches[2], Meta: metaor, MetaValues: children, Index: nestedStructIndex[nestedName]}
 					}
 				}
 			}

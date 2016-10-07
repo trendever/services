@@ -160,12 +160,12 @@ func registerOrders() {
 	}
 }
 
-func retrieveActivities() (*bot.RetrieveActivitiesResult, error) {
+func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
 		AfterId:     lastChecked,
-		Type:        "mentioned",
+		Type:        []string{"mentioned", "direct"},
 		MentionName: conf.GetSettings().Instagram.WantitUser,
 		Limit:       100, //@CHECK this number
 	})
@@ -249,7 +249,18 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	err = createOrder(mention, &productMedia, customer.Id, productID)
-	return err != nil, err
+	if err != nil {
+		return true, err
+	}
+
+	if !customer.Confirmed && mention.DirectThreadId != "" {
+		err = notifyChat(mention)
+		if err != nil {
+			log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+		}
+	}
+
+	return false, nil
 }
 
 func saveProduct(mention *bot.Activity) (id int64, retry bool, err error) {
@@ -270,13 +281,36 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	defer cancel()
 	log.Debug("Creating new order (productId=%v)", productID)
 
+	// indicate it's direct lead if it is
+	var source = "wantit"
+	if mention.DirectThreadId > "" {
+		source = "wantit direct"
+	}
+
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
-		Source:        "wantit",
+		Source:        source,
 		CustomerId:    customerID,
 		ProductId:     int64(productID),
 		Comment:       mention.Comment,
 		InstagramPk:   mention.Pk,
 		InstagramLink: fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
+	})
+
+	return err
+}
+
+func notifyChat(mention *bot.Activity) error {
+
+	if mention.DirectThreadId == "" {
+		return nil
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
+		ThreadId: mention.DirectThreadId,
+		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err

@@ -7,6 +7,8 @@ orderUrlFormat:  'https://localhost:8040/order/%v'
 mandibleURL:     'http://mandible:8089/'
 lastCheckedFile: 'wantit.last'
 
+directNotificationText: "%v, спасибо за @wantit, теперь скачай приложение Trendever - там в чатах ждет заказ."
+
 instagram:
   timeoutMin: 500
   timeoutMax: 2000

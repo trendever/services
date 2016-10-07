@@ -2,11 +2,9 @@ package resources
 
 import (
 	"errors"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 
 	"core/models"
 	"core/qor/filters"
@@ -14,16 +12,15 @@ import (
 )
 
 func init() {
-	addOnQorInitCallback(addProductResource)
-}
-
-func addProductResource(a *admin.Admin) {
-	res := a.AddResource(models.Product{}, &admin.Config{
+	addResource(models.Product{}, &admin.Config{
 		Name: "Products",
 		Menu: []string{"Products"},
-	})
+	}, initProductResource)
 
-	itemRes := a.AddResource(models.ProductItem{}, &admin.Config{
+}
+
+func initProductResource(res *admin.Resource) {
+	itemRes := res.GetAdmin().AddResource(models.ProductItem{}, &admin.Config{
 		Name:      "ProductItem",
 		Invisible: true,
 	})
@@ -38,61 +35,6 @@ func addProductResource(a *admin.Admin) {
 	res.Meta(&admin.Meta{Name: "Img", FieldName: "InstagramImageURL", Type: "image"})
 	res.Meta(&admin.Meta{Name: "InstagramImageCaption", Type: "text"})
 	res.Meta(&admin.Meta{Name: "CreatedAt", Type: "date"})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Shop",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "MentionedBy",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Tags",
-		Type: "select_many",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "Scout",
-		FieldName: "MentionedBy",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_product as pr" +
-					" ON pr.mentioned_by_id = users_user.id AND pr.deleted_at IS NULL AND users_user.is_scout = true").
-				Group("users_user.id").
-				Having("COUNT(pr.id) > 0").
-				Order("COUNT(pr.id) DESC"),
-			)
-
-			return res.GetMeta("MentionedBy").GetCollection(this, searchCtx)
-		},
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "ShopSearch",
-		Label:     "Shop",
-		FieldName: "Shop",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_product as pr ON pr.shop_id = products_shops.id AND pr.deleted_at IS NULL").
-				Group("products_shops.id").
-				Having("COUNT(pr.id) > 0").
-				Order("COUNT(pr.id) DESC"),
-			)
-
-			return res.GetMeta("Shop").GetCollection(this, searchCtx)
-		},
-	})
 
 	res.SearchAttrs(
 		"Code", "Title", "InstagramLink", "Shop", "MentionedBy",
@@ -180,12 +122,6 @@ func addProductResource(a *admin.Admin) {
 		},
 	})
 
-	// embed productItem stuff
-	ajaxor.Meta(itemRes, &admin.Meta{
-		Name: "Tags",
-		Type: "select_many",
-	})
-
 	itemRes.EditAttrs(
 		"Name",
 		"Price", "DiscountPrice",
@@ -195,43 +131,41 @@ func addProductResource(a *admin.Admin) {
 
 	itemRes.SearchAttrs("Name", "Tags")
 
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
-
-	// workaround due to bug in qor
-	// @QORBUG
-	for op, act := range map[string]string{"gt": ">", "lt": "<"} {
-		var actcp = act
-		res.Filter(&admin.Filter{
-			Name: "created_at_" + op,
-			Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
-				return scope.Where(fmt.Sprintf("products_product.created_at %v ?", actcp), query)
-			},
-		})
-	}
-
-	filters.MetaFilter(res, "Scout", "eq")
-	filters.MetaFilter(res, "ShopSearch", "eq")
-	filters.MetaFilter(res, "Tags", "eq")
+	filters.SetDateFilters(res, "CreatedAt")
 
 	res.Filter(&admin.Filter{
-		Name: "tags_id_eq",
-		Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Label:  "Scout",
+		Name:   "MentionedBy",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
+	})
+	res.Filter(&admin.Filter{
+		Name:   "Shop",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Shops")},
+	})
+
+	res.Filter(&admin.Filter{
+		Name: "Tags",
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Joins(`
-				INNER JOIN products_product_item_tags as tagrel ON 
+				INNER JOIN products_product_item_tags as tagrel ON
 				tagrel.product_id = products_product.id AND tagrel.tag_id = ?
-			`, query)
+			`, metaValue.Value)
 		},
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Tags")},
 	})
 
 	type userArg struct {
 		UserID uint64
 		User   models.User
 	}
-	userArgRes := a.NewResource(&userArg{})
-	ajaxor.Meta(userArgRes, &admin.Meta{
-		Name: "User",
-		Type: "select_one",
+	userArgRes := res.GetAdmin().NewResource(&userArg{})
+	userArgRes.Meta(&admin.Meta{
+		Name:   "User",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
 	})
 
 	res.Action(&admin.Action{

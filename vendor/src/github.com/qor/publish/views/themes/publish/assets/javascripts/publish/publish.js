@@ -15,6 +15,8 @@
 
   var NAMESPACE = 'qor.publish';
   var EVENT_CLICK = 'click.' + NAMESPACE;
+  var CLASS_TABLE = '.qor-table';
+  var CLASS_ACTIONS = '.qor-actions--publish';
 
   function replaceText(str, data) {
     if (typeof str === 'string') {
@@ -40,7 +42,12 @@
 
     init: function () {
       this.$modal = $(replaceText(Publish.MODAL, this.options.text)).appendTo('body');
-      this.bind();
+
+      if (!$(CLASS_TABLE).size()) {
+        this.disableButtons();
+      } else {
+        this.bind();
+      }
     },
 
     bind: function () {
@@ -51,16 +58,19 @@
       this.$element.off(EVENT_CLICK, this.click);
     },
 
+    disableButtons: function () {
+      $(CLASS_ACTIONS).find('button').prop('disabled', true);
+    },
+
     click: function (e) {
       var options = this.options;
       var $target = $(e.target);
       var isChecked = $('.qor-js-table').find('input:checkbox').not(options.toggleCheck).is(':checked');
       var data;
-      var $scheduleInput;
       var scheduleTime;
 
 
-      if ($target.is(options.submit)) {
+      if ($target.is(options.submit) || $target.is(options.schedulePopoverButton)) {
         if (!isChecked) {
           window.alert($target.data().noItem);
           return false;
@@ -69,14 +79,15 @@
 
 
       if ($target.is(options.scheduleSetButton)) {
-        e.preventDefault();
         scheduleTime = $(options.scheduleTime).val();
+
         if (scheduleTime){
           $('.publish-schedule-time').val(scheduleTime);
           if (isChecked) {
             $(options.submit).closest('form').submit();
           } else {
             this.$scheduleModal.qorModal('hide');
+            this.$scheduleModal.trigger('disable');
           }
         }
       }
@@ -85,22 +96,19 @@
         data = $target.data();
 
         if (this.$scheduleModal){
+          this.$scheduleModal.trigger('disable');
           this.$scheduleModal.remove();
         }
 
         this.$scheduleModal = $(window.Mustache.render(Publish.SCHEDULE, data)).appendTo('body');
         this.$scheduleModal.qorModal('show');
-        $scheduleInput = $(options.scheduleTime);
+        window.componentHandler.upgradeElement(document.querySelector('.qor-publish__time'));
 
-        $scheduleInput.materialDatePicker({
-          format : 'YYYY-MM-DD HH:mm',
-          minDate : new Date()
-        });
+        this.$scheduleModal.trigger('enable');
 
       }
 
       if ($target.is(options.toggleView)) {
-        e.preventDefault();
 
         if (this.loading) {
           return;
@@ -145,10 +153,26 @@
         '<div class="mdl-card__title">' +
           '<h2 class="mdl-card__title-text">[[modalTitle]]</h2>' +
         '</div>' +
-        '<div class="mdl-card__supporting-text"><p class="hint">[[modalHint]]</p><input class="mdl-textfield__input qor-publish__time" type="text" /></div>' +
-        '<div class="mdl-card__actions">' +
-          '<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect qor-publish__button-schedule">[[modalSet]]</a>' +
-          '<a class="mdl-button mdl-js-button mdl-js-ripple-effect" data-dismiss="modal">[[modalCancel]]</a>' +
+        '<div class="mdl-card__supporting-text">' +
+          '<p class="hint">[[modalHint]]</p>' +
+          '<div class="qor-field__datetimepicker qor-publish__datetimepicker">' +
+            '<div class="mdl-textfield mdl-js-textfield">' +
+              '<input class="mdl-textfield__input qor-publish__time ignore-dirtyform" id="qorPublishTime" type="text" placeholder="YYYY-MM-DD HH:MM" data-start-date="true" />' +
+              '<label class="mdl-textfield__label" for="qorPublishTime"></label>' +
+            '</div>' +
+            '<div>' +
+              '<button data-toggle="qor.datepicker" data-target-input=".qor-publish__time" class="mdl-button mdl-js-button mdl-button--icon qor-action__datepicker" type="button">' +
+                '<i class="material-icons">date_range</i>' +
+              '</button>' +
+              '<button data-toggle="qor.timepicker" data-target-input=".qor-publish__time" class="mdl-button mdl-js-button mdl-button--icon qor-action__timepicker" type="button">' +
+                '<i class="material-icons">access_time</i>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mdl-card__actions">' +
+            '<a class="mdl-button mdl-button--colored mdl-js-button qor-publish__button-schedule">[[modalSet]]</a>' +
+            '<a class="mdl-button mdl-js-button" data-dismiss="modal">[[modalCancel]]</a>' +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>'

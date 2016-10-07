@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+
+	"github.com/qor/qor/utils"
 )
 
 // FlashNow add flash message to current request
@@ -52,7 +54,6 @@ func (context *Context) writeFlashes() {
 
 	if bytes, err := json.Marshal(flashes); err == nil {
 		prefix := context.Admin.GetRouter().Prefix
-		cookie := http.Cookie{Name: "qor-flashes", Value: base64.StdEncoding.EncodeToString(bytes), Path: prefix, HttpOnly: true}
-		http.SetCookie(context.Writer, &cookie)
+		utils.SetCookie(http.Cookie{Name: "qor-flashes", Value: base64.StdEncoding.EncodeToString(bytes), Path: prefix}, context.Context)
 	}
 }

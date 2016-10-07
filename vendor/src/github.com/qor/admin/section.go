@@ -29,6 +29,11 @@ type Section struct {
 	Rows     [][]string
 }
 
+// String stringify section
+func (section *Section) String() string {
+	return fmt.Sprint(section.Rows)
+}
+
 func (res *Resource) generateSections(values ...interface{}) []*Section {
 	var sections []*Section
 	var hasColumns, excludedColumns []string

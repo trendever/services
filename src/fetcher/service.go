@@ -1,17 +1,25 @@
 package main
 
 import (
+	"math/rand"
 	"os"
-	"utils/log"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"fetcher/api"
+	"fetcher/conf"
 	"fetcher/fetcher"
+	"fetcher/models"
+	"fetcher/views"
+
+	"utils/db"
+	"utils/log"
 
 	"github.com/codegangsta/cli"
 )
 
 func main() {
-
-	svc := fetcher.ProjectService{}
 
 	app := cli.NewApp()
 	app.Name = "Ig Inbox"
@@ -23,7 +31,7 @@ func main() {
 			Name:  "start",
 			Usage: "Run fetcher",
 			Action: func(c *cli.Context) {
-				if err := svc.Run(); err != nil {
+				if err := Run(); err != nil {
 					log.Fatal(err)
 				}
 			},
@@ -37,7 +45,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) {
-				if err := svc.AutoMigrate(c); err != nil {
+				if err := models.AutoMigrate(c.Bool("drop")); err != nil {
 					log.Fatal(err)
 				}
 			},
@@ -46,4 +54,29 @@ func main() {
 	log.PanicLogger(func() {
 		app.Run(os.Args)
 	})
+}
+
+// Run main stuff
+func Run() error {
+	db.Init(&conf.GetSettings().DB)
+
+	// init api
+	api.Start()
+	views.Init()
+
+	rand.Seed(time.Now().Unix())
+
+	// interrupt
+	interrupt := make(chan os.Signal)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	err := fetcher.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// wait for terminating
+	<-interrupt
+	log.Warn("Cleanup and terminating...")
+	return nil
 }

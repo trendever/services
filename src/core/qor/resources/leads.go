@@ -5,17 +5,18 @@ import (
 	"core/models"
 	"core/qor/filters"
 	"errors"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 	"utils/db"
 	"utils/log"
 )
 
 func init() {
-	addOnQorInitCallback(addLeadResource)
+	addResource(&models.Lead{}, &admin.Config{
+		Name: "Orders",
+		Menu: []string{"Products"},
+	}, initLeadResource)
 }
 
 type leadEvent struct {
@@ -23,64 +24,18 @@ type leadEvent struct {
 	Handler  func(*admin.ActionArgument, *gorm.DB, interface{}) error
 }
 
-type ProductArg struct {
-	ProductID uint64
-	Product   models.Product
-}
-
-func addLeadResource(a *admin.Admin) {
-	res := a.AddResource(&models.Lead{}, &admin.Config{
-		Name: "Orders",
-		Menu: []string{"Products"},
-	})
+func initLeadResource(res *admin.Resource) {
 
 	res.Meta(&admin.Meta{
 		Name: "State", Type: "select_one",
 		Collection: models.GetLeadStates(),
 	})
 
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Customer",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Shop",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "ProductItems",
-		Type: "select_many",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "CustomerSearch",
-		Label:     "Customer",
-		FieldName: "Customer",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_leads as lead ON lead.customer_id = users_user.id AND lead.deleted_at IS NULL").
-				Group("users_user.id").
-				Having("COUNT(lead.id) > 0").
-				Order("COUNT(lead.id) DESC"),
-			)
-
-			return res.GetMeta("Customer").GetCollection(this, searchCtx)
-		},
-	})
-
-	filters.MetaFilter(res, "CustomerSearch", "eq")
-
 	res.SearchAttrs(
 		"ID", "Name", "Source", "Customer.Name", "Comment",
 	)
 	res.IndexAttrs(
-		"ID", "CreatedAt", "Customer", "Name", "Source", "ProductItems", "State", "CancelReason",
+		"ID", "CreatedAt", "Customer", "Shop", "Name", "Source", "ProductItems", "State", "CancelReason",
 	)
 	res.ShowAttrs(
 		&admin.Section{
@@ -115,18 +70,18 @@ func addLeadResource(a *admin.Admin) {
 		})
 	}
 
-	addTransitionActions(a, res)
+	addTransitionActions(res.GetAdmin(), res)
 
-	argRes := a.NewResource(&ProductArg{})
-	ajaxor.Meta(argRes, &admin.Meta{
-		Name: "Product",
-		Type: "select_one",
-	})
+	type productArg struct {
+		ProductID uint64
+		Product   models.Product
+	}
+	argRes := res.GetAdmin().NewResource(&productArg{})
 
 	res.Action(&admin.Action{
 		Name: "Add product",
 		Handle: func(argument *admin.ActionArgument) error {
-			arg, ok := argument.Argument.(*ProductArg)
+			arg, ok := argument.Argument.(*productArg)
 			if !ok {
 				return errors.New("unxepected argument type")
 			}
@@ -153,9 +108,25 @@ func addLeadResource(a *admin.Admin) {
 		Modes:    []string{"show", "menu_item"},
 	})
 
+	filters.SetDateFilters(res, "CreatedAt")
+
 	res.Filter(&admin.Filter{
-		Name: "products_filter",
-		Handler: func(fieldName string, value string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Name:   "Customer",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Users")},
+	})
+
+	res.Filter(&admin.Filter{
+		Name:   "Shop",
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Shops")},
+	})
+
+	res.Filter(&admin.Filter{
+		Name: "Products",
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Where(
 				`EXISTS (
 					SELECT 1 FROM products_leads_items related
@@ -163,11 +134,10 @@ func addLeadResource(a *admin.Admin) {
 					ON related.product_item_id = item.id
 					WHERE item.product_id = ? AND related.lead_id = products_leads.id
 				)`,
-				value)
+				metaValue.Value)
 		},
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Products")},
 	})
-
-	filters.AddFilter(res, argRes.GetMeta("Product"), "products_filter", "select_one", "wat")
 }
 
 // and typical actions for changing order state
@@ -177,32 +147,7 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 	}
 
 	// helper map that allows to add custom action resources and handlers without unneeded copy&paste
-	events := map[string]leadEvent{
-	//models.LeadEventGotEmail: leadEvent{
-	//	Resource: a.NewResource(&gotEmailArgument{}),
-	//	Handler: func(arg *admin.ActionArgument, db *gorm.DB, record interface{}) error {
-	//		lead := record.(*models.Lead)
-	//		argument := arg.Argument.(*gotEmailArgument)
-	//
-	//		// get user (qor won't preload it to lead)
-	//		user, err := models.FindUserByID(lead.CustomerID)
-	//		if err != nil {
-	//			log.Error(err)
-	//			return err
-	//		}
-	//
-	//		log.Printf("Editing user email %v", user)
-	//		user.Email = argument.Email
-	//
-	//		err = db.Save(&user).Error
-	//		if err != nil {
-	//			return err
-	//		}
-	//
-	//		return nil
-	//	},
-	//},
-	}
+	events := map[string]leadEvent{}
 
 	// Add actions that trigger LeadState events
 	for i := range models.GetLeadEvents() {
@@ -325,43 +270,4 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			},
 		})
 	}
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "ShopSearch",
-		Label:     "Shop",
-		FieldName: "Shop",
-		Type:      "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_leads as pl ON pl.shop_id = products_shops.id AND pl.deleted_at IS NULL").
-				Group("products_shops.id").
-				Having("COUNT(pl.id) > 0").
-				Order("COUNT(pl.id) DESC"),
-			)
-
-			return res.GetMeta("Shop").GetCollection(this, searchCtx)
-		},
-	})
-
-	// filters
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
-	filters.MetaFilter(res, "ShopSearch", "eq")
-
-	// @QORBUG
-	// workaround due to bug in qor
-	for op, act := range map[string]string{"gt": ">", "lt": "<"} {
-		var actcp = act
-
-		res.Filter(&admin.Filter{
-			Name: "created_at_" + op,
-			Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
-				return scope.Where(fmt.Sprintf("products_leads.created_at %v ?", actcp), query)
-			},
-		})
-	}
-
 }

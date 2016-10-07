@@ -242,14 +242,16 @@ func GetUserLead(user *User, leadID uint64) (*Lead, error) {
 	return leads[0], nil
 }
 
-//FindActiveLead searches active lead for shop and customer
+// FindActiveLead searches active lead for shop and customer
+// returns nil result for shops with SeparateLeads
 func FindActiveLead(shopID, customerID uint64) (*Lead, error) {
 	lead := &Lead{}
 	scope := db.New().
 		Model(&Lead{}).
 		Preload("Customer").
+		Joins("JOIN products_shops shop ON shop.id = products_leads.shop_id AND NOT shop.separate_leads").
 		Where(
-			"shop_id = ? AND customer_id = ? AND state IN (?)",
+			"shop.id = ? AND products_leads.customer_id = ? AND products_leads.state IN (?)",
 			shopID,
 			customerID,
 			[]string{
@@ -349,4 +351,39 @@ func GetLeadProducts(lead *Lead) ([]*Product, error) {
 	}
 
 	return products, nil
+}
+
+// GetUsersForLead returns every userID that can possibly join this chat
+func GetUsersForLead(lead *Lead) ([]uint64, error) {
+
+	shop, err := GetShopByID(lead.ShopID)
+	if err != nil {
+		return nil, err
+	}
+
+	var out = []uint64{
+		uint64(lead.CustomerID),
+		uint64(shop.SupplierID),
+	}
+
+	sellers, err := GetSellersByShopID(lead.ShopID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, seller := range sellers {
+		out = append(out, uint64(seller.ID))
+	}
+
+	superSellers, err := GetSuperSellersIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, seller := range superSellers {
+		out = append(out, uint64(seller))
+	}
+
+	return out, nil
+
 }

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -18,19 +19,35 @@ import (
 // Meta meta struct definition
 type Meta struct {
 	Name            string
-	FieldName       string
-	Label           string
 	Type            string
-	FormattedValuer func(interface{}, *qor.Context) interface{}
-	Valuer          func(interface{}, *qor.Context) interface{}
+	Label           string
+	FieldName       string
 	Setter          func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context)
-	Metas           []resource.Metaor
+	Valuer          func(interface{}, *qor.Context) interface{}
+	FormattedValuer func(interface{}, *qor.Context) interface{}
 	Resource        *Resource
-	Collection      interface{}
-	GetCollection   func(interface{}, *qor.Context) [][]string
 	Permission      *roles.Permission
+	Config          MetaConfigInterface
+
+	Metas      []resource.Metaor
+	Collection interface{}
 	resource.Meta
 	baseResource *Resource
+}
+
+// metaConfig meta config
+type metaConfig struct {
+}
+
+// GetTemplate get customized template for meta
+func (metaConfig) GetTemplate(context *Context, metaType string) ([]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+// MetaConfigInterface meta config interface
+type MetaConfigInterface interface {
+	resource.MetaConfigInterface
+	GetTemplate(context *Context, metaType string) ([]byte, error)
 }
 
 // GetMetas get sub metas
@@ -146,14 +163,19 @@ func (meta *Meta) SetPermission(permission *roles.Permission) {
 }
 
 func (meta *Meta) updateMeta() {
+	newPermission := meta.Permission
+	if newPermission == nil {
+		newPermission = meta.baseResource.Permission
+	}
 	meta.Meta = resource.Meta{
 		Name:            meta.Name,
 		FieldName:       meta.FieldName,
 		Setter:          meta.Setter,
-		FormattedValuer: meta.FormattedValuer,
 		Valuer:          meta.Valuer,
-		Permission:      meta.Permission.Concat(meta.baseResource.Permission),
+		FormattedValuer: meta.FormattedValuer,
 		Resource:        meta.baseResource,
+		Permission:      newPermission,
+		Config:          meta.Config,
 	}
 
 	meta.PreInitialize()
@@ -181,6 +203,12 @@ func (meta *Meta) updateMeta() {
 
 	// Set Meta Type
 	if meta.Type == "" && hasColumn {
+		if _, ok := reflect.New(fieldType).Interface().(sql.Scanner); ok {
+			if fieldType.Kind() == reflect.Struct {
+				fieldType = reflect.Indirect(reflect.New(fieldType)).Field(0).Type()
+			}
+		}
+
 		if relationship := meta.FieldStruct.Relationship; relationship != nil {
 			if relationship.Kind == "has_one" {
 				meta.Type = "single_edit"
@@ -238,9 +266,7 @@ func (meta *Meta) updateMeta() {
 				var result interface{}
 
 				if fieldType.Kind() == reflect.Struct {
-					if _, ok := reflect.New(fieldType).Interface().(sql.Scanner); !ok {
-						result = reflect.New(fieldType).Interface()
-					}
+					result = reflect.New(fieldType).Interface()
 				} else if fieldType.Kind() == reflect.Slice {
 					refelectType := fieldType.Elem()
 					for refelectType.Kind() == reflect.Ptr {
@@ -253,8 +279,8 @@ func (meta *Meta) updateMeta() {
 
 				if result != nil {
 					res := meta.baseResource.GetAdmin().NewResource(result)
-					res.configure()
 					meta.Resource = res
+					meta.Meta.Permission = meta.Meta.Permission.Concat(res.Config.Permission)
 				}
 			}
 
@@ -267,78 +293,7 @@ func (meta *Meta) updateMeta() {
 		}
 	}
 
-	scope := &gorm.Scope{Value: meta.baseResource.Value}
-	scopeField, _ := scope.FieldByName(meta.GetFieldName())
-
-	{ // Format Meta FormattedValueOf
-		if meta.FormattedValuer == nil {
-			if meta.Type == "select_one" {
-				meta.SetFormattedValuer(func(value interface{}, context *qor.Context) interface{} {
-					return utils.Stringify(meta.GetValuer()(value, context))
-				})
-			} else if meta.Type == "select_many" {
-				meta.SetFormattedValuer(func(value interface{}, context *qor.Context) interface{} {
-					reflectValue := reflect.Indirect(reflect.ValueOf(meta.GetValuer()(value, context)))
-					var results []string
-					for i := 0; i < reflectValue.Len(); i++ {
-						results = append(results, utils.Stringify(reflectValue.Index(i).Interface()))
-					}
-					return results
-				})
-			}
-		}
-	}
-
-	{ // Format Meta Collection
-		if meta.Collection != nil {
-			if maps, ok := meta.Collection.([]string); ok {
-				meta.GetCollection = func(interface{}, *qor.Context) (results [][]string) {
-					for _, value := range maps {
-						results = append(results, []string{value, value})
-					}
-					return
-				}
-			} else if maps, ok := meta.Collection.([][]string); ok {
-				meta.GetCollection = func(interface{}, *qor.Context) [][]string {
-					return maps
-				}
-			} else if f, ok := meta.Collection.(func(interface{}, *qor.Context) [][]string); ok {
-				meta.GetCollection = f
-			} else {
-				utils.ExitWithMsg("Unsupported Collection format for meta %v of resource %v", meta.Name, reflect.TypeOf(meta.baseResource.Value))
-			}
-		} else if meta.Type == "select_one" || meta.Type == "select_many" {
-			if scopeField.Relationship != nil {
-				fieldType := scopeField.StructField.Struct.Type
-				if fieldType.Kind() == reflect.Slice {
-					fieldType = fieldType.Elem()
-				}
-
-				meta.GetCollection = func(value interface{}, context *qor.Context) (results [][]string) {
-					values := reflect.New(reflect.SliceOf(fieldType)).Interface()
-					context.GetDB().Find(values)
-					reflectValues := reflect.Indirect(reflect.ValueOf(values))
-					for i := 0; i < reflectValues.Len(); i++ {
-						scope := scope.New(reflectValues.Index(i).Interface())
-						primaryKey := fmt.Sprintf("%v", scope.PrimaryKeyValue())
-						results = append(results, []string{primaryKey, utils.Stringify(reflectValues.Index(i).Interface())})
-					}
-					return
-				}
-			} else {
-				utils.ExitWithMsg("%v meta type %v needs Collection", meta.Name, meta.Type)
-			}
-		}
-	}
-
 	meta.FieldName = meta.GetFieldName()
-
-	// call ConfigureMetaInterface
-	if meta.FieldStruct != nil {
-		if injector, ok := reflect.New(meta.FieldStruct.Struct.Type).Interface().(resource.ConfigureMetaInterface); ok {
-			injector.ConfigureQorMeta(meta)
-		}
-	}
 
 	// run meta configors
 	if baseResource := meta.baseResource; baseResource != nil {
@@ -346,6 +301,18 @@ func (meta *Meta) updateMeta() {
 			if key == meta.Type {
 				fc(meta)
 			}
+		}
+	}
+
+	// call meta config's ConfigureMetaInterface
+	if meta.Config != nil {
+		meta.Config.ConfigureQorMeta(meta)
+	}
+
+	// call field's ConfigureMetaInterface
+	if meta.FieldStruct != nil {
+		if injector, ok := reflect.New(meta.FieldStruct.Struct.Type).Interface().(resource.ConfigureMetaInterface); ok {
+			injector.ConfigureQorMeta(meta)
 		}
 	}
 }

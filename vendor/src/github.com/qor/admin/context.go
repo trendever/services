@@ -22,12 +22,13 @@ type Context struct {
 	Admin    *Admin
 	Content  template.HTML
 	Action   string
+	Settings map[string]interface{}
 	Result   interface{}
 }
 
 // NewContext new admin context
 func (admin *Admin) NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	return &Context{Context: &qor.Context{Config: admin.Config, Request: r, Writer: w}, Admin: admin}
+	return &Context{Context: &qor.Context{Config: admin.Config, Request: r, Writer: w}, Admin: admin, Settings: map[string]interface{}{}}
 }
 
 func (context *Context) clone() *Context {
@@ -39,8 +40,19 @@ func (context *Context) clone() *Context {
 		Admin:    context.Admin,
 		Result:   context.Result,
 		Content:  context.Content,
+		Settings: context.Settings,
 		Action:   context.Action,
 	}
+}
+
+// Get get context's Settings
+func (context *Context) Get(key string) interface{} {
+	return context.Settings[key]
+}
+
+// Set set context's Settings
+func (context *Context) Set(key string, value interface{}) {
+	context.Settings[key] = value
 }
 
 func (context *Context) resourcePath() string {
@@ -69,7 +81,9 @@ func (context *Context) Asset(layouts ...string) ([]byte, error) {
 	}
 
 	if len(themes) == 0 && context.Resource != nil {
-		themes = append(themes, context.Resource.Config.Themes...)
+		for _, theme := range context.Resource.Config.Themes {
+			themes = append(themes, theme.GetName())
+		}
 	}
 
 	if resourcePath := context.resourcePath(); resourcePath != "" {
@@ -98,37 +112,51 @@ func (context *Context) Asset(layouts ...string) ([]byte, error) {
 	return []byte(""), fmt.Errorf("template not found: %v", layouts)
 }
 
-// Render render template based on context
-func (context *Context) Render(name string, results ...interface{}) template.HTML {
+// renderText render text based on data
+func (context *Context) renderText(text string, data interface{}) template.HTML {
+	var (
+		err    error
+		tmpl   *template.Template
+		result = bytes.NewBufferString("")
+	)
+
+	if tmpl, err = template.New("").Funcs(context.FuncMap()).Parse(text); err == nil {
+		if err = tmpl.Execute(result, data); err == nil {
+			return template.HTML(result.String())
+		}
+	}
+
+	return template.HTML(err.Error())
+}
+
+// renderWith render template based on data
+func (context *Context) renderWith(name string, data interface{}) template.HTML {
 	var (
 		err     error
 		content []byte
 	)
 
+	if content, err = context.Asset(name + ".tmpl"); err == nil {
+		return context.renderText(string(content), data)
+	}
+	return template.HTML(err.Error())
+}
+
+// Render render template based on context
+func (context *Context) Render(name string, results ...interface{}) template.HTML {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprintf("Get error when render file %v: %v", name, r))
+			err := errors.New(fmt.Sprintf("Get error when render file %v: %v", name, r))
 			utils.ExitWithMsg(err)
 		}
 	}()
 
-	if content, err = context.Asset(name + ".tmpl"); err == nil {
-		var clone = context.clone()
-		var result = bytes.NewBufferString("")
-
-		if len(results) > 0 {
-			clone.Result = results[0]
-		}
-
-		var tmpl *template.Template
-		if tmpl, err = template.New(filepath.Base(name)).Funcs(clone.FuncMap()).Parse(string(content)); err == nil {
-			if err = tmpl.Execute(result, clone); err == nil {
-				return template.HTML(result.String())
-			}
-		}
+	clone := context.clone()
+	if len(results) > 0 {
+		clone.Result = results[0]
 	}
 
-	return template.HTML(err.Error())
+	return context.renderWith(name, clone)
 }
 
 // Execute execute template with layout

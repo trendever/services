@@ -253,7 +253,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	}
 
 	// Step0.8: notify chat; check before sending to chat to avoid inconsistiency if chat is down
-	err = ps.chat.SendCancelOrder(pay)
+	err = ps.chat.SendCancelOrder(pay, req.UserId)
 	if err != nil {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_CHAT_DOWN,

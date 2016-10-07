@@ -32,7 +32,7 @@ func main() {
 					}()
 				}
 				log.Info("Start service")
-				svc := project.ProjectService{}
+				svc := project.Service{}
 
 				if err := svc.Run(); err != nil {
 					log.Fatal(err)

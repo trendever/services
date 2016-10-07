@@ -1,54 +1,38 @@
 package resources
 
 import (
+	"core/models"
+	"core/qor/filters"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
-	"github.com/qor/qor"
-	"github.com/trendever/ajaxor"
 	"reflect"
 	"utils/log"
-
-	"core/models"
-	"core/qor/filters"
 )
 
 func init() {
-	addOnQorInitCallback(addShopResource)
+	addResource(models.Shop{}, &admin.Config{
+		Name: "Shops",
+	}, initShopResource)
 }
 
-func addShopResource(a *admin.Admin) {
-	res := a.AddResource(models.Shop{}, &admin.Config{
-		Name: "Shops",
-	})
-
-	// @TODO: make image URL editable
-	//res.Meta(&admin.Meta{Name: "Img", FieldName: "InstagramAvatarURL", Type: "image"})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Supplier",
-		Type: "select_one",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Sellers",
-		Type: "select_many",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{ //filters Sellers only to set ones
-		Name:      "SellersOnly",
-		FieldName: "Sellers",
-		Label:     "Sellers",
-		Type:      "select_many",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().Where("users_user.is_seller = true"))
-
-			return res.GetMeta("Sellers").GetCollection(this, searchCtx)
-		},
-	})
+func initShopResource(res *admin.Resource) {
+	// @TODO meta with collection will not use pagination. Any workaround?
+	// there was many places where it was used with ajaxor to filter search results
+	//res.Meta(&admin.Meta{
+	//	Name: "Sellers",
+	//	Type: "select_many",
+	//	Collection: func(_ interface{}, ctx *qor.Context) [][]string {
+	//		var values []*models.User
+	//		err := ctx.GetDB().Where("users_user.is_seller = true").Find(&values).Error
+	//		if err != nil {
+	//			log.Error(fmt.Errorf("failed to select values from db: %v", err))
+	//			return [][]string{}
+	//		}
+	//		ret := makeCollection(values, ctx.GetDB())
+	//		return ret
+	//	},
+	//})
 
 	res.Meta(&admin.Meta{
 		Name: "ShippingRules",
@@ -60,29 +44,9 @@ func addShopResource(a *admin.Admin) {
 		Type: "text",
 	})
 
-	ajaxor.Meta(res, &admin.Meta{
-		Name: "Tags",
-		Type: "select_many",
-	})
-
-	ajaxor.Meta(res, &admin.Meta{
-		Name:      "TagsSearch",
-		FieldName: "Tags",
-		Label:     "Tags",
-		Type:      "select_many",
-		Collection: func(this interface{}, ctx *qor.Context) [][]string {
-
-			searchCtx := ctx.Clone()
-
-			searchCtx.SetDB(ctx.GetDB().
-				Joins("JOIN products_shops_tags as tagrel ON products_tag.id = tagrel.tag_id").
-				Group("products_tag.id,tagrel.tag_id").
-				Having("COUNT(tagrel.tag_id) > 0").
-				Order("COUNT(tagrel.tag_id) DESC"),
-			)
-
-			return res.GetMeta("Tags").GetCollection(this, searchCtx)
-		},
+	res.Meta(&admin.Meta{
+		Name:      "Name",
+		FieldName: "InstagramUsername",
 	})
 
 	noteRes := res.Meta(&admin.Meta{Name: "Notes"}).Resource
@@ -141,7 +105,7 @@ func addShopResource(a *admin.Admin) {
 				{"ShippingRules"},
 				{"PaymentRules"},
 				{"Cards"},
-				{"NotifySupplier"},
+				{"NotifySupplier", "SeparateLeads"},
 			},
 		},
 		"Notes",
@@ -160,7 +124,7 @@ func addShopResource(a *admin.Admin) {
 				{"ShippingRules"},
 				{"PaymentRules"},
 				{"Cards"},
-				{"NotifySupplier"},
+				{"NotifySupplier", "SeparateLeads"},
 			},
 		},
 		"Notes",
@@ -169,17 +133,20 @@ func addShopResource(a *admin.Admin) {
 	res.NewAttrs(res.EditAttrs())
 	res.ShowAttrs(res.EditAttrs())
 
-	filters.MetaFilter(res, "TagsSearch", "eq")
 	res.Filter(&admin.Filter{
-		Name: "tags_id_eq",
-		Handler: func(fieldName, query string, scope *gorm.DB, context *qor.Context) *gorm.DB {
+		Name: "Tags",
+		Handler: func(scope *gorm.DB, arg *admin.FilterArgument) *gorm.DB {
+			metaValue := arg.Value.Get("Value")
+			if metaValue == nil {
+				return scope
+			}
 			return scope.Joins(`
-				INNER JOIN products_shops_tags as tagrel ON 
+				INNER JOIN products_shops_tags as tagrel ON
 				tagrel.shop_id = id AND tagrel.tag_id = ?
-			`, query)
+			`, metaValue.Value)
 		},
+		Config: &admin.SelectOneConfig{RemoteDataResource: res.GetAdmin().GetResource("Tags")},
 	})
 
-	filters.MetaFilter(res, "CreatedAt", "gt")
-	filters.MetaFilter(res, "CreatedAt", "lt")
+	filters.SetDateFilters(res, "CreatedAt")
 }

@@ -46,6 +46,7 @@ type ConversationRepository interface {
 	GetUnread(ids []uint64, userID uint64) (map[uint]uint64, error)
 	GetTotalUnread(userID uint64) (uint64, error)
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
+	DeleteConversation(id uint64) error
 }
 
 //Encode converts to protobuf model
@@ -280,7 +281,7 @@ func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, erro
 	err := c.db.
 		Select("COUNT(DISTINCT c.id)").
 		Table("members u").
-		Joins("JOIN conversations c ON u.conversation_id = c.id").
+		Joins("JOIN conversations c ON u.conversation_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN messages m ON m.conversation_id = c.id").
 		Where("u.user_id = ?", userID).
 		Where("u.last_message_id < m.id").
@@ -319,4 +320,8 @@ func (c *Conversation) GetMember(user_id uint64) *Member {
 		}
 	}
 	return nil
+}
+
+func (c *conversationRepositoryImpl) DeleteConversation(id uint64) error {
+	return c.db.Where("id = ?", id).Delete(&Conversation{}).Error
 }
