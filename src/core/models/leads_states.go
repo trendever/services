@@ -95,11 +95,6 @@ var (
 			From: []string{
 				leadStateEmpty,
 				leadStateNew,
-				leadStateInProgress,
-				leadStateSubmited,
-				leadStateOnDelivery,
-				leadStateCompleted,
-				leadStateCancelled,
 			},
 		},
 		leadEventProgress: {
@@ -181,7 +176,7 @@ type LeadEvent struct {
 }
 
 func init() {
-	LeadState.Initial(leadStateNew)
+	LeadState.Initial(leadStateEmpty)
 
 	// init state machine
 	for _, state := range leadStates {
