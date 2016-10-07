@@ -17,8 +17,8 @@ func init() {
 		Name: "Email templates",
 		Menu: []string{"Settings"},
 	}, initEmailTemplateResource)
-	addResource(&models.EmailTemplate{}, &admin.Config{
-		Name: "Email templates",
+	addResource(&models.PushTemplate{}, &admin.Config{
+		Name: "Push templates",
 		Menu: []string{"Settings"},
 	}, initPushTemplateResource)
 	addResource(&models.ChatTemplate{}, &admin.Config{
