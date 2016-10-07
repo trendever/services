@@ -352,3 +352,38 @@ func GetLeadProducts(lead *Lead) ([]*Product, error) {
 
 	return products, nil
 }
+
+// GetUsersForLead returns every userID that can possibly join this chat
+func GetUsersForLead(lead *Lead) ([]uint64, error) {
+
+	shop, err := GetShopByID(lead.ShopID)
+	if err != nil {
+		return nil, err
+	}
+
+	var out = []uint64{
+		uint64(lead.CustomerID),
+		uint64(shop.SupplierID),
+	}
+
+	sellers, err := GetSellersByShopID(lead.ShopID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, seller := range sellers {
+		out = append(out, uint64(seller.ID))
+	}
+
+	superSellers, err := GetSuperSellersIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, seller := range superSellers {
+		out = append(out, uint64(seller))
+	}
+
+	return out, nil
+
+}

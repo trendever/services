@@ -100,3 +100,21 @@ func handleNewSession(userID uint) {
 		log.Error(fmt.Errorf("failed to update last session in related shops for user %v: %v", userID, err))
 	}
 }
+
+// notifies API about new lead
+func notifyAPI(lead *models.Lead) {
+
+	users, err := models.GetUsersForLead(lead)
+	if err != nil {
+		log.Error(err)
+	}
+
+	err = nats.Publish("core.lead.created", &core.NewLeadMessage{
+		LeadId: uint64(lead.ID),
+		Users:  users,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+
+}
