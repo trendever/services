@@ -58,6 +58,8 @@ outer:
 				// thread is already crawled; no need to check more
 				log.Debug("Skipping not changed threads")
 				break outer
+			} else {
+				log.Debug("Top message differs from saved; do the crawl: %v %v", thread.Items[0].ItemID, info.LastCheckedID)
 			}
 
 			err = w.processThread(&info)
