@@ -118,9 +118,9 @@ message LeadInfo {
     uint64 conversation_id = 11;
     Shop shop = 12;
     int64 updated_at = 13;
-
     uint64 cancel_reason = 15;
     string status_comment = 16;
+    int64 updated_at_ago = 17;
 }
 
 message LeadEventMessage {
