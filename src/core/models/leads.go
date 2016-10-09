@@ -89,6 +89,7 @@ func (l *Lead) Encode() *core.LeadInfo {
 		ConversationId: l.ConversationID,
 		UserRole:       l.UserRole,
 		UpdatedAt:      l.ChatUpdatedAt.UnixNano(),
+		UpdatedAtAgo:   time.Since(l.ChatUpdatedAt).Nanoseconds(),
 		CancelReason:   uint64(l.CancelReasonID.Int64),
 		StatusComment:  l.StatusComment,
 	}
