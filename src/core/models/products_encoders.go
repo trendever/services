@@ -59,7 +59,7 @@ func (p *Product) Encode() *core.Product {
 		InstagramImageWidth:     uint32(p.InstagramImageWidth),
 		InstagramLink:           p.InstagramLink,
 		InstagramPublishedAt:    p.InstagramPublishedAt.Unix(),
-		InstagramPublishedAtAgo: time.Since(p.InstagramPublishedAt).Nanoseconds(),
+		InstagramPublishedAtAgo: int64(time.Since(p.InstagramPublishedAt).Seconds()),
 		InstagramLikesCount:     int32(p.InstagramLikesCount),
 		InstagramImages:         ImageCandidates(p.InstagramImages).Encode(),
 
