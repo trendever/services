@@ -199,3 +199,8 @@ message TotalCountUnreadRequest {
 message TotalCountUnreadReply {
     uint64 count = 1;
 }
+
+message SetStatusMessage {
+    uint64 conversation_id = 1;
+    string status = 2;
+}

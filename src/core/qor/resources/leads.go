@@ -4,6 +4,7 @@ import (
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
+	"core/views"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -17,11 +18,6 @@ func init() {
 		Name: "Orders",
 		Menu: []string{"Products"},
 	}, initLeadResource)
-}
-
-type leadEvent struct {
-	Resource *admin.Resource
-	Handler  func(*admin.ActionArgument, *gorm.DB, interface{}) error
 }
 
 func initLeadResource(res *admin.Resource) {
@@ -146,9 +142,6 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 		Email string
 	}
 
-	// helper map that allows to add custom action resources and handlers without unneeded copy&paste
-	events := map[string]leadEvent{}
-
 	// Add actions that trigger LeadState events
 	for i := range models.GetLeadEvents() {
 		var ev = models.GetLeadEvents()[i] // copy event so we can use it async
@@ -156,31 +149,18 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 		res.Action(&admin.Action{
 			Name:  ev.Name,
 			Modes: []string{"index", "menu_item"},
-
-			// exploit map default value here
-			Resource: events[ev.Name].Resource,
-
 			// that is what called when user clicks action
 			Handle: func(arg *admin.ActionArgument) error {
 
 				// we work in transcation: either everything transists to the new state, either nothing
-				tx := arg.Context.GetDB().Begin()
+				tx := db.NewTransaction()
+				leads := []*models.Lead{}
 
 				for _, order := range arg.FindSelectedRecords() {
 					lead := order.(*models.Lead)
 					log.Debug("Starting processing order %v", lead)
 
-					// run handler if exists
-					if handler := events[ev.Name].Handler; handler != nil {
-						err := handler(arg, tx, order)
-						if err != nil {
-							tx.Rollback()
-							log.Error(err)
-							return err
-						}
-					}
-
-					// then, trigger an event using qor/transition state machine instance
+					// trigger an event using qor/transition state machine instance
 					err := models.LeadState.Trigger(ev.Name, lead, tx)
 					if err != nil {
 						tx.Rollback()
@@ -195,9 +175,15 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 						log.Error(err)
 						return err
 					}
+					leads = append(leads, lead)
 				}
 
-				tx.Commit()
+				log.Error(tx.Commit().Error)
+
+				for _, lead := range leads {
+					views.NotifyAboutLeadEvent(lead, ev.Name)
+				}
+
 				return nil
 			},
 			// that defines if action is visible

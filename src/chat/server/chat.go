@@ -2,11 +2,19 @@ package server
 
 import (
 	"chat/models"
-	"chat/publisher"
 	"chat/queue"
 	"errors"
 	"golang.org/x/net/context"
 	proto_chat "proto/chat"
+	"utils/nats"
+)
+
+// NATS events
+const (
+	EventJoin            = "chat.member.join"
+	EventMessage         = "chat.message.new"
+	EventMessageReaded   = "chat.message.readed"
+	EventMessageAppended = "chat.message.appended"
 )
 
 type chatServer struct {
@@ -16,6 +24,15 @@ type chatServer struct {
 
 //NewChatServer returns implementation of protobuf ChatServiceServer
 func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_chat.ChatServiceServer {
+	nats.Subscribe(&nats.Subscription{
+		Subject: "chat.conversation.delete",
+		Group:   "chat",
+		Handler: chats.DeleteConversation,
+	}, &nats.Subscription{
+		Subject: "chat.conversation.set_status",
+		Group:   "chat",
+		Handler: chats.SetConversationStatus,
+	})
 	return &chatServer{chats: chats, queue: q}
 }
 
@@ -242,21 +259,21 @@ func (cs *chatServer) notifyChatAboutAppendedMessage(msg *proto_chat.Message) {
 		return
 	}
 
-	publisher.Publish(publisher.EventMessageAppended, &proto_chat.MessageAppendedRequest{
+	nats.Publish(EventMessageAppended, &proto_chat.MessageAppendedRequest{
 		Message: msg,
 		Chat:    chat.Encode(),
 	})
 }
 
 func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
-	publisher.Publish(publisher.EventMessage, &proto_chat.NewMessageRequest{
+	nats.Publish(EventMessage, &proto_chat.NewMessageRequest{
 		Chat:     chat,
 		Messages: messages,
 	})
 }
 
 func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messageID, userID uint64) {
-	publisher.Publish(publisher.EventMessageReaded, &proto_chat.MessageReadedRequest{
+	nats.Publish(EventMessageReaded, &proto_chat.MessageReadedRequest{
 		Chat:      chat,
 		MessageId: messageID,
 		UserId:    userID,
@@ -265,7 +282,7 @@ func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messag
 }
 
 func (cs *chatServer) notifyChatAboutNewMember(chat *proto_chat.Chat, member *proto_chat.Member) {
-	publisher.Publish(publisher.EventJoin, &proto_chat.NewChatMemberRequest{
+	nats.Publish(EventJoin, &proto_chat.NewChatMemberRequest{
 		Chat: chat,
 		User: member,
 	})

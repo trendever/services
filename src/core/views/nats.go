@@ -101,24 +101,39 @@ func handleNewSession(userID uint) {
 	}
 }
 
-// notifies API about new lead
-func notifyAPI(lead *models.Lead, channel, event string) {
+// notifies about lead event via NATS, changes related conversation status
+func NotifyAboutLeadEvent(lead *models.Lead, event string) {
 
-	log.Debug("Notifying API about new lead (%v)", lead.ID)
+	log.Debug("Notifying about lead %v event", lead.ID)
 
 	users, err := models.GetUsersForLead(lead)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get related users for lead %v: %v", lead.ID, err)
 	}
 
-	err = nats.Publish(channel, &core.LeadEventMessage{
+	err = nats.Publish("core.lead.event", &core.LeadEventMessage{
 		LeadId: uint64(lead.ID),
 		Users:  users,
 		Event:  event,
 	})
-
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to publush core.lead.event: %v", err)
 	}
 
+	chatStatus := "new"
+	switch lead.State {
+	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
+
+	case core.LeadStatus_CANCELLED.String():
+		chatStatus = "cancelled"
+	default:
+		chatStatus = "active"
+	}
+	err = nats.Publish("chat.conversation.set_status", &chat.SetStatusMessage{
+		ConversationId: lead.ConversationID,
+		Status:         chatStatus,
+	})
+	if err != nil {
+		log.Errorf("failed to publush chat.conversation.status: %v", err)
+	}
 }
