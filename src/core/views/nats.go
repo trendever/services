@@ -2,7 +2,6 @@ package views
 
 import (
 	"core/models"
-	"fmt"
 	"proto/chat"
 	"proto/core"
 	"time"
@@ -36,6 +35,31 @@ func init() {
 
 func newMessage(req *chat.NewMessageRequest) {
 	log.Error(models.TouchLead(req.Chat.Id))
+
+	lead, err := models.GetLead(0, req.Chat.Id, "Shop", "Shop.Supplier", "Shop.Sellers", "Customer")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	users := map[*models.User]bool{}
+	for _, msg := range req.Messages {
+		if msg.UserId != uint64(lead.Customer.ID) {
+			users[&lead.Customer] = true
+		}
+		if msg.UserId != uint64(lead.Shop.SupplierID) {
+			users[&lead.Shop.Supplier] = true
+		}
+		for _, seller := range lead.Shop.Sellers {
+			if msg.UserId != uint64(seller.ID) {
+				users[seller] = true
+			}
+		}
+	}
+	n := models.GetNotifier()
+	for user := range users {
+		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
+	}
 }
 
 func notifySellerAboutUnreadedMessage(msg *chat.Message) {
@@ -50,10 +74,6 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 	}
 
 	n := models.GetNotifier()
-
-	if msg.UserId != uint64(lead.Customer.ID) {
-		log.Error(n.NotifyCustomerAboutUnreadMessage(&lead.Customer, lead, msg))
-	}
 
 	for _, seller := range lead.Shop.Sellers {
 		if msg.UserId != uint64(seller.ID) {
@@ -78,7 +98,7 @@ func handleUserLogin(userID uint) {
 		Where("id = ?", userID).
 		UpdateColumn("confirmed", true).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to confirm user: %v", err))
+		log.Errorf("failed to confirm user: %v", err)
 	}
 }
 
@@ -88,7 +108,7 @@ func handleNewSession(userID uint) {
 		Where("id = ?", userID).
 		UpdateColumn("last_login", now).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to update last session for user %v: %v", userID, err))
+		log.Errorf("failed to update last session for user %v: %v", userID, err)
 	}
 	err = db.New().Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
@@ -97,28 +117,43 @@ func handleNewSession(userID uint) {
 			"notify_supplier":     true,
 		}).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to update last session in related shops for user %v: %v", userID, err))
+		log.Errorf("failed to update last session in related shops for user %v: %v", userID, err)
 	}
 }
 
-// notifies API about new lead
-func notifyAPI(lead *models.Lead, channel, event string) {
+// notifies about lead event via NATS, changes related conversation status
+func NotifyAboutLeadEvent(lead *models.Lead, event string) {
 
-	log.Debug("Notifying API about new lead (%v)", lead.ID)
+	log.Debug("Notifying about lead %v event", lead.ID)
 
 	users, err := models.GetUsersForLead(lead)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get related users for lead %v: %v", lead.ID, err)
 	}
 
-	err = nats.Publish(channel, &core.LeadEventMessage{
+	err = nats.Publish("core.lead.event", &core.LeadEventMessage{
 		LeadId: uint64(lead.ID),
 		Users:  users,
 		Event:  event,
 	})
-
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to publush core.lead.event: %v", err)
 	}
 
+	chatStatus := "new"
+	switch lead.State {
+	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
+
+	case core.LeadStatus_CANCELLED.String():
+		chatStatus = "cancelled"
+	default:
+		chatStatus = "active"
+	}
+	err = nats.Publish("chat.conversation.set_status", &chat.SetStatusMessage{
+		ConversationId: lead.ConversationID,
+		Status:         chatStatus,
+	})
+	if err != nil {
+		log.Errorf("failed to publush chat.conversation.set_status: %v", err)
+	}
 }

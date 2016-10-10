@@ -47,10 +47,6 @@ func init() {
 
 		// core lead events
 		&nats.Subscription{
-			Subject: "core.lead.created",
-			Handler: onLeadEvent,
-		},
-		&nats.Subscription{
 			Subject: "core.lead.event",
 			Handler: onLeadEvent,
 		},
@@ -103,7 +99,7 @@ func newChatMember(req *chat.NewChatMemberRequest) {
 
 func onLeadEvent(req *core.LeadEventMessage) {
 
-	log.Debug("Recieved new leadCreated message for %v", req.Users)
+	log.Debug("Recieved lead event message for %v", req.Users)
 
 	r := map[string]interface{}{
 		"lead":           req.LeadId,

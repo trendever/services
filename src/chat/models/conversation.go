@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"github.com/jinzhu/gorm"
 	pb_chat "proto/chat"
 	"utils/log"
@@ -47,6 +46,7 @@ type ConversationRepository interface {
 	GetTotalUnread(userID uint64) (uint64, error)
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
 	DeleteConversation(id uint64) error
+	SetConversationStatus(req *pb_chat.SetStatusMessage) error
 }
 
 //Encode converts to protobuf model
@@ -115,17 +115,6 @@ func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs .
 }
 
 func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ...*Message) error {
-	if chat.Status == "new" {
-		for _, m := range messages {
-			if m.Member != nil && m.Member.Role != pb_chat.MemberRole_name[int32(pb_chat.MemberRole_SYSTEM)] {
-				chat.Status = "active"
-				err := c.db.Save(chat).Error
-				if err != nil {
-					return fmt.Errorf("failed to update chat status: %v", err)
-				}
-			}
-		}
-	}
 	return c.db.Model(chat).Association("Messages").Append(messages).Error
 }
 
@@ -285,6 +274,7 @@ func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, erro
 		Joins("JOIN messages m ON m.conversation_id = c.id").
 		Where("u.user_id = ?", userID).
 		Where("u.last_message_id < m.id").
+		Where("c.status != 'cancelled'").
 		Where("u.role = 'CUSTOMER' OR c.status != 'new'").
 		Row().
 		Scan(&missed)
@@ -324,4 +314,8 @@ func (c *Conversation) GetMember(user_id uint64) *Member {
 
 func (c *conversationRepositoryImpl) DeleteConversation(id uint64) error {
 	return c.db.Where("id = ?", id).Delete(&Conversation{}).Error
+}
+
+func (c *conversationRepositoryImpl) SetConversationStatus(req *pb_chat.SetStatusMessage) error {
+	return c.db.Model(&Conversation{}).Where("id = ?", req.ConversationId).UpdateColumn("status", req.Status).Error
 }

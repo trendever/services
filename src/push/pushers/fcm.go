@@ -3,7 +3,6 @@ package pushers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/betrok/go-fcm"
 	"proto/push"
 	"push/config"
@@ -72,7 +71,7 @@ func (s *FCMPusher) Push(notify *models.PushNotify, tokens []string) (*PushResul
 	res, err := cli.Send()
 	// connection  error
 	if err != nil {
-		log.Error(fmt.Errorf("FCMPusher: connection error: %v, %+v", err, res))
+		log.Errorf("FCMPusher: connection error: %v, %+v", err, res)
 		ret.NeedRetry = tokens
 		return &ret, nil
 	}
@@ -100,17 +99,17 @@ func (s *FCMPusher) Push(notify *models.PushNotify, tokens []string) (*PushResul
 
 			case FCMInvalidRegistration, FCMNotRegistered, FCMInvalidPackageName, FCMMismatchSenderId:
 				ret.Invalids = append(ret.Invalids, tokens[k])
-				log.Error(fmt.Errorf("FCMPusher: token '%v' is invalid: %v", tokens[k], err))
+				log.Errorf("FCMPusher: token '%v' is invalid: %v", tokens[k], err)
 
 			case FCMMessageTooBig, FCMInvalidDataKey, FCMInvalidTtl:
-				log.Error(fmt.Errorf("FCMPusher: invalid message: %v", err))
+				log.Errorf("FCMPusher: invalid message: %v", err)
 
 			case FCMInternalServerError, FCMDeviceMessageRateExceeded, FCMTopicsMessageRateExceeded:
 				log.Warn("FCMPusher: temporarily failed to send message for '%v': %v", tokens[k], err)
 				ret.NeedRetry = append(ret.NeedRetry, tokens[k])
 
 			default:
-				log.Error(fmt.Errorf("FCMPusher: unknown error while sending to '%v': %v", tokens[k], err))
+				log.Errorf("FCMPusher: unknown error while sending to '%v': %v", tokens[k], err)
 			}
 		}
 		if newToken, ok := item["registration_id"]; ok {

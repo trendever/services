@@ -3,7 +3,6 @@ package cmd
 import (
 	"chat/config"
 	"chat/models"
-	"chat/publisher"
 	"chat/queue"
 	"chat/server"
 	"github.com/spf13/cobra"
@@ -14,6 +13,7 @@ import (
 	"time"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -28,8 +28,10 @@ var cmdRun = &cobra.Command{
 		s := rpc.Serve(conf.Host + ":" + conf.Port)
 		db.Init(&conf.DB)
 		db := db.New()
+
 		repository := models.NewConversationRepository(db)
-		publisher.Init(repository)
+		nats.Init(conf.NatsURL)
+
 		chat.RegisterChatServiceServer(s, server.NewChatServer(
 			repository,
 			queue.NewWaiter(time.Minute*5),

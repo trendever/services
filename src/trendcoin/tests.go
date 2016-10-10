@@ -283,7 +283,7 @@ func runTests(configPath string) {
 	}
 	err = yaml.Unmarshal(file, &settings)
 	if err != nil {
-		log.Error(fmt.Errorf("filed to parse config: %v", err))
+		log.Errorf("filed to parse config: %v", err)
 	}
 	db.Init(&settings.DB)
 	Migrate(true)

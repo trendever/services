@@ -17,7 +17,7 @@ func SetDateFilters(res *admin.Resource, field string) {
 	tableName := scope.QuotedTableName()
 	fieldInfo, ok := scope.FieldByName(field)
 	if !ok {
-		log.Error(fmt.Errorf("field %v not fount in table %v", field, tableName))
+		log.Errorf("field %v not fount in table %v", field, tableName)
 		return
 	}
 	dbName := fieldInfo.DBName
@@ -39,7 +39,7 @@ func SetDateFilters(res *admin.Resource, field string) {
 				}
 				val, err := time.Parse("2006-01-02 15:04", data[0])
 				if err != nil {
-					log.Error(fmt.Errorf("failed to parse time in filter argument: %v", err))
+					log.Errorf("failed to parse time in filter argument: %v", err)
 					return scope
 				}
 				return scope.Where(fmt.Sprintf("%v.%v %v ?", tableName, dbName, op), val)

@@ -94,11 +94,11 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		return fmt.Errorf("failed to load templates: %v", res.Error)
 	}
 	if len(templates) == 0 {
-		log.Error(fmt.Errorf(
+		log.Errorf(
 			"suitable tamplates not found for productID = %v with group %v",
 			product.ID,
 			group,
-		))
+		)
 		return nil
 	}
 
@@ -121,16 +121,16 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		})
 
 		if err != nil {
-			log.Error(fmt.Errorf(
+			log.Errorf(
 				"failed to parse template with id %v for product %v in lead %v: %v",
 				tmpl.ID, product.ID, lead.ID, err,
-			))
+			)
 			continue
 		}
 
 		parts, ok := content.([]*chat.MessagePart)
 		if !ok {
-			log.Error(fmt.Errorf("template '%v' returned unexpected type", tmpl.TemplateName))
+			log.Errorf("template '%v' returned unexpected type", tmpl.TemplateName)
 			continue
 		}
 		if len(parts) == 0 {
@@ -167,7 +167,7 @@ func SendChatMessage(userID, conversationID uint64, parts ...*chat.MessagePart) 
 func SendStatusMessage(conversationID uint64, statusType, value string) {
 	err := joinChat(conversationID, chat.MemberRole_SYSTEM, &SystemUser)
 	if err != nil {
-		log.Error(fmt.Errorf("failed to join chat: %v", err))
+		log.Errorf("failed to join chat: %v", err)
 		return
 	}
 	content, _ := json.Marshal(struct {
@@ -183,7 +183,7 @@ func SendStatusMessage(conversationID uint64, statusType, value string) {
 		&chat.MessagePart{Content: string(content), MimeType: "json/status"},
 	)
 	if err != nil {
-		log.Error(fmt.Errorf("failed to send message: %v", err))
+		log.Errorf("failed to send message: %v", err)
 	}
 }
 

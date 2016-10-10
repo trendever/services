@@ -149,6 +149,11 @@ func Error(err error) {
 	log(LevelError, err)
 }
 
+// Error puts error log, format version
+func Errorf(format string, values ...interface{}) {
+	log(LevelError, fmt.Errorf(format, values...))
+}
+
 //Fatal puts fatal error log
 func Fatal(err error) {
 	if err == nil {

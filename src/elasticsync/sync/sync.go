@@ -402,7 +402,7 @@ func saveMeta(products map[uint64]*models.ElasticProduct, res *elastic.BulkRespo
 		}
 	}
 	if err != nil {
-		log.Error(fmt.Errorf("at last one action failed, last error: %v", err))
+		log.Errorf("at last one action failed, last error: %v", err)
 	}
 	if len(arguments) == 0 {
 		return

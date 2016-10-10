@@ -56,9 +56,6 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 			log.Error(err)
 			return nil, err
 		}
-
-		// send this message only on new lead
-		go notifyAPI(lead, "core.lead.created", "CREATE")
 	} else {
 		lead = existsLead
 	}
@@ -83,8 +80,6 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	}
 
-	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
-
 	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
 		//Event CREATE performs chat creation
 		if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {
@@ -97,6 +92,12 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 			//that's also not critical
 			log.Error(err)
 		}
+	}
+
+	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
+	if existsLead != nil {
+		// send this message only on new lead
+		go NotifyAboutLeadEvent(lead, "CREATE")
 	}
 
 	// If chat is down, conversation is not created (yet)
@@ -199,7 +200,7 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	if req.Event == core.LeadStatusEvent_CANCEL {
 		err := db.New().First(&reason).Error
 		if err != nil {
-			log.Error(fmt.Errorf("failed to load cancel reason %v: %v", reason.ID, err))
+			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
 		} else {
 			upd["cancel_reason_id"] = reason.ID
 			reasonIsValid = true
@@ -227,10 +228,10 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	if reasonIsValid {
 		chatMsg, err := reason.GenChatMessage(lead, user)
 		if err != nil {
-			log.Error(fmt.Errorf(
+			log.Errorf(
 				"failed to generate chat message for cancel reason %v: %v",
 				reason.ID, err,
-			))
+			)
 		}
 		if chatMsg != "" {
 			go func() {
@@ -247,7 +248,7 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 
 	// notify stuff
 	go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
-	go notifyAPI(lead, "core.lead.event", req.Event.String())
+	go NotifyAboutLeadEvent(lead, req.Event.String())
 
 	return &core.SetLeadStatusReply{Lead: lead.Encode()}, nil
 }

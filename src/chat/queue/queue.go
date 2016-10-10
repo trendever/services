@@ -3,12 +3,16 @@ package queue
 import (
 	"chat/common"
 	"chat/models"
-	"chat/publisher"
-	"fmt"
 	"proto/chat"
 	"sync"
 	"time"
 	"utils/log"
+	"utils/nats"
+)
+
+const (
+	//EventNotifySeller is a notification about a not answered message
+	EventNotifySeller = "core.notify.message"
 )
 
 type Waiter interface {
@@ -46,7 +50,7 @@ func (q *queue) start() {
 func (q *queue) inboxLoop() {
 	for msg := range q.inbox {
 		if msg.Member == nil {
-			log.Error(fmt.Errorf("Message without a loaded member!"))
+			log.Errorf("Message without a loaded member!")
 			continue
 		}
 		switch {
@@ -123,6 +127,6 @@ func (q *queue) notify() {
 	}
 
 	delete(q.chatMap, msg.ConversationID)
-	publisher.Publish(publisher.EventNotifySeller, msg.Encode())
+	nats.Publish(EventNotifySeller, msg.Encode())
 	log.Debug("Notify about message %v", msg.ID)
 }
