@@ -20,8 +20,8 @@ func init() {
 	topics := []string{
 		"notify_seller_about_lead",
 		"notify_customer_about_lead",
-		"notify_customer_about_unread_message",
 		"notify_seller_about_unread_message",
+		"notify_user_about_new_messages",
 		"call_supplier_to_chat",
 		"call_customer_to_chat",
 	}
@@ -63,7 +63,6 @@ func (n *Notifier) NotifyByEmail(dest, about string, model interface{}) error {
 	template := &EmailTemplate{}
 	ret := n.db.Find(template, "template_id = ?", about)
 	if ret.RecordNotFound() {
-		log.Warn("Email template with ID '%v' not found", about)
 		return nil
 	}
 	if ret.Error != nil {
@@ -102,7 +101,6 @@ func (n *Notifier) NotifyBySms(phone, about string, model interface{}) error {
 	template := &SMSTemplate{}
 	ret := n.db.Find(template, "template_id = ?", about)
 	if ret.RecordNotFound() {
-		log.Warn("SMS template with ID '%v' not found", about)
 		return nil
 	}
 	if ret.Error != nil {
@@ -145,7 +143,6 @@ func (n *Notifier) NotifyByPush(receivers []*push.Receiver, about string, model 
 	template := &PushTemplate{}
 	ret := n.db.Find(template, "template_id = ?", about)
 	if ret.RecordNotFound() {
-		log.Warn("push template with ID '%v' not found", about)
 		return nil
 	}
 	if ret.Error != nil {
@@ -219,14 +216,20 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 	if smsError == nil && emailError == nil && pushError == nil {
 		return nil
 	}
-	return fmt.Errorf(
-		"following errors happened while trying to notify user '%v' about %v:\n\tsms: %v\n\temail: %v\n\tpush: %v",
-		user.Stringify(),
-		about,
-		smsError,
-		emailError,
-		pushError,
+	strErr := fmt.Sprintf(
+		"following errors happened while trying to notify user '%v' about %v:",
+		user.Stringify(), about,
 	)
+	if smsError != nil {
+		strErr += fmt.Sprintf("\n\t sms: %v", smsError)
+	}
+	if emailError != nil {
+		strErr += fmt.Sprintf("\n\t email: %v", emailError)
+	}
+	if pushError != nil {
+		strErr += fmt.Sprintf("\n\t push: %v", pushError)
+	}
+	return errors.New(strErr)
 }
 
 func (n *Notifier) NotifySellerAboutLead(seller *User, lead *Lead) error {
@@ -241,6 +244,23 @@ func (n *Notifier) NotifySellerAboutLead(seller *User, lead *Lead) error {
 			"Seller": seller,
 			"URL":    url,
 			"Lead":   lead,
+		},
+	)
+}
+
+func (n *Notifier) NotifyUserAboutNewMessages(user *User, lead *Lead, msgs []*chat.Message) error {
+	url, err := mkShortChatUrl(user.ID, lead.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get lead url: %v", err)
+	}
+	return n.NotifyUserAbout(
+		user,
+		"notify_user_about_new_messages",
+		map[string]interface{}{
+			"User":     user,
+			"URL":      url,
+			"Lead":     lead,
+			"Messages": msgs,
 		},
 	)
 }
@@ -274,23 +294,6 @@ func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead, msg 
 			"URL":     url,
 			"Lead":    lead,
 			"Message": msg,
-		},
-	)
-}
-
-func (n *Notifier) NotifyCustomerAboutUnreadMessage(customer *User, lead *Lead, msg *chat.Message) error {
-	url, err := mkShortChatUrl(customer.ID, lead.ID)
-	if err != nil {
-		return fmt.Errorf("failed to get lead url: %v", err)
-	}
-	return n.NotifyUserAbout(
-		customer,
-		"notify_customer_about_unread_message",
-		map[string]interface{}{
-			"Customer": customer,
-			"URL":      url,
-			"Lead":     lead,
-			"Message":  msg,
 		},
 	)
 }

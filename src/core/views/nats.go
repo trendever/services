@@ -35,6 +35,31 @@ func init() {
 
 func newMessage(req *chat.NewMessageRequest) {
 	log.Error(models.TouchLead(req.Chat.Id))
+
+	lead, err := models.GetLead(0, req.Chat.Id, "Shop", "Shop.Supplier", "Shop.Sellers", "Customer")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	users := map[*models.User]bool{}
+	for _, msg := range req.Messages {
+		if msg.UserId != uint64(lead.Customer.ID) {
+			users[&lead.Customer] = true
+		}
+		if msg.UserId != uint64(lead.Shop.SupplierID) {
+			users[&lead.Shop.Supplier] = true
+		}
+		for _, seller := range lead.Shop.Sellers {
+			if msg.UserId != uint64(seller.ID) {
+				users[seller] = true
+			}
+		}
+	}
+	n := models.GetNotifier()
+	for user := range users {
+		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
+	}
 }
 
 func notifySellerAboutUnreadedMessage(msg *chat.Message) {
@@ -49,10 +74,6 @@ func notifySellerAboutUnreadedMessage(msg *chat.Message) {
 	}
 
 	n := models.GetNotifier()
-
-	if msg.UserId != uint64(lead.Customer.ID) {
-		log.Error(n.NotifyCustomerAboutUnreadMessage(&lead.Customer, lead, msg))
-	}
 
 	for _, seller := range lead.Shop.Sellers {
 		if msg.UserId != uint64(seller.ID) {
@@ -133,6 +154,6 @@ func NotifyAboutLeadEvent(lead *models.Lead, event string) {
 		Status:         chatStatus,
 	})
 	if err != nil {
-		log.Errorf("failed to publush chat.conversation.status: %v", err)
+		log.Errorf("failed to publush chat.conversation.set_status: %v", err)
 	}
 }
