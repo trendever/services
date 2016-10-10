@@ -193,6 +193,10 @@ func initChatTemplateResource(chat *admin.Resource) {
 		Type:       "select_one",
 		Collection: models.LeadSources,
 	})
+	caseRes.Meta(&admin.Meta{
+		Name:      "IfSupplierIsRegistered",
+		FieldName: "ForSuppliersWithNotices",
+	})
 	attrs = []*admin.Section{
 		{
 			Rows: [][]string{
