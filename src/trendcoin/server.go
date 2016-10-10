@@ -70,7 +70,7 @@ func (s *TrendcoinServer) loop() {
 		ans := &proto.MakeTransactionsReply{}
 		err := req.Transactions.Perform()
 		if err != nil {
-			log.Error(fmt.Errorf("failed to perform trasactions: %v", err))
+			log.Errorf("failed to perform trasactions: %v", err)
 			ans.Error = err.Error()
 		}
 		for _, trans := range req.Transactions {
@@ -99,7 +99,7 @@ func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.Transactio
 	}
 	err := scope.Find(&transactions).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to load transactions log for user %v: %v", in.UserId, err))
+		log.Errorf("failed to load transactions log for user %v: %v", in.UserId, err)
 		return &proto.TransactionLogReply{
 			Error: err.Error(),
 		}, nil

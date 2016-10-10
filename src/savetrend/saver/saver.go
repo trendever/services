@@ -263,7 +263,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 	if !mentioner.Confirmed && mention.DirectThreadId != "" {
 		err = notifyChat(mention)
 		if err != nil {
-			log.Error(fmt.Errorf("Failed no reply in direct chat: %v", err))
+			log.Errorf("Failed no reply in direct chat: %v", err)
 		}
 	}
 

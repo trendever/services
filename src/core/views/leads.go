@@ -200,7 +200,7 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	if req.Event == core.LeadStatusEvent_CANCEL {
 		err := db.New().First(&reason).Error
 		if err != nil {
-			log.Error(fmt.Errorf("failed to load cancel reason %v: %v", reason.ID, err))
+			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
 		} else {
 			upd["cancel_reason_id"] = reason.ID
 			reasonIsValid = true
@@ -228,10 +228,10 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	if reasonIsValid {
 		chatMsg, err := reason.GenChatMessage(lead, user)
 		if err != nil {
-			log.Error(fmt.Errorf(
+			log.Errorf(
 				"failed to generate chat message for cancel reason %v: %v",
 				reason.ID, err,
-			))
+			)
 		}
 		if chatMsg != "" {
 			go func() {

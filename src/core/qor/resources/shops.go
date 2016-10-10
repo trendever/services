@@ -26,7 +26,7 @@ func initShopResource(res *admin.Resource) {
 	//		var values []*models.User
 	//		err := ctx.GetDB().Where("users_user.is_seller = true").Find(&values).Error
 	//		if err != nil {
-	//			log.Error(fmt.Errorf("failed to select values from db: %v", err))
+	//			log.Errorf("failed to select values from db: %v", err)
 	//			return [][]string{}
 	//		}
 	//		ret := makeCollection(values, ctx.GetDB())

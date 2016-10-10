@@ -2,7 +2,6 @@ package elastic
 
 import (
 	"errors"
-	"fmt"
 	"gopkg.in/olivere/elastic.v3"
 	"time"
 	"utils/log"
@@ -27,7 +26,7 @@ func (*eDebugLogger) Printf(format string, values ...interface{}) {
 type eErrorLogger struct{}
 
 func (*eErrorLogger) Printf(format string, values ...interface{}) {
-	log.Error(fmt.Errorf(format, values...))
+	log.Errorf(format, values...)
 }
 
 func Init(settings *Settings) {

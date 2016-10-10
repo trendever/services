@@ -6,7 +6,6 @@ import (
 	"api/models"
 	"api/soso"
 	"errors"
-	"fmt"
 	"net/http"
 	"proto/core"
 	"strings"
@@ -173,7 +172,7 @@ func GetCancelReasons(c *soso.Context) {
 	defer cancel()
 	resp, err := leadServiceClient.GetCancelReasons(ctx, &core.GetCancelReasonsRequest{})
 	if err != nil {
-		log.Error(fmt.Errorf("failed to get cancel reasons: %v", err))
+		log.Errorf("failed to get cancel reasons: %v", err)
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
@@ -242,7 +241,7 @@ func SetLeadStatus(c *soso.Context) {
 
 			go chat.BroadcastMessage(lead.Chat.Members, c, remote_ctx)
 		} else {
-			log.Error(fmt.Errorf("Chat with id %v not found", lead.ConversationId))
+			log.Errorf("Chat with id %v not found", lead.ConversationId)
 		}
 
 	}

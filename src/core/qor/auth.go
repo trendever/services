@@ -3,7 +3,6 @@ package qor
 import (
 	"core/models"
 	"core/utils"
-	"fmt"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"utils/log"
@@ -52,7 +51,7 @@ func (Auth) GetCurrentUser(c *admin.Context) qor.CurrentUser {
 	}
 
 	if !user.IsAdmin {
-		log.Error(fmt.Errorf("User %v has no admin rights", user))
+		log.Errorf("User %v has no admin rights", user)
 		return nil
 	}
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"golang.org/x/net/context"
 	"instagram"
 	"io/ioutil"
@@ -70,7 +69,7 @@ func (s *CheckerServer) loop() {
 				Limit(settings.RequestsPerTick).Order("id ASC").
 				Find(&users).Error
 			if err != nil {
-				log.Error(fmt.Errorf("failed to load users for update: %v", err))
+				log.Errorf("failed to load users for update: %v", err)
 			}
 			for _, user := range users {
 				checkUser(&user)
@@ -82,7 +81,7 @@ func (s *CheckerServer) loop() {
 			log.Debug("%v users have been checked", len(users))
 			err = saveLastChecked(lastChecked)
 			if err != nil {
-				log.Error(fmt.Errorf("failed to save last checked: %v", err))
+				log.Errorf("failed to save last checked: %v", err)
 			}
 		case id, ok := <-s.queryChan:
 			if !ok {
@@ -91,7 +90,7 @@ func (s *CheckerServer) loop() {
 			user := User{ID: id}
 			err := db.New().First(&user).Error
 			if err != nil {
-				log.Error(fmt.Errorf("failed to load user for update: %v", err))
+				log.Errorf("failed to load user for update: %v", err)
 			}
 			checkUser(&user)
 			log.Debug("user %v updated by request", id)
@@ -115,7 +114,7 @@ func checkUser(user *User) {
 	if nameValidator.MatchString(user.InstagramUsername) {
 		candidates, err := Instagram.GetFree().SearchUsers(user.InstagramUsername)
 		if err != nil {
-			log.Error(fmt.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err))
+			log.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err)
 			return
 		}
 		for i := range candidates.Users {
@@ -142,14 +141,14 @@ func checkUser(user *User) {
 				updateMap["instagram_avatar_url"] = instagramInfo.ProfilePicURL
 				updateMap["avatar_url"] = avatarURL
 			} else {
-				log.Error(fmt.Errorf("failed to upload new avatar for user %v: %v", user.ID, err))
+				log.Errorf("failed to upload new avatar for user %v: %v", user.ID, err)
 			}
 		}
 	}
 	if len(updateMap) != 0 {
 		err := db.New().Model(&user).UpdateColumns(updateMap).Error
 		if err != nil {
-			log.Error(fmt.Errorf("failed to update user %v: %v", user.ID, err))
+			log.Errorf("failed to update user %v: %v", user.ID, err)
 		}
 	}
 }

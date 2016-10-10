@@ -3,7 +3,6 @@ package queue
 import (
 	"chat/common"
 	"chat/models"
-	"fmt"
 	"proto/chat"
 	"sync"
 	"time"
@@ -51,7 +50,7 @@ func (q *queue) start() {
 func (q *queue) inboxLoop() {
 	for msg := range q.inbox {
 		if msg.Member == nil {
-			log.Error(fmt.Errorf("Message without a loaded member!"))
+			log.Errorf("Message without a loaded member!")
 			continue
 		}
 		switch {

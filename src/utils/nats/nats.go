@@ -28,7 +28,7 @@ func Subscribe(subs ...*Subscription) {
 		if encoded != nil {
 			err := subscribe(sub)
 			if err != nil {
-				log.Error(fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err))
+				log.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err)
 			}
 		}
 	}

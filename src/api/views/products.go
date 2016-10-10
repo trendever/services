@@ -6,7 +6,6 @@ import (
 	"api/soso"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"gopkg.in/olivere/elastic.v3"
 	"net/http"
 	"proto/core"
@@ -217,7 +216,7 @@ func GetSpecialProducts(c *soso.Context) {
 		err = errors.New(res.Err)
 	}
 	if err != nil {
-		log.Error(fmt.Errorf("Failed to get special products list: %v", err))
+		log.Errorf("Failed to get special products list: %v", err)
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}

@@ -94,7 +94,7 @@ func (slice TransactionsSlice) Perform() error {
 		if err == nil {
 			continue
 		}
-		log.Error(fmt.Errorf("while performing transaction %+v: %v", trans, err))
+		log.Errorf("while performing transaction %+v: %v", trans, err)
 		tx.Rollback()
 		return err
 	}

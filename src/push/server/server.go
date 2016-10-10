@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"golang.org/x/net/context"
 	"proto/core"
 	"proto/push"
@@ -63,12 +62,12 @@ func (s *PushServer) pushInternal(notify *models.PushNotify) map[push.ServiceTyp
 	for service, tokens := range tokens {
 		pusher, err := pushers.GetPusher(service)
 		if err != nil {
-			log.Error(fmt.Errorf("failed to get pusher %v: %v", service.String(), err))
+			log.Errorf("failed to get pusher %v: %v", service.String(), err)
 			continue
 		}
 		res, err := pusher.Push(notify, tokens)
 		if err != nil {
-			log.Error(fmt.Errorf("failed to send message via service %v: %v", service.String(), err))
+			log.Errorf("failed to send message via service %v: %v", service.String(), err)
 			continue
 		}
 		if res.Invalids != nil {
@@ -92,7 +91,7 @@ func (s *PushServer) saveRetries(notify *models.PushNotify, retries map[push.Ser
 	}
 	err := db.New().Create(&notify).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to save retries: %v", err))
+		log.Errorf("failed to save retries: %v", err)
 	}
 }
 
@@ -114,7 +113,7 @@ func (s *PushServer) retryLoop() {
 			var saved []models.PushNotify
 			err := db.New().Preload("Receivers").Limit(100).Find(&saved, "last_try < ?", now.Truncate(time.Duration(s.retryTimeout)*time.Second)).Error
 			if err != nil {
-				log.Error(fmt.Errorf("failed to load reties: %v", err))
+				log.Errorf("failed to load reties: %v", err)
 				continue
 			}
 			if len(saved) == 0 {
@@ -126,17 +125,17 @@ func (s *PushServer) retryLoop() {
 				if notify.Receivers == nil {
 					err := db.New().Delete(&notify).Error
 					if err != nil {
-						log.Error(fmt.Errorf("failed to delete resended notify: %v", err))
+						log.Errorf("failed to delete resended notify: %v", err)
 					}
 				} else {
 					notify.LastTry = now
 					err := db.New().Find(&notify.Receivers).Error
 					if err != nil {
-						log.Error(fmt.Errorf("failed to save updated notify: %v", err))
+						log.Errorf("failed to save updated notify: %v", err)
 					}
 					err = db.New().Save(&notify).Error
 					if err != nil {
-						log.Error(fmt.Errorf("failed to save updated notify: %v", err))
+						log.Errorf("failed to save updated notify: %v", err)
 					}
 				}
 			}

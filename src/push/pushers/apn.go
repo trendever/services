@@ -102,7 +102,7 @@ func (s *APNPusher) Push(notify *models.PushNotify, tokens []string) (*PushResul
 
 		// 410: The device token is no longer active for the topic
 		case 410:
-			log.Error(fmt.Errorf("APNPusher: token '%v' is invalid: %v(%v)", token, res.Reason, res.StatusCode))
+			log.Errorf("APNPusher: token '%v' is invalid: %v(%v)", token, res.Reason, res.StatusCode)
 			ret.Invalids = append(ret.Invalids, token)
 
 		// 429: The server received too many requests for the same device token.
@@ -124,7 +124,7 @@ func (s *APNPusher) Push(notify *models.PushNotify, tokens []string) (*PushResul
 
 		// nothing else in documentation actuality
 		default:
-			log.Error(fmt.Errorf("APNPusher: unexpected HTTP status code %v, reason: %v", res.StatusCode, res.Reason))
+			log.Errorf("APNPusher: unexpected HTTP status code %v, reason: %v", res.StatusCode, res.Reason)
 			ret.NeedRetry = append(ret.NeedRetry, token)
 		}
 	}

@@ -2,7 +2,6 @@ package views
 
 import (
 	"core/models"
-	"fmt"
 	"proto/chat"
 	"proto/core"
 	"time"
@@ -78,7 +77,7 @@ func handleUserLogin(userID uint) {
 		Where("id = ?", userID).
 		UpdateColumn("confirmed", true).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to confirm user: %v", err))
+		log.Errorf("failed to confirm user: %v", err)
 	}
 }
 
@@ -88,7 +87,7 @@ func handleNewSession(userID uint) {
 		Where("id = ?", userID).
 		UpdateColumn("last_login", now).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to update last session for user %v: %v", userID, err))
+		log.Errorf("failed to update last session for user %v: %v", userID, err)
 	}
 	err = db.New().Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
@@ -97,7 +96,7 @@ func handleNewSession(userID uint) {
 			"notify_supplier":     true,
 		}).Error
 	if err != nil {
-		log.Error(fmt.Errorf("failed to update last session in related shops for user %v: %v", userID, err))
+		log.Errorf("failed to update last session in related shops for user %v: %v", userID, err)
 	}
 }
 

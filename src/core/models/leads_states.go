@@ -3,7 +3,6 @@ package models
 import (
 	"core/api"
 	"errors"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"proto/chat"
@@ -244,17 +243,13 @@ func init() {
 				// @CHECK We cann't handle errors here for real...
 				if shop.NotifySupplier {
 					if err := n.NotifySellerAboutLead(&shop.Supplier, lead); err != nil {
-						log.Error(fmt.Errorf(
-							"failed to send notify for supplier: %v", err,
-						))
+						log.Errorf("failed to send notify for supplier: %v", err)
 					}
 				}
 
 				for _, seller := range shop.Sellers {
 					if err := n.NotifySellerAboutLead(seller, lead); err != nil {
-						log.Error(fmt.Errorf(
-							"failed to send notify for supplier: %v", err,
-						))
+						log.Errorf("failed to send notify for supplier: %v", err)
 					}
 				}
 			}()

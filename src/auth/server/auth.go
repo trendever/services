@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/dvsekhvalnov/jose2go"
 	"github.com/ttacon/libphonenumber"
 	"golang.org/x/net/context"
@@ -65,7 +64,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	}
 	userExists, err := s.core.ReadUser(context.Background(), userRequest)
 	if err != nil {
-		log.Error(fmt.Errorf("failed to read user with phone %v: %v", phoneNumber, err))
+		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
 		return nil, err
 	}
 	//That's mean we found confirmed user
@@ -83,13 +82,13 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	}
 	resp, err := s.core.FindOrCreateUser(context.Background(), newUser)
 	if err != nil {
-		log.Error(fmt.Errorf("failed to create user with phone %v: %v", phoneNumber, err))
+		log.Errorf("failed to create user with phone %v: %v", phoneNumber, err)
 		return nil, err
 	}
 
 	go (func() {
 		if err := s.sendSMSWithPassword(uint(resp.Id), phoneNumber); err != nil {
-			log.Error(fmt.Errorf("failed to send password sms to %v: %v", phoneNumber, err))
+			log.Errorf("failed to send password sms to %v: %v", phoneNumber, err)
 		}
 	})()
 
@@ -122,18 +121,18 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	resp, err := s.core.ReadUser(context.Background(), userRequest)
 
 	if err != nil {
-		log.Error(fmt.Errorf("failed to read user with phone %v: %v", phoneNumber, err))
+		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
 		return nil, err
 	}
 
 	if resp.Id == 0 {
-		log.Error(fmt.Errorf("user with phone %v not found", phoneNumber))
+		log.Errorf("user with phone %v not found", phoneNumber)
 		return s.wrongCredentialsReply(), nil
 	}
 
 	pass, err := s.passwords.FindByUserID(uint(resp.Id))
 	if err != nil {
-		log.Error(fmt.Errorf("failed to find password for user %v: %v", resp.Id, err))
+		log.Errorf("failed to find password for user %v: %v", resp.Id, err)
 		return nil, err
 	}
 
