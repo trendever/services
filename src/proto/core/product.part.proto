@@ -97,6 +97,7 @@ message Product {
   repeated ProductItem items = 15;
   repeated ImageCandidate instagram_images = 18;
   repeated User liked_by = 19;
+  int64 instagram_published_at_ago = 20;
 }
 
 
