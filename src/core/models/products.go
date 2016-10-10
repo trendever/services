@@ -32,6 +32,8 @@ type Product struct {
 	InstagramLikesCount   int
 	InstagramImages       []ImageCandidate
 
+	WebShopURL string `gorm:"type:text"`
+
 	// Product shop
 	ShopID uint `gorm:"index:shops_index"`
 	Shop   Shop

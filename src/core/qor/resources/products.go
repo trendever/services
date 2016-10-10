@@ -49,6 +49,7 @@ func initProductResource(res *admin.Resource) {
 			Rows: [][]string{
 				{"Code", "Title"},
 				{"IsSale"},
+				{"WebShopURL"},
 			},
 		},
 		&admin.Section{
@@ -76,6 +77,7 @@ func initProductResource(res *admin.Resource) {
 				{"Code", "Title"},
 				{"CreatedAt"},
 				{"IsSale"},
+				{"WebShopURL"},
 			},
 		},
 		&admin.Section{
