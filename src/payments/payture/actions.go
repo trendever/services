@@ -114,7 +114,7 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 	}
 
 	sess.Success = (res.State == successState)
-	sess.Finished = (res.OrderID != "") && (res.Success || (res.ErrCode != "" && res.ErrCode != "NONE"))
+	sess.Finished = (res.OrderID != "") && (sess.Success || (res.ErrCode != "" && res.ErrCode != "NONE"))
 	sess.State = res.State
 
 	finished = sess.Finished
