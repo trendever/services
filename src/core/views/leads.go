@@ -235,11 +235,13 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 		}
 		if chatMsg != "" {
 			go func() {
-				log.Error(models.SendChatMessage(
-					uint64(models.SystemUser.ID),
-					lead.ConversationID, &chat.MessagePart{
-						Content:  chatMsg,
-						MimeType: "text/plain",
+				log.Error(models.SendChatMessages(
+					lead.ConversationID,
+					&chat.Message{
+						UserId: uint64(models.SystemUser.ID),
+						Parts: []*chat.MessagePart{
+							{Content: string(chatMsg), MimeType: "text/plain"},
+						},
 					},
 				))
 			}()

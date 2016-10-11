@@ -109,6 +109,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 
 	specific := templates[0].ProductID
 
+	messages := []*chat.Message{}
 	for _, tmpl := range templates {
 		// we are at end of specific templates(if any)
 		if tmpl.ProductID != specific {
@@ -138,27 +139,28 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			continue
 		}
 		log.Debug("%v parts: %+v", len(parts), parts)
-
-		err = SendChatMessage(uint64(SystemUser.ID), lead.ConversationID, parts...)
-		if err != nil {
-			return fmt.Errorf("failed to send status message to chat: %v", err)
-		}
+		messages = append(messages, &chat.Message{
+			UserId: uint64(SystemUser.ID),
+			Parts:  parts,
+		})
+	}
+	err = SendChatMessages(lead.ConversationID, messages...)
+	if err != nil {
+		return fmt.Errorf("failed to send messages to chat: %v", err)
 	}
 	return nil
 }
 
-//SendChatMessage sends message to chat
-func SendChatMessage(userID, conversationID uint64, parts ...*chat.MessagePart) error {
+// SendChatMessages sends messages to chat
+func SendChatMessages(conversationID uint64, messages ...*chat.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
 	context, cancel := rpc.DefaultContext()
 	defer cancel()
 	_, err := api.ChatServiceClient.SendNewMessage(context, &chat.SendMessageRequest{
 		ConversationId: conversationID,
-		Messages: []*chat.Message{
-			{
-				UserId: userID,
-				Parts:  parts,
-			},
-		},
+		Messages:       messages,
 	})
 	return err
 }
@@ -177,10 +179,14 @@ func SendStatusMessage(conversationID uint64, statusType, value string) {
 		Type:  statusType,
 		Value: value,
 	})
-	err = SendChatMessage(
-		uint64(SystemUser.ID),
+	err = SendChatMessages(
 		conversationID,
-		&chat.MessagePart{Content: string(content), MimeType: "json/status"},
+		&chat.Message{
+			UserId: uint64(SystemUser.ID),
+			Parts: []*chat.MessagePart{
+				{Content: string(content), MimeType: "json/status"},
+			},
+		},
 	)
 	if err != nil {
 		log.Errorf("failed to send message: %v", err)
