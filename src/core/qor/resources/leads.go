@@ -152,7 +152,7 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			// that is what called when user clicks action
 			Handle: func(arg *admin.ActionArgument) error {
 
-				// we work in transcation: either everything transists to the new state, either nothing
+				// we work in transaction: either everything transits to the new state, either nothing
 				tx := db.NewTransaction()
 				leads := []*models.Lead{}
 
