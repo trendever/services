@@ -163,17 +163,17 @@ func (t PushTemplate) Validate(db *gorm.DB) {
 // Execute returns MessageFields object with ready-to-use fields
 func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
-	subject, err := applyTemplate(t.Subject, ctx)
+	subject, err := applyTemplate(t.Subject, ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := applyTemplate(t.Body, ctx)
+	body, err := applyTemplate(t.Body, ctx, true)
 	if err != nil {
 		return nil, err
 	}
 
-	from, err := applyTemplate(t.From, ctx)
+	from, err := applyTemplate(t.From, ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -187,17 +187,17 @@ func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
 // Execute returns ready-to-use message text
 func (t *SMSTemplate) Execute(ctx interface{}) (interface{}, error) {
-	return applyTemplate(t.Message, ctx)
+	return applyTemplate(t.Message, ctx, false)
 }
 
 // setting data to string from ctx["URL"] is hardcoded, you need this field in context or data will be empty
 func (t *PushTemplate) Execute(ctx interface{}) (interface{}, error) {
-	title, err := applyTemplate(t.Title, ctx)
+	title, err := applyTemplate(t.Title, ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := applyTemplate(t.Body, ctx)
+	body, err := applyTemplate(t.Body, ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,11 @@ func (t *PushTemplate) Execute(ctx interface{}) (interface{}, error) {
 }
 
 // applyTemplate applies template from string to ctx and returns result
-func applyTemplate(template string, ctx interface{}) (string, error) {
+func applyTemplate(template string, ctx interface{}, escape bool) (string, error) {
+	// there is no other way to disable autoescape on global level... Looks very dirty
+	if !escape {
+		template = "{% autoescape off %}" + template + "{% endautoescape %}"
+	}
 	tmpl, err := pongo2.FromString(template)
 	if err != nil {
 		return "", err
@@ -237,5 +241,5 @@ func applyTemplate(template string, ctx interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return strings.Trim(out, " \t\n"), nil
+	return strings.Trim(out, " \r\t\n"), nil
 }

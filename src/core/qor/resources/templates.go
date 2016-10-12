@@ -140,20 +140,22 @@ func initChatTemplateResource(chat *admin.Resource) {
 	})
 	chat.Meta(&admin.Meta{
 		Name: "Product",
-		Type: "select_one",
-		Collection: func(this interface{}, ctx *qor.Context) (results [][]string) {
-			var res []models.Product
-			ctx.GetDB().
-				Joins("LEFT JOIN products_shops ON products_product.shop_id = products_shops.id").
-				Where("products_shops.supplier_id = ?", models.SystemUser.ID).
-				Find(&res)
-			for _, p := range res {
-				results = append(
-					results,
-					[]string{strconv.FormatUint(uint64(p.ID), 10), p.Stringify()},
-				)
-			}
-			return
+		Config: &admin.SelectOneConfig{
+			AllowBlank: true,
+			Collection: func(this interface{}, ctx *qor.Context) (results [][]string) {
+				var res []models.Product
+				ctx.GetDB().
+					Joins("LEFT JOIN products_shops ON products_product.shop_id = products_shops.id").
+					Where("products_shops.supplier_id = ?", models.SystemUser.ID).
+					Find(&res)
+				for _, p := range res {
+					results = append(
+						results,
+						[]string{strconv.FormatUint(uint64(p.ID), 10), p.Stringify()},
+					)
+				}
+				return
+			},
 		},
 	})
 

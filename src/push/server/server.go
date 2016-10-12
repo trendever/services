@@ -43,6 +43,7 @@ func NewPushServer() *PushServer {
 
 func (s *PushServer) Push(_ context.Context, in *push.PushRequest) (*push.PushResult, error) {
 	notify := models.DecodeNotify(in)
+	log.Debug("new push request: %+v", notify)
 	retries := s.pushInternal(notify)
 	// there is no need to save short-lived messages
 	if in.Message.TimeToLive > config.Get().RetryTimeout/2 && len(retries) != 0 {

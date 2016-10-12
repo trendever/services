@@ -60,6 +60,20 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		lead = existsLead
 	}
 
+	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
+		//Event CREATE performs chat creation
+		if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {
+			//this errors not critical, we can change status from EMPTY to NEW later
+			err = db.New().Model(lead).UpdateColumn("state", lead.State).Error
+			if err != nil {
+				log.Error(err)
+			}
+		} else {
+			//that's also not critical
+			log.Error(err)
+		}
+	}
+
 	if protoLead.Action == core.LeadAction_BUY {
 		if count, err := models.AppendLeadItems(lead, prod.Items); err != nil {
 			log.Error(err)
@@ -80,35 +94,22 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	}
 
-	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
-		//Event CREATE performs chat creation
-		if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {
-			//this errors not critical, we can change status from EMPTY to NEW later
-			err = db.New().Model(lead).UpdateColumn("state", lead.State).Error
-			if err != nil {
-				log.Error(err)
-			}
-		} else {
-			//that's also not critical
-			log.Error(err)
-		}
-	}
-
-	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
-	if existsLead != nil {
-		// send this message only on new lead
-		go NotifyAboutLeadEvent(lead, "CREATE")
-	}
-
 	// If chat is down, conversation is not created (yet)
 	// Later CREATE lead event (see below) can be triggered to fix it
 	// So, everything is partly fine now
 	if lead.ConversationID != 0 {
 		go func() {
-			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil))
+			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, false))
 		}()
 	} else {
 		log.Error(errors.New("lead.ConversationID == 0"))
+	}
+
+	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
+	// @CHECK may be it's wrong place to do it
+	if existsLead != nil {
+		// send this message only on new lead
+		go NotifyAboutLeadEvent(lead, "CREATE")
 	}
 
 	leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
@@ -235,11 +236,13 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 		}
 		if chatMsg != "" {
 			go func() {
-				log.Error(models.SendChatMessage(
-					uint64(models.SystemUser.ID),
-					lead.ConversationID, &chat.MessagePart{
-						Content:  chatMsg,
-						MimeType: "text/plain",
+				log.Error(models.SendChatMessages(
+					lead.ConversationID,
+					&chat.Message{
+						UserId: uint64(models.SystemUser.ID),
+						Parts: []*chat.MessagePart{
+							{Content: string(chatMsg), MimeType: "text/plain"},
+						},
 					},
 				))
 			}()
