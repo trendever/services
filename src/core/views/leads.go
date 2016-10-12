@@ -59,7 +59,6 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	} else {
 		lead = existsLead
 	}
-	log.Debug("lead: %+v", lead)
 
 	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
 		//Event CREATE performs chat creation
