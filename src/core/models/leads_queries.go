@@ -342,6 +342,7 @@ func GetLeadProducts(lead *Lead) ([]*Product, error) {
 	products := []*Product{}
 	err = db.New().
 		Preload("Items").
+		Preload("InstagramImages").
 		Where("id in (?)", productIDs).
 		Find(&products).
 		Error
