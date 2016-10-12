@@ -117,11 +117,11 @@ func (m ChatTemplateMessage) Validate(db *gorm.DB) {
 
 // Execute returns ready-to-use message parts([]*chat.MessagePart)
 func (t *ChatTemplateMessage) Execute(ctx interface{}) (interface{}, error) {
-	text, err := applyTemplate(t.Text, ctx)
+	text, err := applyTemplate(t.Text, ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	data, err := applyTemplate(t.Data, ctx)
+	data, err := applyTemplate(t.Data, ctx, false)
 	if err != nil {
 		return nil, err
 	}
