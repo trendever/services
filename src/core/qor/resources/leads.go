@@ -158,10 +158,16 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 
 				for _, order := range arg.FindSelectedRecords() {
 					lead := order.(*models.Lead)
-					log.Debug("Starting processing order %v", lead)
+					err := tx.Preload("Shop").Preload("Shop.Supplier").Preload("Customer").First(lead).Error
+					if err != nil {
+						tx.Rollback()
+						log.Error(err)
+						return err
+					}
+					log.Debug("Starting processing order %+v", lead)
 
 					// trigger an event using qor/transition state machine instance
-					err := models.LeadState.Trigger(ev.Name, lead, tx)
+					err = models.LeadState.Trigger(ev.Name, lead, tx)
 					if err != nil {
 						tx.Rollback()
 						log.Error(err)

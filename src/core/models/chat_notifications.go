@@ -85,7 +85,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
 		Where("tmpl.group = ?", group).
 		Where("tmpl.product_id = ? OR tmpl.is_default", product.ID).
-		Where("c.for_suppliers_with_notices = ?", product.Shop.NotifySupplier).
+		Where("c.for_suppliers_with_notices = ?", lead.Shop.NotifySupplier).
 		Where("c.for_new_users = ? ", isNewUser).
 		Where("c.source = ?", source).
 		Order("tmpl.product_id IS NULL, msg.position").

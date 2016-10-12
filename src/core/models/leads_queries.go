@@ -249,6 +249,8 @@ func FindActiveLead(shopID, customerID uint64) (*Lead, error) {
 	scope := db.New().
 		Model(&Lead{}).
 		Preload("Customer").
+		Preload("Shop").
+		Preload("Shop.Supplier").
 		Joins("JOIN products_shops shop ON shop.id = products_leads.shop_id AND NOT shop.separate_leads").
 		Where(
 			"shop.id = ? AND products_leads.customer_id = ? AND products_leads.state IN (?)",
@@ -278,6 +280,12 @@ func CreateLead(protoLead *core.Lead, shopID uint) (*Lead, error) {
 	lead.ShopID = shopID
 	// If customer id is not correct, it should throw an error
 	if err := db.New().Create(&lead).Error; err != nil {
+		return nil, err
+	}
+	if err := db.New().Model(&lead).Related(&lead.Shop, "Shop").Related(&lead.Customer, "Customer").Error; err != nil {
+		return nil, err
+	}
+	if err := db.New().Model(&lead.Shop).Related(&lead.Shop.Supplier, "Supplier").Error; err != nil {
 		return nil, err
 	}
 	return lead, nil
@@ -342,6 +350,7 @@ func GetLeadProducts(lead *Lead) ([]*Product, error) {
 	products := []*Product{}
 	err = db.New().
 		Preload("Items").
+		Preload("InstagramImages").
 		Where("id in (?)", productIDs).
 		Find(&products).
 		Error
