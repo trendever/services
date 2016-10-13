@@ -10,7 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"proto/chat"
 	"proto/core"
 	"utils/db"
 	"utils/log"
@@ -234,16 +233,11 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 				reason.ID, err,
 			)
 		}
-		if chatMsg != "" {
+		if chatMsg != nil {
 			go func() {
 				log.Error(models.SendChatMessages(
 					lead.ConversationID,
-					&chat.Message{
-						UserId: uint64(models.SystemUser.ID),
-						Parts: []*chat.MessagePart{
-							{Content: string(chatMsg), MimeType: "text/plain"},
-						},
-					},
+					chatMsg,
 				))
 			}()
 		}
