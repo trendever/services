@@ -37,5 +37,5 @@ func (r *LeadCancelReason) GenChatMessage(lead *Lead, mover *User) (string, erro
 		"lead":   lead,
 		"mover":  mover,
 		"reason": r,
-	})
+	}, false)
 }

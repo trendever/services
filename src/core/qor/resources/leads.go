@@ -152,16 +152,22 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			// that is what called when user clicks action
 			Handle: func(arg *admin.ActionArgument) error {
 
-				// we work in transcation: either everything transists to the new state, either nothing
+				// we work in transaction: either everything transits to the new state, either nothing
 				tx := db.NewTransaction()
 				leads := []*models.Lead{}
 
 				for _, order := range arg.FindSelectedRecords() {
 					lead := order.(*models.Lead)
-					log.Debug("Starting processing order %v", lead)
+					err := tx.Preload("Shop").Preload("Shop.Supplier").Preload("Customer").First(lead).Error
+					if err != nil {
+						tx.Rollback()
+						log.Error(err)
+						return err
+					}
+					log.Debug("Starting processing order %+v", lead)
 
 					// trigger an event using qor/transition state machine instance
-					err := models.LeadState.Trigger(ev.Name, lead, tx)
+					err = models.LeadState.Trigger(ev.Name, lead, tx)
 					if err != nil {
 						tx.Rollback()
 						log.Error(err)

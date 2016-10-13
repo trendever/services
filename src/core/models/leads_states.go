@@ -226,7 +226,15 @@ func init() {
 		lead.ConversationID = resp.Chat.Id
 		err = db.New().Model(lead).UpdateColumn("conversation_id", resp.Chat.Id).Error
 		if err != nil {
-			log.Error(err)
+			// @CHECK chat leak... can we do something?
+			return err
+		}
+		// send products that have been added before chat creation
+		products, err := GetLeadProducts(lead)
+		init := true
+		for _, product := range products {
+			log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
+			init = false
 		}
 		return nil
 	})
