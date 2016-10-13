@@ -272,7 +272,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 		InstagramImageCaption: media.Caption.Text,
 		InstagramLink:         fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
 		InstagramLikesCount:   int32(media.LikeCount),
-		InstagramPublishedAt:  media.Caption.CreatedAtUtc,
+		InstagramPublishedAt:  media.TakenAt,
 
 		InstagramImages:      candidates,
 		InstagramImageUrl:    img.URL,
