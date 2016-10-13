@@ -218,30 +218,8 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		supplierUsername    string
 	)
 
-	if productMedia.Caption.UserID > 0 {
-		supplierInstagramID = productMedia.Caption.UserID
-		supplierUsername = productMedia.Caption.User.Username
-	} else {
-		var shopInstagramName = productMedia.User.Username
-
-		candidats, err := pool.GetFree().SearchUsers(shopInstagramName)
-		if err != nil {
-			return -1, true, fmt.Errorf("failed to search user '%v': %v", shopInstagramName, err)
-		}
-
-		for _, user := range candidats.Users {
-			if user.Username == shopInstagramName {
-				supplierInstagramID = user.Pk
-				supplierUsername = user.Username
-			}
-		}
-
-		if supplierInstagramID == 0 {
-			// something really weird search should (was) be stable. just skip the entry
-			return -1, false, fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
-		}
-
-	}
+	supplierInstagramID = productMedia.User.Pk
+	supplierUsername = productMedia.User.Username
 
 	supplierID, _, err := userID(supplierInstagramID, supplierUsername)
 	if err != nil {
