@@ -260,7 +260,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		return -1, true, err
 	}
 
-	if !mentioner.Confirmed && mention.DirectThreadId != "" {
+	if !mentioner.Confirmed {
 		err = notifyChat(mention)
 		if err != nil {
 			log.Errorf("Failed no reply in direct chat: %v", err)
@@ -432,16 +432,12 @@ func shopID(supplierID uint64) (uint64, error) {
 
 func notifyChat(mention *bot.Activity) error {
 
-	if mention.DirectThreadId == "" {
-		return nil
-	}
-
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ThreadId: mention.DirectThreadId,
-		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+		ActivityPk: mention.Pk,
+		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err

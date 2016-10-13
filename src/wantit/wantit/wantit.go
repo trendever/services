@@ -308,8 +308,8 @@ func notifyChat(mention *bot.Activity) error {
 	defer cancel()
 
 	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ThreadId: mention.DirectThreadId,
-		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+		ActivityPk: mention.Pk,
+		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err
