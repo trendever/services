@@ -29,8 +29,8 @@ func (act *Activity) TableName() string {
 	return "activities_activity"
 }
 
-// Save activity to db if new
-func (act *Activity) Save() error {
+// Create activity to db if new
+func (act *Activity) Create() error {
 	// write activity to DB
 	var count int
 
@@ -54,6 +54,11 @@ func (act *Activity) Save() error {
 
 	log.Debug("Add row: %v", act.Pk)
 	return nil
+}
+
+// Save existing activity
+func (act *Activity) Save() error {
+	return db.New().Save(act).Error
 }
 
 // Encode to protobuf

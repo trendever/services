@@ -163,12 +163,18 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          thread.ThreadID,
 	}
-	return act.Save()
+	return act.Create()
 }
 
-// SendDirectMsg sends response to the chat
+// SendDirectMsg sends text to a new chat
 func (w *Worker) SendDirectMsg(threadID, message string) error {
 
 	_, err := w.api.BroadcastText(threadID, message)
 	return err
+}
+
+// SendDirectMsgToUser sends text to user
+func (w *Worker) SendDirectMsgToUser(userID int64, message string) (*instagram.SendTextRespone, error) {
+	res, err := w.api.SendText(userID, message)
+	return res, err
 }

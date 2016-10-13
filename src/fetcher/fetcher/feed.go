@@ -68,7 +68,7 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 		act.MediaURL = stories.Args.Media[0].Image
 	}
 
-	return act.Save()
+	return act.Create()
 }
 
 // parse Args.Text field

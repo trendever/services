@@ -13,7 +13,7 @@ message RetrieveActivitiesRequest {
 }
 
 message SendDirectRequest {
-  string thread_id = 1;
+  string activity_pk = 1;
   string text = 2;
 }
 

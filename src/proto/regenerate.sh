@@ -10,7 +10,7 @@ path="$PWD"
 pkg=$(basename "${path}")
 proto="${path}/${pkg}.proto"
 
-cat - ${path}/*.part.proto > "${proto}" << EOF
+cat - "${path}"/*.part.proto > "${proto}" << EOF
 syntax = "proto3";
 package $pkg;
 EOF

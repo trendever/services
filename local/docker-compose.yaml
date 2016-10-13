@@ -119,6 +119,8 @@ services:
       - data
     working_dir: /services/
     command: bin/telebot start
+    ports:
+      - 127.0.0.1:4040:4040
 
   fetcher:
     image: debian:jessie
@@ -126,6 +128,8 @@ services:
       - data
     working_dir: /services/
     command: sh -c './bin/fetcher migrate && exec ./bin/fetcher start'
+    ports:
+      - 127.0.0.1:3006:3006
 
   savetrend:
     image: debian:jessie

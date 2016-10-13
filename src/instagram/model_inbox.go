@@ -210,6 +210,12 @@ type DirectThreadApproveAllResponse struct {
 	Message
 }
 
+// SendText is BroadcastText sent to users response
+type SendTextRespone struct {
+	Message
+	ThreadID string
+}
+
 // ThreadItems contains messages from the chat
 type ThreadItems []ThreadItem
 
