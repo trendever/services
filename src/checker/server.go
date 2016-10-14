@@ -106,7 +106,7 @@ func checkUser(user *User) {
 	}
 	var instagramInfo *instagram.SearchUserInfo
 	updateMap := map[string]interface{}{}
-	trimmed := strings.Trim(user.InstagramUsername, " \n\t")
+	trimmed := strings.Trim(user.InstagramUsername, " \r\n\t")
 	if trimmed != user.InstagramUsername {
 		user.InstagramUsername = trimmed
 		updateMap["instagram_username"] = trimmed

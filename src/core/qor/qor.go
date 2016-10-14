@@ -39,7 +39,6 @@ var (
 		&models.SMSTemplate{},
 		&models.PushTemplate{},
 		&models.ChatTemplate{},
-		&models.ChatTemplateCase{},
 		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},

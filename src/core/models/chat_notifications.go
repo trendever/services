@@ -81,13 +81,9 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 	res := db.New().
 		Select("msg.text, msg.data, msg.position, tmpl.template_name, tmpl.product_id").
 		Table("chat_template_messages msg").
-		Joins("JOIN chat_template_cases c ON c.id = msg.case_id").
-		Joins("JOIN chat_templates tmpl ON tmpl.id = c.template_id").
+		Joins("JOIN chat_templates tmpl ON tmpl.id = msg.template_id").
 		Where("tmpl.group = ?", group).
 		Where("tmpl.product_id = ? OR tmpl.is_default", product.ID).
-		Where("c.for_suppliers_with_notices = ?", lead.Shop.NotifySupplier).
-		Where("c.for_new_users = ? ", isNewUser).
-		Where("c.source = ?", source).
 		Order("tmpl.product_id IS NULL, msg.position").
 		Scan(&templates)
 	if res.Error != nil {
@@ -119,6 +115,8 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		content, err := tmpl.Execute(map[string]interface{}{
 			"lead":    lead,
 			"product": product,
+			"source":  source,
+			"newUser": isNewUser,
 		})
 
 		if err != nil {
