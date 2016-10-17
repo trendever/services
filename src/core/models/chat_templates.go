@@ -9,6 +9,7 @@ import (
 	"github.com/qor/validations"
 	"proto/chat"
 	"strings"
+	"utils/log"
 )
 
 type ChatTemplate struct {
@@ -42,8 +43,31 @@ func (t ChatTemplate) Validate(db *gorm.DB) {
 	if t.TemplateName == "" {
 		db.AddError(validations.NewError(t, "TemplateName", "Template name can not be empty"))
 	}
-	if !templateIDRegexp.MatchString(t.Group) {
-		db.AddError(validations.NewError(t, "Group", "Incorrect template group"))
+	log.Debug("validateing %+v...", t)
+
+	var ok bool
+	for _, group := range TemplatesList["chat"] {
+		if t.Group == group {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		db.AddError(validations.NewError(t, "Group", "Unknown template group"))
+	}
+
+	scope := db.New().Model(&ChatTemplate{}).Where(`"group" = ?`, t.Group).Where("id != ?", t.ID)
+	if t.Product.ID != 0 {
+		scope = scope.Where("product_id = ?", t.Product.ID)
+	} else {
+		scope = scope.Where("product_id IS NULL")
+	}
+	var count uint
+	scope.Count(&count)
+	if count > 0 {
+		db.AddError(validations.NewError(
+			t, "ProductID", "Template with this group and prodcut already exists",
+		))
 	}
 
 	if t.IsDefault && t.Product.ID != 0 {
