@@ -101,7 +101,7 @@ outer:
 		msgs := resp.Thread.Items
 		sort.Sort(msgs)
 
-		for _, message := range msgs { // range over page messages
+		for id, message := range msgs { // range over page messages
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
 			lastCrawledID = message.ItemID
 
@@ -114,7 +114,13 @@ outer:
 			if message.ItemType == "media_share" && message.MediaShare != nil {
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
-				if err := w.fillDirect(&message, &resp.Thread); err != nil {
+				// comment is in next follow-up message
+				var comment string
+				if id+1 < len(msgs) && msgs[id+1].ItemType == "text" && msgs[id+1].UserID == message.UserID {
+					comment = message.Text
+				}
+
+				if err := w.fillDirect(&message, &resp.Thread, comment); err != nil {
 					return err
 				}
 			}
@@ -132,7 +138,7 @@ outer:
 }
 
 // fill database model by direct message
-func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread) error {
+func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, comment string) error {
 
 	share := item.MediaShare
 
@@ -158,7 +164,7 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		UserImageURL:      share.User.ProfilePicURL,
 		MentionedUsername: w.api().GetUserName(),
 		Type:              "direct",
-		Comment:           item.Text,
+		Comment:           comment,
 		MediaID:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          thread.ThreadID,
