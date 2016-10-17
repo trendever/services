@@ -12,7 +12,7 @@ import (
 )
 
 type ChatTemplate struct {
-	ID uint `gorm:"primary_key"`
+	ID uint64 `gorm:"primary_key"`
 
 	// Template fields
 	TemplateName string
@@ -25,23 +25,13 @@ type ChatTemplate struct {
 	// When true this template will be used if there is no specific templates
 	IsDefault bool
 
-	Cases []ChatTemplateCase `gorm:"ForeignKey:TemplateID"`
-}
-
-type ChatTemplateCase struct {
-	ID         uint `gorm:"primary_key"`
-	TemplateID uint `gorm:"index"`
-	// lead source with which this template can be used
-	Source                  string
-	ForNewUsers             bool
-	ForSuppliersWithNotices bool
-
-	Messages []ChatTemplateMessage `gorm:"ForeignKey:CaseID"`
+	Messages       []ChatTemplateMessage `gorm:"ForeignKey:TemplateID"`
+	MessagesSorter sorting.SortableCollection
 }
 
 type ChatTemplateMessage struct {
-	ID     uint `gorm:"primary_key"`
-	CaseID uint `gorm:"index"`
+	ID         uint `gorm:"primary_key"`
+	TemplateID uint `gorm:"index"`
 	sorting.Sorting
 	Text string `gorm:"type:text"`
 	Data string `gorm:"type:text"`
@@ -68,33 +58,8 @@ func (t ChatTemplate) Validate(db *gorm.DB) {
 	}
 }
 
-func (c ChatTemplateCase) Validate(db *gorm.DB) {
-	knownSource := false
-	for _, s := range LeadSources {
-		if s == c.Source {
-			knownSource = true
-			break
-		}
-	}
-	if !knownSource {
-		db.AddError(validations.NewError(c, "Source", "Unknown source"))
-	}
-
-	var tmp ChatTemplateCase
-	ret := db.
-		Where("source = ?", c.Source).
-		Where("for_new_users = ?", c.ForNewUsers).
-		Where("for_suppliers_with_notices = ?", c.ForSuppliersWithNotices).
-		Where("template_id = ?", c.TemplateID).
-		Where("id <> ?", c.ID).
-		First(&tmp)
-	if !ret.RecordNotFound() {
-		db.AddError(validations.NewError(c, "", "Identical cases detected"))
-	}
-}
-
 func (m ChatTemplateMessage) Validate(db *gorm.DB) {
-	if strings.Trim(m.Text, " \t\n") == "" {
+	if strings.Trim(m.Text, " \t\r\n") == "" {
 		db.AddError(validations.NewError(m, "Text", "blank message text"))
 	}
 	_, err := pongo2.FromString(m.Text)
@@ -109,7 +74,7 @@ func (m ChatTemplateMessage) Validate(db *gorm.DB) {
 	if err != nil {
 		db.AddError(validations.NewError(
 			m,
-			"ImageURL",
+			"Data",
 			fmt.Sprintf("failed to compile template: %v", err),
 		))
 	}

@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"utils/db"
+	"utils/log"
 )
 
 //Migrate runs migrations
@@ -52,9 +53,6 @@ func Migrate() error {
 
 	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
-	db.New().Model(&ChatTemplateCase{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
-	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("case_id", "chat_template_cases(id)", "CASCADE", "RESTRICT")
-
 	db.New().Model(&PushToken{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
 
 	// i'm somewhat unsure if drop something here is good idea
@@ -73,6 +71,21 @@ func Migrate() error {
 	db.New().Exec("UPDATE users_user SET confirmed = (phone != '') WHERE confirmed IS NULL")
 
 	relationsIndices()
+
+	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
+
+	var count uint
+	err := db.New().Table("information_schema.columns").Where("table_name='chat_template_messages' and column_name = 'case_id'").Count(&count)
+	if count > 0 {
+		db.New().Exec(`
+			UPDATE chat_template_messages msg
+			SET template_id = c.template_id
+			FROM chat_template_cases c WHERE c.id = msg.case_id
+		`)
+		db.New().Model(&ChatTemplateMessage{}).DropColumn("case_id")
+	} else {
+		log.Debug("err: %v", err)
+	}
 
 	return nil
 }

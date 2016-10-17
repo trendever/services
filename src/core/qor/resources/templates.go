@@ -182,35 +182,13 @@ func initChatTemplateResource(chat *admin.Resource) {
 			Rows: [][]string{
 				{"TemplateName", "Group"},
 				{"IsDefault", "Product"},
-				{"Cases"},
+				{"Messages"},
 			},
 		},
 	}
 	chat.NewAttrs(attrs)
 	chat.EditAttrs(attrs)
 
-	caseRes := chat.Meta(&admin.Meta{Name: "Cases"}).Resource
-	caseRes.Meta(&admin.Meta{
-		Name:       "Source",
-		Type:       "select_one",
-		Collection: models.LeadSources,
-	})
-	caseRes.Meta(&admin.Meta{
-		Name:      "IfSupplierIsRegistered",
-		FieldName: "ForSuppliersWithNotices",
-	})
-	attrs = []*admin.Section{
-		{
-			Rows: [][]string{
-				{"Source"},
-				{"ForNewUsers", "ForSuppliersWithNotices"},
-				{"Messages"},
-			},
-		},
-	}
-	caseRes.NewAttrs(attrs)
-	caseRes.EditAttrs(attrs)
-
-	msgRes := caseRes.Meta(&admin.Meta{Name: "Messages"}).Resource
+	msgRes := chat.Meta(&admin.Meta{Name: "Messages"}).Resource
 	msgRes.Meta(&admin.Meta{Name: "Text", Type: "text"})
 }
