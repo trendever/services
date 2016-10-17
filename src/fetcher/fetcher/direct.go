@@ -115,9 +115,13 @@ outer:
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
 				// comment is in next follow-up message
+				// try to watch in next 2 messages because of service "Notified" msg
 				var comment string
-				if id+1 < len(msgs) && msgs[id+1].ItemType == "text" && msgs[id+1].UserID == message.UserID {
-					comment = message.Text
+				if id+1 < len(msgs) {
+					comment = followUpString(&message, &msgs[id+1])
+				}
+				if id+2 < len(msgs) && comment == "" {
+					comment = followUpString(&message, &msgs[id+2])
 				}
 
 				if err := w.fillDirect(&message, &resp.Thread, comment); err != nil {
@@ -135,6 +139,13 @@ outer:
 	}
 
 	return models.SaveLastCheckedID(threadID, lastCrawledID)
+}
+
+func followUpString(mediaShare, followUp *instagram.ThreadItem) string {
+	if followUp.ItemType == "text" && mediaShare.UserID == followUp.UserID {
+		return followUp.Text
+	}
+	return ""
 }
 
 // fill database model by direct message
