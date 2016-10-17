@@ -30,6 +30,9 @@ message Shop {
   string slogan = 15;
 
   bool available = 16;
+
+  // unix time, seconds
+  uint64 created_at = 17;
 }
 
 
