@@ -32,13 +32,13 @@ func (w *Worker) checkNewMessages() error {
 
 outer:
 	for {
-		resp, err := w.api.Inbox(cursor)
+		resp, err := w.api().Inbox(cursor)
 		if err != nil {
 			return err
 		}
 
 		if resp.PendingRequestsTotal > 0 {
-			_, err := w.api.DirectThreadApproveAll()
+			_, err := w.api().DirectThreadApproveAll()
 			// do nothing else now
 			return err
 		}
@@ -91,7 +91,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 
 outer:
 	for { // range over thread pages
-		resp, err := w.api.DirectThread(threadID, cursor)
+		resp, err := w.api().DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		UserID:            item.UserID,
 		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
-		MentionedUsername: w.api.GetUserName(),
+		MentionedUsername: w.api().GetUserName(),
 		Type:              "direct",
 		Comment:           item.Text,
 		MediaID:           share.ID,
@@ -169,12 +169,12 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 // SendDirectMsg sends text to a new chat
 func (w *Worker) SendDirectMsg(threadID, message string) error {
 
-	_, err := w.api.BroadcastText(threadID, message)
+	_, err := w.api().BroadcastText(threadID, message)
 	return err
 }
 
 // SendDirectMsgToUser sends text to user
 func (w *Worker) SendDirectMsgToUser(userID int64, message string) (*instagram.SendTextRespone, error) {
-	res, err := w.api.SendText(userID, message)
+	res, err := w.api().SendText(userID, message)
 	return res, err
 }

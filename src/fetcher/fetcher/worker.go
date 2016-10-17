@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"instagram"
 	"sync"
-	"time"
 )
 
 // Worker defines fetcher worker
 type Worker struct {
-	api     *instagram.Instagram
-	timeout time.Duration
+	pool     *instagram.Pool
+	username string
 }
 
 type workerPool struct {
@@ -21,8 +20,9 @@ type workerPool struct {
 var pool = workerPool{values: make(map[string]*Worker)}
 
 // delay for next processing loop
+// not needed now, actually?
+// @CHECK
 func (w *Worker) next() {
-	time.Sleep(w.timeout)
 }
 
 func (w *Worker) start() {
@@ -30,8 +30,12 @@ func (w *Worker) start() {
 	go w.directActivity()
 
 	pool.Lock()
-	pool.values[w.api.GetUserName()] = w
+	pool.values[w.username] = w
 	pool.Unlock()
+}
+
+func (w *Worker) api() *instagram.Instagram {
+	return w.pool.GetFree()
 }
 
 // GetWorker returns worker with given instagram username
