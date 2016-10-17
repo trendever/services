@@ -117,11 +117,11 @@ outer:
 				// comment is in next follow-up message
 				// try to watch in next 2 messages because of service "Notified" msg
 				var comment string
-				if id+1 < len(msgs) {
-					comment = followUpString(&message, &msgs[id+1])
+				if id-1 >= 0 {
+					comment = followUpString(&message, &msgs[id-1])
 				}
-				if id+2 < len(msgs) && comment == "" {
-					comment = followUpString(&message, &msgs[id+2])
+				if id-2 >= 0 && comment == "" {
+					comment = followUpString(&message, &msgs[id-2])
 				}
 
 				if err := w.fillDirect(&message, &resp.Thread, comment); err != nil {
