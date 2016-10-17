@@ -163,7 +163,10 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 	}
 
 	if username == "" {
-		return fmt.Errorf("Wut? Could not find username for userID=%v in thread=%v itemID=%v", item.UserID, thread.ThreadID, item.ItemID)
+		//this is media_share sent by our account
+		//ignore it silently
+		log.Debug("Wut? Could not find username for userID=%v in thread=%v itemID=%v", item.UserID, thread.ThreadID, item.ItemID)
+		return nil
 	}
 
 	log.Debug("Filling in new direct story")
