@@ -5,7 +5,7 @@ natsURL: nats://nats:4222
 key: "asdasdasdasdasdasd"
 password_len: 4
 site_url: "http://localdev.trendever.com:3002/"
-sms_template: "Введите код {{.Password}} или перейдите по ссылке {{.Url}}"
+sms_template: "Введите код {{.Password}}"
 debug: true
 db:
     debug:    true
@@ -14,7 +14,3 @@ db:
     host:     db
     port:     5432
     base:     postgres
-bitly:
-  login: o_v1v8rptir
-  apiKey: R_05e4113d379c43d695030ba8fbac6edf
-  accessToken: c8d0210ba7542be997bc36071d966e582ca9890b

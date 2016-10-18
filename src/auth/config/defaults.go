@@ -26,12 +26,7 @@ type Config struct {
 	NatsURL     string
 	SiteUrl     string `mapstructure:"site_url"`
 	SmsTemplate string `mapstructure:"sms_template"`
-	Bitly       struct {
-		Login       string
-		ApiKey      string `mapstructure:"apiKey"`
-		AccessToken string `mapstructure:"accessToken"`
-	}
-	SentryDSN string
+	SentryDSN   string
 }
 
 var settings = &Config{}
@@ -56,10 +51,6 @@ func init() {
 	}
 	if settings.SiteUrl == "" {
 		log.Fatal(errors.New("site_url is empty! Check your config"))
-	}
-
-	if settings.Bitly.Login == "" || settings.Bitly.ApiKey == "" || settings.Bitly.AccessToken == "" {
-		log.Fatal(errors.New("Bitly config is incorrect"))
 	}
 
 }

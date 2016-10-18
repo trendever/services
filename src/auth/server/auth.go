@@ -1,7 +1,6 @@
 package server
 
 import (
-	"auth/bitly"
 	"auth/config"
 	"auth/models"
 	"bytes"
@@ -290,18 +289,6 @@ func (s *authServer) sendSMSWithPassword(uid uint, phone string) error {
 		return err
 	}
 
-	token, err := s.getToken(uint64(uid))
-
-	if err != nil {
-		return err
-	}
-
-	url, err := bitly.GetShortUrl(bitly.GetSiteUrl(token))
-
-	if err != nil {
-		return err
-	}
-
 	tpl, err := template.New("sms_template").Parse(config.Get().SmsTemplate)
 
 	if err != nil {
@@ -312,10 +299,8 @@ func (s *authServer) sendSMSWithPassword(uid uint, phone string) error {
 
 	err = tpl.Execute(wr, struct {
 		Password string
-		Url      string
 	}{
 		Password: u.SmsPassword,
-		Url:      url.URL,
 	})
 
 	if err != nil {
