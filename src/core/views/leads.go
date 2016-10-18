@@ -41,8 +41,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(err)
 		return nil, err
 	}
-	prod := product
-	existsLead, err := models.FindActiveLead(uint64(prod.ShopID), uint64(protoLead.CustomerId))
+	existsLead, err := models.FindActiveLead(uint64(product.ShopID), uint64(protoLead.CustomerId), uint64(protoLead.ProductId))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -50,7 +49,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 	//Create new lead if lead not exists, or use exists
 	if existsLead == nil {
-		lead, err = models.CreateLead(protoLead, prod.ShopID)
+		lead, err = models.CreateLead(protoLead, product.ShopID)
 		if err != nil {
 			log.Error(err)
 			return nil, err
@@ -74,7 +73,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	}
 
 	if protoLead.Action == core.LeadAction_BUY {
-		if count, err := models.AppendLeadItems(lead, prod.Items); err != nil {
+		if count, err := models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)
 			return nil, err
 		} else if count == 0 {
@@ -98,13 +97,13 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// So, everything is partly fine now
 	if lead.ConversationID != 0 {
 		go func() {
-			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil))
+			log.Error(models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, existsLead == nil))
 		}()
 	} else {
 		log.Error(errors.New("lead.ConversationID == 0"))
 	}
 
-	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
+	go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 	// @CHECK may be it's wrong place to do it
 	if existsLead != nil {
 		// send this message only on new lead
