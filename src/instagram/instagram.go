@@ -328,7 +328,7 @@ func (ig *Instagram) SendText(userID int64, message string) (*SendTextRespone, e
 	var object SendTextRespone
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":            message,
-		"recipient_users": fmt.Sprintf("[%v]", userID),
+		"recipient_users": fmt.Sprintf("[[%v]]", userID),
 	}, &object)
 
 	return &object, err
