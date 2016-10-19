@@ -13,6 +13,7 @@ db:
 instagram:
   timeoutMin: 10s
   timeoutMax: 15s
+  responseLogging: false
   users:
     - username: nmstrs1
       password: pass4ig

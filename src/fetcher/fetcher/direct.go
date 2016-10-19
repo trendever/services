@@ -32,13 +32,13 @@ func (w *Worker) checkNewMessages() error {
 
 outer:
 	for {
-		resp, err := w.api.Inbox(cursor)
+		resp, err := w.api().Inbox(cursor)
 		if err != nil {
 			return err
 		}
 
 		if resp.PendingRequestsTotal > 0 {
-			_, err := w.api.DirectThreadApproveAll()
+			_, err := w.api().DirectThreadApproveAll()
 			// do nothing else now
 			return err
 		}
@@ -54,7 +54,7 @@ outer:
 			if len(thread.Items) != 1 {
 				return fmt.Errorf("Thread (id=%v) got %v msgs, should be 1!", thread.ThreadID, len(thread.Items))
 			}
-			if thread.Items[0].ItemID == info.LastCheckedID {
+			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
 				// thread is already crawled; no need to check more
 				log.Debug("Skipping not changed threads")
 				break outer
@@ -87,11 +87,11 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 	defer log.Debug("Processing thread %v end", threadID)
 
 	cursor := ""
-	lastCrawledID := ""
+	newestProcessed := ""
 
 outer:
 	for { // range over thread pages
-		resp, err := w.api.DirectThread(threadID, cursor)
+		resp, err := w.api().DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
@@ -101,9 +101,12 @@ outer:
 		msgs := resp.Thread.Items
 		sort.Sort(msgs)
 
-		for _, message := range msgs { // range over page messages
+		for id, message := range msgs { // range over page messages; from most new to the oldest
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
-			lastCrawledID = message.ItemID
+
+			if newestProcessed == "" {
+				newestProcessed = message.ItemID
+			}
 
 			if info.LaterThan(message.ItemID) {
 				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
@@ -114,7 +117,17 @@ outer:
 			if message.ItemType == "media_share" && message.MediaShare != nil {
 				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
 
-				if err := w.fillDirect(&message, &resp.Thread); err != nil {
+				// comment is in next follow-up message
+				// try to watch in next 2 messages because of service "Notified" msg
+				var comment string
+				if id-1 >= 0 {
+					comment = followUpString(&message, &msgs[id-1])
+				}
+				if id-2 >= 0 && comment == "" {
+					comment = followUpString(&message, &msgs[id-2])
+				}
+
+				if err := w.fillDirect(&message, &resp.Thread, comment); err != nil {
 					return err
 				}
 			}
@@ -128,11 +141,23 @@ outer:
 		cursor = resp.Thread.OldestCursor
 	}
 
-	return models.SaveLastCheckedID(threadID, lastCrawledID)
+	// if no error, mark all these messages as read
+	if newestProcessed != "" {
+		return models.SaveLastCheckedID(threadID, newestProcessed)
+	}
+
+	return nil
+}
+
+func followUpString(mediaShare, followUp *instagram.ThreadItem) string {
+	if followUp.ItemType == "text" && mediaShare.UserID == followUp.UserID {
+		return followUp.Text
+	}
+	return ""
 }
 
 // fill database model by direct message
-func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread) error {
+func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, comment string) error {
 
 	share := item.MediaShare
 
@@ -146,7 +171,10 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 	}
 
 	if username == "" {
-		return fmt.Errorf("Wut? Could not find username for userID=%v in thread=%v", item.UserID, thread.ThreadID)
+		//this is media_share sent by our account
+		//ignore it silently
+		log.Debug("Wut? Could not find username for userID=%v in thread=%v itemID=%v", item.UserID, thread.ThreadID, item.ItemID)
+		return nil
 	}
 
 	log.Debug("Filling in new direct story")
@@ -156,19 +184,25 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		UserID:            item.UserID,
 		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
-		MentionedUsername: w.api.GetUserName(),
+		MentionedUsername: w.username,
 		Type:              "direct",
-		Comment:           item.Text,
+		Comment:           comment,
 		MediaID:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          thread.ThreadID,
 	}
-	return act.Save()
+	return act.Create()
 }
 
-// SendDirectMsg sends response to the chat
+// SendDirectMsg sends text to a new chat
 func (w *Worker) SendDirectMsg(threadID, message string) error {
 
-	_, err := w.api.BroadcastText(threadID, message)
+	_, err := w.api().BroadcastText(threadID, message)
 	return err
+}
+
+// SendDirectMsgToUser sends text to user
+func (w *Worker) SendDirectMsgToUser(userID int64, message string) (*instagram.SendTextRespone, error) {
+	res, err := w.api().SendText(userID, message)
+	return res, err
 }

@@ -15,7 +15,10 @@ const (
 	payStatusMethod = "PayStatus"
 )
 
-const successState = "Charged"
+const (
+	successState = "Charged"
+	timeoutError = "ORDER_TIME_OUT"
+)
 
 const gatewayType = "payture"
 
@@ -114,7 +117,7 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 	}
 
 	sess.Success = (res.State == successState)
-	sess.Finished = (res.OrderID != "") && (sess.Success || (res.ErrCode != "" && res.ErrCode != "NONE"))
+	sess.Finished = (res.ErrCode == timeoutError)
 	sess.State = res.State
 
 	finished = sess.Finished

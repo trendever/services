@@ -253,7 +253,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		return true, err
 	}
 
-	if !customer.Confirmed && mention.DirectThreadId != "" {
+	if !customer.Confirmed {
 		err = notifyChat(mention)
 		if err != nil {
 			log.Errorf("Failed no reply in direct chat: %v", err)
@@ -300,16 +300,12 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 
 func notifyChat(mention *bot.Activity) error {
 
-	if mention.DirectThreadId == "" {
-		return nil
-	}
-
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ThreadId: mention.DirectThreadId,
-		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+		ActivityPk: mention.Pk,
+		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err

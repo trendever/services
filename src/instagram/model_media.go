@@ -55,14 +55,14 @@ type MediaInfo struct {
 		CreatedAt    int64  `json:"created_at"`
 		CreatedAtUtc int64  `json:"created_at_utc"`
 		MediaID      int64  `json:"media_id"`
-		Pk           int    `json:"pk"`
+		Pk           int64  `json:"pk"`
 		Status       string `json:"status"`
 		Text         string `json:"text"`
 		Type         int    `json:"type"`
 		User         struct {
 			FullName      string `json:"full_name"`
 			IsPrivate     bool   `json:"is_private"`
-			Pk            int    `json:"pk"`
+			Pk            int64  `json:"pk"`
 			ProfilePicURL string `json:"profile_pic_url"`
 			Username      string `json:"username"`
 		} `json:"user"`
@@ -78,14 +78,14 @@ type MediaInfo struct {
 		CreatedAt    int    `json:"created_at"`
 		CreatedAtUtc int    `json:"created_at_utc"`
 		MediaID      int    `json:"media_id"`
-		Pk           int    `json:"pk"`
+		Pk           int64  `json:"pk"`
 		Status       string `json:"status"`
 		Text         string `json:"text"`
 		Type         int    `json:"type"`
 		User         struct {
 			FullName      string `json:"full_name"`
 			IsPrivate     bool   `json:"is_private"`
-			Pk            int    `json:"pk"`
+			Pk            int64  `json:"pk"`
 			ProfilePicURL string `json:"profile_pic_url"`
 			Username      string `json:"username"`
 		} `json:"user"`
@@ -111,14 +111,14 @@ type MediaInfo struct {
 	OriginalHeight               int           `json:"original_height"`
 	OriginalWidth                int           `json:"original_width"`
 	PhotoOfYou                   bool          `json:"photo_of_you"`
-	Pk                           int           `json:"pk"`
-	TakenAt                      float64       `json:"taken_at"`
+	Pk                           int64         `json:"pk"`
+	TakenAt                      int64         `json:"taken_at"`
 	User                         struct {
 		FullName                   string `json:"full_name"`
 		HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
 		IsPrivate                  bool   `json:"is_private"`
 		IsUnpublished              bool   `json:"is_unpublished"`
-		Pk                         int    `json:"pk"`
+		Pk                         int64  `json:"pk"`
 		ProfilePicURL              string `json:"profile_pic_url"`
 		Username                   string `json:"username"`
 	} `json:"user"`

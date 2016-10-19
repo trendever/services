@@ -50,10 +50,14 @@ func GetThreadInfo(threadID string) (ThreadInfo, error) {
 
 // SaveLastCheckedID updates threadInfo with lastCheckedID=messageID
 func SaveLastCheckedID(threadID, messageID string) error {
-	// save LastCheckedID
 	return db.New().
 		Model(&ThreadInfo{}).
 		Where("thread_id = ?", threadID).
 		Update("last_checked_id", messageID).
 		Error
+}
+
+// Save just saves it in usual way
+func (info *ThreadInfo) Save() error {
+	return db.New().Save(info).Error
 }

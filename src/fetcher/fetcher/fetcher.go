@@ -1,25 +1,15 @@
 package fetcher
 
 import (
-	"math/rand"
-	"time"
-	"utils/log"
-
 	"fetcher/conf"
 	"instagram"
+	"time"
+	"utils/log"
 )
 
 // Start starts main fetching duty
 func Start() error {
 	settings := conf.GetSettings()
-
-	// to prevent service restart too quickly and thus compromise bot
-	// also make sure config is ok and we don't get panic in future
-	startTimeout, err := generateTimeout(settings)
-	if err != nil {
-		log.Fatal(err)
-	}
-	time.Sleep(startTimeout)
 
 	// connections pool
 	var apis []*instagram.Instagram
@@ -37,37 +27,34 @@ func Start() error {
 		apis = append(apis, api)
 	}
 
+	// parse timeouts
+	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
+	if err != nil {
+		return err
+	}
+	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
+	if err != nil {
+		return err
+	}
+
 	// run goroutine
 	for _, api := range apis {
 
-		// random timeout
-		rndTimeout, err := generateTimeout(settings)
-		if err != nil {
-			log.Fatal(err)
-		}
+		pool := instagram.NewPool(&instagram.PoolSettings{
+			TimeoutMin:     int(min / time.Millisecond),
+			TimeoutMax:     int(max / time.Millisecond),
+			ReloginTimeout: int(time.Second * 10 / time.Millisecond),
+		})
+
+		pool.Add(api)
 
 		fetcherWorker := &Worker{
-			api:     api,
-			timeout: rndTimeout,
+			pool:     pool,
+			username: api.GetUserName(),
 		}
 
 		fetcherWorker.start()
 	}
 
 	return nil
-}
-
-// get random timeout
-func generateTimeout(settings *conf.Settings) (time.Duration, error) {
-
-	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
-	if err != nil {
-		return time.Duration(0), err
-	}
-	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
-	if err != nil {
-		return time.Duration(0), err
-	}
-
-	return min + time.Duration(rand.Intn(int(max-min))), nil
 }

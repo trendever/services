@@ -2,7 +2,6 @@ package views
 
 import (
 	"fetcher/api"
-	"fetcher/fetcher"
 	"fetcher/models"
 
 	"golang.org/x/net/context"
@@ -48,46 +47,4 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 	return &bot.RetrieveActivitiesReply{
 		Result: models.EncodeActivities(result),
 	}, nil
-}
-
-// SendDirect sends message to the chat (if not sent earlier)
-func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest) (*bot.SendDirectReply, error) {
-
-	// find thread info
-	var info models.ThreadInfo
-	err := db.New().Where("thread_id = ?", in.ThreadId).Find(&info).Error
-	if err != nil {
-		return nil, err
-	}
-
-	if info.Notified { // all ok; do nothing
-		return &bot.SendDirectReply{}, nil
-	}
-
-	// find related activity to get bot username
-	var act models.Activity
-	err = db.New().Where("thread_id = ?", in.ThreadId).Find(&act).Error
-	if err != nil {
-		return nil, err
-	}
-
-	worker, err := fetcher.GetWorker(act.MentionedUsername)
-	if err != nil {
-		return nil, err
-	}
-
-	err = worker.SendDirectMsg(in.ThreadId, in.Text)
-	if err != nil {
-		log.Debug("Could not send shiet: %v", err)
-		return nil, err
-	}
-
-	// set notified
-	err = db.New().
-		Model(&models.ThreadInfo{}).
-		Where("thread_id = ?", info.ThreadID).
-		Update("notified", true).
-		Error
-
-	return &bot.SendDirectReply{}, nil
 }

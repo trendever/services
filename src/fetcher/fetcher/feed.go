@@ -18,20 +18,20 @@ type textField struct {
 func (w *Worker) getActivity() {
 
 	// little log
-	log.Debug("Start getting with timeout: %v", w.timeout)
+	log.Debug("Start fetching feed activity")
 
 	for {
 		// get recent activity
-		ract, err := w.api.GetRecentActivity()
+		ract, err := w.api().GetRecentActivity()
 		if err != nil {
-			log.Warn("Got error %v while fetching recent activitity with user %v", err, w.api.GetUserName())
+			log.Warn("Got error %v while fetching recent activitity with user %v", err, w.username)
 			time.Sleep(time.Second)
 			continue
 		}
 
 		// fetch old stories
 		for _, story := range append(ract.OldStories, ract.NewStories...) {
-			err := fillFeed(story, w.api.GetUserName())
+			err := fillFeed(story, w.username)
 			if err != nil {
 				log.Error(err)
 			}
@@ -68,7 +68,7 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 		act.MediaURL = stories.Args.Media[0].Image
 	}
 
-	return act.Save()
+	return act.Create()
 }
 
 // parse Args.Text field

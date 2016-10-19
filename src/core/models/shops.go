@@ -85,6 +85,8 @@ func (s Shop) Encode() *core.Shop {
 		SupplierId: int64(s.SupplierID),
 		AvatarUrl:  s.Supplier.AvatarURL,
 		Available:  s.NotifySupplier,
+
+		CreatedAt: uint64(s.CreatedAt.Unix()),
 	}
 }
 

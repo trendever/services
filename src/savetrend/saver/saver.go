@@ -218,30 +218,8 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		supplierUsername    string
 	)
 
-	if productMedia.Caption.UserID > 0 {
-		supplierInstagramID = productMedia.Caption.UserID
-		supplierUsername = productMedia.Caption.User.Username
-	} else {
-		var shopInstagramName = productMedia.User.Username
-
-		candidats, err := pool.GetFree().SearchUsers(shopInstagramName)
-		if err != nil {
-			return -1, true, fmt.Errorf("failed to search user '%v': %v", shopInstagramName, err)
-		}
-
-		for _, user := range candidats.Users {
-			if user.Username == shopInstagramName {
-				supplierInstagramID = user.Pk
-				supplierUsername = user.Username
-			}
-		}
-
-		if supplierInstagramID == 0 {
-			// something really weird search should (was) be stable. just skip the entry
-			return -1, false, fmt.Errorf("User %v not found using search (no caption present) for %v", shopInstagramName, mediaID)
-		}
-
-	}
+	supplierInstagramID = productMedia.User.Pk
+	supplierUsername = productMedia.User.Username
 
 	supplierID, _, err := userID(supplierInstagramID, supplierUsername)
 	if err != nil {
@@ -260,7 +238,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		return -1, true, err
 	}
 
-	if !mentioner.Confirmed && mention.DirectThreadId != "" {
+	if !mentioner.Confirmed {
 		err = notifyChat(mention)
 		if err != nil {
 			log.Errorf("Failed no reply in direct chat: %v", err)
@@ -294,7 +272,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 		InstagramImageCaption: media.Caption.Text,
 		InstagramLink:         fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
 		InstagramLikesCount:   int32(media.LikeCount),
-		InstagramPublishedAt:  media.Caption.CreatedAtUtc,
+		InstagramPublishedAt:  media.TakenAt,
 
 		InstagramImages:      candidates,
 		InstagramImageUrl:    img.URL,
@@ -432,16 +410,12 @@ func shopID(supplierID uint64) (uint64, error) {
 
 func notifyChat(mention *bot.Activity) error {
 
-	if mention.DirectThreadId == "" {
-		return nil
-	}
-
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ThreadId: mention.DirectThreadId,
-		Text:     fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+		ActivityPk: mention.Pk,
+		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
 	})
 
 	return err
