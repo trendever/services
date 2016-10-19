@@ -99,7 +99,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// So, everything is partly fine now
 	if lead.ConversationID != 0 {
 		go func() {
-			log.Error(models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil))
+			if err := models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
+				log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
+			}
 		}()
 	} else {
 		log.Error(errors.New("lead.ConversationID == 0"))
