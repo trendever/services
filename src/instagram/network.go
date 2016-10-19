@@ -12,6 +12,9 @@ import (
 	"utils/log"
 )
 
+// DoResponeLogging enables full json body output
+var DoResponseLogging = false
+
 // Request for Login method. Needs to get the authorization cookies.
 func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login bool) (*http.Response, error) {
 
@@ -63,7 +66,9 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			return nil, err
 		}
 
-		log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
+		if DoResponseLogging {
+			log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
+		}
 
 		var message *Message
 		err = json.Unmarshal(jsonBody, &message)
