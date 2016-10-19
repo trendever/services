@@ -73,46 +73,32 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 
 func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string) error {
 	// load templates
-	var templates []struct {
-		ChatTemplateMessage
-		TemplateName string
-		ProductID    uint
-	}
-	res := db.New().
-		Select("msg.text, msg.data, msg.position, tmpl.template_name, tmpl.product_id").
-		Table("chat_template_messages msg").
-		Joins("JOIN chat_templates tmpl ON tmpl.id = msg.template_id").
-		Where("tmpl.group = ?", group).
-		Where("tmpl.product_id = ? OR tmpl.is_default", product.ID).
-		Order("tmpl.product_id IS NULL, msg.position").
-		Scan(&templates)
-	if res.Error != nil {
-		return fmt.Errorf("failed to load templates: %v", res.Error)
-	}
-	if len(templates) == 0 {
+	var template ChatTemplate
+	res := db.New().Preload("Messages").
+		Where(`"group" = ?`, group).
+		Where("product_id = ? OR is_default", product.ID).
+		Order("product_id IS NULL").
+		First(&template)
+	if res.RecordNotFound() {
 		log.Errorf(
-			"suitable tamplates not found for productID = %v with group %v",
+			"suitable tamplate not found for productID = %v with group %v",
 			product.ID,
 			group,
 		)
-		return nil
 	}
+	if res.Error != nil {
+		return fmt.Errorf("failed to load templates: %v", res.Error)
+	}
+	template.MessagesSorter.Sort(&template.Messages)
 
 	err := joinChat(lead.ConversationID, chat.MemberRole_SYSTEM, &SystemUser)
 	if err != nil {
 		return fmt.Errorf("failed to join chat: %v", err)
 	}
 
-	specific := templates[0].ProductID
-
 	messages := []*chat.Message{}
-	for _, tmpl := range templates {
-		// we are at end of specific templates(if any)
-		if tmpl.ProductID != specific {
-			break
-		}
-
-		content, err := tmpl.Execute(map[string]interface{}{
+	for _, msg := range template.Messages {
+		content, err := msg.Execute(map[string]interface{}{
 			"lead":    lead,
 			"product": product,
 			"source":  source,
@@ -121,22 +107,17 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 
 		if err != nil {
 			log.Errorf(
-				"failed to parse template with id %v for product %v in lead %v: %v",
-				tmpl.ID, product.ID, lead.ID, err,
+				"failed to parse template message with id %v for product %v in lead %v: %v",
+				msg.ID, product.ID, lead.ID, err,
 			)
 			continue
 		}
 
 		parts, ok := content.([]*chat.MessagePart)
 		if !ok {
-			log.Errorf("template '%v' returned unexpected type", tmpl.TemplateName)
+			log.Errorf("template message %v returned unexpected type", msg.ID)
 			continue
 		}
-		if len(parts) == 0 {
-			log.Warn("template '%v' returned empty result", tmpl.TemplateName)
-			continue
-		}
-		log.Debug("%v parts: %+v", len(parts), parts)
 		messages = append(messages, &chat.Message{
 			UserId: uint64(SystemUser.ID),
 			Parts:  parts,

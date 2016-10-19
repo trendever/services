@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"utils/db"
-	"utils/log"
 )
 
 //Migrate runs migrations
@@ -75,7 +74,7 @@ func Migrate() error {
 	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
 
 	var count uint
-	err := db.New().Table("information_schema.columns").Where("table_name='chat_template_messages' and column_name = 'case_id'").Count(&count)
+	db.New().Table("information_schema.columns").Where("table_name='chat_template_messages' and column_name = 'case_id'").Count(&count)
 	if count > 0 {
 		db.New().Exec(`
 			UPDATE chat_template_messages msg
@@ -83,8 +82,6 @@ func Migrate() error {
 			FROM chat_template_cases c WHERE c.id = msg.case_id
 		`)
 		db.New().Model(&ChatTemplateMessage{}).DropColumn("case_id")
-	} else {
-		log.Debug("err: %v", err)
 	}
 
 	return nil
