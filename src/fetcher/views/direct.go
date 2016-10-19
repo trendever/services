@@ -63,17 +63,27 @@ func sendDirectToChat(req *bot.SendDirectRequest, act *models.Activity, worker *
 		return nil
 	}
 
-	err = worker.SendDirectMsg(info.ThreadID, req.Text)
-	if err != nil {
-		log.Debug("Could not send shiet: %v", err)
-		return err
-	}
+	// send async -- queue can be pretty long (longer than ctx ttl)
+	go func() {
+		err = worker.SendDirectMsg(info.ThreadID, req.Text)
+		if err != nil {
+			log.Debug("Could not send shiet: %v", err)
+			return
+		}
 
-	// set notified
-	// update only one column not to conflict with direct message crawling
-	return db.New().
-		Model(&models.ThreadInfo{}).
-		Where("thread_id = ?", info.ThreadID).
-		Update("notified", true).
-		Error
+		// set notified
+		// update only one column not to conflict with direct message crawling
+		err = db.New().
+			Model(&models.ThreadInfo{}).
+			Where("thread_id = ?", info.ThreadID).
+			Update("notified", true).
+			Error
+
+		if err != nil {
+			log.Debug("Could not send save notification fact: %v", err)
+			return
+		}
+	}()
+
+	return nil
 }
