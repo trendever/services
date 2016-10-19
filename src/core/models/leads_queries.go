@@ -243,7 +243,7 @@ func GetUserLead(user *User, leadID uint64) (*Lead, error) {
 }
 
 // FindActiveLead searches active lead for shop and customer,
-// returns nil result for shops with SeparateLeads if productID isn't presented in in active leads
+// returns nil result for shops with SeparateLeads if productID isn't presented in active leads
 func FindActiveLead(shopID, customerID, productID uint64) (*Lead, error) {
 	lead := &Lead{}
 	scope := db.New().
