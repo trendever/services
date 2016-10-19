@@ -142,7 +142,11 @@ outer:
 	}
 
 	// if no error, mark all these messages as read
-	return models.SaveLastCheckedID(threadID, newestProcessed)
+	if newestProcessed != "" {
+		return models.SaveLastCheckedID(threadID, newestProcessed)
+	}
+
+	return nil
 }
 
 func followUpString(mediaShare, followUp *instagram.ThreadItem) string {
