@@ -3,13 +3,14 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"proto/core"
 	"strings"
 	"time"
 	"utils/db"
 	"utils/nats"
+
+	"github.com/jinzhu/gorm"
 )
 
 // Shop model defines virtual "Shop"
@@ -44,6 +45,7 @@ type Shop struct {
 	Notes []ShopNote `gorm:"ForeignKey:ShopID"`
 }
 
+// ShopNote model for keeping notes about shops in qor
 type ShopNote struct {
 	ID     uint64 `gorm:"primary_key"`
 	ShopID uint64
@@ -62,6 +64,11 @@ func (s Shop) ResourceName() string {
 
 // Stringify returns human-friendly name
 func (s Shop) Stringify() string {
+
+	if strings.HasSuffix(strings.ToLower(s.InstagramUsername), "shop") {
+		return s.InstagramUsername
+	}
+
 	return fmt.Sprintf("%s shop", s.InstagramUsername)
 }
 
@@ -108,11 +115,12 @@ func (s Shop) Decode(cs *core.Shop) Shop {
 	}
 }
 
-//gorm callbacks
+// BeforeSave gorm callbacks
 func (s *Shop) BeforeSave(db *gorm.DB) {
 	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
 }
 
+// BeforeUpdate hook
 func (s *Shop) BeforeUpdate() error {
 	err := db.New().Model(&s).Select("supplier_id").Where("id = ?", s.ID).Row().Scan(&s.oldSupplier)
 	if err != nil && err != sql.ErrNoRows {
@@ -121,6 +129,7 @@ func (s *Shop) BeforeUpdate() error {
 	return nil
 }
 
+// AfterUpdate hook
 func (s *Shop) AfterUpdate() error {
 	if s.oldSupplier != 0 && s.oldSupplier != s.SupplierID {
 		err := s.onSupplierChanged()
@@ -132,6 +141,7 @@ func (s *Shop) AfterUpdate() error {
 	return nil
 }
 
+// AfterDelete hook
 func (s *Shop) AfterDelete() {
 	go nats.Publish("core.shop.flush", s.ID)
 }
@@ -200,6 +210,7 @@ func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint64, err error) {
 	return
 }
 
+// FindOrCreateShopForSupplier func
 func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID uint64, deleted bool, err error) {
 	scope := db.New().Where("supplier_id = ?", supplier.ID)
 	if !recreateDeleted {
