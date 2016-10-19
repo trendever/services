@@ -24,14 +24,14 @@ func (w *Worker) getActivity() {
 		// get recent activity
 		ract, err := w.api().GetRecentActivity()
 		if err != nil {
-			log.Warn("Got error %v while fetching recent activitity with user %v", err, w.api().GetUserName())
+			log.Warn("Got error %v while fetching recent activitity with user %v", err, w.username)
 			time.Sleep(time.Second)
 			continue
 		}
 
 		// fetch old stories
 		for _, story := range append(ract.OldStories, ract.NewStories...) {
-			err := fillFeed(story, w.api().GetUserName())
+			err := fillFeed(story, w.username)
 			if err != nil {
 				log.Error(err)
 			}

@@ -184,7 +184,7 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		UserID:            item.UserID,
 		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
-		MentionedUsername: w.api().GetUserName(),
+		MentionedUsername: w.username,
 		Type:              "direct",
 		Comment:           comment,
 		MediaID:           share.ID,
