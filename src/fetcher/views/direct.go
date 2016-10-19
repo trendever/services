@@ -3,6 +3,7 @@ package views
 import (
 	"fetcher/fetcher"
 	"fetcher/models"
+	"fmt"
 
 	"golang.org/x/net/context"
 
@@ -26,12 +27,21 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 		return nil, err
 	}
 
-	if act.ThreadID == "" { // create new thread
+	// do sending async
+	go func() {
+		var err error
+		if act.ThreadID == "" { // create new thread
+			err = sendDirectToNewChat(in, &act, worker)
+		} else {
+			err = sendDirectToChat(in, &act, worker)
+		}
 
-		return &bot.SendDirectReply{}, sendDirectToNewChat(in, &act, worker)
-	}
+		if err != nil {
+			log.Errorf("Could not create chat: %v", err)
+		}
+	}()
 
-	return &bot.SendDirectReply{}, sendDirectToChat(in, &act, worker)
+	return &bot.SendDirectReply{}, nil
 }
 
 func sendDirectToNewChat(req *bot.SendDirectRequest, act *models.Activity, worker *fetcher.Worker) error {
@@ -63,27 +73,16 @@ func sendDirectToChat(req *bot.SendDirectRequest, act *models.Activity, worker *
 		return nil
 	}
 
-	// send async -- queue can be pretty long (longer than ctx ttl)
-	go func() {
-		err = worker.SendDirectMsg(info.ThreadID, req.Text)
-		if err != nil {
-			log.Debug("Could not send shiet: %v", err)
-			return
-		}
+	err = worker.SendDirectMsg(info.ThreadID, req.Text)
+	if err != nil {
+		return fmt.Errorf("Could not send shiet: %v", err)
+	}
 
-		// set notified
-		// update only one column not to conflict with direct message crawling
-		err = db.New().
-			Model(&models.ThreadInfo{}).
-			Where("thread_id = ?", info.ThreadID).
-			Update("notified", true).
-			Error
-
-		if err != nil {
-			log.Debug("Could not send save notification fact: %v", err)
-			return
-		}
-	}()
-
-	return nil
+	// set notified
+	// update only one column not to conflict with direct message crawling
+	return db.New().
+		Model(&models.ThreadInfo{}).
+		Where("thread_id = ?", info.ThreadID).
+		Update("notified", true).
+		Error
 }
