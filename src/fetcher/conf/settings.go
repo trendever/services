@@ -2,10 +2,12 @@ package conf
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
+	"instagram"
 	"utils/config"
 	"utils/db"
 	"utils/log"
+
+	"github.com/spf13/viper"
 )
 
 var (
@@ -30,6 +32,7 @@ func init() {
 		panic(fmt.Errorf("Config can not be unmarshaled: %v", err))
 	}
 	log.Init(settings.Debug, tagName, settings.SentryDSN)
+	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
 }
 
 // GetSettings returns service settings
@@ -48,9 +51,10 @@ type Settings struct {
 
 // Instagram config part
 type Instagram struct {
-	TimeoutMin string
-	TimeoutMax string
-	Users      []struct {
+	TimeoutMin      string
+	TimeoutMax      string
+	ResponseLogging bool
+	Users           []struct {
 		Username string
 		Password string
 	}
