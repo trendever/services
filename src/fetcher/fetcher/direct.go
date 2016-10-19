@@ -54,7 +54,7 @@ outer:
 			if len(thread.Items) != 1 {
 				return fmt.Errorf("Thread (id=%v) got %v msgs, should be 1!", thread.ThreadID, len(thread.Items))
 			}
-			if thread.Items[0].ItemID == info.LastCheckedID {
+			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
 				// thread is already crawled; no need to check more
 				log.Debug("Skipping not changed threads")
 				break outer
@@ -87,7 +87,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 	defer log.Debug("Processing thread %v end", threadID)
 
 	cursor := ""
-	lastCrawledID := ""
+	newestProcessed := ""
 
 outer:
 	for { // range over thread pages
@@ -101,9 +101,12 @@ outer:
 		msgs := resp.Thread.Items
 		sort.Sort(msgs)
 
-		for id, message := range msgs { // range over page messages
+		for id, message := range msgs { // range over page messages; from most new to the oldest
 			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
-			lastCrawledID = message.ItemID
+
+			if newestProcessed == "" {
+				newestProcessed = message.ItemID
+			}
 
 			if info.LaterThan(message.ItemID) {
 				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
@@ -138,7 +141,8 @@ outer:
 		cursor = resp.Thread.OldestCursor
 	}
 
-	return models.SaveLastCheckedID(threadID, lastCrawledID)
+	// if no error, mark all these messages as read
+	return models.SaveLastCheckedID(threadID, newestProcessed)
 }
 
 func followUpString(mediaShare, followUp *instagram.ThreadItem) string {
