@@ -5,7 +5,7 @@ pushTokensServer: core:3005
 
 retryTimeout: 60
 
-FCMServerKey: AIzaSyBk8p7ZfqMmLay2Ma5ATD9nImyhfkQepu4
+FCMServerKey: AIzaSyD2cbxb2Kl51UouQysAXJkkD26VmGAboss
 
 APNPemFile: pushcert.pem
 #APNPemPass:
