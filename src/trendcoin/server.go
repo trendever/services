@@ -82,18 +82,22 @@ func (s *TrendcoinServer) loop() {
 
 func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.TransactionLogRequest) (*proto.TransactionLogReply, error) {
 	var transactions TransactionsSlice
-	scope := db.New().Where("from = ? OR to = ?", in.UserId, in.UserId).Order("id DESC")
+	scope := db.New().Where("source = ? OR destination = ?", in.UserId, in.UserId)
+	if in.Asc {
+		scope = scope.Order("id ASC")
+	} else {
+		scope = scope.Order("id DESC")
+	}
 	if in.Before != 0 {
-		scope = scope.Where("created_at < ?", time.Unix(0, in.Before))
+		scope = scope.Where("created_at < ?", time.Unix(in.Before, 0))
 	}
 	if in.After != 0 {
-		scope = scope.Where("created_at >= ?", time.Unix(0, in.After))
+		scope = scope.Where("created_at >= ?", time.Unix(in.After, 0))
 	}
-	if in.Limit != 0 {
-		scope = scope.Limit(in.Limit)
-	} else {
-		scope = scope.Limit(20)
+	if in.Limit == 0 {
+		in.Limit = 20
 	}
+	scope = scope.Limit(in.Limit + 1)
 	if in.Offset != 0 {
 		scope = scope.Offset(in.Offset)
 	}
@@ -104,7 +108,13 @@ func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.Transactio
 			Error: err.Error(),
 		}, nil
 	}
+	hasMore := false
+	if uint64(len(transactions)) > in.Limit {
+		hasMore = true
+		transactions = transactions[:in.Limit]
+	}
 	return &proto.TransactionLogReply{
 		Transactions: transactions.Encode(),
+		HasMore:      hasMore,
 	}, nil
 }

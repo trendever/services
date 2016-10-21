@@ -41,9 +41,12 @@ message TransactionLogRequest {
 	// default limit is 20
 	uint64 limit = 2;
 	uint64 offset = 3;
-	// created_at bounds, unixnano, [after, before)
+	// optional created_at bounds, unixtime, seconds, [after, before)
 	int64 before = 4;
 	int64 after = 5;
+	// transactions are ordered from newest to oldest by default,
+	// if asc is true order will be reversed
+	bool asc = 6;
 }
 
 message Transaction {
@@ -55,4 +58,5 @@ message Transaction {
 message TransactionLogReply {
 	repeated Transaction transactions = 1;
 	string error = 2;
+	bool has_more = 3;
 }
