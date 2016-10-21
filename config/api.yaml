@@ -4,6 +4,7 @@ coreaddr: core:3005
 authaddr: auth:8433
 chataddr: chat:2010
 smsaddr:  sms:12326
+coinsaddr: trendcoin:2014
 natsURL: "nats://nats:4222"
 
 marketSMS: "Your ad could be here"

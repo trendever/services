@@ -58,6 +58,7 @@ type Settings struct {
 	ChatAddr     string
 	PaymentsAddr string
 	SMSAddr      string
+	CoinsAddr    string
 
 	Elastic elastic.Settings
 
