@@ -49,7 +49,7 @@ func Loop() {
 		}
 
 		select {
-		case <-time.Tick(time.Millisecond * time.Duration(conf.Delay)):
+		case <-time.After(time.Millisecond * time.Duration(conf.Delay)):
 		case <-interrupt:
 			log.Info("elasticsync service stopped")
 			os.Exit(0)

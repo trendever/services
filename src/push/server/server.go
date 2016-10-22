@@ -101,7 +101,7 @@ func (s *PushServer) retryLoop() {
 		select {
 		case <-s.stop:
 			return
-		case <-time.Tick(time.Second * RetryLoopTick):
+		case <-time.After(time.Second * RetryLoopTick):
 			now := time.Now()
 			db.New().Delete(&models.PushNotify{}, "expiration < ?", now)
 			db.New().Exec(`
