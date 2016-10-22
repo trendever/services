@@ -1,0 +1,43 @@
+service MonetizationService {
+    // get plan by id
+    rpc GetPlan(GetPlanRequest) returns (GetPlanReply) {}
+    // returns list of public plans
+    rpc GetPlansList(GetPlansListRequest) returns (GetPlansListReply) {}
+}
+
+message GetPlanRequest{
+    uint64 id = 1;
+}
+
+message GetPlansListRequest{
+    // here may be some conditions(primary currency or country may be)
+}
+
+message ConsOffer {
+    uint64 id = 1;
+    uint64 amount = 2;
+    uint64 price = 3;
+}
+
+message MonezationPlan {
+    uint64 id = 1;
+    string name = 2;
+    string about = 3;
+    string primary_currency = 4;
+    uint64 subscription_price = 5;
+    double commission_rate = 6;
+    double coins_exchange_rate = 7;
+    bool public = 8;
+
+    repeated ConsOffer cons_offers = 9;
+}
+
+message GetPlanReply {
+    MonezationPlan plan = 1;
+    string error = 2;
+}
+
+message GetPlansListReply {
+    repeated MonezationPlan plans = 1;
+    string error = 2;
+}

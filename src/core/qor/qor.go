@@ -45,6 +45,8 @@ var (
 		&models.UsersProducts{},
 		&models.PushToken{},
 		&models.ShopNote{},
+		&models.CoinsOffer{},
+		&models.MonetizationPlan{},
 	}
 )
 
