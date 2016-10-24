@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/kljensen/snowball/english"
@@ -83,7 +84,6 @@ func PrepareText(text, language string) (string, error) {
 	for i := range words {
 		words[i] = stemmer(strings.ToLower(words[i]), true)
 	}
-	log.Debug("text '%v' prepared on %v: %v", text, language, strings.Join(words, " "))
 	return strings.Join(words, " "), nil
 }
 
@@ -112,6 +112,7 @@ func (auto *AutoAnswer) Prepare() error {
 func (auto *AutoAnswer) Match(preparedText string) bool {
 	for _, phase := range auto.preparedDictionary {
 		if strings.Contains(preparedText, phase) {
+			log.Debug("phase '%v' matchs text '%v'", phase, preparedText)
 			return true
 		}
 	}
@@ -182,12 +183,24 @@ func GenerateAnswers(text, language string, templatesContext interface{}) ([]str
 }
 
 func SendAutoAnswers(msg *chat.Message, lead *Lead) {
-	log.Debug("SendAutoAnswers")
 	var messages []*chat.Message
 	for _, part := range msg.Parts {
-		if part.MimeType != "text/plain" {
+		switch part.MimeType {
+		case "text/plain":
+
+		case "text/x-attrs":
+			var attrs map[string]interface{}
+			json.Unmarshal([]byte(part.Content), &attrs)
+			if val, ok := attrs["isAutoAnswer"]; ok {
+				if b, _ := val.(bool); b {
+					return
+				}
+			}
+
+		default:
 			continue
 		}
+		// @TODO check message language somehow? possible set it on lead lvl
 		answers, err := GenerateAnswers(part.Content, "russian", map[string]interface{}{
 			"user": lead.Customer,
 			"lead": lead,
@@ -202,6 +215,10 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 					{
 						MimeType: "text/plain",
 						Content:  answer,
+					},
+					{
+						MimeType: "text/x-attrs",
+						Content:  `{"isAutoAnswer": true}`,
 					},
 				},
 			})

@@ -24,6 +24,14 @@ func answersInit(res *admin.Resource) {
 		Type:       "select_one",
 		Collection: models.AnswersSupportedLanguages,
 	})
+	res.Meta(&admin.Meta{
+		Name: "Dictionary",
+		Type: "text",
+	})
+	res.Meta(&admin.Meta{
+		Name: "Template",
+		Type: "text",
+	})
 	attrs := &admin.Section{
 		Rows: [][]string{
 			{"Name", "Language"},
