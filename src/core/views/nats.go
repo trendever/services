@@ -44,14 +44,17 @@ func newMessage(req *chat.NewMessageRequest) {
 
 	users := map[*models.User]bool{}
 	for _, msg := range req.Messages {
-		if msg.UserId != uint64(lead.Customer.ID) {
+		if msg.User.UserId != uint64(lead.Customer.ID) {
 			users[&lead.Customer] = true
+		} else {
+			models.SendAutoAnswers(msg, lead)
 		}
-		if msg.UserId != uint64(lead.Shop.SupplierID) {
+
+		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
 			users[&lead.Shop.Supplier] = true
 		}
 		for _, seller := range lead.Shop.Sellers {
-			if msg.UserId != uint64(seller.ID) {
+			if msg.User.UserId != uint64(seller.ID) {
 				users[seller] = true
 			}
 		}

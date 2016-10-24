@@ -47,6 +47,7 @@ var (
 		&models.ShopNote{},
 		&models.CoinsOffer{},
 		&models.MonetizationPlan{},
+		&models.AutoAnswer{},
 	}
 )
 

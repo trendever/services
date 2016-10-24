@@ -78,6 +78,8 @@ func (s *Service) Run(cli *cli.Context) {
 		// Start api
 		api.Start()
 
+		models.ReloadAnswers()
+
 		// Initial gin web server
 		if err := r.Run(settings.AppHost); err != nil {
 			log.Fatal(err)
