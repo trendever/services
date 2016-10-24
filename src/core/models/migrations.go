@@ -84,6 +84,8 @@ func Migrate() error {
 		db.New().Model(&ChatTemplateMessage{}).DropColumn("case_id")
 	}
 
+	db.New().Model(&ChatTemplate{}).Where("source IS NULL OR source = ''").UpdateColumn("source", "any")
+
 	return nil
 }
 

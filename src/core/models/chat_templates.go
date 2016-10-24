@@ -25,6 +25,8 @@ type ChatTemplate struct {
 	Product   Product
 	// When true this template will be used if there is no specific templates
 	IsDefault bool
+	// Specific lead source or 'any'
+	Source string
 
 	Messages       []ChatTemplateMessage `gorm:"ForeignKey:TemplateID"`
 	MessagesSorter sorting.SortableCollection

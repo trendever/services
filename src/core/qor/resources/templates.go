@@ -139,6 +139,11 @@ func initChatTemplateResource(chat *admin.Resource) {
 		Collection: models.TemplatesList["chat"],
 	})
 	chat.Meta(&admin.Meta{
+		Name:       "Source",
+		Type:       "select_one",
+		Collection: append(models.LeadSources, "any"),
+	})
+	chat.Meta(&admin.Meta{
 		Name: "Product",
 		Config: &admin.SelectOneConfig{
 			AllowBlank: true,
@@ -174,13 +179,14 @@ func initChatTemplateResource(chat *admin.Resource) {
 		},
 	})
 
-	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product")
-	chat.SearchAttrs("TemplateName", "Group", "IsDefault", "ProductID")
+	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product", "Source")
+	chat.SearchAttrs("TemplateName", "Group", "Product", "Source")
 
 	attrs := []*admin.Section{
 		{
 			Rows: [][]string{
-				{"TemplateName", "Group"},
+				{"TemplateName"},
+				{"Group", "Source"},
 				{"IsDefault", "Product"},
 				{"Messages"},
 			},

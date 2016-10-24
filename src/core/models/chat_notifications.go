@@ -77,7 +77,8 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 	res := db.New().Preload("Messages").
 		Where(`"group" = ?`, group).
 		Where("product_id = ? OR is_default", product.ID).
-		Order("product_id IS NULL").
+		Where("source = ? OR source = 'any'", source).
+		Order("product_id IS NULL, source = 'any'").
 		First(&template)
 	if res.RecordNotFound() {
 		log.Errorf(
