@@ -345,6 +345,12 @@
 			"path": "/cli"
 		},
 		{
+			"importpath": "github.com/kljensen/snowball",
+			"repository": "https://github.com/kljensen/snowball",
+			"revision": "eccb3014a653352f4f9969f416b9b3cc3605a6ef",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/kr/pretty",
 			"repository": "https://github.com/kr/pretty",
 			"revision": "737b74a46c4bf788349f72cb256fed10aea4d0ac",
