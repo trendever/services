@@ -20,6 +20,14 @@ type Settings struct {
 	Debug    bool
 }
 
+// similar to gorm.Model but with uint64 key
+type Model struct {
+	ID        uint64 `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+}
+
 // New database conn
 func New() *gorm.DB {
 	return connection.New()
