@@ -30,7 +30,11 @@ func (s *monetizationServer) GetPlan(_ context.Context, in *core.GetPlanRequest)
 
 func (s *monetizationServer) GetPlansList(_ context.Context, in *core.GetPlansListRequest) (*core.GetPlansListReply, error) {
 	var plans []models.MonetizationPlan
-	err := db.New().Find(&plans, "public").Error
+	scope := db.New()
+	if in.Currency != "" {
+		scope = scope.Where("primary_currency = ?", in.Currency)
+	}
+	err := scope.Find(&plans, "public").Error
 	if err != nil {
 		log.Errorf("failed to load monetization plans: %v", err)
 		return &core.GetPlansListReply{Error: err.Error()}, nil
@@ -41,6 +45,24 @@ func (s *monetizationServer) GetPlansList(_ context.Context, in *core.GetPlansLi
 	ret := &core.GetPlansListReply{}
 	for _, plan := range plans {
 		ret.Plans = append(ret.Plans, plan.Encode())
+	}
+	return ret, nil
+}
+
+func (s *monetizationServer) GetCoinsOffers(_ context.Context, in *core.GetCoinsOffersRequest) (*core.GetCoinsOffersReply, error) {
+	var offers []models.CoinsOffer
+	scope := db.New()
+	if in.Currency != "" {
+		scope = scope.Where("currency = ?", in.Currency)
+	}
+	err := scope.Find(&offers).Error
+	if err != nil {
+		log.Errorf("failed to load coins offers: %v", err)
+		return &core.GetCoinsOffersReply{Error: err.Error()}, nil
+	}
+	ret := &core.GetCoinsOffersReply{}
+	for _, offer := range offers {
+		ret.Offers = append(ret.Offers, offer.Encode())
 	}
 	return ret, nil
 }

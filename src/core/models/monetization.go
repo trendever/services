@@ -1,52 +1,52 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"proto/core"
+	"utils/db"
 )
 
 type MonetizationPlan struct {
-	gorm.Model
-	Name              string
-	About             string `gorm:"text"`
-	PrimaryCurrency   string
+	db.Model
+	Name               string
+	About              string `gorm:"text"`
+	PrimaryCurrency    string
+	SubscriptionPeriod uint64
+	// in coins, zero if plan have no subscription fee
 	SubscriptionPrice uint64
-	CommissionRate    float64
+	// zero for commission-free plan
+	TransactionCommission float64
+	// for commission charge
 	CoinsExchangeRate float64
-	Public            bool
 
-	CoinsOffers []CoinsOffer `gorm:"ForeignKey:PlanID"`
+	Public bool
 }
 
 type CoinsOffer struct {
-	ID     uint64 `gorm:"primary_key"`
-	PlanID uint64
-	Amount uint64
-	// in primary currency of plan
-	Price uint64
+	ID       uint64 `gorm:"primary_key"`
+	Amount   uint64
+	Currency string
+	Price    uint64
 }
 
-func (offer CoinsOffer) Encode() *core.ConsOffer {
-	return &core.ConsOffer{
-		Id:     offer.ID,
-		Amount: offer.Amount,
-		Price:  offer.Price,
+func (offer CoinsOffer) Encode() *core.CoinsOffer {
+	return &core.CoinsOffer{
+		Id:       offer.ID,
+		Amount:   offer.Amount,
+		Price:    offer.Price,
+		Currency: offer.Currency,
 	}
 }
 
 func (plan MonetizationPlan) Encode() *core.MonezationPlan {
 	ret := &core.MonezationPlan{
-		Id:                uint64(plan.ID),
-		Name:              plan.Name,
-		About:             plan.About,
-		PrimaryCurrency:   plan.PrimaryCurrency,
-		SubscriptionPrice: plan.SubscriptionPrice,
-		CommissionRate:    plan.CommissionRate,
-		CoinsExchangeRate: plan.CoinsExchangeRate,
-		Public:            plan.Public,
-	}
-	for _, offer := range plan.CoinsOffers {
-		ret.ConsOffers = append(ret.ConsOffers, offer.Encode())
+		Id:                    plan.ID,
+		Name:                  plan.Name,
+		About:                 plan.About,
+		PrimaryCurrency:       plan.PrimaryCurrency,
+		SubscriptionPrice:     plan.SubscriptionPrice,
+		TransactionCommission: plan.TransactionCommission,
+		CoinsExchangeRate:     plan.CoinsExchangeRate,
+		Public:                plan.Public,
 	}
 	return ret
 }
