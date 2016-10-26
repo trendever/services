@@ -73,6 +73,10 @@ func (ig *Instagram) Login() error {
 		}
 	}
 
+	if ig.userName == "" || ig.password == "" {
+		return fmt.Errorf("Empty username or password")
+	}
+
 	// login
 	login := &Login{
 		DeviceId:          ig.deviceID,

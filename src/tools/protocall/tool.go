@@ -49,9 +49,13 @@ func main() {
 
 	argument := reflect.New(call.Type().In(1).Elem())
 
-	fmt.Printf("%#v\n", argument.Interface())
+	err = yaml.Unmarshal(bytes, argument.Interface())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Could not decode:", err.Error())
+		os.Exit(1)
+	}
 
-	yaml.Unmarshal(bytes, argument.Interface())
+	fmt.Printf("%#v\n", argument.Interface())
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()

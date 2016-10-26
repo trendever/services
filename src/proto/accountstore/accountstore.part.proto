@@ -1,0 +1,52 @@
+service AccountStoreService {
+	rpc Add(AddRequest) returns (AddReply) {}
+	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
+	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
+	rpc GetValid(GetValidRequest) returns (GetValidReply) {}
+	rpc GetByName(GetByNameRequest) returns (GetByNameReply) {}
+}
+
+message Account {
+  string instagram_username = 1;
+  string cookie = 2;
+  bool valid = 3;
+}
+
+message AddRequest {
+  string instagram_username = 1;
+  string password = 2;
+}
+
+message AddReply {
+  bool needCode = 2;
+}
+
+message ConfirmRequest {
+  string instagram_username = 1;
+}
+
+message ConfirmReply {
+}
+
+message MarkInvalidRequest {
+  string instagram_username = 1;
+}
+
+message MarkInvalidReply {
+}
+
+message GetValidRequest {
+}
+
+message GetValidReply {
+  repeated Account accounts = 1;
+}
+
+message GetByNameRequest {
+  string instagram_username = 1;
+  bool hide_private = 2;
+}
+
+message GetByNameReply {
+  Account account = 1;
+}
