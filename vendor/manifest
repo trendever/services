@@ -470,28 +470,28 @@
 		{
 			"importpath": "github.com/nats-io/gnatsd/auth",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/auth"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/conf",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/conf"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/server",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/server"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/test",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/test"
 		},
@@ -504,13 +504,13 @@
 		{
 			"importpath": "github.com/nats-io/nats",
 			"repository": "https://github.com/nats-io/nats",
-			"revision": "bdc4f3232bda0d36829b72d1cecede976bbe54a5",
+			"revision": "aab6caaf3a868d3f1a8cd87b7c34b364306df278",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/nats-io/nuid",
 			"repository": "https://github.com/nats-io/nuid",
-			"revision": "a5152d67cf63cbfb5d992a395458722a45194715",
+			"revision": "289cccf02c178dc782430d534e3c1f5b72af807f",
 			"branch": "master"
 		},
 		{

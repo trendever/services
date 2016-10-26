@@ -14,8 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
 	"github.com/nats-io/gnatsd/server"
 	gnatsd "github.com/nats-io/gnatsd/test"
+	"runtime"
 )
 
 // Dumb wait program to sync on callbacks, etc... Will timeout
@@ -30,6 +32,23 @@ func WaitTime(ch chan bool, timeout time.Duration) error {
 	case <-time.After(timeout):
 	}
 	return errors.New("timeout")
+}
+
+func stackFatalf(t *testing.T, f string, args ...interface{}) {
+	lines := make([]string, 0, 32)
+	msg := fmt.Sprintf(f, args...)
+	lines = append(lines, msg)
+
+	// Generate the Stack of callers: Skip us and verify* frames.
+	for i := 2; true; i++ {
+		_, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		msg := fmt.Sprintf("%d - %s:%d", i, file, line)
+		lines = append(lines, msg)
+	}
+	t.Fatalf("%s", strings.Join(lines, "\n"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -203,6 +222,30 @@ func TestServersRandomize(t *testing.T) {
 	}
 	if !reflect.DeepEqual(testServers, clientServers) {
 		t.Fatalf("ServerPool list should not be randomized\n")
+	}
+
+	// Although the original intent was that if Opts.Url is
+	// set, Opts.Servers is not (and vice versa), the behavior
+	// is that Opts.Url is always first, even when randomization
+	// is enabled. So make sure that this is still the case.
+	opts = DefaultOptions
+	opts.Url = DefaultURL
+	opts.Servers = testServers
+	nc = &Conn{Opts: opts}
+	if err := nc.setupServerPool(); err != nil {
+		t.Fatalf("Problem setting up Server Pool: %v\n", err)
+	}
+	// Build []string from srvPool
+	clientServers = []string{}
+	for _, s := range nc.srvPool {
+		clientServers = append(clientServers, s.url.String())
+	}
+	// In theory this could happen..
+	if reflect.DeepEqual(testServers, clientServers) {
+		t.Fatalf("ServerPool list not randomized\n")
+	}
+	if clientServers[0] != DefaultURL {
+		t.Fatalf("Options.Url should be first in the array, got %v", clientServers[0])
 	}
 }
 
@@ -784,4 +827,272 @@ func TestNormalizeError(t *testing.T) {
 	if s := normalizeErr("-ERR " + received + "'"); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
+}
+
+func TestAsyncINFO(t *testing.T) {
+	opts := DefaultOptions
+	c := &Conn{Opts: opts}
+
+	c.ps = &parseState{}
+
+	if c.ps.state != OP_START {
+		t.Fatalf("Expected OP_START vs %d\n", c.ps.state)
+	}
+
+	info := []byte("INFO {}\r\n")
+	if c.ps.state != OP_START {
+		t.Fatalf("Expected OP_START vs %d\n", c.ps.state)
+	}
+	err := c.parse(info[:1])
+	if err != nil || c.ps.state != OP_I {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	err = c.parse(info[1:2])
+	if err != nil || c.ps.state != OP_IN {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	err = c.parse(info[2:3])
+	if err != nil || c.ps.state != OP_INF {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	err = c.parse(info[3:4])
+	if err != nil || c.ps.state != OP_INFO {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	err = c.parse(info[4:5])
+	if err != nil || c.ps.state != OP_INFO_SPC {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	err = c.parse(info[5:])
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+
+	// All at once
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+
+	// Server pool needs to be setup
+	c.setupServerPool()
+
+	// Partials requiring argBuf
+	expectedServer := serverInfo{
+		Id:           "test",
+		Host:         "localhost",
+		Port:         4222,
+		Version:      "1.2.3",
+		AuthRequired: true,
+		TLSRequired:  true,
+		MaxPayload:   2 * 1024 * 1024,
+		ConnectURLs:  []string{"localhost:5222", "localhost:6222"},
+	}
+	b, _ := json.Marshal(expectedServer)
+	info = []byte(fmt.Sprintf("INFO %s\r\n", b))
+	if c.ps.state != OP_START {
+		t.Fatalf("Expected OP_START vs %d\n", c.ps.state)
+	}
+	err = c.parse(info[:9])
+	if err != nil || c.ps.state != INFO_ARG || c.ps.argBuf == nil {
+		t.Fatalf("Unexpected: %d err: %v argBuf: %v\n", c.ps.state, err, c.ps.argBuf)
+	}
+	err = c.parse(info[9:11])
+	if err != nil || c.ps.state != INFO_ARG || c.ps.argBuf == nil {
+		t.Fatalf("Unexpected: %d err: %v argBuf: %v\n", c.ps.state, err, c.ps.argBuf)
+	}
+	err = c.parse(info[11:])
+	if err != nil || c.ps.state != OP_START || c.ps.argBuf != nil {
+		t.Fatalf("Unexpected: %d err: %v argBuf: %v\n", c.ps.state, err, c.ps.argBuf)
+	}
+	if !reflect.DeepEqual(c.info, expectedServer) {
+		t.Fatalf("Expected server info to be: %v, got: %v", expectedServer, c.info)
+	}
+
+	// Good INFOs
+	good := []string{"INFO {}\r\n", "INFO  {}\r\n", "INFO {} \r\n", "INFO { \"server_id\": \"test\"  }   \r\n", "INFO {\"connect_urls\":[]}\r\n"}
+	for _, gi := range good {
+		c.ps = &parseState{}
+		err = c.parse([]byte(gi))
+		if err != nil || c.ps.state != OP_START {
+			t.Fatalf("Protocol %q should be fine. Err=%v state=%v", gi, err, c.ps.state)
+		}
+	}
+
+	// Wrong INFOs
+	wrong := []string{"IxNFO {}\r\n", "INxFO {}\r\n", "INFxO {}\r\n", "INFOx {}\r\n", "INFO{}\r\n", "INFO {}"}
+	for _, wi := range wrong {
+		c.ps = &parseState{}
+		err = c.parse([]byte(wi))
+		if err == nil && c.ps.state == OP_START {
+			t.Fatalf("Protocol %q should have failed", wi)
+		}
+	}
+
+	checkPool := func(urls ...string) {
+		// Check both pool and urls map
+		if len(c.srvPool) != len(urls) {
+			stackFatalf(t, "Pool should have %d elements, has %d", len(urls), len(c.srvPool))
+		}
+		if len(c.urls) != len(urls) {
+			stackFatalf(t, "Map should have %d elements, has %d", len(urls), len(c.urls))
+		}
+		for i, url := range urls {
+			if c.Opts.NoRandomize {
+				if c.srvPool[i].url.Host != url {
+					stackFatalf(t, "Pool should have %q at index %q, has %q", url, i, c.srvPool[i].url.Host)
+				}
+			} else {
+				if _, present := c.urls[url]; !present {
+					stackFatalf(t, "Pool should have %q", url)
+				}
+			}
+		}
+	}
+
+	// Now test the decoding of "connect_urls"
+
+	// No randomize for now
+	c.Opts.NoRandomize = true
+	// Reset the pool
+	c.setupServerPool()
+	// Reinitialize the parser
+	c.ps = &parseState{}
+
+	info = []byte("INFO {\"connect_urls\":[\"localhost:5222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) and localhost:5222
+	checkPool("localhost:4222", "localhost:5222")
+
+	// Make sure that if client receives the same, it is not added again.
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool should still contain localhost:4222 (the default URL) and localhost:5222
+	checkPool("localhost:4222", "localhost:5222")
+
+	// Receive a new URL
+	info = []byte("INFO {\"connect_urls\":[\"localhost:6222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) localhost:5222 and localhost:6222
+	checkPool("localhost:4222", "localhost:5222", "localhost:6222")
+
+	// Receive more than 1 URL at once
+	info = []byte("INFO {\"connect_urls\":[\"localhost:7222\", \"localhost:8222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) localhost:5222, localhost:6222
+	// localhost:7222 and localhost:8222
+	checkPool("localhost:4222", "localhost:5222", "localhost:6222", "localhost:7222", "localhost:8222")
+
+	// Test with pool randomization now
+	c.Opts.NoRandomize = false
+	c.setupServerPool()
+
+	info = []byte("INFO {\"connect_urls\":[\"localhost:5222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) and localhost:5222
+	checkPool("localhost:4222", "localhost:5222")
+
+	// Make sure that if client receives the same, it is not added again.
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool should still contain localhost:4222 (the default URL) and localhost:5222
+	checkPool("localhost:4222", "localhost:5222")
+
+	// Receive a new URL
+	info = []byte("INFO {\"connect_urls\":[\"localhost:6222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) localhost:5222 and localhost:6222
+	checkPool("localhost:4222", "localhost:5222", "localhost:6222")
+
+	// Receive more than 1 URL at once
+	info = []byte("INFO {\"connect_urls\":[\"localhost:7222\", \"localhost:8222\"]}\r\n")
+	err = c.parse(info)
+	if err != nil || c.ps.state != OP_START {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Pool now should contain localhost:4222 (the default URL) localhost:5222, localhost:6222
+	// localhost:7222 and localhost:8222
+	checkPool("localhost:4222", "localhost:5222", "localhost:6222", "localhost:7222", "localhost:8222")
+
+	// Finally, check that the pool should be randomized.
+	allUrls := []string{"localhost:4222", "localhost:5222", "localhost:6222", "localhost:7222", "localhost:8222"}
+	same := 0
+	for i, url := range c.srvPool {
+		if url.url.Host == allUrls[i] {
+			same++
+		}
+	}
+	if same == len(allUrls) {
+		t.Fatal("Pool does not seem to be randomized")
+	}
+}
+
+func TestConnServers(t *testing.T) {
+	opts := DefaultOptions
+	c := &Conn{Opts: opts}
+	c.ps = &parseState{}
+	c.setupServerPool()
+
+	validateURLs := func(serverUrls []string, expectedUrls ...string) {
+		var found bool
+		if len(serverUrls) != len(expectedUrls) {
+			stackFatalf(t, "Array should have %d elements, has %d", len(expectedUrls), len(serverUrls))
+		}
+
+		for _, ev := range expectedUrls {
+			found = false
+			for _, av := range serverUrls {
+				if ev == av {
+					found = true
+					break
+				}
+			}
+			if !found {
+				stackFatalf(t, "array is missing %q in %v", ev, serverUrls)
+			}
+		}
+	}
+
+	// check the default url
+	validateURLs(c.Servers(), "nats://localhost:4222")
+	if len(c.DiscoveredServers()) != 0 {
+		t.Fatalf("Expected no discovered servers")
+	}
+
+	// Add a new URL
+	err := c.parse([]byte("INFO {\"connect_urls\":[\"localhost:5222\"]}\r\n"))
+	if err != nil {
+		t.Fatalf("Unexpected: %d : %v\n", c.ps.state, err)
+	}
+	// Server list should now contain both the default and the new url.
+	validateURLs(c.Servers(), "nats://localhost:4222", "nats://localhost:5222")
+	// Discovered servers should only contain the new url.
+	validateURLs(c.DiscoveredServers(), "nats://localhost:5222")
+
+	// verify user credentials are stripped out.
+	opts.Servers = []string{"nats://user:pass@localhost:4333", "nats://token@localhost:4444"}
+	c = &Conn{Opts: opts}
+	c.ps = &parseState{}
+	c.setupServerPool()
+
+	validateURLs(c.Servers(), "nats://localhost:4333", "nats://localhost:4444")
 }
