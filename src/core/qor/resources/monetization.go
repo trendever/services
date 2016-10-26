@@ -37,7 +37,7 @@ func initPlansResource(res *admin.Resource) {
 		Name:      "CoinsExchangeRateForCommissionCharge",
 		FieldName: "CoinsExchangeRate",
 	})
-	res.IndexAttrs("-About")
+	res.IndexAttrs("-About", "-CoinsExchangeRateForCommissionCharge")
 	attrs := &admin.Section{
 		Rows: [][]string{
 			{"Name", "PrimaryCurrency"},

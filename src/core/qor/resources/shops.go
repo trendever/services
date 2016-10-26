@@ -89,7 +89,7 @@ func initShopResource(res *admin.Resource) {
 		"Supplier.InstagramUsername", "Supplier.Name", "Supplier.InstagramCaption", "Supplier.InstagramFullname", "Supplier.InstagramWebsite",
 	)
 	res.IndexAttrs(
-		"ID", "InstagramUsername", "Supplier", "SupplierLastLogin", "Tags",
+		"ID", "InstagramUsername", "Supplier", "SupplierLastLogin", "Suspended", "Tags",
 	)
 
 	res.EditAttrs(
@@ -100,6 +100,7 @@ func initShopResource(res *admin.Resource) {
 				{"CreatedAt"},
 				{"Tags"},
 				{"Supplier", "Sellers"},
+				{"Plan", "PlanExpiresAt", "AutoRenewal"},
 				{"Caption"},
 				{"Slogan"},
 				{"ShippingRules"},

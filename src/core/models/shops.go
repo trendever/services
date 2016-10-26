@@ -41,6 +41,18 @@ type Shop struct {
 	// if true new leads will not be joined with existing one
 	SeparateLeads bool
 
+	// monetization related stuff
+	PlanID uint64
+	Plan   MonetizationPlan
+	// nil for plans without expiration
+	PlanExpiresAt *time.Time
+	// if true subscription will be renewed automatically after expiration
+	AutoRenewal bool
+	// there may be some time between subscription expiration and autorenewal,
+	// so  any logic should use field below instead of compare expiration time with current one.
+	// true if shop was no active monetization plan
+	Suspended bool
+
 	// it's better to keep them outside main struct to avoid load surplus data
 	Notes []ShopNote `gorm:"ForeignKey:ShopID"`
 }
@@ -74,7 +86,7 @@ func (s Shop) Stringify() string {
 
 //Encode converts Shop to core.Shop
 func (s Shop) Encode() *core.Shop {
-	return &core.Shop{
+	ret := &core.Shop{
 		Id:                 int64(s.ID),
 		InstagramId:        s.Supplier.InstagramID,
 		InstagramUsername:  s.Supplier.InstagramUsername,
@@ -94,7 +106,14 @@ func (s Shop) Encode() *core.Shop {
 		Available:  s.NotifySupplier,
 
 		CreatedAt: uint64(s.CreatedAt.Unix()),
+
+		Plan:      s.Plan.Encode(),
+		Suspended: s.Suspended,
 	}
+	if s.PlanExpiresAt != nil {
+		ret.PlanExpiresAt = s.PlanExpiresAt.Unix()
+	}
+	return ret
 }
 
 //Decode converts core.Shop to Shop

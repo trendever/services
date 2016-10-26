@@ -11,9 +11,9 @@ type MonetizationPlan struct {
 	About              string `gorm:"text"`
 	PrimaryCurrency    string
 	SubscriptionPeriod uint64
-	// in coins, zero if plan have no subscription fee
+	// in coins, zero if plan has no subscription fee
 	SubscriptionPrice uint64
-	// zero for commission-free plan
+	// zero for commission-free plans
 	TransactionCommission float64
 	// for commission charge
 	CoinsExchangeRate float64

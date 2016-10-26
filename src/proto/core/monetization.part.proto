@@ -4,6 +4,8 @@ service MonetizationService {
     // returns list of public plans
     rpc GetPlansList(GetPlansListRequest) returns (GetPlansListReply) {}
     rpc GetCoinsOffers(GetCoinsOffersRequest) returns (GetCoinsOffersReply) {}
+    // subscribe shop to plan
+    rpc Subscribe(SubscribeRequest) returns (SubscribeReply) {}
 }
 
 message GetPlanRequest{
@@ -49,5 +51,18 @@ message GetCoinsOffersRequest {
 
 message GetCoinsOffersReply {
     repeated CoinsOffer offers = 1;
+    string error = 2;
+}
+
+message SubscribeRequest {
+    uint64 shop_id = 1;
+    // should be supplier of shop
+    uint64 user_id = 2;
+    uint64 plan_id = 3;
+    bool auto_renewal = 4;
+}
+
+message SubscribeReply {
+    bool ok = 1;
     string error = 2;
 }

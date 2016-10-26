@@ -5,6 +5,7 @@ import (
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
+	"core/utils"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -203,7 +204,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return performTransactions(transactions...)
+			return utils.PerformTransactions(transactions...)
 		},
 	})
 	type writeOffArg struct {
@@ -240,7 +241,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return performTransactions(transactions...)
+			return utils.PerformTransactions(transactions...)
 		},
 	})
 
@@ -285,24 +286,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:      reason,
 				})
 			}
-			return performTransactions(transactions...)
+			return utils.PerformTransactions(transactions...)
 		},
 	})
-}
-
-func performTransactions(transactions ...*trendcoin.TransactionData) error {
-	// @TODO add local checks after service tests
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	res, err := api.TrendcoinServiceClient.MakeTransactions(
-		ctx,
-		&trendcoin.MakeTransactionsRequest{Transactions: transactions},
-	)
-	if err != nil {
-		return err
-	}
-	if res.Error != "" {
-		return errors.New(res.Error)
-	}
-	return nil
 }
