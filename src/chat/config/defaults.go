@@ -5,6 +5,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 const consulConfigPath = "chat"
@@ -18,7 +19,7 @@ type Settings struct {
 	Receiver      string
 	UploadService string `mapstructure:"upload_service"`
 	SentryDSN     string
-	NatsURL       string
+	Nats          nats.Config
 }
 
 var settings = &Settings{}

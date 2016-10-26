@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/elastic"
 	"utils/log"
+	"utils/nats"
 )
 
 var settings *Settings
@@ -49,7 +50,7 @@ type Settings struct {
 	ChannelPort string
 
 	SentryDSN string
-	NatsURL   string
+	Nats      nats.Config
 
 	MarketSMS string
 

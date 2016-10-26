@@ -1,12 +1,23 @@
 package nats
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/gorm"
+	"github.com/nats-io/go-nats-streaming"
 	"github.com/nats-io/nats"
+	"reflect"
 	"sync"
 	"time"
+	"utils/db"
 	"utils/log"
 )
+
+type Config struct {
+	URL         string
+	StanCluster string
+	StanID      string
+}
 
 type Subscription struct {
 	Subject string
@@ -14,10 +25,30 @@ type Subscription struct {
 	Handler nats.Handler
 }
 
+type StanSubscription struct {
+	Subject string
+	Group   string
+	// set it to get messages starting with the last acknowledged by this client message
+	DurableName string
+	// if zero ack will be automatically called on msg receive
+	AskTimeout time.Duration
+	// normal stan handler, ask may be performed via msg.Ack()
+	Handler stan.MsgHandler
+	// easier way: data will be decoded with json.Unmarshal, ack will be performed after handler will return true,
+	// should be func(decodedArg something) bool or func(decodedArg something, tx *gorm.DB) bool
+	// in second case tx.Commit() will be called if handler will return true and msg.Ack() will be success, tx.Rollback() otherwise
+	DecodedHandler interface{}
+}
+
 var (
-	encoded       *nats.EncodedConn
-	subscriptions []*Subscription
-	lock          sync.Mutex
+	stanConn    stan.Conn
+	encodedConn *nats.EncodedConn
+
+	subscriptions     []*Subscription
+	stanSubscriptions []*StanSubscription
+	lock              sync.Mutex
+
+	stanClientID string
 )
 
 // may be called before Init(), so it's fine to call it in package init
@@ -25,7 +56,7 @@ func Subscribe(subs ...*Subscription) {
 	lock.Lock()
 	for _, sub := range subs {
 		subscriptions = append(subscriptions, sub)
-		if encoded != nil {
+		if encodedConn != nil {
 			err := subscribe(sub)
 			if err != nil {
 				log.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err)
@@ -37,18 +68,116 @@ func Subscribe(subs ...*Subscription) {
 
 func subscribe(sub *Subscription) (err error) {
 	if sub.Group == "" {
-		_, err = encoded.Subscribe(sub.Subject, sub.Handler)
+		_, err = encodedConn.Subscribe(sub.Subject, sub.Handler)
 	} else {
-		_, err = encoded.QueueSubscribe(sub.Subject, sub.Group, sub.Handler)
+		_, err = encodedConn.QueueSubscribe(sub.Subject, sub.Group, sub.Handler)
 	}
 	return err
 }
 
-func Init(url string) {
+func StanSubscribe(subs ...*StanSubscription) {
+	lock.Lock()
+	for _, sub := range subs {
+		stanSubscriptions = append(stanSubscriptions, sub)
+		if stanConn != nil {
+			err := stanSubscribe(sub)
+			if err != nil {
+				log.Errorf("failed to subscribe to NATS Streaming subject '%v': %v", sub.Subject, err)
+			}
+		}
+	}
+	lock.Unlock()
+}
+
+func stanSubscribe(sub *StanSubscription) (err error) {
+	if sub.DecodedHandler != nil {
+		hType := reflect.TypeOf(sub.DecodedHandler)
+		ok := true
+		if hType.Kind() != reflect.Func {
+			ok = false
+		}
+		if hType.NumOut() != 1 || hType.Out(0).Kind() != reflect.Bool {
+			ok = false
+		}
+		hasTxArg := false
+		switch {
+		case hType.NumIn() == 1:
+		case hType.NumIn() == 2:
+			if hType.In(1) != reflect.TypeOf(db.New()) {
+				ok = false
+			} else {
+				hasTxArg = true
+			}
+		default:
+			ok = false
+		}
+		if !ok {
+			return fmt.Errorf("DecodedHandler for subject %v has unexpected type", sub.Subject)
+		}
+		argType := hType.In(0)
+
+		sub.Handler = func(m *stan.Msg) {
+			var argPtr reflect.Value
+			if argType.Kind() != reflect.Ptr {
+				argPtr = reflect.New(argType)
+			} else {
+				argPtr = reflect.New(argType.Elem())
+			}
+			if err := json.Unmarshal(m.Data, argPtr.Interface()); err != nil {
+				log.Errorf("failed to unmarshal argument to stan subscription %v: %v", sub.Subject, err)
+				return
+			}
+			var args []reflect.Value
+			var tx *gorm.DB
+			if hasTxArg {
+				tx = db.NewTransaction()
+				args = []reflect.Value{argPtr, reflect.ValueOf(tx)}
+			} else {
+				args = []reflect.Value{argPtr}
+			}
+			hValue := reflect.ValueOf(sub.DecodedHandler)
+			success := hValue.Call(args)[0].Bool()
+			if success {
+				if hasTxArg {
+					tx.Rollback()
+				}
+			}
+			if sub.AskTimeout != 0 {
+				err := m.Ack()
+				if err != nil {
+					log.Errorf("failed to acknowledge nats server about successefuly handled msg: %v", err)
+					if hasTxArg {
+						tx.Rollback()
+					}
+				}
+			}
+			if hasTxArg {
+				tx.Commit()
+			}
+		}
+	}
+
+	var options = []stan.SubscriptionOption{}
+	if sub.AskTimeout != 0 {
+		options = append(options, stan.SetManualAckMode(), stan.AckWait(sub.AskTimeout))
+	}
+	if sub.DurableName != "" {
+		options = append(options, stan.DurableName(sub.DurableName))
+	}
+
+	if sub.Group == "" {
+		_, err = stanConn.Subscribe(sub.Subject, sub.Handler, options...)
+	} else {
+		_, err = stanConn.QueueSubscribe(sub.Subject, sub.Group, sub.Handler, options...)
+	}
+	return err
+}
+
+func Init(config *Config) {
 	lock.Lock()
 	defer lock.Unlock()
 	for {
-		err := connect(url)
+		err := connect(config)
 		if err == nil {
 			return
 		}
@@ -57,12 +186,12 @@ func Init(url string) {
 	}
 }
 
-func connect(url string) error {
-	conn, err := nats.Connect(url)
+func connect(config *Config) error {
+	conn, err := nats.Connect(config.URL)
 	if err != nil {
 		return fmt.Errorf("connection to NATS failed: %v", err)
 	}
-	encoded, err = nats.NewEncodedConn(conn, nats.JSON_ENCODER)
+	encodedConn, err = nats.NewEncodedConn(conn, nats.JSON_ENCODER)
 	if err != nil {
 		return fmt.Errorf("failed to create encoded NATS connection: %v", err)
 	}
@@ -73,13 +202,33 @@ func connect(url string) error {
 			return fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err)
 		}
 	}
+	if config.StanCluster != "" {
+		stanConn, err = stan.Connect(config.StanCluster, config.StanID, stan.NatsConn(conn))
+		if err != nil {
+			return fmt.Errorf("connection to streaming server failed: %v", err)
+		}
+		for _, sub := range stanSubscriptions {
+			err := stanSubscribe(sub)
+			if err != nil {
+				return fmt.Errorf("failed to subscribe to NATS Streaming subject '%v': %v", sub.Subject, err)
+			}
+		}
+	}
 	return nil
 }
 
 func Publish(subj string, data interface{}) error {
-	err := encoded.Publish(subj, data)
+	err := encodedConn.Publish(subj, data)
 	if err != nil {
 		log.Error(err)
 	}
 	return err
+}
+
+func StanPublish(subj string, data interface{}) error {
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return stanConn.Publish(subj, encoded)
 }

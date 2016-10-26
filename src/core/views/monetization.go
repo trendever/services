@@ -112,7 +112,7 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 	if plan.SubscriptionPeriod != 0 {
 
 	}
-	shop.PlanExpiresAt = &time.Now().Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+	shop.PlanExpiresAt = time.Now().Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
 	shop.Suspended = false
 	shop.AutoRenewal = in.AutoRenewal
 
@@ -134,17 +134,16 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		AllowEmptySide: true,
 		Reason:         "subscription fee",
 	})
-	switch err.Error() {
-	case nil:
+	if err != nil {
+		switch err.Error() {
+		case "Invalid source account", "Credit is not allowed for this transaction":
+			log.Errorf("failed to perform transactions: %v", err)
+			ret.Error = "insufficient funds"
 
-	case "Invalid source account", "Credit is not allowed for this transaction":
-		log.Errorf("failed to perform transactions: %v", err)
-		ret.Error = "insufficient funds"
-		return
-
-	default:
-		log.Errorf("failed to perform transactions: %v", err)
-		ret.Error = "temporarily unable to write-off coins"
+		default:
+			log.Errorf("failed to perform transactions: %v", err)
+			ret.Error = "temporarily unable to write-off coins"
+		}
 		return
 	}
 

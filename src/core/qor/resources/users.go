@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"core/api"
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
@@ -12,7 +11,6 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"proto/trendcoin"
-	"utils/rpc"
 )
 
 func init() {

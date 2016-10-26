@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 var (
@@ -53,7 +54,6 @@ type Settings struct {
 	AppHost    string
 	SiteURL    string
 	SentryDSN  string
-	NatsURL    string
 	SystemUser string
 
 	RPC struct {
@@ -69,7 +69,8 @@ type Settings struct {
 		Trendcoin      string
 	}
 
-	DB db.Settings
+	DB   db.Settings
+	Nats nats.Config
 
 	Bitly struct {
 		APIKey      string

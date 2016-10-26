@@ -44,8 +44,8 @@ type Shop struct {
 	// monetization related stuff
 	PlanID uint64
 	Plan   MonetizationPlan
-	// nil for plans without expiration
-	PlanExpiresAt *time.Time
+	// zero time for plans without expiration
+	PlanExpiresAt time.Time
 	// if true subscription will be renewed automatically after expiration
 	AutoRenewal bool
 	// there may be some time between subscription expiration and autorenewal,
@@ -110,7 +110,7 @@ func (s Shop) Encode() *core.Shop {
 		Plan:      s.Plan.Encode(),
 		Suspended: s.Suspended,
 	}
-	if s.PlanExpiresAt != nil {
+	if !s.PlanExpiresAt.IsZero() {
 		ret.PlanExpiresAt = s.PlanExpiresAt.Unix()
 	}
 	return ret
