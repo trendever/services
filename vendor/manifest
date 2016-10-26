@@ -216,6 +216,27 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/gogo/protobuf/gogoproto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/gogoproto"
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/proto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/proto"
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/protoc-gen-gogo/descriptor"
+		},
+		{
 			"importpath": "github.com/golang/glog",
 			"repository": "https://github.com/golang/glog",
 			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
@@ -473,6 +494,12 @@
 			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
 			"branch": "master",
 			"path": "/test"
+		},
+		{
+			"importpath": "github.com/nats-io/go-nats-streaming",
+			"repository": "https://github.com/nats-io/go-nats-streaming",
+			"revision": "f0b13ceaf55c6d86604169520dfd8ee3c03e9524",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/nats-io/nats",
