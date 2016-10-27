@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/models"
 	"core/utils"
+	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
@@ -90,6 +91,12 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		ret.Error = "unsuitable user"
 	}
 
+	now := time.Now()
+	// @CHECK prolongation actuality may be repetitive. what about it?
+	if now.Sub(shop.LastPlanUpdate) < time.Minute {
+		ret.Error = "action may be repetitive"
+	}
+
 	var plan models.MonetizationPlan
 	res = db.New().First(&plan, "id = ?", in.PlanId)
 	if res.RecordNotFound() {
@@ -108,13 +115,20 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		return
 	}
 
-	shop.PlanID = plan.ID
 	if plan.SubscriptionPeriod != 0 {
-
+		// prolongation
+		if plan.ID == shop.PlanID && shop.PlanExpiresAt.After(now) {
+			shop.PlanExpiresAt = shop.PlanExpiresAt.Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+		} else {
+			shop.PlanExpiresAt = now.Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+		}
+	} else {
+		shop.PlanExpiresAt = time.Time{}
 	}
-	shop.PlanExpiresAt = time.Now().Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+	shop.PlanID = plan.ID
 	shop.Suspended = false
 	shop.AutoRenewal = in.AutoRenewal
+	shop.LastPlanUpdate = now
 
 	// for plans without subscription fee
 	if plan.SubscriptionPrice == 0 {
@@ -128,7 +142,7 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		return
 	}
 
-	err := utils.PerformTransactions(&trendcoin.TransactionData{
+	txIDs, err := utils.PerformTransactions(&trendcoin.TransactionData{
 		Source:         uint64(in.UserId),
 		Amount:         plan.SubscriptionPrice,
 		AllowEmptySide: true,
@@ -151,16 +165,16 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 	// here comes troubles
 	if err != nil {
 		log.Errorf("failed to save shop after coins write off: %v!", res.Error)
-		refundErr := utils.PerformTransactions(&trendcoin.TransactionData{
+		refundErr := utils.PostTransactions(&trendcoin.TransactionData{
 			Destination:    uint64(in.UserId),
 			Amount:         plan.SubscriptionPrice,
 			AllowEmptySide: true,
-			Reason:         "failed subscription refund",
+			Reason:         fmt.Sprintf("#%v refund(failed subscription)", txIDs[0]),
+			IdempotencyKey: fmt.Sprintf("#%v refund", txIDs[0]),
 		})
 		if refundErr != nil {
 			// well... things going really bad
-			// @CHECK what else can we do?
-			// @TODO use rpc with guaranteed delivery?
+			// @TODO we need extra error level, it's really critical
 			log.Errorf("failed to refund coins %v to %v: %v!", plan.SubscriptionPrice, in.UserId, refundErr)
 			ret.Error = "db error after coins write-off"
 		} else {

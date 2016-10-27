@@ -202,7 +202,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return utils.PerformTransactions(transactions...)
+			_, err := utils.PerformTransactions(transactions...)
+			return err
 		},
 	})
 	type writeOffArg struct {
@@ -239,7 +240,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return utils.PerformTransactions(transactions...)
+			_, err := utils.PerformTransactions(transactions...)
+			return err
 		},
 	})
 
@@ -284,7 +286,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:      reason,
 				})
 			}
-			return utils.PerformTransactions(transactions...)
+			_, err := utils.PerformTransactions(transactions...)
+			return err
 		},
 	})
 }

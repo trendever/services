@@ -44,6 +44,8 @@ type Shop struct {
 	// monetization related stuff
 	PlanID uint64
 	Plan   MonetizationPlan
+	// used to prevent repetitive actions
+	LastPlanUpdate time.Time
 	// zero time for plans without expiration
 	PlanExpiresAt time.Time
 	// if true subscription will be renewed automatically after expiration

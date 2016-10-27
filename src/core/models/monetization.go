@@ -43,6 +43,7 @@ func (plan MonetizationPlan) Encode() *core.MonezationPlan {
 		Name:                  plan.Name,
 		About:                 plan.About,
 		PrimaryCurrency:       plan.PrimaryCurrency,
+		SubscriptionPeriod:    plan.SubscriptionPeriod,
 		SubscriptionPrice:     plan.SubscriptionPrice,
 		TransactionCommission: plan.TransactionCommission,
 		CoinsExchangeRate:     plan.CoinsExchangeRate,
