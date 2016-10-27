@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/models"
 	"core/utils"
+	"errors"
 	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -14,9 +15,14 @@ import (
 	"utils/log"
 )
 
+// duration multiplier for plans periods
+const PlansBaseDuration = time.Minute
+
 func init() {
 	api.AddOnStartCallback(func(s *grpc.Server) {
-		core.RegisterMonetizationServiceServer(s, &monetizationServer{})
+		server := &monetizationServer{}
+		core.RegisterMonetizationServiceServer(s, server)
+		go server.loop()
 	})
 }
 
@@ -114,59 +120,66 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		ret.Error = "plan is not public"
 		return
 	}
+	err := subscribe(&shop, &plan, in.AutoRenewal)
+	if err != nil {
+		ret.Error = err.Error()
+	} else {
+		ret.Ok = true
+	}
+	// @TODO notifications
+	return
+}
 
+func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal bool) error {
+	now := time.Now()
+	updateMap := map[string]interface{}{
+		"plan_id":          plan.ID,
+		"suspended":        false,
+		"auto_renewal":     autoRenewal,
+		"last_plan_update": now,
+	}
 	if plan.SubscriptionPeriod != 0 {
 		// prolongation
 		if plan.ID == shop.PlanID && shop.PlanExpiresAt.After(now) {
-			shop.PlanExpiresAt = shop.PlanExpiresAt.Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+			updateMap["plan_expires_at"] = shop.PlanExpiresAt.Add(PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
 		} else {
-			shop.PlanExpiresAt = now.Add(time.Hour * 24 * time.Duration(plan.SubscriptionPeriod))
+			updateMap["plan_expires_at"] = now.Add(PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
 		}
 	} else {
-		shop.PlanExpiresAt = time.Time{}
+		updateMap["plan_expires_at"] = time.Time{}
 	}
-	shop.PlanID = plan.ID
-	shop.Suspended = false
-	shop.AutoRenewal = in.AutoRenewal
-	shop.LastPlanUpdate = now
 
 	// for plans without subscription fee
 	if plan.SubscriptionPrice == 0 {
 		err := db.New().Save(&shop).Error
 		if err != nil {
-			log.Errorf("failed to save shop: %v", res.Error)
-			ret.Error = "db error"
-		} else {
-			ret.Ok = true
+			log.Errorf("failed to save shop: %v", err)
+			return errors.New("db error")
 		}
-		return
+		return nil
 	}
 
 	txIDs, err := utils.PerformTransactions(&trendcoin.TransactionData{
-		Source:         uint64(in.UserId),
+		Source:         uint64(shop.SupplierID),
 		Amount:         plan.SubscriptionPrice,
 		AllowEmptySide: true,
 		Reason:         "subscription fee",
 	})
 	if err != nil {
-		switch err.Error() {
-		case "Invalid source account", "Credit is not allowed for this transaction":
+		if err.Error() == "Invalid source account" || err.Error() == "Credit is not allowed for this transaction" {
 			log.Errorf("failed to perform transactions: %v", err)
-			ret.Error = "insufficient funds"
-
-		default:
-			log.Errorf("failed to perform transactions: %v", err)
-			ret.Error = "temporarily unable to write-off coins"
+			return errors.New("insufficient funds")
 		}
-		return
+		log.Errorf("failed to perform transactions: %v", err)
+		return errors.New("temporarily unable to write-off coins")
 	}
 
-	err = db.New().Save(&shop).Error
+	err = db.New().Model(&shop).UpdateColumn(updateMap).Error
 	// here comes troubles
 	if err != nil {
-		log.Errorf("failed to save shop after coins write off: %v!", res.Error)
+		log.Errorf("failed to save shop after coins write off: %v!", err)
 		refundErr := utils.PostTransactions(&trendcoin.TransactionData{
-			Destination:    uint64(in.UserId),
+			Destination:    uint64(shop.SupplierID),
 			Amount:         plan.SubscriptionPrice,
 			AllowEmptySide: true,
 			Reason:         fmt.Sprintf("#%v refund(failed subscription)", txIDs[0]),
@@ -175,14 +188,50 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		if refundErr != nil {
 			// well... things going really bad
 			// @TODO we need extra error level, it's really critical
-			log.Errorf("failed to refund coins %v to %v: %v!", plan.SubscriptionPrice, in.UserId, refundErr)
-			ret.Error = "db error after coins write-off"
-		} else {
-			ret.Error = "db error"
+			log.Errorf("failed to refund coins %v to %v: %v!", plan.SubscriptionPrice, shop.SupplierID, refundErr)
+			return errors.New("db error after coins write-off")
 		}
-		return
+		return errors.New("db error")
 	}
+	return nil
+}
 
-	ret.Ok = true
-	return
+func (s *monetizationServer) loop() {
+	for now := range time.Tick(time.Minute) {
+		log.Debug("checking subscriptions...")
+		var shops []*models.Shop
+		err := db.New().Preload("Plan").
+			Where("plan_expires_at < ?", now).
+			//ignore plans without expiration
+			Where("plan_expires_at != ? AND plan_expires_at IS NOT NULL", time.Time{}).
+			Where("NOT suspended").
+			Find(&shops).Error
+		if err != nil {
+			log.Errorf("failed to load shops with expired subscriptions: %v", err)
+			continue
+		}
+		for _, shop := range shops {
+			// @TODO notifications
+			if !shop.AutoRenewal {
+				err := db.New().Model(shop).UpdateColumn("suspended", true).Error
+				if err != nil {
+					log.Errorf("failed to suspend shop: %v", err)
+				}
+				continue
+			}
+			err := subscribe(shop, &shop.Plan, true)
+			switch {
+			case err == nil:
+			case err.Error() == "insufficient funds":
+				// @TODO autorefill coins
+				log.Errorf("shop %v should be suspended due to not able to pay the subscription fee", shop.ID)
+				err := db.New().Model(shop).UpdateColumn("suspended", true).Error
+				if err != nil {
+					log.Errorf("failed to suspend shop: %v", err)
+				}
+			default:
+				log.Errorf("failed to renew subscription if shop %v: %v", shop.ID, err)
+			}
+		}
+	}
 }

@@ -18,6 +18,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"get_plan", "monetization", GetMonetizationPlan},
 		soso.Route{"plans_list", "monetization", GetMonetizationPlansList},
+		soso.Route{"coins_offers", "monetization", GetCoinsOffers},
 		soso.Route{"subscribe", "monetization", SubscribeToPlan},
 	)
 }
