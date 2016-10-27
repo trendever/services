@@ -15,9 +15,6 @@ import (
 	"utils/log"
 )
 
-// duration multiplier for plans periods
-const PlansBaseDuration = time.Minute
-
 func init() {
 	api.AddOnStartCallback(func(s *grpc.Server) {
 		server := &monetizationServer{}
@@ -141,9 +138,9 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 	if plan.SubscriptionPeriod != 0 {
 		// prolongation
 		if plan.ID == shop.PlanID && shop.PlanExpiresAt.After(now) {
-			updateMap["plan_expires_at"] = shop.PlanExpiresAt.Add(PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
+			updateMap["plan_expires_at"] = shop.PlanExpiresAt.Add(models.PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
 		} else {
-			updateMap["plan_expires_at"] = now.Add(PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
+			updateMap["plan_expires_at"] = now.Add(models.PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
 		}
 	} else {
 		updateMap["plan_expires_at"] = time.Time{}

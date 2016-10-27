@@ -113,6 +113,23 @@ func handleNewSession(userID uint) {
 	if err != nil {
 		log.Errorf("failed to update last session for user %v: %v", userID, err)
 	}
+
+	plan := &models.InitialPlan
+	updateMap := map[string]interface{}{
+		"plan_id":          plan.ID,
+		"suspended":        false,
+		"auto_renewal":     false,
+		"last_plan_update": time.Now(),
+		"plan_expires_at":  time.Time{},
+	}
+	if plan.SubscriptionPeriod != 0 {
+		updateMap["plan_expires_at"] = time.Now().Add(models.PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
+	}
+	err = db.New().Model(&models.Shop{}).
+		Where("supplier_id = ?", userID).
+		Where("supplier_last_login = ? OR supplier_last_login IS NULL", time.Time{}).
+		UpdateColumns(updateMap).Error
+
 	err = db.New().Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
 		UpdateColumns(map[string]interface{}{

@@ -55,6 +55,8 @@ type Settings struct {
 	SiteURL    string
 	SentryDSN  string
 	SystemUser string
+	// name of plan that will be assigned to shop after creation. default is 'init'
+	InitialPlanName string
 
 	RPC struct {
 		Listen         string

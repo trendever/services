@@ -1,9 +1,15 @@
 package models
 
 import (
+	"core/conf"
 	"proto/core"
+	"time"
 	"utils/db"
+	"utils/log"
 )
+
+// duration multiplier for plans periods
+const PlansBaseDuration = time.Minute
 
 type MonetizationPlan struct {
 	db.Model
@@ -50,4 +56,34 @@ func (plan MonetizationPlan) Encode() *core.MonezationPlan {
 		Public:                plan.Public,
 	}
 	return ret
+}
+
+func (plan *MonetizationPlan) AfterCommit() {
+	if plan.ID == InitialPlan.ID {
+		InitialPlan = *plan
+	}
+}
+
+var defaultIniPlan = MonetizationPlan{
+	Name:               "init",
+	About:              "default initial plan",
+	PrimaryCurrency:    "RUB",
+	SubscriptionPeriod: 7,
+}
+
+var InitialPlan MonetizationPlan
+
+func LoadOrCreateInitialPlan() error {
+	name := conf.GetSettings().InitialPlanName
+	if name == "" {
+		name = "init"
+	}
+	res := db.New().First(&InitialPlan, "name = ?", name)
+	if res.RecordNotFound() {
+		log.Warn("Initial plan with name %v not found, creating dalault one", name)
+		InitialPlan = defaultIniPlan
+		InitialPlan.Name = name
+		return db.New().Create(&InitialPlan).Error
+	}
+	return res.Error
 }

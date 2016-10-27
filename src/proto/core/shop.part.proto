@@ -40,6 +40,7 @@ message Shop {
   // may be zero for plans without expiration
   // DO NOT use this field to determinate whether shop has active plan, check "suspended" field instead
   int64 plan_expires_at = 20;
+  bool auto_renewal = 21;
 }
 
 

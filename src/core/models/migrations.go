@@ -2,7 +2,9 @@ package models
 
 import (
 	"fmt"
+	"time"
 	"utils/db"
+	"utils/log"
 )
 
 //Migrate runs migrations
@@ -86,7 +88,28 @@ func Migrate() error {
 
 	db.New().Model(&ChatTemplate{}).Where("source IS NULL OR source = ''").UpdateColumn("source", "any")
 
+	setInitialPlan()
+
 	return nil
+}
+
+func setInitialPlan() {
+	err := LoadOrCreateInitialPlan()
+	if err != nil {
+		log.Errorf("failed to load or create initial monetization plan")
+		return
+	}
+	updateMap := map[string]interface{}{
+		"plan_id":          InitialPlan.ID,
+		"suspended":        false,
+		"auto_renewal":     false,
+		"last_plan_update": time.Now(),
+		"plan_expires_at":  time.Time{},
+	}
+	if InitialPlan.SubscriptionPeriod != 0 {
+		updateMap["plan_expires_at"] = time.Now().Add(PlansBaseDuration * time.Duration(InitialPlan.SubscriptionPeriod))
+	}
+	db.New().Model(&Shop{}).Where("plan_id IS NULL OR plan_id = 0").UpdateColumns(updateMap)
 }
 
 func relationsIndices() {

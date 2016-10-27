@@ -109,8 +109,9 @@ func (s Shop) Encode() *core.Shop {
 
 		CreatedAt: uint64(s.CreatedAt.Unix()),
 
-		PlanId:    s.PlanID,
-		Suspended: s.Suspended,
+		PlanId:      s.PlanID,
+		Suspended:   s.Suspended,
+		AutoRenewal: s.AutoRenewal,
 	}
 	if !s.PlanExpiresAt.IsZero() {
 		ret.PlanExpiresAt = s.PlanExpiresAt.Unix()
@@ -137,6 +138,14 @@ func (s Shop) Decode(cs *core.Shop) Shop {
 }
 
 // BeforeSave gorm callbacks
+func (s *Shop) BeforeCreate(db *gorm.DB) {
+	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
+	s.PlanID = InitialPlan.ID
+	if InitialPlan.SubscriptionPeriod != 0 {
+		s.PlanExpiresAt = time.Now().Add(PlansBaseDuration * time.Duration(InitialPlan.SubscriptionPeriod))
+	}
+}
+
 func (s *Shop) BeforeSave(db *gorm.DB) {
 	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
 }

@@ -1,6 +1,7 @@
 debug: true
 appHost: :3004
 siteURL: http://localhost
+InitialPlanName: init
 
 nats:
   url: nats://nats:4222
