@@ -36,7 +36,7 @@ message Shop {
 
   // true if shop has no active monetization plan
   bool suspended = 18;
-  MonezationPlan plan = 19;
+  uint64 plan_id = 19;
   // may be zero for plans without expiration
   // DO NOT use this field to determinate whether shop has active plan, check "suspended" field instead
   int64 plan_expires_at = 20;

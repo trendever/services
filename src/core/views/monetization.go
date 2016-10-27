@@ -151,7 +151,7 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 
 	// for plans without subscription fee
 	if plan.SubscriptionPrice == 0 {
-		err := db.New().Save(&shop).Error
+		err := db.New().Model(shop).UpdateColumns(updateMap).Error
 		if err != nil {
 			log.Errorf("failed to save shop: %v", err)
 			return errors.New("db error")

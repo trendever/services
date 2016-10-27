@@ -109,7 +109,7 @@ func (s Shop) Encode() *core.Shop {
 
 		CreatedAt: uint64(s.CreatedAt.Unix()),
 
-		Plan:      s.Plan.Encode(),
+		PlanId:    s.PlanID,
 		Suspended: s.Suspended,
 	}
 	if !s.PlanExpiresAt.IsZero() {
