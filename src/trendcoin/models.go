@@ -24,6 +24,7 @@ type Transaction struct {
 	Destination    uint64    `gorm:"index" sql:"default:NULL"`
 	Amount         uint64
 	Reason         string
+	IdempotencyKey string `gorm:"unique" sql:"default:NULL"`
 	AllowCredit    bool
 	AllowEmptySide bool
 }
@@ -37,6 +38,7 @@ func (t Transaction) Encode() *proto.Transaction {
 			Destination:    t.Destination,
 			Amount:         t.Amount,
 			Reason:         t.Reason,
+			IdempotencyKey: t.IdempotencyKey,
 			AllowCredit:    t.AllowCredit,
 			AllowEmptySide: t.AllowEmptySide,
 		},
@@ -49,6 +51,7 @@ func DecodeTransactionData(d *proto.TransactionData) *Transaction {
 		Destination:    d.Destination,
 		Amount:         d.Amount,
 		Reason:         d.Reason,
+		IdempotencyKey: d.IdempotencyKey,
 		AllowCredit:    d.AllowCredit,
 		AllowEmptySide: d.AllowEmptySide,
 	}

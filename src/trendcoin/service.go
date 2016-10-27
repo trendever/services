@@ -8,9 +8,11 @@ import (
 	"os/signal"
 	"proto/trendcoin"
 	"syscall"
+	"time"
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -21,6 +23,7 @@ var settings struct {
 	RPC       string
 	DB        db.Settings
 	SentryDSN string
+	Nats      nats.Config
 }
 
 func Init() {
@@ -46,7 +49,15 @@ func main() {
 
 			rpc := rpc.Serve(settings.RPC)
 			db.Init(&settings.DB)
+			nats.Init(&settings.Nats)
 			server := NewTrendcoinServer()
+			nats.StanSubscribe(&nats.StanSubscription{
+				Subject:        "coins.makeTransactions",
+				Group:          "trendcoin",
+				DurableName:    "trendcoin",
+				AckTimeout:     time.Second * 30,
+				DecodedHandler: server.NatsTransactions,
+			})
 
 			log.Info("Registering server...")
 			trendcoin.RegisterTrendcoinServiceServer(rpc, server)

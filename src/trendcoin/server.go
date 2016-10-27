@@ -65,6 +65,28 @@ func (s *TrendcoinServer) MakeTransactions(_ context.Context, in *proto.MakeTran
 	return ans, nil
 }
 
+func (s *TrendcoinServer) NatsTransactions(in *proto.MakeTransactionsRequest) bool {
+	log.Debug("got transactions request via nats: %+v", in)
+	for _, tx := range in.Transactions {
+		if tx.IdempotencyKey == "" {
+			log.Errorf("nats transaction request %+v without IdempotencyKey ignored", in)
+			return true
+		}
+	}
+	res, _ := s.MakeTransactions(nil, in)
+	// in case of external(db) error we want receive this request again later
+	externalErr := true
+	if res.Error != "" {
+		for _, cur := range LogicalErrors {
+			if res.Error == cur.Error() {
+				externalErr = false
+				break
+			}
+		}
+	}
+	return !externalErr
+}
+
 func (s *TrendcoinServer) loop() {
 	for req := range s.requestChan {
 		ans := &proto.MakeTransactionsReply{}

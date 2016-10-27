@@ -25,6 +25,9 @@ message TransactionData {
 	bool allow_credit = 5;
 	// allows empty "source" or "destination" field
 	bool allow_empty_side = 6;
+	// this key used to guarantee that only a single charge is created,
+	// should be unique or empty, required for nats requests
+	string idempotency_key = 7;
 }
 
 message MakeTransactionsRequest {

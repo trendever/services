@@ -31,7 +31,7 @@ type StanSubscription struct {
 	// set it to get messages starting with the last acknowledged by this client message
 	DurableName string
 	// if zero ack will be automatically called on msg receive
-	AskTimeout time.Duration
+	AckTimeout time.Duration
 	// normal stan handler, ask may be performed via msg.Ack()
 	Handler stan.MsgHandler
 	// easier way: data will be decoded with json.Unmarshal, ack will be performed after handler will return true,
@@ -142,7 +142,7 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 					tx.Rollback()
 				}
 			}
-			if sub.AskTimeout != 0 {
+			if sub.AckTimeout != 0 {
 				err := m.Ack()
 				if err != nil {
 					log.Errorf("failed to acknowledge nats server about successefuly handled msg: %v", err)
@@ -158,8 +158,8 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 	}
 
 	var options = []stan.SubscriptionOption{}
-	if sub.AskTimeout != 0 {
-		options = append(options, stan.SetManualAckMode(), stan.AckWait(sub.AskTimeout))
+	if sub.AckTimeout != 0 {
+		options = append(options, stan.SetManualAckMode(), stan.AckWait(sub.AckTimeout))
 	}
 	if sub.DurableName != "" {
 		options = append(options, stan.DurableName(sub.DurableName))

@@ -274,6 +274,31 @@ var tests = []struct {
 		},
 		Expection: InvalidSourceError,
 	},
+	{
+		Name: "idempotency ckeck",
+		Transactions: TransactionsSlice{
+			&Transaction{
+				Source:         2,
+				Destination:    1,
+				Amount:         1,
+				Reason:         "reasonable",
+				AllowEmptySide: false,
+				AllowCredit:    false,
+				IdempotencyKey: "key",
+			},
+			&Transaction{
+				Source:         2,
+				Destination:    1,
+				Amount:         1,
+				Reason:         "reasonable",
+				AllowEmptySide: false,
+				AllowCredit:    false,
+				// same as before
+				IdempotencyKey: "key",
+			},
+		},
+		Expection: IdempotencyCheckError,
+	},
 }
 
 func runTests(configPath string) {
