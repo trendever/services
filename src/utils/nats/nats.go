@@ -28,7 +28,9 @@ type Subscription struct {
 type StanSubscription struct {
 	Subject string
 	Group   string
-	// set it to get messages starting with the last acknowledged by this client message
+	// Set it make stan server remember about client after disconnection.
+	// For non durable queue subsribers, when the last member leaves the group, that group is removed.
+	// In individual subscription case durable name allows start receiving starting from last acknowledged by client
 	DurableName string
 	// if zero ack will be automatically called on msg receive
 	AckTimeout time.Duration
