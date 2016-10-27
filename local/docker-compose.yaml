@@ -165,12 +165,16 @@ services:
     command: sh -c 'exec ./bin/mandible'
     ports:
       - 127.0.0.1:8089:8089
-
+  
   nats:
-    image: nats
+    image: nats-streaming
+    volumes:
+      - natsdata:/data:rw
+    entrypoint: /nats-streaming-server -st file -dir /data -cid stan -SD
     ports:
       - 127.0.0.1:8222:8222
       - 127.0.0.1:4222:4222
+  
 
   redis:
     image: redis:alpine
@@ -181,3 +185,4 @@ volumes:
   dbdata: {}
   influxdata: {}
   elasticdata: {}
+  natsdata: {}

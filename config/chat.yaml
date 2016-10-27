@@ -9,5 +9,6 @@ db:
     base:     postgres
 
 upload_service: http://mandible:8089
-natsURL: "nats://nats:4222"
+nats:
+  url: nats://nats:4222
 debug: true

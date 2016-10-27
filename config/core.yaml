@@ -1,7 +1,11 @@
 debug: true
 appHost: :3004
 siteURL: http://localhost
-natsURL: nats://nats:4222
+
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: core1
 
 rpc:
   listen: :3005
