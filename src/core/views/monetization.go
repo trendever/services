@@ -3,14 +3,12 @@ package views
 import (
 	"core/api"
 	"core/models"
-	"core/utils"
 	"errors"
-	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
-	"proto/trendcoin"
 	"time"
+	"utils/coins"
 	"utils/db"
 	"utils/log"
 )
@@ -156,41 +154,19 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 		return nil
 	}
 
-	txIDs, err := utils.PerformTransactions(&trendcoin.TransactionData{
-		Source:         uint64(shop.SupplierID),
-		Amount:         plan.SubscriptionPrice,
-		AllowEmptySide: true,
-		Reason:         "subscription fee",
-	})
-	if err != nil {
-		if err.Error() == "Invalid source account" || err.Error() == "Credit is not allowed for this transaction" {
-			log.Errorf("failed to perform transactions: %v", err)
-			return errors.New("insufficient funds")
-		}
-		log.Errorf("failed to perform transactions: %v", err)
-		return errors.New("temporarily unable to write-off coins")
+	err := coins.CheckWriteOff(
+		uint64(shop.SupplierID), plan.SubscriptionPrice, "subscription fee",
+		func() error {
+			return db.New().Model(&shop).UpdateColumn(updateMap).Error
+		},
+	)
+	switch err {
+	case coins.CallbackFailed:
+		err = errors.New("db error")
+	case coins.RefundError:
+		err = errors.New("unrecoverable error, refund failed")
 	}
-
-	err = db.New().Model(&shop).UpdateColumn(updateMap).Error
-	// here comes troubles
-	if err != nil {
-		log.Errorf("failed to save shop after coins write off: %v!", err)
-		refundErr := utils.PostTransactions(&trendcoin.TransactionData{
-			Destination:    uint64(shop.SupplierID),
-			Amount:         plan.SubscriptionPrice,
-			AllowEmptySide: true,
-			Reason:         fmt.Sprintf("#%v refund(failed subscription)", txIDs[0]),
-			IdempotencyKey: fmt.Sprintf("#%v refund", txIDs[0]),
-		})
-		if refundErr != nil {
-			// well... things going really bad
-			// @TODO we need extra error level, it's really critical
-			log.Errorf("failed to refund coins %v to %v: %v!", plan.SubscriptionPrice, shop.SupplierID, refundErr)
-			return errors.New("db error after coins write-off")
-		}
-		return errors.New("db error")
-	}
-	return nil
+	return err
 }
 
 func (s *monetizationServer) loop() {

@@ -11,6 +11,7 @@ import (
 	"utils/log"
 
 	"github.com/spf13/cobra"
+	"utils/nats"
 )
 
 var cmdRun = &cobra.Command{
@@ -23,6 +24,7 @@ var cmdRun = &cobra.Command{
 
 		//	api.Init()
 		db.Init(&config.Get().DB)
+		nats.Init(&config.Get().Nats, true)
 		views.Init()
 
 		// interrupt

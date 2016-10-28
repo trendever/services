@@ -2,6 +2,7 @@ package nats
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/nats-io/go-nats-streaming"
@@ -175,11 +176,11 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 	return err
 }
 
-func Init(config *Config) {
+func Init(config *Config, stanRequired bool) {
 	lock.Lock()
 	defer lock.Unlock()
 	for {
-		err := connect(config)
+		err := connect(config, stanRequired)
 		if err == nil {
 			return
 		}
@@ -188,7 +189,7 @@ func Init(config *Config) {
 	}
 }
 
-func connect(config *Config) error {
+func connect(config *Config, stanRequired bool) error {
 	conn, err := nats.Connect(config.URL)
 	if err != nil {
 		return fmt.Errorf("connection to NATS failed: %v", err)
@@ -204,7 +205,7 @@ func connect(config *Config) error {
 			return fmt.Errorf("failed to subscribe to NATS subject '%v': %v", sub.Subject, err)
 		}
 	}
-	if config.StanCluster != "" {
+	if config.StanCluster != "" && config.StanID != "" {
 		stanConn, err = stan.Connect(config.StanCluster, config.StanID, stan.NatsConn(conn))
 		if err != nil {
 			return fmt.Errorf("connection to streaming server failed: %v", err)
@@ -215,6 +216,8 @@ func connect(config *Config) error {
 				return fmt.Errorf("failed to subscribe to NATS Streaming subject '%v': %v", sub.Subject, err)
 			}
 		}
+	} else if stanRequired {
+		return errors.New("nats: stan reuqired but not configured")
 	}
 	return nil
 }

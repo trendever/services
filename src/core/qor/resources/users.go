@@ -4,13 +4,13 @@ import (
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
-	"core/utils"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"proto/trendcoin"
+	"utils/coins"
 )
 
 func init() {
@@ -202,7 +202,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			_, err := utils.PerformTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
 			return err
 		},
 	})
@@ -240,7 +240,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			_, err := utils.PerformTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
 			return err
 		},
 	})
@@ -286,7 +286,7 @@ func initUserResource(res *admin.Resource) {
 					Reason:      reason,
 				})
 			}
-			_, err := utils.PerformTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
 			return err
 		},
 	})

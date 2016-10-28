@@ -66,7 +66,7 @@ func (s *Service) Run(cli *cli.Context) {
 	go log.PanicLogger(func() {
 		// connect to database
 		db.Init(&conf.GetSettings().DB)
-		nats.Init(&conf.GetSettings().Nats)
+		nats.Init(&conf.GetSettings().Nats, true)
 		if err := models.LoadOrCreateSystemUser(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))
 		}

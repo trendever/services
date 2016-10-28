@@ -7,6 +7,8 @@ import (
 	"payments/models"
 	"proto/chat"
 	"proto/payment"
+	"proto/trendcoin"
+	"utils/coins"
 	"utils/rpc"
 )
 
@@ -52,6 +54,7 @@ func GetChatNotifier(r models.Repo) ChatNotifier {
 func Init() {
 	settings := config.Get()
 	chatClient = chat.NewChatServiceClient(rpc.Connect(settings.ChatServer))
+	coins.SetGRPCCli(trendcoin.NewTrendcoinServiceClient(rpc.Connect(settings.CoinsServer)))
 }
 
 // SendSession notifies chat about session finish

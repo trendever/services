@@ -1,5 +1,6 @@
 rpc: :7777
 chatServer: "chat:2010"
+coinsServer: "trendcoin:2014"
 
 debug: true
 
@@ -9,12 +10,17 @@ http:
   redirect: "http://localhost:3002/chat/%v/payed/%v"
 
 db:
-    debug:    true
-    user:     postgres
-    password: 1234
-    host:     db
-    port:     5432
-    base:     postgres
+  debug:    true
+  user:     postgres
+  password: 1234
+  host:     db
+  port:     5432
+  base:     postgres
+
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: payment1
 
 payture:
   key: "MerchantTrendeverp2p"

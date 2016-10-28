@@ -69,19 +69,26 @@ func GetMonetizationPlan(c *soso.Context) {
 		return
 	}
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	res, err := monetizationServiceClient.GetPlan(ctx, &core.GetPlanRequest{Id: uint64(id)})
+	plan, err := getMonetizationPlan(uint64(id))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
-	if res.Error != "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.Error))
-		return
+	c.SuccessResponse(plan)
+}
+
+func getMonetizationPlan(id uint64) (*core.MonezationPlan, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := monetizationServiceClient.GetPlan(ctx, &core.GetPlanRequest{Id: id})
+	if err != nil {
+		return nil, err
 	}
-	c.SuccessResponse(res.Plan)
+	if res.Error != "" {
+		return nil, errors.New(res.Error)
+	}
+	return res.Plan, nil
 }
 
 func GetMonetizationPlansList(c *soso.Context) {

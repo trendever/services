@@ -24,6 +24,11 @@ type Payment struct {
 	ShopCardNumber string
 	Amount         uint64
 	Currency       int32
+
+	// in coins
+	CommissionFee uint64
+	// user id, usually supplier
+	CommissionSource uint64
 }
 
 // Session once-used pay sess
@@ -180,6 +185,10 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 		return nil, fmt.Errorf("Empty lead ID")
 	}
 
+	if r.CommissionFee != 0 && r.CommissionSource == 0 {
+		return nil, fmt.Errorf("Empty commission source")
+	}
+
 	pay := &Payment{
 		// Bank cards
 		ShopCardNumber: r.ShopCardNumber,
@@ -189,6 +198,9 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 		Direction:      int32(r.Direction),
 		ConversationID: r.ConversationId,
 		UserID:         r.UserId,
+
+		CommissionFee:    r.CommissionFee,
+		CommissionSource: r.CommissionSource,
 	}
 
 	switch r.Currency {

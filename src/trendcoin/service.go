@@ -49,7 +49,7 @@ func main() {
 
 			rpc := rpc.Serve(settings.RPC)
 			db.Init(&settings.DB)
-			nats.Init(&settings.Nats)
+			nats.Init(&settings.Nats, true)
 			server := NewTrendcoinServer()
 			nats.StanSubscribe(&nats.StanSubscription{
 				Subject:        "coins.makeTransactions",

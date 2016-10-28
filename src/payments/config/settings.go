@@ -6,18 +6,21 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 const configName = "payment"
 
 //Settings is a app settings
 type Settings struct {
-	RPC        string
-	ChatServer string
+	RPC         string
+	ChatServer  string
+	CoinsServer string
 
 	Debug     bool
 	SentryDSN string
 	DB        db.Settings
+	Nats      nats.Config
 	Payture   struct {
 		Sandbox bool
 		URL     string

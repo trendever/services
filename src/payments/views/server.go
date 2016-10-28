@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"utils/coins"
 	"utils/db"
 	"utils/log"
 	"utils/rpc"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
+	"proto/trendcoin"
 )
 
 type paymentServer struct {
@@ -139,9 +141,37 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	}
 
 	// Step2: Save pay
-	err = ps.repo.CreatePay(pay)
-	if err != nil {
-		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	if pay.CommissionFee != 0 {
+		err := coins.CheckWriteOff(
+			pay.CommissionSource, pay.CommissionFee, "payment commission",
+			func() error {
+				return ps.repo.CreatePay(pay)
+			},
+		)
+		switch err {
+		case nil:
+
+		case coins.CallbackFailed:
+			return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: "failed to save pay"}, nil
+
+		case coins.ServiceError:
+			return &payment.CreateOrderReply{Error: payment.Errors_COINS_DOWN, ErrorMessage: err.Error()}, nil
+
+		case coins.InsufficientFunds:
+			return &payment.CreateOrderReply{Error: payment.Errors_CANT_PAY_FEE, ErrorMessage: "insufficient funds to pay commission fee"}, nil
+
+		case coins.RefundError:
+			return &payment.CreateOrderReply{Error: payment.Errors_REFUND_ERROR, ErrorMessage: "failed to refund commission fee after db error"}, nil
+
+		default:
+			return &payment.CreateOrderReply{Error: payment.Errors_UNKNOWN_ERROR, ErrorMessage: fmt.Sprintf("unexpected error happend on commission write-off: %v", err)}, nil
+		}
+
+	} else { // pay without commission
+		err = ps.repo.CreatePay(pay)
+		if err != nil {
+			return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+		}
 	}
 
 	// Step3: Send to chat
@@ -173,7 +203,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 
 	// Step0.55: cancelled pays shall not proceed
 	if pay.Cancelled {
-		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: fmt.Sprintf("Payment is cancelled, aborting")}, nil
+		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: "Payment is cancelled, aborting"}, nil
 	}
 
 	// Step0.6: check if TX is already finished
@@ -182,7 +212,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 	if finished > 0 {
-		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: fmt.Sprintf("payments: This pay is already payed")}, nil
+		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: "payments: This pay is already payed"}, nil
 	}
 
 	// Step1: init TX
@@ -248,7 +278,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	if finished > 0 {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_ALREADY_PAYED,
-			ErrorMessage: fmt.Sprintf("payments: This pay is already payed; why do you want to cancel it?"),
+			ErrorMessage: "payments: This pay is already payed; why do you want to cancel it?",
 		}, nil
 	}
 
@@ -257,17 +287,32 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	if err != nil {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_CHAT_DOWN,
-			ErrorMessage: fmt.Sprintf("payments: chat service is unreachable"),
+			ErrorMessage: "payments: chat service is unreachable",
 		}, nil
 	}
 
-	// Step0.7: do the cancel
+	// Step0.9: refund commission
+	if pay.CommissionFee != 0 {
+		text := fmt.Sprintf("refund commission of pay %v", pay.ID)
+		err := coins.PostTransactions(&trendcoin.TransactionData{
+			Destination:    pay.CommissionSource,
+			Amount:         pay.CommissionFee,
+			AllowEmptySide: true,
+			Reason:         text,
+			IdempotencyKey: text,
+		})
+		if err != nil {
+			return &payment.CancelOrderReply{Error: payment.Errors_REFUND_ERROR, ErrorMessage: "failed to refund commission fee"}, nil
+		}
+	}
+
+	// Step0.10: do the cancel
 	pay.Cancelled = true
 	err = ps.repo.SavePay(pay)
 	if err != nil {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_DB_FAILED,
-			ErrorMessage: fmt.Sprintf("payments: could not save modified pay"),
+			ErrorMessage: "payments: could not save modified pay",
 		}, nil
 	}
 

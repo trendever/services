@@ -44,7 +44,7 @@ func CreateOrder(c *soso.Context) {
 	leadID, _ := req["lead_id"].(float64)
 
 	currency, _ := req["currency"].(float64)
-	_, currencyOK := payment.Currency_name[int32(currency)]
+	currencyName, currencyOK := payment.Currency_name[int32(currency)]
 
 	// retrieve card number from payments service
 	shopCardID, _ := req["card"].(float64)
@@ -56,36 +56,61 @@ func CreateOrder(c *soso.Context) {
 	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Incorrect parameter"))
 		return
 	}
 
-	conversationID, role, err := getConversationID(c.Token.UID, uint64(leadID))
+	leadInfo, err := getLeadInfo(c.Token.UID, uint64(leadID))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
 
-	direction, err := paymentDirection(role, true)
+	if leadInfo.Shop.Suspended {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("shop is suspended"))
+		return
+	}
+
+	direction, err := paymentDirection(leadInfo.UserRole, true)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
 
-	// now -- create the order
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	resp, err := paymentServiceClient.CreateOrder(ctx, &payment.CreateOrderRequest{
+	request := &payment.CreateOrderRequest{
 		Amount:   uint64(amount),
 		Currency: payment.Currency(currency),
 
 		LeadId:         uint64(leadID),
 		Direction:      direction,
 		UserId:         c.Token.UID,
-		ConversationId: conversationID,
+		ConversationId: leadInfo.ConversationId,
 		ShopCardNumber: shopCardNumber,
-	})
+	}
+
+	if direction == payment.Direction_CLIENT_PAYS {
+		plan, err := getMonetizationPlan(leadInfo.Shop.PlanId)
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+		if plan.TransactionCommission != 0 && plan.CoinsExchangeRate != 0 {
+			if plan.PrimaryCurrency != currencyName {
+				c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Unexpected currency"))
+			}
+			request.CommissionSource = uint64(leadInfo.Shop.SupplierId)
+			request.CommissionFee = uint64(amount*plan.TransactionCommission*plan.CoinsExchangeRate + 0.5)
+			if request.CommissionFee == 0 {
+				request.CommissionFee = 1
+			}
+		}
+	}
+
+	// now -- create the order
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := paymentServiceClient.CreateOrder(ctx, request)
 
 	if err != nil { // RPC errors
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)

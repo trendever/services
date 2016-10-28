@@ -17,6 +17,11 @@ message CreateOrderRequest {
   Direction direction = 6;
 
   string shop_card_number = 7;
+
+  // in trendcoins
+  uint64 commission_fee = 8;
+  // user id, usually supplier
+  uint64 commission_source = 9;
 }
 
 message CreateOrderReply {
@@ -94,10 +99,17 @@ enum Errors {
   PAY_CANCELLED = 4;
   ANOTHER_OPEN_ORDER = 5;
 
+  UNKNOWN_ERROR = 126;
   // external errors
   INIT_FAILED = 127;
   PAY_FAILED = 128;
   CHAT_DOWN = 129;
+  COINS_DOWN = 130;
+  // commission source lacks funds
+  CANT_PAY_FEE = 131;
+  // refund fails
+  // realy bad in case of Create order: commission was writed off, but pay wasn't created
+  REFUND_ERROR = 132;
 }
 
 enum Direction {

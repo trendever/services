@@ -24,7 +24,7 @@ var cmdStart = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		conf := config.Get()
 		db.Init(&conf.DB)
-		nats.Init(&conf.Nats)
+		nats.Init(&conf.Nats, false)
 
 		addr := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
 		log.Info("Starting auth microservice on %s", addr)

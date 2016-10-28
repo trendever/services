@@ -30,7 +30,7 @@ var cmdRun = &cobra.Command{
 		db := db.New()
 
 		repository := models.NewConversationRepository(db)
-		nats.Init(&conf.Nats)
+		nats.Init(&conf.Nats, false)
 
 		chat.RegisterChatServiceServer(s, server.NewChatServer(
 			repository,

@@ -14,6 +14,7 @@ import (
 	"proto/push"
 	"proto/sms"
 	"proto/trendcoin"
+	"utils/coins"
 	"utils/log"
 	"utils/rpc"
 )
@@ -88,6 +89,8 @@ func startClients() {
 
 	trendcoinConn := rpc.Connect(config.RPC.Trendcoin)
 	TrendcoinServiceClient = trendcoin.NewTrendcoinServiceClient(trendcoinConn)
+
+	coins.SetGRPCCli(TrendcoinServiceClient)
 }
 
 // GetBitly returns Bitly client
