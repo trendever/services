@@ -139,8 +139,9 @@ func SetData(c *soso.Context){
 		request.Name = value
 	}
 
-	if (request.Name == ""){
+	if request.Name == ""{
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Enter user name"))
+		return
 	}
 
 	if value, ok := c.RequestMap["phone"].(string); ok {
@@ -152,8 +153,9 @@ func SetData(c *soso.Context){
 
 	_, err := userServiceClient.SetData(ctx, request)
 
-	if (err != nil){
+	if err != nil{
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
 	}
 
 	c.SuccessResponse(map[string]interface{}{

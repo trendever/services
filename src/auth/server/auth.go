@@ -179,14 +179,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 		return s.wrongCredentialsReply(), nil
 	}
 
-	tokenPayload, err := json.Marshal(&auth_protocol.Token{UID: uint64(resp.Id), Exp: time.Now().Add(DefaultTokenExp).Unix()})
-
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	token, err := jose.Sign(string(tokenPayload), jose.HS256, s.sharedKey)
+	token, err := s.getToken(uint64(resp.Id))
 
 	if err != nil {
 		log.Error(err)

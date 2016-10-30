@@ -111,9 +111,9 @@ func (u User) Stringify() string {
 	name := u.getName()
 	addr := u.getAddr()
 
-	switch {
-	case u.ID == 0:
-		return "Deleted user"
+	log.Debug("USER %v",u)
+
+	switch {	
 	case name != "":
 		return name
 	case addr != "":

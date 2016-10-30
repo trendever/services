@@ -128,25 +128,20 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
 	phoneNumber, err := phone.CheckNumber(req.Phone,"")
 
-	if (err != nil){
+	if err != nil{
 		return &core.SetDataReply{}, err
 	}
 
-	userRequest := &core.ReadUserRequest{
-		Phone:             phoneNumber,
-		InstagramUsername: req.Name,
-	}
-
-	userExists, err := s.ReadUser(context.Background(), userRequest)
+	_, found, err := models.FindUserMatchAny(0,0,req.Name,req.Name,"",phoneNumber)
+	
 	if err != nil {
-		//user read error
-		return &core.SetDataReply{}, err
+		log.Error(err)
+		return nil, err
 	}
 
-	if userExists.Id > 0 && userExists.User.Confirmed {
-		//user exists error
+	if found {
 		return &core.SetDataReply{}, errors.New("User exists")
-	}
+	} 
 
 	updateMap := map[string]interface{}{}
 	updateMap["phone"] = phoneNumber
