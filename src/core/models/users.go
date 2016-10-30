@@ -43,6 +43,8 @@ type User struct {
 	IsSeller bool `sql:"default:false"`
 	// ability to join any chat
 	SuperSeller bool `sql:"default:false"`
+	// ability to be fake one
+	IsFake bool `sql:"default:false"`
 
 	LastLogin time.Time
 
@@ -55,6 +57,7 @@ type User struct {
 	// may be loaded with call LoadExternals method
 	// Assigned to qor db has callbacks to do it
 	Balance int64 `sql:"-"`
+
 }
 
 // SystemUser is used if we need to send a message from system
@@ -108,9 +111,9 @@ func (u User) Stringify() string {
 	name := u.getName()
 	addr := u.getAddr()
 
-	switch {
-	case u.ID == 0:
-		return "Deleted user"
+	log.Debug("USER %v",u)
+
+	switch {	
 	case name != "":
 		return name
 	case addr != "":
