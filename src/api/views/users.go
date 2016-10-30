@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"proto/core"
 	"utils/rpc"
+	"strings"
 )
 
 type User struct {
@@ -21,6 +22,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"retrieve", "user", GetUserProfile},
 		soso.Route{"set_email", "user", SetEmail},
+		soso.Route{"set_data","user",SetData},
 	)
 }
 
@@ -113,6 +115,47 @@ func SetEmail(c *soso.Context) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
+}
+
+func SetData(c *soso.Context){
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+
+	request := &core.SetDataRequest{}
+
+	request.UserId = c.Token.UID
+
+	if value, ok := c.RequestMap["name"].(string); ok {
+		value = strings.Trim(value, " \r\n\t")
+		if !nameValidator.MatchString(value) {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid user name"))
+			return
+		}
+		request.Name = value
+	}
+
+	if (request.Name == ""){
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Enter user name"))
+	}
+
+	if value, ok := c.RequestMap["phone"].(string); ok {
+		request.Phone = value
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := userServiceClient.SetData(ctx, request)
+
+	if (err != nil){
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+	}
+
 	c.SuccessResponse(map[string]interface{}{
 		"status": "success",
 	})
