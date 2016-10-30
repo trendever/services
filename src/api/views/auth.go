@@ -20,6 +20,7 @@ func init() {
 		soso.Route{"register", "auth", RegisterNewUser},
 		soso.Route{"login", "auth", Login},
 		soso.Route{"send_password", "auth", SendSmsPassword},
+		soso.Route{"fakeregister","auth", RegisterFakeUser},
 	)
 }
 
@@ -76,6 +77,38 @@ func RegisterNewUser(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"ErrorCode":    resp.ErrorCode,
 		"ErrorMessage": resp.ErrorMessage,
+	})
+}
+
+func RegisterFakeUser(c *soso.Context){
+	request := &auth_protocol.FakeUserRequest{}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := authClient.RegisterFakeUser(ctx, request)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	tokenData, err := auth.GetTokenData(resp.Token)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	user, err := GetUser(tokenData.UID, true)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"token": resp.Token,
+		"user":  user,
 	})
 }
 

@@ -48,6 +48,7 @@ func (u *User) PublicEncode() *core.User {
 		HasEmail:          u.Email != "",
 		HasPhone:          u.Phone != "",
 		Confirmed:         u.Confirmed,
+		IsFake:			   u.IsFake,
 	}
 }
 
@@ -87,5 +88,6 @@ func (u User) Decode(cu *core.User) User {
 		OptOut:      cu.OptOut,
 		SuperSeller: cu.SuperSeller,
 		IsSeller:    cu.Seller,
+		IsFake:		 cu.IsFake,
 	}
 }

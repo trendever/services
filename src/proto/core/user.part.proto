@@ -3,6 +3,8 @@ service UserService {
   // returns a user with a specific email. If not exists, creates it
   rpc FindOrCreateUser (CreateUserRequest) returns (ReadUserReply) {}
 
+  rpc CreateFakeUser (CreateUserRequest) returns (ReadUserReply) {}
+
   // returns a user that mathes request options
   rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
 
@@ -63,6 +65,7 @@ message User {
   bool has_phone = 15;
 
   bool confirmed = 21;
+  bool is_fake = 22;
 
   bool seller = 16;
   //list of shops where user is a supplier

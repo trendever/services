@@ -100,6 +100,40 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 
 }
 
+func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protocol.FakeUserRequest) (*auth_protocol.LoginReply, error) {
+	newUser := &core_protocol.CreateUserRequest{
+		User: &core_protocol.User{
+			IsFake: true,
+		},
+	}
+	resp, err := s.core.CreateFakeUser(context.Background(), newUser)
+
+	if err != nil {
+		return &auth_protocol.LoginReply{
+			ErrorCode:    auth_protocol.ErrorCodes_WRONG_CREDENTIALS,
+			ErrorMessage: "Something goes wrong",
+		}, err
+	}
+
+	tokenPayload, err := json.Marshal(&auth_protocol.Token{UID: uint64(resp.Id), Exp: time.Now().Add(DefaultTokenExp).Unix()})
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	token, err := jose.Sign(string(tokenPayload), jose.HS256, s.sharedKey)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	go nats.Publish(NatsLoginSubject, resp.Id)
+
+	return &auth_protocol.LoginReply{Token: token}, nil
+}
+
 //Login returns JWT token for user
 func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequest) (*auth_protocol.LoginReply, error) {
 
