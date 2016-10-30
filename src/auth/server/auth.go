@@ -16,6 +16,7 @@ import (
 	"utils/log"
 	"utils/nats"
 	"utils/phone"
+	"utils/rpc"
 )
 
 const (
@@ -61,7 +62,10 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 		Name:              request.Username,
 		InstagramUsername: request.InstagramUsername,
 	}
-	userExists, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	
+	userExists, err := s.core.ReadUser(rpcContext, userRequest)
 	if err != nil {
 		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
 		return nil, err
@@ -79,7 +83,10 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 			Name:              request.Username,
 		},
 	}
-	resp, err := s.core.FindOrCreateUser(context.Background(), newUser)
+	
+	defer cancel()
+	resp, err := s.core.FindOrCreateUser(rpcContext, newUser)
+
 	if err != nil {
 		log.Errorf("failed to create user with phone %v: %v", phoneNumber, err)
 		return nil, err
@@ -106,7 +113,11 @@ func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protoco
 			IsFake: true,
 		},
 	}
-	resp, err := s.core.CreateFakeUser(context.Background(), newUser)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := s.core.CreateFakeUser(rpcContext, newUser)
 
 	if err != nil {
 		return &auth_protocol.LoginReply{
@@ -115,14 +126,7 @@ func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protoco
 		}, err
 	}
 
-	tokenPayload, err := json.Marshal(&auth_protocol.Token{UID: uint64(resp.Id), Exp: time.Now().Add(DefaultTokenExp).Unix()})
-
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	token, err := jose.Sign(string(tokenPayload), jose.HS256, s.sharedKey)
+	token, err := s.getToken(uint64(resp.Id))
 
 	if err != nil {
 		log.Error(err)
@@ -151,7 +155,11 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	userRequest := &core_protocol.ReadUserRequest{
 		Phone: phoneNumber,
 	}
-	resp, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 	if err != nil {
 		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
@@ -208,7 +216,10 @@ func (s *authServer) SendNewSmsPassword(ctx context.Context, request *auth_proto
 	userRequest := &core_protocol.ReadUserRequest{
 		Phone: phoneNumber,
 	}
-	resp, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 	if err != nil {
 		log.Error(err)
@@ -273,7 +284,9 @@ func (s *authServer) GetNewToken(ctx context.Context, req *auth_protocol.NewToke
 			return nil, err
 		}
 
-		resp, err := s.core.ReadUser(context.Background(), userRequest)
+		rpcContext, cancel := rpc.DefaultContext()
+		defer cancel()
+		resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 		if err != nil {
 			log.Error(err)
@@ -334,8 +347,12 @@ func (s *authServer) sendSMSWithPassword(uid uint, phone string) error {
 		return err
 	}
 	log.Debug("%s", wr.String())
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
 	_, err = s.sms.SendSMS(
-		context.Background(),
+		rpcContext,
 		&sms_protocol.SendSMSRequest{
 			Phone: phone,
 			Msg:   wr.String(),
