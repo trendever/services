@@ -21,13 +21,13 @@ func init() {
 
 func SendMarketSMS(c *soso.Context) {
 	req := c.RequestMap
-	phone_number, ok := req["phone"].(string)
+	phoneNumber, ok := req["phone"].(string)
 	if !ok {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Empty phone"))
 		return
 	}
 	country, _ := req["country"].(string)
-	phone, err := phone.CheckNumber(phone_number, country)
+	phone, err := phone.CheckNumber(phoneNumber, country)
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid phone"))
 		return
