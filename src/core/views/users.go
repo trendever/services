@@ -51,6 +51,25 @@ func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUs
 	}, err
 }
 
+func (s userServer) CreateFakeUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
+	user := models.User{}.Decode(request.User)
+	err := db.New().Create(&user).Error
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = db.New().Model(&models.User{}).Where("id = ?", user.ID).Update("name", fmt.Sprintf("customer_%v", user.ID)).Error
+
+	return &core.ReadUserReply{
+		Id:   int64(user.ID),
+		User: user.PrivateEncode(),
+	}, err
+}
+
+
+
 func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest) (*core.ReadUserReply, error) {
 	user, found, err := models.FindUserMatchAny(
 		request.Id, request.InstagramId,
