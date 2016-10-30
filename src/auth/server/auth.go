@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/dvsekhvalnov/jose2go"
-	"github.com/ttacon/libphonenumber"
 	"golang.org/x/net/context"
 	auth_protocol "proto/auth"
 	core_protocol "proto/core"
@@ -16,6 +15,7 @@ import (
 	"time"
 	"utils/log"
 	"utils/nats"
+	"utils/phone"
 )
 
 const (
@@ -46,7 +46,7 @@ func NewAuthServer(core core_protocol.UserServiceClient, sms sms_protocol.SmsSer
 //RegisterNewUser creates new user
 func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol.NewUserRequest) (*auth_protocol.UserReply, error) {
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		log.Debug("invalid phone number %v", phoneNumber)
@@ -138,7 +138,7 @@ func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protoco
 func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequest) (*auth_protocol.LoginReply, error) {
 
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		log.Debug("invalid phone number %v", phoneNumber)
@@ -203,7 +203,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 func (s *authServer) SendNewSmsPassword(ctx context.Context, request *auth_protocol.SmsPasswordRequest) (*auth_protocol.SmsPasswordReply, error) {
 
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		return &auth_protocol.SmsPasswordReply{
@@ -271,7 +271,7 @@ func (s *authServer) GetNewToken(ctx context.Context, req *auth_protocol.NewToke
 	// https://github.com/search?l=go&q=org%3Atrendever+GetNewToken&type=Code
 	if userID == 0 {
 		//todo: add country to request
-		phoneNumber, err := checkPhoneNumber(req.PhoneNumber, "")
+		phoneNumber, err := phone.CheckNumber(req.PhoneNumber, "")
 
 		userRequest := &core_protocol.ReadUserRequest{
 			Phone: phoneNumber,
@@ -355,23 +355,6 @@ func (s *authServer) wrongCredentialsReply() *auth_protocol.LoginReply {
 		ErrorCode:    auth_protocol.ErrorCodes_WRONG_CREDENTIALS,
 		ErrorMessage: "Wrong credentials",
 	}
-}
-
-func checkPhoneNumber(phoneNumber, country string) (string, error) {
-	if country == "" {
-		country = "RU"
-	}
-
-	number, err := libphonenumber.Parse(phoneNumber, country)
-	if err != nil {
-		return "", err
-	}
-
-	if !libphonenumber.IsValidNumber(number) {
-		return "", errors.New("Phone number isn't valid")
-	}
-
-	return libphonenumber.Format(number, libphonenumber.E164), nil
 }
 
 func (s *authServer) getToken(uid uint64) (string, error) {

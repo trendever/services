@@ -8,8 +8,7 @@ import (
 	"net/http"
 	"proto/sms"
 	"utils/rpc"
-
-	"github.com/ttacon/libphonenumber"
+	"utils/phone"
 )
 
 var smsServiceClient = sms.NewSmsServiceClient(api.SMSConn)
@@ -22,13 +21,13 @@ func init() {
 
 func SendMarketSMS(c *soso.Context) {
 	req := c.RequestMap
-	phone, ok := req["phone"].(string)
+	phone_number, ok := req["phone"].(string)
 	if !ok {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Empty phone"))
 		return
 	}
 	country, _ := req["country"].(string)
-	phone, err := checkPhoneNumber(phone, country)
+	phone, err := phone.CheckNumber(phone_number, country)
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid phone"))
 		return
@@ -51,18 +50,4 @@ func SendMarketSMS(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"status": "success",
 	})
-}
-
-func checkPhoneNumber(phoneNumber, country string) (string, error) {
-	if country == "" {
-		country = "RU"
-	}
-	number, err := libphonenumber.Parse(phoneNumber, country)
-	if err != nil {
-		return "", err
-	}
-	if !libphonenumber.IsValidNumber(number) {
-		return "", errors.New("Phone number isn't valid")
-	}
-	return libphonenumber.Format(number, libphonenumber.E164), nil
 }

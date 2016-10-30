@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
-	"github.com/ttacon/libphonenumber"
 	"proto/checker"
 	"proto/trendcoin"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"utils/log"
 	"utils/nats"
 	"utils/rpc"
+	"utils/phone"
 )
 
 //NotifyUserCreated is a notification function
@@ -73,18 +73,14 @@ func (u *User) fetchPreviousPhone(db *gorm.DB) {
 }
 
 func (u *User) validatePhone(db *gorm.DB) {
-	if u.Phone != "" {
-		newPhone, err := libphonenumber.Parse(u.Phone, "")
-		correct := libphonenumber.IsValidNumber(newPhone)
+	if (u.Phone != ""){
+		phoneNumber, err := phone.CheckNumber(u.Phone, "")
 
-		switch {
-		case err != nil || !correct:
+		if (err != nil){
 			db.AddError(validations.NewError(u, "Phone", err.Error()))
-		case !correct:
-			db.AddError(validations.NewError(u, "Phone", "Uncorrect phone number"))
-		default:
-			u.Phone = libphonenumber.Format(newPhone, libphonenumber.E164)
 		}
+
+		u.Phone = phoneNumber
 	}
 }
 

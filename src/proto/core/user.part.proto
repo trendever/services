@@ -9,6 +9,8 @@ service UserService {
   rpc ReadUser (ReadUserRequest) returns (ReadUserReply) {}
 
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
+
+  rpc SetData (SetDataRequest) returns (SetDataReply) {}
 }
 
 message CreateUserRequest {
@@ -82,3 +84,11 @@ message SetEmailRequest {
 message SetEmailReply {
   string error = 1;
 }
+
+message SetDataRequest {
+  uint64 user_id = 1;
+  string name = 2;
+  string phone = 3;
+}
+
+message SetDataReply {}

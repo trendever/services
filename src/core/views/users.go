@@ -10,6 +10,8 @@ import (
 	"proto/core"
 	"utils/db"
 	"utils/log"
+	"utils/phone"
+	"errors"
 )
 
 func init() {
@@ -121,4 +123,42 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 		return &core.SetEmailReply{Error: "unknown UserId"}, nil
 	}
 	return &core.SetEmailReply{}, nil
+}
+
+func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
+	phoneNumber, err := phone.CheckNumber(req.Phone,"")
+
+	if (err != nil){
+		return &core.SetDataReply{}, err
+	}
+
+	userRequest := &core.ReadUserRequest{
+		Phone:             phoneNumber,
+		InstagramUsername: req.Name,
+	}
+
+	userExists, err := s.ReadUser(context.Background(), userRequest)
+	if err != nil {
+		//user read error
+		return &core.SetDataReply{}, err
+	}
+
+	if userExists.Id > 0 && userExists.User.Confirmed {
+		//user exists error
+		return &core.SetDataReply{}, errors.New("User exists")
+	}
+
+	updateMap := map[string]interface{}{}
+	updateMap["phone"] = phoneNumber
+	updateMap["instagram_username"] = req.Name
+	updateMap["name"] = req.Name
+
+	res := db.New().Model(&models.User{}).Where("id = ?", req.UserId).UpdateColumns(updateMap)
+
+	if res.Error != nil {
+		//update user error
+		return &core.SetDataReply{}, errors.New("Failed to update user")
+	}
+
+	return &core.SetDataReply{}, nil
 }
