@@ -7,46 +7,35 @@ service PaymentService {
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply) {}
 }
 
-message CreateOrderRequest {
+message OrderData {
   uint64 amount = 1;
   Currency currency = 2;
+  string gateway = 3;
 
-  uint64 lead_id = 3;
   uint64 user_id = 4;
-  uint64 conversation_id = 5;
-  Direction direction = 6;
 
-  string shop_card_number = 7;
+  // payment of our service
+  string service_name = 5;
+  string service_data = 6;
 
+  // p2p payment
+  uint64 lead_id = 7;
+  uint64 conversation_id = 8;
+  Direction direction = 9;
+  string shop_card_number = 10;
   // in trendcoins
-  uint64 commission_fee = 8;
+  uint64 commission_fee = 11;
   // user id, usually supplier
-  uint64 commission_source = 9;
+  uint64 commission_source = 12;
+}
 
-  // ewallet parameters
-  string payment_method = 10;
-  string comment = 11;
-  string service_id = 12;
-  string card_id = 13;
+message CreateOrderRequest {
+  OrderData data = 1;
 }
 
 message PaymentNotification {
   uint64 id = 1;
-  uint64 amount = 2;
-  Currency currency = 3;
-  uint64 lead_id = 4;
-  uint64 user_id = 5;
-
-  // in trendcoins
-  uint64 commission_fee = 6;
-  // user id, usually supplier
-  uint64 commission_source = 7;
-
-  // ewallet parameters
-  string payment_method = 8;
-  string comment = 9;
-  string service_id = 10;
-  string card_id = 11;
+  OrderData data = 2;
 }
 
 message CreateOrderReply {
