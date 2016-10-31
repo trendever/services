@@ -147,7 +147,7 @@ func BuyCoins(c *soso.Context) {
 
 	gateway, _ := c.RequestMap["gateway"].(string)
 	if gateway == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty gatway"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty gateway"))
 		return
 	}
 
@@ -157,7 +157,7 @@ func BuyCoins(c *soso.Context) {
 		return
 	}
 	if len(offersResp.Offers) == 0 {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown offer"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown offer id"))
 		return
 	}
 	offer := offersResp.Offers[0]
@@ -189,7 +189,7 @@ func BuyCoins(c *soso.Context) {
 	if payResp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    payResp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": payResp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(payResp.ErrorMessage))
 		return

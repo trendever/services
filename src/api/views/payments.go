@@ -122,7 +122,7 @@ func CreateOrder(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
@@ -179,7 +179,7 @@ func CreatePayment(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
@@ -237,7 +237,7 @@ func CancelOrder(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
