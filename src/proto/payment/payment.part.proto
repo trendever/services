@@ -22,6 +22,10 @@ message CreateOrderRequest {
   uint64 commission_fee = 8;
   // user id, usually supplier
   uint64 commission_source = 9;
+
+  string payment_method = 10;
+  string comment = 11;
+  string service_id = 12;
 }
 
 message CreateOrderReply {
