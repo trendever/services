@@ -23,9 +23,30 @@ message CreateOrderRequest {
   // user id, usually supplier
   uint64 commission_source = 9;
 
+  // ewallet parameters
   string payment_method = 10;
   string comment = 11;
   string service_id = 12;
+  string card_id = 13;
+}
+
+message PaymentNotification {
+  uint64 id = 1;
+  uint64 amount = 2;
+  Currency currency = 3;
+  uint64 lead_id = 4;
+  uint64 user_id = 5;
+
+  // in trendcoins
+  uint64 commission_fee = 6;
+  // user id, usually supplier
+  uint64 commission_source = 7;
+
+  // ewallet parameters
+  string payment_method = 8;
+  string comment = 9;
+  string service_id = 10;
+  string card_id = 11;
 }
 
 message CreateOrderReply {
