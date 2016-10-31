@@ -1,8 +1,6 @@
 package instagram
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,16 +8,17 @@ import (
 
 // Instagram defines client
 type Instagram struct {
-	userName   string
-	password   string
-	token      string
-	isLoggedIn bool
-	uuid       string
-	deviceID   string
-	phoneID    string
-	userNameID int64
-	rankToken  string
-	cookies    []*http.Cookie
+	userName      string
+	password      string
+	token         string
+	isLoggedIn    bool
+	uuid          string
+	deviceID      string
+	phoneID       string
+	userNameID    int64
+	rankToken     string
+	checkpointURL string
+	cookies       []*http.Cookie
 }
 
 // NewInstagram initializes client for futher use
@@ -38,11 +37,7 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 	}
 
 	err := i.Login()
-	if err != nil {
-		return nil, err
-	}
-
-	return i, nil
+	return i, err
 }
 
 // IsLoggedIn returns if last request does not have auth error
@@ -53,70 +48,6 @@ func (ig *Instagram) IsLoggedIn() bool {
 // GetUserName (will you guess what?) returns set-up username
 func (ig *Instagram) GetUserName() string {
 	return ig.userName
-}
-
-// Login to Instagram.
-func (ig *Instagram) Login() error {
-
-	fetch := fmt.Sprintf("/si/fetch_headers/?challenge_type=signup&guid=%v", generateUUID(false))
-
-	resp, err := ig.requestMain("GET", fetch, nil, true)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// get csrftoken
-	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
-		}
-	}
-
-	if ig.userName == "" || ig.password == "" {
-		return fmt.Errorf("Empty username or password")
-	}
-
-	// login
-	login := &Login{
-		DeviceId:          ig.deviceID,
-		PhoneId:           ig.phoneID,
-		Guid:              ig.uuid,
-		UserName:          ig.userName,
-		Password:          ig.password,
-		Csrftoken:         ig.token,
-		LoginAttemptCount: "0",
-	}
-
-	jsonData, err := json.Marshal(login)
-	if err != nil {
-		return err
-	}
-
-	var loginResp LoginResponse
-	cookies, err := ig.loginRequest("POST", "/accounts/login/?", generateSignature(jsonData), &loginResp)
-	if err != nil {
-		return err
-	}
-
-	// get new csrftoken
-	for _, cookie := range cookies {
-		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
-		}
-	}
-
-	ig.cookies = cookies
-
-	if loginResp.Status == "fail" {
-		return errors.New(loginResp.Message)
-	}
-
-	ig.userNameID = loginResp.LoggedInUser.Pk
-	ig.rankToken = fmt.Sprintf("%d_%v", ig.userNameID, ig.uuid)
-	ig.isLoggedIn = true
-
-	return nil
 }
 
 // GetMediaLikers returns likers of given media

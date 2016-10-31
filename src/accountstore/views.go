@@ -32,7 +32,7 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 
 func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*accountstore.ConfirmReply, error) {
 
-	return nil, nil
+	return &accountstore.ConfirmReply{}, nil
 }
 
 func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest) (*accountstore.MarkInvalidReply, error) {

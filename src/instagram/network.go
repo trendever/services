@@ -12,7 +12,12 @@ import (
 	"utils/log"
 )
 
-// DoResponeLogging enables full json body output
+// Possible network instagram errors
+var (
+	ErrorCheckpointRequired = errors.New("Checkpoint action needed to proceed")
+)
+
+// DoResponseLogging enables full json body output
 var DoResponseLogging = false
 
 // Request for Login method. Needs to get the authorization cookies.
@@ -80,6 +85,9 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			if message.Message != "login_required" {
 				return nil, errors.New(message.Message)
 			}
+			if message.Message == "checkpoint_required" {
+				return nil, ErrorCheckpointRequired
+			}
 			// relogin
 			ig.isLoggedIn = false
 			err = ig.Login()
@@ -134,6 +142,10 @@ func (ig *Instagram) loginRequest(method, endpoint, body string, result interfac
 	jsonBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if DoResponseLogging {
+		log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
 	}
 
 	err = json.Unmarshal(jsonBody, result)

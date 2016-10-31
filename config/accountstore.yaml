@@ -1,5 +1,6 @@
 listen: :5409
 debug: true
+instagramDebug: true
 
 db:
   debug:    true

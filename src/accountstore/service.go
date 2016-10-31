@@ -1,6 +1,7 @@
 package main
 
 import (
+	"instagram"
 	"utils/cli"
 	"utils/config"
 	"utils/db"
@@ -26,6 +27,7 @@ func (s *svc) Load() {
 	config.LoadStruct("accountstore", &settings)
 	log.Init(settings.Debug, "accountstore", settings.SentryDSN)
 	db.Init(settings.DB)
+	instagram.DoResponseLogging = settings.InstagramDebug
 }
 
 func (s *svc) Start() {
