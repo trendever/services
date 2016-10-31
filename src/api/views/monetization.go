@@ -4,9 +4,11 @@ import (
 	"api/api"
 	"api/soso"
 	"errors"
+	"fmt"
 	"golang.org/x/net/context"
 	"net/http"
 	"proto/core"
+	"proto/payment"
 	"time"
 	"utils/rpc"
 )
@@ -19,6 +21,7 @@ func init() {
 		soso.Route{"get_plan", "monetization", GetMonetizationPlan},
 		soso.Route{"plans_list", "monetization", GetMonetizationPlansList},
 		soso.Route{"coins_offers", "monetization", GetCoinsOffers},
+		soso.Route{"buy_coins", "monetization", BuyCoins},
 		soso.Route{"subscribe", "monetization", SubscribeToPlan},
 	)
 }
@@ -122,17 +125,93 @@ func GetCoinsOffers(c *soso.Context) {
 
 	currency, _ := c.RequestMap["currency"].(string)
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	res, err := monetizationServiceClient.GetCoinsOffers(ctx, &core.GetCoinsOffersRequest{Currency: currency})
+	res, err := getCoinsOffers(currency, 0)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
-	if res.Error != "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.Error))
+	c.SuccessResponse(res)
+}
+
+func BuyCoins(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
-	c.SuccessResponse(res)
+
+	offerID, _ := c.RequestMap["offer_id"].(float64)
+	if offerID <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid offer id"))
+		return
+	}
+
+	gateway, _ := c.RequestMap["gateway"].(string)
+	if gateway == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty gatway"))
+		return
+	}
+
+	offersResp, err := getCoinsOffers("", uint64(offerID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if len(offersResp.Offers) == 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown offer"))
+		return
+	}
+	offer := offersResp.Offers[0]
+
+	currency, ok := payment.Currency_value[offer.Currency]
+	if !ok {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("unsupported currency"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	payResp, err := paymentServiceClient.CreateOrder(ctx, &payment.CreateOrderRequest{
+		Data: &payment.OrderData{
+			Amount:      uint64(offer.Amount),
+			Currency:    payment.Currency(currency),
+			Gateway:     gateway,
+			UserId:      c.Token.UID,
+			ServiceName: "coins_refill",
+			ServiceData: fmt.Sprintf(`{"user_id": %v, "amount": %v}`, c.Token.UID, offer.Amount),
+		},
+	})
+
+	if err != nil { // RPC errors
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if payResp.Error > 0 { // service errors
+		c.Response.ResponseMap = map[string]interface{}{
+			"ErrorCode":    payResp.Error,
+			"ErrorMessage": err,
+		}
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(payResp.ErrorMessage))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"order_id": payResp.Id,
+	})
+}
+
+func getCoinsOffers(currency string, id uint64) (*core.GetCoinsOffersReply, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := monetizationServiceClient.GetCoinsOffers(ctx, &core.GetCoinsOffersRequest{
+		Currency: currency,
+		OfferId:  id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != "" {
+		return nil, errors.New(res.Error)
+	}
+	return res, nil
 }

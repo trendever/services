@@ -13,8 +13,8 @@ import (
 const PaymentName = "coins_refill"
 
 type PaymentData struct {
-	UserID uint64
-	Amount uint64
+	UserID uint64 `json:"user_id"`
+	Amount uint64 `json:"amount"`
 }
 
 func (s *TrendcoinServer) subscribe() {
@@ -28,7 +28,8 @@ func (s *TrendcoinServer) subscribe() {
 		},
 		&nats.StanSubscription{
 			Subject:        "payments.notifications",
-			DurableName:    settings.Nats.StanID,
+			Group:          "trendcoin",
+			DurableName:    "trendcoin",
 			AckTimeout:     time.Second * 15,
 			DecodedHandler: s.NatsTransactions,
 		},

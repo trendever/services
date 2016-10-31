@@ -60,6 +60,9 @@ func (s *monetizationServer) GetCoinsOffers(_ context.Context, in *core.GetCoins
 	if in.Currency != "" {
 		scope = scope.Where("currency = ?", in.Currency)
 	}
+	if in.OfferId != 0 {
+		scope = scope.Where("id = ?", in.OfferId)
+	}
 	err := scope.Find(&offers).Error
 	if err != nil {
 		log.Errorf("failed to load coins offers: %v", err)
