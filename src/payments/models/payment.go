@@ -175,49 +175,49 @@ func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
 
 // NewPayment generates a payment infocard by request
 func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
-
+	data := r.Data
 	// Check credit cards first
-	if !validate(r.ShopCardNumber) {
+	if !validate(data.ShopCardNumber) {
 		return nil, fmt.Errorf("Invalid credit card (Luhn failed)")
 	}
 
-	if r.LeadId <= 0 {
+	if data.LeadId <= 0 {
 		return nil, fmt.Errorf("Empty lead ID")
 	}
 
-	if r.CommissionFee != 0 && r.CommissionSource == 0 {
+	if data.CommissionFee != 0 && data.CommissionSource == 0 {
 		return nil, fmt.Errorf("Empty commission source")
 	}
 
 	pay := &Payment{
 		// Bank cards
-		ShopCardNumber: r.ShopCardNumber,
+		ShopCardNumber: data.ShopCardNumber,
 
 		// Core LeadID
-		LeadID:         r.LeadId,
-		Direction:      int32(r.Direction),
-		ConversationID: r.ConversationId,
-		UserID:         r.UserId,
+		LeadID:         data.LeadId,
+		Direction:      int32(data.Direction),
+		ConversationID: data.ConversationId,
+		UserID:         data.UserId,
 
-		CommissionFee:    r.CommissionFee,
-		CommissionSource: r.CommissionSource,
+		CommissionFee:    data.CommissionFee,
+		CommissionSource: data.CommissionSource,
 	}
 
-	switch r.Currency {
+	switch data.Currency {
 	case payment.Currency_RUB:
 
 		// must convert to cops (1/100 of rub)
-		pay.Amount = r.Amount * 100
+		pay.Amount = data.Amount * 100
 		pay.Currency = int32(payment.Currency_COP)
 
 	case payment.Currency_COP:
 
-		pay.Amount = r.Amount
+		pay.Amount = data.Amount
 		pay.Currency = int32(payment.Currency_COP)
 
 	default:
 		// unknown currency! panic
-		return nil, fmt.Errorf("Unsupported currency %v (%v)", r.Currency, payment.Currency_name[int32(r.Currency)])
+		return nil, fmt.Errorf("Unsupported currency %v (%v)", data.Currency, payment.Currency_name[int32(data.Currency)])
 	}
 
 	return pay, nil

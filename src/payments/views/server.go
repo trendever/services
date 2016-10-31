@@ -124,13 +124,13 @@ func (ps *paymentServer) PeriodicCheck() {
 func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrderRequest) (*payment.CreateOrderReply, error) {
 
 	// Step0: check if Lead already has open order
-	canOpen, err := ps.repo.CanCreateOrder(uint(req.LeadId))
+	canOpen, err := ps.repo.CanCreateOrder(uint(req.Data.LeadId))
 	if err != nil {
 		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	} else if !canOpen {
 		return &payment.CreateOrderReply{
 			Error:        payment.Errors_ANOTHER_OPEN_ORDER,
-			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open order", req.LeadId),
+			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open order", req.Data.LeadId),
 		}, nil
 	}
 

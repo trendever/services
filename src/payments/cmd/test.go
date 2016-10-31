@@ -24,10 +24,12 @@ var cmdTest = &cobra.Command{
 		case "create":
 
 			res, err := client.CreateOrder(context.Background(), &payment.CreateOrderRequest{
-				Amount:         amount,
-				Currency:       payment.Currency(payment.Currency_value[currency]),
-				LeadId:         leadID,
-				ShopCardNumber: shopCard,
+				Data: &payment.OrderData{
+					Amount:         amount,
+					Currency:       payment.Currency(payment.Currency_value[currency]),
+					LeadId:         leadID,
+					ShopCardNumber: shopCard,
+				},
 			})
 
 			fmt.Printf("Result: %#v\nError: %v\n", res, err)

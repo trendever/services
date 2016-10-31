@@ -78,14 +78,16 @@ func CreateOrder(c *soso.Context) {
 	}
 
 	request := &payment.CreateOrderRequest{
-		Amount:   uint64(amount),
-		Currency: payment.Currency(currency),
+		Data: &payment.OrderData{
+			Amount:   uint64(amount),
+			Currency: payment.Currency(currency),
 
-		LeadId:         uint64(leadID),
-		Direction:      direction,
-		UserId:         c.Token.UID,
-		ConversationId: leadInfo.ConversationId,
-		ShopCardNumber: shopCardNumber,
+			LeadId:         uint64(leadID),
+			Direction:      direction,
+			UserId:         c.Token.UID,
+			ConversationId: leadInfo.ConversationId,
+			ShopCardNumber: shopCardNumber,
+		},
 	}
 
 	if direction == payment.Direction_CLIENT_PAYS {
@@ -98,11 +100,12 @@ func CreateOrder(c *soso.Context) {
 			if plan.PrimaryCurrency != currencyName {
 				c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Unexpected currency"))
 			}
-			request.CommissionSource = uint64(leadInfo.Shop.SupplierId)
-			request.CommissionFee = uint64(amount*plan.TransactionCommission*plan.CoinsExchangeRate + 0.5)
-			if request.CommissionFee == 0 {
-				request.CommissionFee = 1
+			request.Data.CommissionSource = uint64(leadInfo.Shop.SupplierId)
+			fee := uint64(amount*plan.TransactionCommission*plan.CoinsExchangeRate + 0.5)
+			if fee == 0 {
+				fee = 1
 			}
+			request.Data.CommissionFee = fee
 		}
 	}
 
