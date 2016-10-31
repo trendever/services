@@ -7,8 +7,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"net/http"
 	"proto/core"
-	"utils/rpc"
 	"strings"
+	"utils/rpc"
 )
 
 type User struct {
@@ -22,7 +22,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"retrieve", "user", GetUserProfile},
 		soso.Route{"set_email", "user", SetEmail},
-		soso.Route{"set_data","user",SetData},
+		soso.Route{"set_data", "user", SetData},
 	)
 }
 
@@ -120,7 +120,7 @@ func SetEmail(c *soso.Context) {
 	})
 }
 
-func SetData(c *soso.Context){
+func SetData(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
@@ -139,7 +139,7 @@ func SetData(c *soso.Context){
 		request.Name = value
 	}
 
-	if request.Name == ""{
+	if request.Name == "" {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Enter user name"))
 		return
 	}
@@ -153,7 +153,7 @@ func SetData(c *soso.Context){
 
 	_, err := userServiceClient.SetData(ctx, request)
 
-	if err != nil{
+	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
 	}

@@ -57,7 +57,6 @@ type User struct {
 	// may be loaded with call LoadExternals method
 	// Assigned to qor db has callbacks to do it
 	Balance int64 `sql:"-"`
-
 }
 
 // SystemUser is used if we need to send a message from system
@@ -111,9 +110,9 @@ func (u User) Stringify() string {
 	name := u.getName()
 	addr := u.getAddr()
 
-	log.Debug("USER %v",u)
+	log.Debug("USER %v", u)
 
-	switch {	
+	switch {
 	case name != "":
 		return name
 	case addr != "":

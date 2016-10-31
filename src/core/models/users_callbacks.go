@@ -11,8 +11,8 @@ import (
 	"utils/db"
 	"utils/log"
 	"utils/nats"
-	"utils/rpc"
 	"utils/phone"
+	"utils/rpc"
 )
 
 //NotifyUserCreated is a notification function
@@ -73,10 +73,10 @@ func (u *User) fetchPreviousPhone(db *gorm.DB) {
 }
 
 func (u *User) validatePhone(db *gorm.DB) {
-	if (u.Phone != ""){
+	if u.Phone != "" {
 		phoneNumber, err := phone.CheckNumber(u.Phone, "")
 
-		if (err != nil){
+		if err != nil {
 			db.AddError(validations.NewError(u, "Phone", err.Error()))
 		}
 

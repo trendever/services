@@ -3,6 +3,7 @@ package views
 import (
 	"core/api"
 	"core/models"
+	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/net/context"
@@ -11,7 +12,6 @@ import (
 	"utils/db"
 	"utils/log"
 	"utils/phone"
-	"errors"
 )
 
 func init() {
@@ -70,8 +70,6 @@ func (s userServer) CreateFakeUser(ctx context.Context, request *core.CreateUser
 	}, err
 }
 
-
-
 func (s userServer) ReadUser(ctx context.Context, request *core.ReadUserRequest) (*core.ReadUserReply, error) {
 	user, found, err := models.FindUserMatchAny(
 		request.Id, request.InstagramId,
@@ -126,14 +124,14 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 }
 
 func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
-	phoneNumber, err := phone.CheckNumber(req.Phone,"")
+	phoneNumber, err := phone.CheckNumber(req.Phone, "")
 
-	if err != nil{
+	if err != nil {
 		return &core.SetDataReply{}, err
 	}
 
-	_, found, err := models.FindUserMatchAny(0,0,req.Name,req.Name,"",phoneNumber)
-	
+	_, found, err := models.FindUserMatchAny(0, 0, req.Name, req.Name, "", phoneNumber)
+
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -141,7 +139,7 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 
 	if found {
 		return &core.SetDataReply{}, errors.New("User exists")
-	} 
+	}
 
 	updateMap := map[string]interface{}{}
 	updateMap["phone"] = phoneNumber
