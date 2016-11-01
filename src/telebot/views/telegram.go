@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 	"proto/bot"
-	"utils/log"
 	"utils/rpc"
 )
 
@@ -25,12 +24,7 @@ type telebotServer struct {
 }
 
 func (t telebotServer) NotifyMessage(ctx context.Context, req *bot.NotifyMessageRequest) (*bot.NotifyMessageResult, error) {
-	go func() {
-		err := t.Telegram.Notify(req.Channel, req.Message)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
+	go t.Telegram.Notify(req.Channel, req.Message)
 
 	return &bot.NotifyMessageResult{}, nil
 }
