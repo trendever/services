@@ -72,7 +72,13 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 		}
 
 		if DoResponseLogging {
-			log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
+			var buf bytes.Buffer
+			err := json.Indent(&buf, jsonBody, "  ", "  ")
+			if err == nil {
+				log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, buf.String())
+			} else {
+				log.Debug("Instagram response indent failed: %v", err)
+			}
 		}
 
 		var message *Message
