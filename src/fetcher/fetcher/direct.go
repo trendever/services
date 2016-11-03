@@ -158,11 +158,11 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 				comment := ""
 				if relatedMedia.UserID == message.UserID {
 					comment = message.Text
+					notify.RelatedMedia = relatedMedia.MediaShare.ID
 				}
 				if err := w.fillDirect(relatedMedia, &resp.Thread, comment); err != nil {
 					return err
 				}
-				notify.RelatedMedia = relatedMedia.MediaShare.ID
 				relatedMedia = nil
 			}
 
