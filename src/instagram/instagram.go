@@ -256,11 +256,11 @@ func (ig *Instagram) BroadcastText(threadID, message string) (*Message, error) {
 }
 
 // SendText sends text to given user
-func (ig *Instagram) SendText(userID int64, message string) (*SendTextRespone, error) {
+func (ig *Instagram) SendText(userID uint64, message string) (*SendTextResponse, error) {
 
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
-	var object SendTextRespone
+	var object SendTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":            message,
 		"recipient_users": fmt.Sprintf("[[%v]]", userID),

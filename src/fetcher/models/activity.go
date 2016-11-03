@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/bot"
 	"utils/db"
@@ -15,7 +16,7 @@ type Activity struct {
 	Pk                string `gorm:"not null;unique"`
 	MediaID           string
 	MediaURL          string
-	UserID            int64  // commentary owner ID
+	UserID            uint64 // commentary owner ID
 	UserName          string // commentary owner username
 	UserImageURL      string
 	MentionedUsername string // mention tag. @saveit, for instance
@@ -37,7 +38,7 @@ func (act *Activity) Create() error {
 	// check by pk if record exist
 	err := db.New().Model(&Activity{}).Where("pk = ?", act.Pk).Count(&count).Error
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check whether activity already exists: %v", err)
 	}
 
 	if count > 0 {
@@ -49,7 +50,7 @@ func (act *Activity) Create() error {
 	// now -- create
 	err = db.New().Create(act).Error
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to save activity: %v", err)
 	}
 
 	log.Debug("Add row: %v", act.Pk)
@@ -68,7 +69,7 @@ func (act *Activity) Encode() *bot.Activity {
 		Pk:                act.Pk,
 		MediaId:           act.MediaID,
 		MediaUrl:          act.MediaURL,
-		UserId:            act.UserID,
+		UserId:            int64(act.UserID),
 		UserImageUrl:      act.UserImageURL,
 		UserName:          act.UserName,
 		MentionedUsername: act.MentionedUsername,

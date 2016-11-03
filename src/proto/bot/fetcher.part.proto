@@ -43,3 +43,14 @@ message Activity {
 
   string direct_thread_id = 12;
 }
+
+message DirectMessageNotify {
+  string thread_id = 1;
+  string message_id = 2;
+  // instagram id
+  uint64 user_id = 3;
+  string text = 4;
+  // id of possible related post
+  // if it's aviable, it probably mean, that this message was comment to media share
+  string related_media = 5;
+}

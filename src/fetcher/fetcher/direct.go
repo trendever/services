@@ -4,8 +4,9 @@ import (
 	"fetcher/models"
 	"fmt"
 	"instagram"
-	"sort"
+	"proto/bot"
 	"utils/log"
+	"utils/nats"
 )
 
 // direct activity: accept PM invites; read && parse them
@@ -28,9 +29,11 @@ func (w *Worker) checkNewMessages() error {
 	// check which threads got updated since last time
 	// get them
 
+	var threads []models.ThreadInfo
+
 	cursor := ""
 
-outer:
+collectLoop:
 	for {
 		resp, err := w.api().Inbox(cursor)
 		if err != nil {
@@ -44,116 +47,151 @@ outer:
 		}
 
 		for _, thread := range resp.Inbox.Threads {
-
 			info, err := models.GetThreadInfo(thread.ThreadID)
 			if err != nil {
 				return err
 			}
-
 			// check if getting shiet is necessary
-			if len(thread.Items) != 1 {
-				return fmt.Errorf("Thread (id=%v) got %v msgs, should be 1!", thread.ThreadID, len(thread.Items))
+			if len(thread.Items) == 0 {
+				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
 			}
 			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
-				// thread is already crawled; no need to check more
-				log.Debug("Skipping not changed threads")
-				break outer
-			} else {
-				log.Debug("Top message differs from saved; do the crawl: %v %v", thread.Items[0].ItemID, info.LastCheckedID)
+				log.Debug("Unchanged thread is reached")
+				break collectLoop
 			}
-
-			err = w.processThread(&info)
-			if err != nil {
-				return err
-			}
+			threads = append(threads, info)
 		}
 
-		if resp.Inbox.HasOlder {
-			cursor = resp.Inbox.OldestCursor
-			continue
+		if !resp.Inbox.HasOlder {
+			break
 		}
+		cursor = resp.Inbox.OldestCursor
+	}
 
-		break
+	for it := len(threads) - 1; it >= 0; it-- {
+		err := w.processThread(&threads[it])
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (w *Worker) processThread(info *models.ThreadInfo) error {
-
-	var threadID = info.ThreadID
-
-	log.Debug("Processing thread %v", threadID)
+	var (
+		threadID = info.ThreadID
+		resp     *instagram.DirectThreadResponse
+		msgs     []instagram.ThreadItem
+		err      error
+	)
+	log.Debug("Processing thread %v, last checked was %v", threadID, info.LastCheckedID)
 	defer log.Debug("Processing thread %v end", threadID)
 
+	// populate new messages
 	cursor := ""
-	newestProcessed := ""
-
-outer:
-	for { // range over thread pages
-		resp, err := w.api().DirectThread(threadID, cursor)
+	for {
+		resp, err = w.api().DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
 
-		log.Debug("Thread is from %v; got %v messages there", resp.Thread.Inviter.Username, len(resp.Thread.Items))
-
-		msgs := resp.Thread.Items
-		sort.Sort(msgs)
-
-		for id, message := range msgs { // range over page messages; from most new to the oldest
-			log.Debug("Checking message with id=%v, lastCheckedID=%v", message.ItemID, info.LastCheckedID)
-
-			if newestProcessed == "" {
-				newestProcessed = message.ItemID
+		if info.LaterThan(resp.Thread.OldestCursor) {
+			log.Debug("last checked is older then oldest cursor")
+			msgs = append(msgs, resp.Thread.Items...)
+			cursor = resp.Thread.OldestCursor
+			if !resp.Thread.HasOlder {
+				log.Debug("Reached end of the thread %v", threadID)
+				break
 			}
-
-			if info.LaterThan(message.ItemID) {
-				log.Debug("Reached end of the new conversation (%v); exiting", threadID)
-				break outer
-			}
-
-			// only use messages that are cojoined with media link
-			if message.ItemType == "media_share" && message.MediaShare != nil {
-				log.Debug("Adding new mediaShare with ID=%v", message.MediaShare.ID)
-
-				// comment is in next follow-up message
-				// try to watch in next 2 messages because of service "Notified" msg
-				var comment string
-				if id-1 >= 0 {
-					comment = followUpString(&message, &msgs[id-1])
-				}
-				if id-2 >= 0 && comment == "" {
-					comment = followUpString(&message, &msgs[id-2])
-				}
-
-				if err := w.fillDirect(&message, &resp.Thread, comment); err != nil {
-					return err
-				}
-			}
+			continue
 		}
 
-		if !resp.Thread.HasOlder {
-			log.Debug("Reached end of the thread %v", threadID)
+		if info.LastCheckedID == resp.Thread.OldestCursor {
+			log.Debug("last checked match oldest cursor")
+			msgs = append(msgs, resp.Thread.Items...)
 			break
 		}
 
-		cursor = resp.Thread.OldestCursor
+		log.Debug("last checked should be somewhere in middle")
+		for it, msg := range resp.Thread.Items {
+			if !info.LaterThan(msg.ItemID) {
+				msgs = append(msgs, resp.Thread.Items[:it]...)
+				break
+			}
+		}
+		break
 	}
 
-	// if no error, mark all these messages as read
-	if newestProcessed != "" {
-		return models.SaveLastCheckedID(threadID, newestProcessed)
+	log.Debug("Thread is from %v; got %v new messages there", resp.Thread.Inviter.Username, len(msgs))
+
+	var relatedMedia *instagram.ThreadItem
+	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
+	for it := len(msgs) - 1; it >= 0; it-- {
+		message := &msgs[it]
+		log.Debug("Checking message with id=%v", message.ItemID)
+
+		switch message.ItemType {
+		case "media_share":
+			// there was older media without comment
+			if relatedMedia != nil {
+				if err := w.fillDirect(message, &resp.Thread, ""); err != nil {
+					return err
+				}
+			}
+			if message.MediaShare != nil {
+				relatedMedia = message
+			} else {
+				log.Errorf("message %v with type 'media_share' has empty media", message.ItemID)
+				relatedMedia = nil
+			}
+
+		case "text":
+			notify := bot.DirectMessageNotify{
+				ThreadId:  threadID,
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				Text:      message.Text,
+			}
+
+			if relatedMedia != nil {
+				comment := ""
+				if relatedMedia.UserID == message.UserID {
+					comment = message.Text
+				}
+				if err := w.fillDirect(relatedMedia, &resp.Thread, comment); err != nil {
+					return err
+				}
+				notify.RelatedMedia = relatedMedia.MediaShare.ID
+				relatedMedia = nil
+			}
+
+			err := nats.StanPublish("direct.new_message", &notify)
+			if err != nil {
+				return fmt.Errorf("failed to send message notification via stan: %v", err)
+			}
+		}
+		// only if we have no media in progress
+		if relatedMedia == nil {
+			err := models.SaveLastCheckedID(threadID, message.ItemID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// some unfinished stuff
+	if relatedMedia != nil {
+		if err := w.fillDirect(relatedMedia, &resp.Thread, ""); err != nil {
+			return err
+		}
+		err := models.SaveLastCheckedID(threadID, msgs[0].ItemID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-func followUpString(mediaShare, followUp *instagram.ThreadItem) string {
-	if followUp.ItemType == "text" && mediaShare.UserID == followUp.UserID {
-		return followUp.Text
-	}
-	return ""
 }
 
 // fill database model by direct message
@@ -202,7 +240,7 @@ func (w *Worker) SendDirectMsg(threadID, message string) error {
 }
 
 // SendDirectMsgToUser sends text to user
-func (w *Worker) SendDirectMsgToUser(userID int64, message string) (*instagram.SendTextRespone, error) {
+func (w *Worker) SendDirectMsgToUser(userID uint64, message string) (*instagram.SendTextResponse, error) {
 	res, err := w.api().SendText(userID, message)
 	return res, err
 }

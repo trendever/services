@@ -10,10 +10,15 @@ db:
   port:     5432
   base:     postgres
 
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: fetcher1
+
 instagram:
   timeoutMin: 10s
   timeoutMax: 15s
-  responseLogging: false
+  responseLogging: true
   users:
     - username: nmstrs1
       password: pass4ig
