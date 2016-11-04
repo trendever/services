@@ -70,13 +70,14 @@ func (s *Service) Run(cli *cli.Context) {
 		if err := models.LoadOrCreateSystemUser(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create system user: %v", err))
 		}
-		if err := models.LoadOrCreateInitialPlan(); err != nil {
-			log.Fatal(fmt.Errorf("Failed to load/create initial monetization plan: %v", err))
-		}
 
 		// Initial web server
 		r := gin.Default()
 		qor.Init(r) //start qor
+
+		if err := models.LoadOrCreateInitialPlan(); err != nil {
+			log.Fatal(fmt.Errorf("Failed to load/create initial monetization plan: %v", err))
+		}
 
 		// Start api
 		api.Start()
