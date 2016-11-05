@@ -9,6 +9,7 @@ import (
 	"proto/chat"
 	"proto/payment"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -21,8 +22,12 @@ const (
 
 var paymentServiceClient = payment.NewPaymentServiceClient(api.PaymentsConn)
 
-// Init initializes API connections
 func init() {
+	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "payments.event",
+		Group:          "api",
+		DecodedHandler: onPaymentEvent,
+	})
 }
 
 func wrap(wr func(*payment.PaymentNotification) error, event *payment.PaymentNotification) bool {
