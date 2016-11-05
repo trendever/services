@@ -192,6 +192,13 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
+	if pay.Cancelled {
+		return &payment.CancelOrderReply{
+			Error:        payment.Errors_ALREADY_CANCELLED,
+			ErrorMessage: "payments: This pay is already cancelled; why do you want to cancel it again?",
+		}, nil
+	}
+
 	// Step0.6: check if TX is already finished
 	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
 	if err != nil {

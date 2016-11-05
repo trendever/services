@@ -114,6 +114,7 @@ enum Errors {
   ALREADY_PAYED = 3;
   PAY_CANCELLED = 4;
   ANOTHER_OPEN_ORDER = 5;
+  ALREADY_CANCELLED = 6;
 
   UNKNOWN_ERROR = 126;
   // external errors
