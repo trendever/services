@@ -48,7 +48,7 @@ func CreateOrder(c *soso.Context) {
 	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Incorrect parameter"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, fmt.Errorf("Incorrect parameter"))
 		return
 	}
 
@@ -87,6 +87,7 @@ func CreateOrder(c *soso.Context) {
 			UserId:         c.Token.UID,
 			ShopCardNumber: shopCardNumber,
 
+			Gateway:     "payture",
 			ServiceName: "api",
 			ServiceData: string(data),
 		},
