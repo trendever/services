@@ -240,7 +240,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	err = nats.StanPublish(natsStream, &payment.PaymentNotification{
 		Id:    uint64(pay.ID),
 		Data:  pay.Encode(),
-		Event: payment.Event_Created,
+		Event: payment.Event_Cancelled,
 	})
 	if err != nil {
 		return &payment.CancelOrderReply{Error: payment.Errors_NATS_FAILED, ErrorMessage: err.Error()}, nil
