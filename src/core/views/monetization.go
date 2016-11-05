@@ -13,7 +13,21 @@ import (
 	"utils/log"
 )
 
+const (
+	subscriptionNotifyTopic = "notify_about_subscription"
+	suspendNotifyTopic      = "notify_about_shop_suspense"
+)
+
 func init() {
+	topics := []string{
+		subscriptionNotifyTopic,
+		suspendNotifyTopic,
+	}
+	for _, t := range topics {
+		models.RegisterTemplate("sms", t)
+		models.RegisterTemplate("push", t)
+		models.RegisterTemplate("email", t)
+	}
 	api.AddOnStartCallback(func(s *grpc.Server) {
 		server := &monetizationServer{}
 		core.RegisterMonetizationServiceServer(s, server)
@@ -59,6 +73,9 @@ func (s *monetizationServer) GetCoinsOffers(_ context.Context, in *core.GetCoins
 	scope := db.New()
 	if in.Currency != "" {
 		scope = scope.Where("currency = ?", in.Currency)
+	}
+	if in.OfferId != 0 {
+		scope = scope.Where("id = ?", in.OfferId)
 	}
 	err := scope.Find(&offers).Error
 	if err != nil {
@@ -120,8 +137,9 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		ret.Error = err.Error()
 	} else {
 		ret.Ok = true
+		shop.Plan = plan
+		go notifySupplierAboutSubscription(&shop, false, false)
 	}
-	// @TODO notifications
 	return
 }
 
@@ -184,7 +202,6 @@ func (s *monetizationServer) loop() {
 			continue
 		}
 		for _, shop := range shops {
-			// @TODO notifications
 			if !shop.AutoRenewal {
 				err := db.New().Model(shop).UpdateColumn("suspended", true).Error
 				if err != nil {
@@ -195,6 +212,8 @@ func (s *monetizationServer) loop() {
 			err := subscribe(shop, &shop.Plan, true)
 			switch {
 			case err == nil:
+				go notifySupplierAboutSubscription(shop, false, true)
+
 			case err.Error() == "insufficient funds":
 				// @TODO autorefill coins
 				log.Errorf("shop %v should be suspended due to not able to pay the subscription fee", shop.ID)
@@ -202,9 +221,30 @@ func (s *monetizationServer) loop() {
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
 				}
+				go notifySupplierAboutSubscription(shop, true, true)
+
 			default:
 				log.Errorf("failed to renew subscription if shop %v: %v", shop.ID, err)
 			}
 		}
 	}
+}
+
+func notifySupplierAboutSubscription(shop *models.Shop, suspense, renewal bool) {
+	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID)
+	if err != nil {
+		log.Errorf("failed to load supplier: %v", err)
+		return
+	}
+	topic := subscriptionNotifyTopic
+	if suspense {
+		topic = suspendNotifyTopic
+	}
+	log.Error(models.GetNotifier().NotifyUserAbout(
+		&shop.Supplier, topic,
+		map[string]interface{}{
+			"shop":    shop,
+			"renewal": renewal,
+		},
+	))
 }

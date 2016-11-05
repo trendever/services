@@ -169,6 +169,7 @@ func initUserResource(res *admin.Resource) {
 	})
 
 	filters.SetDateFilters(res, "CreatedAt")
+	filters.SetDateFilters(res, "LastLogin")
 
 	type refillArg struct {
 		Amount  uint64

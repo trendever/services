@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/getsentry/raven-go"
 	golog "log"
@@ -180,4 +181,9 @@ func filenameWithLineNum() string {
 		}
 	}
 	return ""
+}
+
+func IndentEncode(data interface{}) string {
+	bytes, _ := json.MarshalIndent(data, "  ", "  ")
+	return string(bytes)
 }

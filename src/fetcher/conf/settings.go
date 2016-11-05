@@ -8,6 +8,7 @@ import (
 	"utils/log"
 
 	"github.com/spf13/viper"
+	"utils/nats"
 )
 
 var (
@@ -47,6 +48,7 @@ type Settings struct {
 	DB        db.Settings
 	Instagram Instagram
 	SentryDSN string
+	Nats      nats.Config
 }
 
 // Instagram config part

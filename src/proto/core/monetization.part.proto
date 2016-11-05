@@ -47,6 +47,8 @@ message CoinsOffer {
 
 message GetCoinsOffersRequest {
     string currency = 1;
+    // get single offer by id
+    uint64 offer_id = 2;
 }
 
 message GetCoinsOffersReply {

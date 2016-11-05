@@ -2,6 +2,7 @@ package views
 
 import (
 	"core/models"
+	"proto/bot"
 	"proto/chat"
 	"proto/core"
 	"time"
@@ -31,6 +32,18 @@ func init() {
 		Group:   "core",
 		Handler: handleNewSession,
 	})
+	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "direct.new_message",
+		Group:          "core",
+		DurableName:    "core",
+		AckTimeout:     time.Second * 20,
+		DecodedHandler: handleDirectMessage,
+	})
+}
+
+func handleDirectMessage(notify *bot.DirectMessageNotify) bool {
+	log.Debug("new direct message: %+v", notify)
+	return true
 }
 
 func newMessage(req *chat.NewMessageRequest) {

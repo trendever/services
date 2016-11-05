@@ -17,6 +17,7 @@ import (
 	"utils/log"
 
 	"github.com/codegangsta/cli"
+	"utils/nats"
 )
 
 func main() {
@@ -62,6 +63,7 @@ func Run() error {
 
 	// init api
 	api.Start()
+	nats.Init(&conf.GetSettings().Nats, true)
 	views.Init()
 
 	rand.Seed(time.Now().Unix())
