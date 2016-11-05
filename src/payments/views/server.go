@@ -238,9 +238,10 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 
 	// @TODO: shit; shit; shit. If nat is dead -- the thing will FUCK UP
 	err = nats.StanPublish(natsStream, &payment.PaymentNotification{
-		Id:    uint64(pay.ID),
-		Data:  pay.Encode(),
-		Event: payment.Event_Cancelled,
+		Id:            uint64(pay.ID),
+		Data:          pay.Encode(),
+		Event:         payment.Event_Cancelled,
+		InvokerUserId: req.UserId,
 	})
 	if err != nil {
 		return &payment.CancelOrderReply{Error: payment.Errors_NATS_FAILED, ErrorMessage: err.Error()}, nil
