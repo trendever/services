@@ -309,8 +309,8 @@ func canCancelPay(payDirection, userDirection payment.Direction) bool {
 	// so I will disable checks only for new payment sides
 	switch payDirection {
 	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
-		if userDirection != payment.Direction_CLIENT_PAYS && userDirection != payment.Direction_CLIENT_RECV {
-			return false
+		if userDirection == payment.Direction_CLIENT_PAYS || userDirection == payment.Direction_CLIENT_RECV {
+			return true
 		}
 	}
 
@@ -321,7 +321,7 @@ func canBuy(payDirection, userDirection payment.Direction) bool {
 
 	switch payDirection {
 	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
-		if payDirection != userDirection {
+		if payDirection != userDirection { //only other side can pay
 			if userDirection == payment.Direction_CLIENT_PAYS || userDirection == payment.Direction_CLIENT_RECV {
 				return true
 			}
