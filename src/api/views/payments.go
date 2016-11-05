@@ -1,7 +1,9 @@
 package views
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"api/api"
@@ -21,16 +23,6 @@ func init() {
 		soso.Route{"create", "payment", CreatePayment},
 	)
 }
-
-// @IMPORTANT info about sending info (leadID, direction in the methods where it seems to be extra and excess
-// We have to transfer lead ID to make sure only associated user can create payment
-// Malicious request can be sent and the following check will succeed
-// However, payments service must check if reqeusted leadID is equal to the CreateOrder one
-// This scheme help both avoid calling core from payments and guarantee security
-// In other words
-//  api checks if user is customer in lead(LeadID)
-//  payments checks if leadID is connected to pay(payID)
-//  -> user is checked to have access to pay
 
 // CreateOrder for given summ, card number and leadID
 func CreateOrder(c *soso.Context) {
@@ -77,16 +69,26 @@ func CreateOrder(c *soso.Context) {
 		return
 	}
 
+	data, err := json.Marshal(&payment.UsualData{
+		Direction:      direction,
+		ConversationId: leadInfo.ConversationId,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
 	request := &payment.CreateOrderRequest{
 		Data: &payment.OrderData{
 			Amount:   uint64(amount),
 			Currency: payment.Currency(currency),
 
 			LeadId:         uint64(leadID),
-			Direction:      direction,
 			UserId:         c.Token.UID,
-			ConversationId: leadInfo.ConversationId,
 			ShopCardNumber: shopCardNumber,
+
+			ServiceName: "api",
+			ServiceData: string(data),
 		},
 	}
 
@@ -162,14 +164,23 @@ func CreatePayment(c *soso.Context) {
 		return
 	}
 
+	orderData, paymentData, err := retrieveOrder(uint64(payID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	if paymentData.Direction != direction || orderData.LeadId != uint64(leadID) {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
+		return
+	}
+
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := paymentServiceClient.BuyOrder(ctx, &payment.BuyOrderRequest{
-		PayId:     uint64(payID),
-		LeadId:    uint64(leadID),
-		Direction: direction,
-		Ip:        c.RemoteIP,
+		PayId: uint64(payID),
+		Ip:    c.RemoteIP,
 	})
 
 	if err != nil { // RPC errors
@@ -220,14 +231,27 @@ func CancelOrder(c *soso.Context) {
 		return
 	}
 
+	orderData, paymentData, err := retrieveOrder(uint64(payID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	if !canCancelPay(direction, paymentData.Direction) {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("No access to cancel this pay"))
+		return
+	}
+	if orderData.LeadId != uint64(leadID) {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Parameters mangled"))
+		return
+	}
+
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := paymentServiceClient.CancelOrder(ctx, &payment.CancelOrderRequest{
-		PayId:     uint64(payID),
-		LeadId:    uint64(leadID),
-		Direction: direction,
-		UserId:    c.Token.UID,
+		PayId:  uint64(payID),
+		UserId: c.Token.UID,
 	})
 
 	if err != nil { // RPC errors
@@ -249,6 +273,7 @@ func CancelOrder(c *soso.Context) {
 
 }
 
+// get chat ID by leadID
 func getConversationID(userID, leadID uint64) (uint64, core.LeadUserRole, error) {
 
 	info, err := getLeadInfo(userID, leadID)
@@ -274,4 +299,46 @@ func paymentDirection(role core.LeadUserRole, create bool) (payment.Direction, e
 	}
 
 	return payment.Direction(0), errors.New("payments.view: Bad user role in the chat")
+}
+
+func canCancelPay(payDirection, userDirection payment.Direction) bool {
+
+	// allow both sides cancel
+	// we have only 2 direction and this may seem useless; but it is planned to have other people in conversation
+	// so I will disable checks only for new payment sides
+	switch payDirection {
+	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
+		if userDirection != payment.Direction_CLIENT_PAYS && userDirection != payment.Direction_CLIENT_RECV {
+			return false
+		}
+	default:
+		if payDirection != userDirection {
+			return false
+		}
+	}
+
+	return true
+}
+
+// get orderData and decode serviceData to our struct
+func retrieveOrder(id uint64) (*payment.OrderData, *payment.UsualData, error) {
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := paymentServiceClient.GetOrder(ctx, &payment.GetOrderRequest{
+		Id: id,
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var decoded payment.UsualData
+	err = json.Unmarshal([]byte(resp.Order.ServiceData), &decoded)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp.Order, &decoded, nil
 }

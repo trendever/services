@@ -5,13 +5,16 @@ service PaymentService {
   rpc BuyOrder(BuyOrderRequest) returns (BuyOrderReply) {}
 
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply) {}
+
+  rpc GetOrder(GetOrderRequest) returns (GetOrderReply) {}
+
+  rpc UpdateServiceData(UpdateServiceDataRequest) returns (UpdateServiceDataReply) {}
 }
 
 message OrderData {
   uint64 amount = 1;
   Currency currency = 2;
   string gateway = 3;
-
   uint64 user_id = 4;
 
   // payment of our service
@@ -20,22 +23,49 @@ message OrderData {
 
   // p2p payment
   uint64 lead_id = 7;
-  uint64 conversation_id = 8;
-  Direction direction = 9;
   string shop_card_number = 10;
+
   // in trendcoins
   uint64 commission_fee = 11;
   // user id, usually supplier
   uint64 commission_source = 12;
+
+  bool cancelled = 13;
 }
 
 message CreateOrderRequest {
   OrderData data = 1;
 }
 
+message GetOrderRequest {
+  uint64 id = 1;
+}
+
+message GetOrderReply {
+  OrderData order = 1;
+  // @TODO: some other fields, like open, finished sessions and etc
+}
+
+message UpdateServiceDataRequest {
+  uint64 id = 1;
+  string new_data = 2;
+}
+
+message UpdateServiceDataReply {
+}
+
 message PaymentNotification {
   uint64 id = 1;
   OrderData data = 2;
+  Event event = 3;
+  uint64 invoker_user_id = 4;
+}
+
+enum Event {
+  Created = 0;
+  Cancelled = 1;
+  PayFailed = 2;
+  PaySuccess = 3;
 }
 
 message CreateOrderReply {
@@ -47,10 +77,6 @@ message CreateOrderReply {
 message BuyOrderRequest {
   uint64 pay_id = 1;
   string ip = 2;
-
-  // parameters to check permissions
-  uint64 lead_id = 3;
-  Direction direction = 4;
 }
 
 message BuyOrderReply {
@@ -62,10 +88,6 @@ message BuyOrderReply {
 message CancelOrderRequest {
   uint64 pay_id = 1;
 
-  // parameters to check permissions
-  uint64 lead_id = 3;
-  Direction direction = 4;
-
   // userID just to log it
   uint64 user_id = 5;
 }
@@ -76,26 +98,6 @@ message CancelOrderReply {
   string error_message = 3;
 }
 
-// chat messages
-message ChatMessageNewOrder {
-  uint64 pay_id = 1;
-  uint64 amount = 2;
-  Currency currency = 3;
-}
-
-message ChatMessagePaymentFinished {
-  uint64 pay_id = 1;
-  bool success = 3;
-  bool failure = 4;
-  uint64 amount = 5;
-  Currency currency = 6;
-  Direction direction = 7;
-}
-
-message ChatMessageOrderCancelled {
-  uint64 pay_id = 1;
-  uint64 user_id = 2;
-}
 
 enum Currency {
   RUB = 0;
@@ -124,6 +126,7 @@ enum Errors {
   // refund fails
   // realy bad in case of Create order: commission was writed off, but pay wasn't created
   REFUND_ERROR = 132;
+  NATS_FAILED = 133;
 }
 
 enum Direction {

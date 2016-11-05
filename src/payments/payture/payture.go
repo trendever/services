@@ -2,12 +2,21 @@ package payture
 
 import (
 	"payments/config"
+	"payments/gateway"
 )
 
 // Client def
 type Client struct {
 	URL string
 	Key string
+}
+
+// Loader loads this gw
+type Loader struct {
+}
+
+func init() {
+	gateway.Loaders = append(gateway.Loaders, &Loader{})
 }
 
 // GetSandboxClient returns testing client
@@ -31,4 +40,14 @@ func GetClient() *Client {
 		URL: config.Get().Payture.URL,
 		Key: config.Get().Payture.Key,
 	}
+}
+
+// Load gateway from config
+func (cl *Loader) Load() (enabled bool, gw gateway.Gateway, err error) {
+	client := GetClient()
+	if client.URL == "" || client.Key == "" {
+		return false, nil, nil
+	}
+
+	return true, client, nil
 }

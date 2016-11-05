@@ -13,12 +13,13 @@ import (
 type Payment struct {
 	gorm.Model
 
-	LeadID         uint64 `gorm:"index"`
-	Direction      int32
-	ConversationID uint64
-	UserID         uint64 // that's client id
-	MessageID      uint64 // message id (in chat service) that contains payment button
-	Cancelled      bool   `sql:"default:false"` // sender side can cancel payment
+	UserID    uint64 // that's client id
+	LeadID    uint64 `gorm:"index"`
+	Cancelled bool   `sql:"default:false"` // sender side can cancel payment
+
+	GatewayType string // implemented gate, like `payture`
+	ServiceName string `gorm:"index"` // like `api` or `trendcoin`
+	ServiceData string `gorm:"text"`
 
 	// p2p params
 	ShopCardNumber string
@@ -31,84 +32,10 @@ type Payment struct {
 	CommissionSource uint64
 }
 
-// Session once-used pay sess
-type Session struct {
-	gorm.Model
-
-	PaymentID uint
-	Payment   *Payment
-
-	Amount      uint64
-	IP          string
-	GatewayType string `gorm:"index"`
-
-	State        string `gorm:"index"`
-	Finished     bool   `gorm:"index" sql:"default:false"` // session can be finished, but unsuccessfully
-	Success      bool   `gorm:"index" sql:"default:false"`
-	ChatNotified bool   `gorm:"index" sql:"default:false"`
-
-	// I wonder why payture wants 2 unique ids;
-	UniqueID   string `gorm:"index"` // this one is used to check pay status
-	ExternalID string `gorm:"index"` // this one is used by client
-}
-
-// Repo is mockable payment repository
-type Repo interface {
-
-	// pay part
-	GetPayByID(uint) (*Payment, error)
-	CreatePay(*Payment) error
-	SavePay(*Payment) error
-	CanCreateOrder(leadID uint) (bool, error)
-
-	// sess part
-	CreateSess(*Session) error
-	GetSessByUID(string) (*Session, error)
-	FinishedSessionsForPayID(pay uint) (int, error)
-	SaveSess(*Session) error
-	GetUnfinished(string) ([]Session, error)
-}
-
-// RepoImpl is implementation that uses gorm
-type RepoImpl struct {
-	DB *gorm.DB
-}
-
-// Gateway interface (1-step payment)
-type Gateway interface {
-
-	// create buying session
-	Buy(sess *Payment, ipAddr string) (*Session, error)
-
-	// get redirect URL for this session
-	Redirect(*Session) string
-
-	CheckStatus(*Session) (finished bool, err error)
-
-	GatewayType() string
-}
-
-// CreateSess to DB
-func (r *RepoImpl) CreateSess(s *Session) error {
-	return r.DB.Create(s).Error
-}
-
 // GetPayByID returns payment by ID
 func (r *RepoImpl) GetPayByID(id uint) (*Payment, error) {
 	var result Payment
 	err := r.DB.Where("id = ?", id).Find(&result).Error
-	return &result, err
-}
-
-// GetSessByUID returns payment by ID
-func (r *RepoImpl) GetSessByUID(uid string) (*Session, error) {
-	var result Session
-	err := r.DB.
-		Where("unique_id = ?", uid).
-		Preload("Payment").
-		Find(&result).
-		Error
-
 	return &result, err
 }
 
@@ -126,37 +53,22 @@ func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
 	return count, err
 }
 
-// GetUnfinished returns payment by ID
-func (r *RepoImpl) GetUnfinished(gatewayType string) ([]Session, error) {
-	var result []Session
-
-	err := r.DB.
-		Where("gateway_type = ?", gatewayType).
-		Where("finished != TRUE or chat_notified != TRUE").
-		Preload("Payment").
-		Find(&result).
-		Error
-
-	return result, err
-}
-
-// SaveSess saves payment
-func (r *RepoImpl) SaveSess(p *Session) error {
-	return r.DB.Save(p).Error
-}
-
 // CreatePay creates payment
 func (r *RepoImpl) CreatePay(p *Payment) error {
 	return r.DB.Create(p).Error
 }
 
-// SavePay saves payment
-func (r *RepoImpl) SavePay(p *Payment) error {
-	return r.DB.Save(p).Error
+// UpdateServiceData service data can be upgraded
+func (r *RepoImpl) UpdateServiceData(id uint, data string) error {
+	return r.DB.Model(&Payment{}).Where("id = ?", id).Update("service_data", data).Error
 }
 
 // CanCreateOrder shows if you can create another order for this leadID
 func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
+
+	if leadID == 0 {
+		return true, nil
+	}
 
 	var count int
 	err := r.DB.
@@ -177,50 +89,61 @@ func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
 func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 	data := r.Data
 	// Check credit cards first
-	if !validate(data.ShopCardNumber) {
-		return nil, fmt.Errorf("Invalid credit card (Luhn failed)")
-	}
-
-	if data.LeadId <= 0 {
-		return nil, fmt.Errorf("Empty lead ID")
+	if data.ShopCardNumber != "" && !validate(data.ShopCardNumber) {
+		return nil, fmt.Errorf("Invalid credit card (%v) (Luhn failed)", data.ShopCardNumber)
 	}
 
 	if data.CommissionFee != 0 && data.CommissionSource == 0 {
 		return nil, fmt.Errorf("Empty commission source")
 	}
 
-	pay := &Payment{
+	if data.Gateway == "" {
+		return nil, fmt.Errorf("Empty gateway info")
+	}
+
+	return DecodePayment(data), nil
+}
+
+// DecodePayment protobuf.OrderData -> models.Payment
+func DecodePayment(pay *payment.OrderData) *Payment {
+	return &Payment{
 		// Bank cards
-		ShopCardNumber: data.ShopCardNumber,
+		ShopCardNumber: pay.ShopCardNumber,
+		Cancelled:      pay.Cancelled,
+		GatewayType:    pay.Gateway,
+		ServiceName:    pay.ServiceName,
+		ServiceData:    pay.ServiceData,
 
-		// Core LeadID
-		LeadID:         data.LeadId,
-		Direction:      int32(data.Direction),
-		ConversationID: data.ConversationId,
-		UserID:         data.UserId,
+		// Money
+		Amount:   pay.Amount,
+		Currency: int32(pay.Currency),
+		UserID:   pay.UserId,
+		LeadID:   pay.LeadId,
 
-		CommissionFee:    data.CommissionFee,
-		CommissionSource: data.CommissionSource,
+		CommissionFee:    pay.CommissionFee,
+		CommissionSource: pay.CommissionSource,
 	}
+}
 
-	switch data.Currency {
-	case payment.Currency_RUB:
+// Encode models.Payment -> protobuf.OrderData
+func (pay *Payment) Encode() *payment.OrderData {
+	return &payment.OrderData{
+		// Bank cards
+		ShopCardNumber: pay.ShopCardNumber,
+		Cancelled:      pay.Cancelled,
+		Gateway:        pay.GatewayType,
+		ServiceName:    pay.ServiceName,
+		ServiceData:    pay.ServiceData,
 
-		// must convert to cops (1/100 of rub)
-		pay.Amount = data.Amount * 100
-		pay.Currency = int32(payment.Currency_COP)
+		// Money
+		Amount:   pay.Amount,
+		Currency: payment.Currency(pay.Currency),
+		UserId:   pay.UserID,
+		LeadId:   pay.LeadID,
 
-	case payment.Currency_COP:
-
-		pay.Amount = data.Amount
-		pay.Currency = int32(payment.Currency_COP)
-
-	default:
-		// unknown currency! panic
-		return nil, fmt.Errorf("Unsupported currency %v (%v)", data.Currency, payment.Currency_name[int32(data.Currency)])
+		CommissionFee:    pay.CommissionFee,
+		CommissionSource: pay.CommissionSource,
 	}
-
-	return pay, nil
 }
 
 // decorator to call CC check

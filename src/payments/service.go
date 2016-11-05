@@ -1,15 +1,13 @@
 package main
 
 import (
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"payments/cmd"
-	"utils/log"
+	"utils/cli"
+
+	// load gateways
+	_ "payments/payture"
 )
 
 func main() {
-	log.PanicLogger(func() {
-		if err := cmd.RootCmd.Execute(); err != nil {
-			log.Fatal(err)
-		}
-	})
+	cli.Main(&cmd.Service{})
 }

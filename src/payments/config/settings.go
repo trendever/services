@@ -26,6 +26,11 @@ type Settings struct {
 		URL     string
 		Key     string
 	}
+	PaytureEwallet struct {
+		URL      string
+		Login    string
+		Password string
+	}
 	HTTP struct {
 		Listen   string // http-server bind addr (like :7780)
 		Public   string // public-accessible URL of http-server root (like http://te.com:7780/)

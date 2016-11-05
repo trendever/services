@@ -52,10 +52,23 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 
 	uniqueID := uuid.New()
 
+	var amount uint64
+
+	switch payment.Currency(pay.Currency) {
+	case payment.Currency_RUB:
+		// must convert to cops (1/100 of rub)
+		amount = pay.Amount * 100
+	case payment.Currency_COP:
+		amount = pay.Amount
+	default:
+		// unknown currency! panic
+		return nil, fmt.Errorf("Unsupported currency %v (%v)", pay.Currency, payment.Currency_name[pay.Currency])
+	}
+
 	request := map[string]string{
 		"SessionType": "Pay",
 		"OrderID":     uniqueID,
-		"Amount":      fmt.Sprintf("%v", pay.Amount),
+		"Amount":      fmt.Sprintf("%v", amount),
 		"IP":          ipAddr,
 
 		// callback URL; seems not to work in sandbox mode
@@ -63,15 +76,9 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		"Url": config.Get().HTTP.Public + "?orderid={orderid}&success={success}",
 
 		// template fields
-		"Product": fmt.Sprintf("#%d", pay.LeadID),
-		"CardTo":  pay.ShopCardNumber,
-	}
-
-	switch payment.Currency(pay.Currency) {
-	case payment.Currency_RUB:
-		request["Total"] = fmt.Sprintf("%d", pay.Amount)
-	case payment.Currency_COP:
-		request["Total"] = fmt.Sprintf("%d", pay.Amount/100)
+		"CardTo": pay.ShopCardNumber,
+		// convert back to rubs
+		"Total": fmt.Sprintf("%d", amount/100),
 	}
 
 	err := c.xmlRequest(initMethod, &res, request, nil)
@@ -106,7 +113,6 @@ func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
 	err = c.xmlRequest(payStatusMethod, &res, nil, map[string]string{
 		"OrderId": sess.UniqueID,
 	})
-
 	if err != nil {
 		return
 	}

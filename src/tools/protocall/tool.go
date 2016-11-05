@@ -67,6 +67,6 @@ func main() {
 		argument,
 	})
 
-	fmt.Printf("Error is: %v", result[0].Interface())
-	spew.Dump(result[1].Interface())
+	fmt.Printf("Error is: %v\n", result[1].Interface())
+	spew.Dump(result[0].Interface())
 }
