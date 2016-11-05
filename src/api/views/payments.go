@@ -171,7 +171,7 @@ func CreatePayment(c *soso.Context) {
 		return
 	}
 
-	if paymentData.Direction != direction || orderData.LeadId != uint64(leadID) {
+	if !canBuy(paymentData.Direction, direction) || orderData.LeadId != uint64(leadID) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
 		return
 	}
@@ -238,7 +238,7 @@ func CancelOrder(c *soso.Context) {
 		return
 	}
 
-	if !canCancelPay(direction, paymentData.Direction) {
+	if !canCancelPay(paymentData.Direction, direction) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("No access to cancel this pay"))
 		return
 	}
@@ -312,13 +312,23 @@ func canCancelPay(payDirection, userDirection payment.Direction) bool {
 		if userDirection != payment.Direction_CLIENT_PAYS && userDirection != payment.Direction_CLIENT_RECV {
 			return false
 		}
-	default:
+	}
+
+	return false
+}
+
+func canBuy(payDirection, userDirection payment.Direction) bool {
+
+	switch payDirection {
+	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
 		if payDirection != userDirection {
-			return false
+			if userDirection == payment.Direction_CLIENT_PAYS || userDirection == payment.Direction_CLIENT_RECV {
+				return true
+			}
 		}
 	}
 
-	return true
+	return false
 }
 
 // get orderData and decode serviceData to our struct
