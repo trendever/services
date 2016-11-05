@@ -72,6 +72,7 @@ func onPaymentEvent(event *payment.PaymentNotification) bool {
 	case payment.Event_Created:
 		return wrap(sendPayment, event)
 	case payment.Event_Cancelled:
+		return wrap(sendCancelOrder, event)
 	case payment.Event_PayFailed, payment.Event_PaySuccess:
 		return wrap(sendSession, event)
 	}
