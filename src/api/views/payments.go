@@ -58,14 +58,14 @@ func CreateOrder(c *soso.Context) {
 		return
 	}
 
-	if leadInfo.Shop.Suspended {
-		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("shop is suspended"))
-		return
-	}
-
 	direction, err := paymentDirection(leadInfo.UserRole, true)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	if direction != payment.Direction_CLIENT_RECV && leadInfo.Shop.Suspended {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("shop is suspended"))
 		return
 	}
 
