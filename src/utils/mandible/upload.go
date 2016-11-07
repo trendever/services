@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/go-querystring/query"
 	"net/http"
+	"strings"
 )
 
 type thumbnailRequest map[string]*Thumbnail
@@ -18,7 +19,7 @@ type Thumbnail struct {
 }
 
 type imageResp struct {
-	Data    *image `json:"data"`
+	Data    *Image `json:"data"`
 	Status  int    `json:"status"`
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
@@ -29,7 +30,7 @@ type imageReq struct {
 	Thumbs string `url:"thumbs,omitempty"`
 }
 
-type image struct {
+type Image struct {
 	Link    string            `json:"link"`
 	Mime    string            `json:"mime"`
 	Name    string            `json:"name"`
@@ -51,7 +52,7 @@ type Uploader struct {
 // New uploader
 func New(mandibleURL string, thumbs ...Thumbnail) *Uploader {
 	uploader := &Uploader{
-		mandibleURL: mandibleURL,
+		mandibleURL: strings.TrimSuffix(mandibleURL, "/"),
 		thumbs:      thumbnailRequest{},
 	}
 
@@ -63,7 +64,7 @@ func New(mandibleURL string, thumbs ...Thumbnail) *Uploader {
 	return uploader
 }
 
-func (u *Uploader) doPostRequest(imageURL string) (*image, error) {
+func (u *Uploader) DoRequest(dest, image string) (*Image, error) {
 	// generate thumbnails
 	thumbsJSON, err := json.Marshal(u.thumbs)
 	if err != nil {
@@ -72,13 +73,13 @@ func (u *Uploader) doPostRequest(imageURL string) (*image, error) {
 
 	result := imageResp{}
 	data, err := query.Values(&imageReq{
-		Image:  imageURL,
+		Image:  image,
 		Thumbs: string(thumbsJSON),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare post data: %v", err)
 	}
-	resp, err := http.PostForm(u.mandibleURL+"url", data)
+	resp, err := http.PostForm(u.mandibleURL+"/"+dest, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make post request: %v", err)
 	}
@@ -98,7 +99,7 @@ func (u *Uploader) doPostRequest(imageURL string) (*image, error) {
 // UploadImageByURL is used to upload image to Mandible by it's URL
 func (u *Uploader) UploadImageByURL(imageURL string) (string, map[string]string, error) {
 
-	data, err := u.doPostRequest(imageURL)
+	data, err := u.DoRequest("url", imageURL)
 	if err != nil {
 		return "", nil, err
 	}

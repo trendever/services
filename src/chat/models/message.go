@@ -1,12 +1,12 @@
 package models
 
 import (
-	"chat/images"
 	"database/sql"
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"utils/log"
+	"utils/mandible"
 )
 
 //Message is model of message
@@ -25,6 +25,27 @@ type MessagePart struct {
 	ContentID string
 	MimeType  string
 	MessageID uint
+}
+
+var ImageUploader *mandible.Uploader
+
+func InitUploader(mandibleUrl string) {
+	ImageUploader = mandible.New(mandibleUrl, mandible.Thumbnail{
+		Name:   "big",
+		Width:  1080,
+		Height: 1080,
+		Shape:  "thumb",
+	}, mandible.Thumbnail{
+		Name:   "small",
+		Width:  480,
+		Height: 480,
+		Shape:  "thumb",
+	}, mandible.Thumbnail{
+		Name:   "small_crop",
+		Width:  480,
+		Height: 480,
+		Shape:  "square",
+	})
 }
 
 //Encode converts message to protobuf model
@@ -86,7 +107,7 @@ func DecodeParts(parts []*chat.MessagePart) []*MessagePart {
 func (mp *MessagePart) BeforeSave() error {
 	switch mp.MimeType {
 	case "image/base64":
-		img, err := images.UploadBase64(mp.Content)
+		img, err := ImageUploader.DoRequest("base64", mp.Content)
 		if err != nil {
 			log.Error(err)
 			return err
