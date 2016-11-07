@@ -147,33 +147,35 @@ func CreatePayment(c *soso.Context) {
 	payID, _ := req["id"].(float64)
 	leadID, _ := req["lead_id"].(float64)
 
-	if leadID <= 0 || payID <= 0 {
+	if leadID < 0 || payID <= 0 {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
 		return
 	}
 
-	_, role, err := getConversationID(c.Token.UID, uint64(leadID))
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
+	if leadID != 0 {
+		_, role, err := getConversationID(c.Token.UID, uint64(leadID))
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
 
-	// must be owner in his chat
-	direction, err := paymentDirection(role, false)
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
+		// must be owner in his chat
+		direction, err := paymentDirection(role, false)
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
 
-	orderData, paymentData, err := retrieveOrder(uint64(payID))
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
+		orderData, paymentData, err := retrieveOrder(uint64(payID))
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
 
-	if !canBuy(paymentData.Direction, direction) || orderData.LeadId != uint64(leadID) {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
-		return
+		if !canBuy(paymentData.Direction, direction) || orderData.LeadId != uint64(leadID) {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
+			return
+		}
 	}
 
 	// now -- create the order

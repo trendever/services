@@ -138,7 +138,9 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 	} else {
 		ret.Ok = true
 		shop.Plan = plan
-		go notifySupplierAboutSubscription(&shop, false, false)
+		go notifySupplierAboutSubscription(&shop, subscriptionNotifyTopic, map[string]interface{}{
+			"shop": &shop,
+		})
 	}
 	return
 }
@@ -207,12 +209,18 @@ func (s *monetizationServer) loop() {
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
 				}
+				go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
+					"shop": shop,
+				})
 				continue
 			}
 			err := subscribe(shop, &shop.Plan, true)
 			switch {
 			case err == nil:
-				go notifySupplierAboutSubscription(shop, false, true)
+				go notifySupplierAboutSubscription(shop, subscriptionNotifyTopic, map[string]interface{}{
+					"shop":    shop,
+					"renewal": true,
+				})
 
 			case err.Error() == "insufficient funds":
 				// @TODO autorefill coins
@@ -221,7 +229,10 @@ func (s *monetizationServer) loop() {
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
 				}
-				go notifySupplierAboutSubscription(shop, true, true)
+				go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
+					"shop":    shop,
+					"renewal": true,
+				})
 
 			default:
 				log.Errorf("failed to renew subscription if shop %v: %v", shop.ID, err)
@@ -230,21 +241,11 @@ func (s *monetizationServer) loop() {
 	}
 }
 
-func notifySupplierAboutSubscription(shop *models.Shop, suspense, renewal bool) {
+func notifySupplierAboutSubscription(shop *models.Shop, topic string, ctx map[string]interface{}) {
 	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID)
 	if err != nil {
 		log.Errorf("failed to load supplier: %v", err)
 		return
 	}
-	topic := subscriptionNotifyTopic
-	if suspense {
-		topic = suspendNotifyTopic
-	}
-	log.Error(models.GetNotifier().NotifyUserAbout(
-		&shop.Supplier, topic,
-		map[string]interface{}{
-			"shop":    shop,
-			"renewal": renewal,
-		},
-	))
+	log.Error(models.GetNotifier().NotifyUserAbout(&shop.Supplier, topic, ctx))
 }

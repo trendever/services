@@ -27,7 +27,7 @@ func (s *TrendcoinServer) subscribe() {
 			DecodedHandler: s.NatsTransactions,
 		},
 		&nats.StanSubscription{
-			Subject:        "payments.notifications",
+			Subject:        "payments.event",
 			Group:          "trendcoin",
 			DurableName:    "trendcoin",
 			AckTimeout:     time.Second * 15,
@@ -59,7 +59,7 @@ func (s *TrendcoinServer) NatsTransactions(in *trendcoin.MakeTransactionsRequest
 }
 
 func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowledged bool) {
-	if in.Data.ServiceName != PaymentName {
+	if in.Data.ServiceName != PaymentName || in.Event != payment.Event_PaySuccess {
 		return true
 	}
 	log.Debug("got payment notification with data %v", in.Data.ServiceData)

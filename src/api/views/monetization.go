@@ -147,8 +147,7 @@ func BuyCoins(c *soso.Context) {
 
 	gateway, _ := c.RequestMap["gateway"].(string)
 	if gateway == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty gateway"))
-		return
+		gateway = "payture"
 	}
 
 	offersResp, err := getCoinsOffers("", uint64(offerID))
@@ -179,6 +178,7 @@ func BuyCoins(c *soso.Context) {
 			UserId:      c.Token.UID,
 			ServiceName: "coins_refill",
 			ServiceData: fmt.Sprintf(`{"user_id": %v, "amount": %v}`, c.Token.UID, offer.Amount),
+			Comment:     fmt.Sprintf("%v trendcoins", offer.Amount),
 		},
 	})
 
