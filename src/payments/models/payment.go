@@ -20,6 +20,7 @@ type Payment struct {
 	GatewayType string // implemented gate, like `payture`
 	ServiceName string `gorm:"index"` // like `api` or `trendcoin`
 	ServiceData string `gorm:"text"`
+	Comment     string `gorm:"text"`
 
 	// p2p params
 	ShopCardNumber string
@@ -113,6 +114,7 @@ func DecodePayment(pay *payment.OrderData) *Payment {
 		GatewayType:    pay.Gateway,
 		ServiceName:    pay.ServiceName,
 		ServiceData:    pay.ServiceData,
+		Comment:        pay.Comment,
 
 		// Money
 		Amount:   pay.Amount,
@@ -134,6 +136,7 @@ func (pay *Payment) Encode() *payment.OrderData {
 		Gateway:        pay.GatewayType,
 		ServiceName:    pay.ServiceName,
 		ServiceData:    pay.ServiceData,
+		Comment:        pay.Comment,
 
 		// Money
 		Amount:   pay.Amount,

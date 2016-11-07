@@ -31,6 +31,8 @@ message OrderData {
   uint64 commission_source = 12;
 
   bool cancelled = 13;
+
+  string comment = 14;
 }
 
 message CreateOrderRequest {
