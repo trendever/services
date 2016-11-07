@@ -91,9 +91,9 @@ func sendSession(event *payment.PaymentNotification) error {
 		return fmt.Errorf("Zero message ID in payment(pay=%v); should not normally happen", event.Id)
 	}
 
-	var success = false
+	var success = true
 	if event.Event == payment.Event_PayFailed {
-		success = true
+		success = false
 	}
 
 	// STEP1: send status message
