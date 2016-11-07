@@ -159,20 +159,13 @@ func CreatePayment(c *soso.Context) {
 			return
 		}
 
-		// must be owner in his chat
-		direction, err := paymentDirection(role, false)
-		if err != nil {
-			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-			return
-		}
-
 		orderData, paymentData, err := retrieveOrder(uint64(payID))
 		if err != nil {
 			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 			return
 		}
 
-		if !canBuy(paymentData.Direction, direction) {
+		if !canBuy(paymentData.Direction, role) {
 			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("This side of order can not pay it"))
 			return
 		}
@@ -324,15 +317,13 @@ func canCancelPay(payDirection, userDirection payment.Direction) bool {
 	return false
 }
 
-func canBuy(payDirection, userDirection payment.Direction) bool {
+func canBuy(payDirection payment.Direction, userRole core.LeadUserRole) bool {
 
-	switch payDirection {
-	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
-		if payDirection != userDirection { //only other side can pay
-			if userDirection == payment.Direction_CLIENT_PAYS || userDirection == payment.Direction_CLIENT_RECV {
-				return true
-			}
-		}
+	switch userRole {
+	case core.LeadUserRole_CUSTOMER:
+		return payDirection == payment.Direction_CLIENT_PAYS
+	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
+		return payDirection == payment.Direction_CLIENT_RECV
 	}
 
 	return false
