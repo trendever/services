@@ -172,10 +172,15 @@ func CreatePayment(c *soso.Context) {
 			return
 		}
 
-		if !canBuy(paymentData.Direction, direction) || orderData.LeadId != uint64(leadID) {
+		if !canBuy(paymentData.Direction, direction) {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("This side of order can not pay it"))
+			return
+		}
+		if orderData.LeadId != uint64(leadID) {
 			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
 			return
 		}
+
 	}
 
 	// now -- create the order
