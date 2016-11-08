@@ -60,6 +60,7 @@ type Settings struct {
 	PaymentsAddr string
 	SMSAddr      string
 	CoinsAddr    string
+	CheckerAddr  string
 
 	Elastic elastic.Settings
 

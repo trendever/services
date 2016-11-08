@@ -14,6 +14,7 @@ var (
 	SMSConn      *grpc.ClientConn
 	PaymentsConn *grpc.ClientConn
 	CoinsConn    *grpc.ClientConn
+	CheckerConn  *grpc.ClientConn
 )
 
 // Start initializes API connections
@@ -26,4 +27,5 @@ func init() {
 	SMSConn = rpc.Connect(settings.SMSAddr)
 	PaymentsConn = rpc.Connect(settings.PaymentsAddr)
 	CoinsConn = rpc.Connect(settings.CoinsAddr)
+	CheckerConn = rpc.Connect(settings.CheckerAddr)
 }

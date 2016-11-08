@@ -30,7 +30,8 @@ var settings struct {
 	RequestsPerTick uint64
 	MinimalTickLen  uint64
 
-	Pool instagram.PoolSettings
+	Pool            instagram.PoolSettings
+	ResponseLogging bool
 
 	Users []struct {
 		Name string
@@ -98,6 +99,7 @@ func main() {
 
 func initInstagramPool() {
 	rand.Seed(time.Now().Unix())
+	instagram.DoResponseLogging = settings.ResponseLogging
 	Instagram = instagram.NewPool(&settings.Pool)
 	if len(settings.Users) == 0 {
 		log.Fatal(errors.New("Instagram users are undefined"))

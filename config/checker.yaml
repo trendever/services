@@ -13,11 +13,15 @@ db:
   base:     postgres
 
 requestsPerTick: 10
-minimalTickLen:  50000
+minimalTickLen:  100000
+
 pool:
   timeoutMin: 500
   timeoutMax: 2000
   reloginTimeout: 10000
+  
+responseLogging: false
+
 users:
 - name: nmstrs1
   pass: pass4ig
