@@ -11,7 +11,6 @@ import (
 	"proto/core"
 	"utils/db"
 	"utils/log"
-	"utils/phone"
 )
 
 func init() {
@@ -124,13 +123,8 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 }
 
 func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
-	phoneNumber, err := phone.CheckNumber(req.Phone, "")
 
-	if err != nil {
-		return &core.SetDataReply{}, err
-	}
-
-	_, found, err := models.FindUserMatchAny(0, 0, req.Name, req.Name, "", phoneNumber)
+	_, found, err := models.FindUserMatchAny(0, 0, req.Name, req.Name, "", req.Phone)
 
 	if err != nil {
 		log.Error(err)
@@ -142,7 +136,7 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 	}
 
 	updateMap := map[string]interface{}{}
-	updateMap["phone"] = phoneNumber
+	updateMap["phone"] = req.Phone
 	updateMap["instagram_username"] = req.Name
 	updateMap["name"] = req.Name
 

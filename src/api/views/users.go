@@ -7,8 +7,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"net/http"
 	"proto/core"
+	"proto/auth"
 	"strings"
 	"utils/rpc"
+	p "utils/phone"
 )
 
 type User struct {
@@ -16,6 +18,7 @@ type User struct {
 }
 
 var userServiceClient = core.NewUserServiceClient(api.CoreConn)
+var authServiceClient = auth.NewAuthServiceClient(api.AuthConn)
 
 func init() {
 	SocketRoutes = append(
@@ -144,14 +147,29 @@ func SetData(c *soso.Context) {
 		return
 	}
 
-	if value, ok := c.RequestMap["phone"].(string); ok {
-		request.Phone = value
+	if phone, ok := c.RequestMap["phone"].(string); ok {
+		phoneNumber, err := p.CheckNumber(phone, "")
+
+		if err != nil {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+			return
+		}
+
+		request.Phone = phoneNumber
 	}
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	_, err := userServiceClient.SetData(ctx, request)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	smsRequest := &auth.SmsPasswordRequest{PhoneNumber: request.Phone}
+	_, err = authServiceClient.SendNewSmsPassword(ctx,smsRequest)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
