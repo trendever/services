@@ -68,6 +68,10 @@ func decodeData(event *payment.PaymentNotification) (*payment.UsualData, error) 
 
 func onPaymentEvent(event *payment.PaymentNotification) bool {
 
+	if event.Data != nil && event.Data.ServiceName != "api" {
+		return true // not this service event
+	}
+
 	switch event.Event {
 	case payment.Event_Created:
 		return wrap(sendPayment, event)
