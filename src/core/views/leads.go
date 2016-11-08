@@ -349,3 +349,56 @@ func (s leadServer) GetCancelReasons(_ context.Context, in *core.GetCancelReason
 	}
 	return ret, nil
 }
+
+func (s leadServer) GetUserRole(_ context.Context, in *core.GetUserRoleRequest) (ret *core.GetUserRoleReply, _ error) {
+	ret = &core.GetUserRoleReply{}
+
+	if (in.LeadId == 0 && in.ConversationId == 0) || (in.UserId == 0 && in.InstagramUserId == 0) {
+		ret.Error = "empty conditions"
+		return
+	}
+
+	user, found, err := models.FindUserMatchAny(in.UserId, in.InstagramUserId, "", "", "", "")
+	if err != nil {
+		ret.Error = fmt.Sprintf("failed to load user: %v", err)
+		return
+	}
+	if !found {
+		ret.Error = "user not found"
+		return
+	}
+
+	lead := models.Lead{
+		Model: gorm.Model{
+			ID: uint(in.LeadId),
+		},
+		ConversationID: in.ConversationId,
+	}
+
+	res := db.New().Preload("Shop").Preload("Shop.Sellers").Where(&lead).First(&lead)
+	if res.RecordNotFound() {
+		ret.Error = "lead not found"
+		return
+	}
+	if res.Error != nil {
+		ret.Error = fmt.Sprintf("failed to load lead: %v", res.Error)
+		return
+	}
+	switch {
+	case lead.CustomerID == user.ID:
+		ret.Role = core.LeadUserRole_CUSTOMER
+
+	case lead.Shop.SupplierID == user.ID:
+		ret.Role = core.LeadUserRole_SUPPLIER
+
+	case lead.Shop.HasSeller(user.ID):
+		ret.Role = core.LeadUserRole_SELLER
+
+	case user.SuperSeller:
+		ret.Role = core.LeadUserRole_SUPER_SELLER
+
+	default:
+		ret.Role = core.LeadUserRole_UNKNOWN
+	}
+	return
+}

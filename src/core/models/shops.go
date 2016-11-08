@@ -201,6 +201,16 @@ func (s *Shop) onSupplierChanged() error {
 	return nil
 }
 
+// sellers should be preloaded
+func (s *Shop) HasSeller(userID uint) bool {
+	for _, seller := range s.Sellers {
+		if seller.ID == userID {
+			return true
+		}
+	}
+	return false
+}
+
 //GetShopByID returns Shop by ID
 func GetShopByID(shopID uint) (*Shop, error) {
 	shop := &Shop{}
