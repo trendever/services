@@ -36,6 +36,7 @@ func (cs *chatServer) handleDirectMessage(notify *bot.DirectMessageNotify) (ackn
 	// unknown/new conversation
 	if chat == nil {
 		// @TODO should we wait until lead will be created?
+		log.Debug("unknown thread %v", notify.ThreadId)
 		return true
 	}
 

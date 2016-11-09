@@ -16,5 +16,6 @@ func Migrate(db *gorm.DB) error {
 
 	db.Exec("ALTER TABLE conversations ALTER COLUMN status SET DEFAULT 'new'")
 	db.Model(&Conversation{}).Where("status IS NULL or status = ''").Update("status", "active")
+	db.New().Model(&Member{}).AddUniqueIndex("once_per_conv", "user_id", "conversation_id")
 	return nil
 }

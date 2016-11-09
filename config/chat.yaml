@@ -1,7 +1,9 @@
 port: 2010
 host: 0.0.0.0
 debug: true
-coreServer: core:3005
+rpc:
+    core: core:3005
+    checker: checker:2013
 upload_service: http://mandible:8089
 
 db:
