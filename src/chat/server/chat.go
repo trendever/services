@@ -3,7 +3,6 @@ package server
 import (
 	"chat/config"
 	"chat/models"
-	"chat/queue"
 	"errors"
 	"golang.org/x/net/context"
 	proto_chat "proto/chat"
@@ -24,14 +23,13 @@ const (
 
 type chatServer struct {
 	chats      models.ConversationRepository
-	queue      queue.Waiter
 	userCli    core.UserServiceClient
 	leadCli    core.LeadServiceClient
 	checkerCli checker.CheckerServiceClient
 }
 
 //NewChatServer returns implementation of protobuf ChatServiceServer
-func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_chat.ChatServiceServer {
+func NewChatServer(chats models.ConversationRepository) proto_chat.ChatServiceServer {
 	nats.Subscribe(&nats.Subscription{
 		Subject: "chat.conversation.delete",
 		Group:   "chat",
@@ -47,7 +45,6 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 	coreConn := rpc.Connect(conf.RPC.Core)
 	srv := &chatServer{
 		chats:      chats,
-		queue:      q,
 		userCli:    core.NewUserServiceClient(coreConn),
 		leadCli:    core.NewLeadServiceClient(coreConn),
 		checkerCli: checker.NewCheckerServiceClient(rpc.Connect(conf.RPC.Checker)),
@@ -193,7 +190,6 @@ func (cs *chatServer) sendMessage(chat *models.Conversation, newMessages ...*pro
 		if err != nil {
 			return
 		}
-		cs.queue.Push(msg)
 		messages = append(messages, msg.Encode())
 	}
 	return

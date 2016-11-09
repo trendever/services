@@ -3,14 +3,12 @@ package cmd
 import (
 	"chat/config"
 	"chat/models"
-	"chat/queue"
 	"chat/server"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"proto/chat"
 	"syscall"
-	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -35,7 +33,6 @@ var cmdRun = &cobra.Command{
 		s := rpc.Serve(conf.Host + ":" + conf.Port)
 		chat.RegisterChatServiceServer(s, server.NewChatServer(
 			repository,
-			queue.NewWaiter(time.Minute*5),
 		))
 
 		// interrupt

@@ -18,11 +18,6 @@ func init() {
 		Handler: newMessage,
 	})
 	nats.Subscribe(&nats.Subscription{
-		Subject: "core.notify.message",
-		Group:   "core",
-		Handler: notifySellerAboutUnreadedMessage,
-	})
-	nats.Subscribe(&nats.Subscription{
 		Subject: "auth.login",
 		Group:   "core",
 		Handler: handleUserLogin,
@@ -75,37 +70,6 @@ func newMessage(req *chat.NewMessageRequest) {
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
-	}
-}
-
-func notifySellerAboutUnreadedMessage(msg *chat.Message) {
-	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Shop.Sellers", "Customer")
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	if lead.State == core.LeadStatus_NEW.String() {
-		return
-	}
-
-	n := models.GetNotifier()
-
-	for _, seller := range lead.Shop.Sellers {
-		if msg.UserId != uint64(seller.ID) {
-			log.Error(n.NotifySellerAboutUnreadMessage(seller, lead, msg))
-		}
-	}
-
-	if lead.Shop.NotifySupplier {
-		supplier, err := models.GetUserByID(lead.Shop.SupplierID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if msg.UserId != uint64(supplier.ID) {
-			log.Error(n.NotifySellerAboutUnreadMessage(supplier, lead, msg))
-		}
 	}
 }
 

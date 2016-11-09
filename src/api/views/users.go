@@ -6,11 +6,11 @@ import (
 	"errors"
 	"github.com/asaskevich/govalidator"
 	"net/http"
-	"proto/core"
 	"proto/auth"
+	"proto/core"
 	"strings"
-	"utils/rpc"
 	p "utils/phone"
+	"utils/rpc"
 )
 
 type User struct {
@@ -169,7 +169,7 @@ func SetData(c *soso.Context) {
 	}
 
 	smsRequest := &auth.SmsPasswordRequest{PhoneNumber: request.Phone}
-	_, err = authServiceClient.SendNewSmsPassword(ctx,smsRequest)
+	_, err = authServiceClient.SendNewSmsPassword(ctx, smsRequest)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
