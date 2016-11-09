@@ -282,12 +282,13 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	log.Debug("Creating new order (productId=%v)", productID)
 
 	// indicate it's direct lead if it is
-	if mention.DirectThreadId > "" {
-		mention.Comment = "direct: " + mention.Comment
+	source := "wantit"
+	if mention.DirectThreadId != "" {
+		source = "direct"
 	}
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
-		Source:        "wantit",
+		Source:        source,
 		CustomerId:    customerID,
 		ProductId:     int64(productID),
 		Comment:       mention.Comment,
