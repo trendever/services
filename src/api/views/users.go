@@ -6,11 +6,11 @@ import (
 	"errors"
 	"github.com/asaskevich/govalidator"
 	"net/http"
-	"proto/core"
 	"proto/auth"
+	"proto/core"
 	"strings"
-	"utils/rpc"
 	p "utils/phone"
+	"utils/rpc"
 )
 
 type User struct {
@@ -25,7 +25,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"retrieve", "user", GetUserProfile},
 		soso.Route{"set_email", "user", SetEmail},
-		soso.Route{"set_data","user",SetData},
+		soso.Route{"set_data", "user", SetData},
 	)
 }
 
@@ -123,7 +123,7 @@ func SetEmail(c *soso.Context) {
 	})
 }
 
-func SetData(c *soso.Context){
+func SetData(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
@@ -142,7 +142,7 @@ func SetData(c *soso.Context){
 		request.Name = value
 	}
 
-	if request.Name == ""{
+	if request.Name == "" {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Enter user name"))
 		return
 	}
@@ -163,13 +163,13 @@ func SetData(c *soso.Context){
 
 	_, err := userServiceClient.SetData(ctx, request)
 
-	if err != nil{
+	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
 	}
 
 	smsRequest := &auth.SmsPasswordRequest{PhoneNumber: request.Phone}
-	_, err = authServiceClient.SendNewSmsPassword(ctx,smsRequest)
+	_, err = authServiceClient.SendNewSmsPassword(ctx, smsRequest)
 
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

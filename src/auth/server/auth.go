@@ -64,7 +64,8 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 	}
 
 	rpcContext, cancel := rpc.DefaultContext()
-	
+	defer cancel()
+
 	userExists, err := s.core.ReadUser(rpcContext, userRequest)
 	if err != nil {
 		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
@@ -83,8 +84,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 			Name:              request.Username,
 		},
 	}
-	
-	defer cancel()
+
 	resp, err := s.core.FindOrCreateUser(rpcContext, newUser)
 
 	if err != nil {

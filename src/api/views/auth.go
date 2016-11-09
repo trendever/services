@@ -20,7 +20,7 @@ func init() {
 		soso.Route{"register", "auth", RegisterNewUser},
 		soso.Route{"login", "auth", Login},
 		soso.Route{"send_password", "auth", SendSmsPassword},
-		soso.Route{"fakeregister","auth", RegisterFakeUser},
+		soso.Route{"fakeregister", "auth", RegisterFakeUser},
 	)
 }
 
@@ -80,7 +80,7 @@ func RegisterNewUser(c *soso.Context) {
 	})
 }
 
-func RegisterFakeUser(c *soso.Context){
+func RegisterFakeUser(c *soso.Context) {
 	request := &auth_protocol.FakeUserRequest{}
 
 	ctx, cancel := rpc.DefaultContext()
