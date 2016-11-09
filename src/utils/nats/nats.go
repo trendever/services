@@ -30,12 +30,12 @@ type StanSubscription struct {
 	Subject string
 	Group   string
 	// Set it make stan server remember about client after disconnection.
-	// For non durable queue subsribers, when the last member leaves the group, that group is removed.
-	// In individual subscription case durable name allows start receiving starting from last acknowledged by client
+	// For non durable queue subscribers, when the last member leaves the group, that group is removed.
+	// In individual subscription case durable name allows start receiving starting from last acknowledged by client massage
 	DurableName string
 	// if zero ack will be automatically called on msg receive
 	AckTimeout time.Duration
-	// normal stan handler, ask may be performed via msg.Ack()
+	// normal stan handler, ack may be performed via msg.Ack()
 	Handler stan.MsgHandler
 	// easier way: data will be decoded with json.Unmarshal, ack will be performed after handler will return true,
 	// should be func(decodedArg something) bool or func(decodedArg something, tx *gorm.DB) bool
