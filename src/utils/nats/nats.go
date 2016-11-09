@@ -140,10 +140,11 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 			}
 			hValue := reflect.ValueOf(sub.DecodedHandler)
 			success := hValue.Call(args)[0].Bool()
-			if success {
+			if !success {
 				if hasTxArg {
 					tx.Rollback()
 				}
+				return
 			}
 			if sub.AckTimeout != 0 {
 				err := m.Ack()
@@ -152,6 +153,7 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 					if hasTxArg {
 						tx.Rollback()
 					}
+					return
 				}
 			}
 			if hasTxArg {
