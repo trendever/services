@@ -1,12 +1,17 @@
 package server
 
 import (
+	"chat/config"
 	"chat/models"
 	"chat/queue"
 	"errors"
 	"golang.org/x/net/context"
 	proto_chat "proto/chat"
+	"proto/checker"
+	"proto/core"
+	"time"
 	"utils/nats"
+	"utils/rpc"
 )
 
 // NATS events
@@ -18,8 +23,11 @@ const (
 )
 
 type chatServer struct {
-	chats models.ConversationRepository
-	queue queue.Waiter
+	chats      models.ConversationRepository
+	queue      queue.Waiter
+	userCli    core.UserServiceClient
+	leadCli    core.LeadServiceClient
+	checkerCli checker.CheckerServiceClient
 }
 
 //NewChatServer returns implementation of protobuf ChatServiceServer
@@ -33,7 +41,25 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		Group:   "chat",
 		Handler: chats.SetConversationStatus,
 	})
-	return &chatServer{chats: chats, queue: q}
+
+	conf := config.Get()
+
+	coreConn := rpc.Connect(conf.RPC.Core)
+	srv := &chatServer{
+		chats:      chats,
+		queue:      q,
+		userCli:    core.NewUserServiceClient(coreConn),
+		leadCli:    core.NewLeadServiceClient(coreConn),
+		checkerCli: checker.NewCheckerServiceClient(rpc.Connect(conf.RPC.Checker)),
+	}
+	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "direct.new_message",
+		Group:          "chat",
+		DurableName:    "chat",
+		AckTimeout:     time.Second * 30,
+		DecodedHandler: srv.handleDirectMessage,
+	})
+	return srv
 }
 
 //CreateChat creates new chat
@@ -41,7 +67,10 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 	if req.Chat == nil {
 		return nil, errors.New("Chat is required")
 	}
-	chat := &models.Conversation{Name: req.Chat.Name}
+	chat := &models.Conversation{
+		Name:         req.Chat.Name,
+		DirectThread: req.Chat.DirectThread,
+	}
 	if err := cs.chats.Create(chat); err != nil {
 		return nil, err
 	}
@@ -228,7 +257,7 @@ func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsRe
 	//We don't want make a new query only for get updated last_message_id
 	//so just update it in the structure
 	member = chat.GetMember(req.UserId)
-	member.LastMessageID = uint(req.MessageId)
+	member.LastMessageID = req.MessageId
 
 	go cs.notifyChatAboutReadedMessage(chat.Encode(), req.MessageId, req.UserId)
 

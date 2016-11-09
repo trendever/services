@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
+	"utils/db"
 	"utils/log"
 	"utils/mandible"
 )
 
 //Message is model of message
 type Message struct {
-	gorm.Model
+	db.Model
 	ConversationID uint
+	InstagramID    string `gorm:"index;unique"`
 	MemberID       sql.NullInt64
 	Member         *Member
 	Parts          []*MessagePart
@@ -57,6 +59,7 @@ func (m *Message) Encode() *chat.Message {
 		UserId:         uint64(m.MemberID.Int64),
 		Parts:          m.EncodeParts(),
 		CreatedAt:      m.CreatedAt.Unix(),
+		InstagramId:    m.InstagramID,
 	}
 	if m.Member != nil {
 		message.User = m.Member.Encode()
@@ -80,9 +83,10 @@ func (m *Message) EncodeParts() []*chat.MessagePart {
 //DecodeMessage creates message from protobuf model
 func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
-		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
-		Member:   member,
-		Parts:    DecodeParts(pbMessage.Parts),
+		MemberID:    sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
+		Member:      member,
+		Parts:       DecodeParts(pbMessage.Parts),
+		InstagramID: pbMessage.InstagramId,
 	}
 	return message
 }

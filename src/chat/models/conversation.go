@@ -3,17 +3,19 @@ package models
 import (
 	"github.com/jinzhu/gorm"
 	pb_chat "proto/chat"
+	"utils/db"
 	"utils/log"
 )
 
 //Conversation is representation of conversation model
 type Conversation struct {
-	gorm.Model
-	Name        string
-	Members     []*Member
-	Messages    []*Message
-	Status      string `gorm:"index;default:'new'"`
-	UnreadCount uint64 `sql:"-"`
+	db.Model
+	Name         string
+	Members      []*Member
+	Messages     []*Message
+	Status       string `gorm:"index;default:'new'"`
+	UnreadCount  uint64 `sql:"-"`
+	DirectThread string `gorm:"index"`
 }
 
 type conversationRepositoryImpl struct {
@@ -35,18 +37,21 @@ type ConversationRepository interface {
 	GetByID(uint) (*Conversation, error)
 	GetByIDs([]uint64) (Conversations, error)
 	GetByUserID(uint) ([]*Conversation, error)
+	GetByDirectThread(string) (*Conversation, error)
 	AddMembers(*Conversation, ...*Member) error
 	RemoveMembers(*Conversation, ...uint64) error
 	AddMessages(*Conversation, ...*Message) error
 	GetMember(*Conversation, uint64) (*Member, error)
+	UpdateMember(member *Member) error
 	GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) ([]*Message, error)
 	TotalMessages(chat *Conversation) uint64
 	MarkAsReaded(member *Member, messageID uint64) error
-	GetUnread(ids []uint64, userID uint64) (map[uint]uint64, error)
+	GetUnread(ids []uint64, userID uint64) (map[uint64]uint64, error)
 	GetTotalUnread(userID uint64) (uint64, error)
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
 	DeleteConversation(id uint64) error
 	SetConversationStatus(req *pb_chat.SetStatusMessage) error
+	CheckMessageExists(instagramID string) (bool, error)
 }
 
 //Encode converts to protobuf model
@@ -55,6 +60,7 @@ func (c *Conversation) Encode() *pb_chat.Chat {
 	chat.Id = uint64(c.ID)
 	chat.Name = c.Name
 	chat.UnreadCount = c.UnreadCount
+	chat.DirectThread = c.DirectThread
 	if c.Members != nil {
 		chat.Members = []*pb_chat.Member{}
 		for _, m := range c.Members {
@@ -81,6 +87,15 @@ func (c *conversationRepositoryImpl) GetByID(id uint) (model *Conversation, err 
 	return
 }
 
+func (c *conversationRepositoryImpl) GetByDirectThread(id string) (*Conversation, error) {
+	var conv Conversation
+	res := c.db.Preload("Members").Where("direct_thread = ?", id).First(&conv)
+	if res.RecordNotFound() {
+		return nil, nil
+	}
+	return &conv, res.Error
+}
+
 func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*Member) error {
 
 	for _, member := range members {
@@ -96,6 +111,10 @@ func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*
 		}
 	}
 	return nil
+}
+
+func (c *conversationRepositoryImpl) UpdateMember(member *Member) error {
+	return c.db.Update(member).Error
 }
 
 func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs ...uint64) error {
@@ -239,8 +258,8 @@ func (c *conversationRepositoryImpl) defaultPreload(ids []uint64) *gorm.DB {
 }
 
 //GetUnread returns count of unread messages mapped to conversation ids
-func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map[uint]uint64, error) {
-	unreadMap := map[uint]uint64{}
+func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map[uint64]uint64, error) {
+	unreadMap := map[uint64]uint64{}
 	rows, err := c.db.Model(&Message{}).
 		Select("count(messages.id), messages.conversation_id").
 		Joins("LEFT JOIN members ON (members.conversation_id = messages.conversation_id AND members.user_id = ?)", userID).
@@ -254,8 +273,7 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 	defer rows.Close()
 
 	for rows.Next() {
-		var id uint
-		var count uint64
+		var id, count uint64
 		err := rows.Scan(&count, &id)
 		if err != nil {
 			return unreadMap, err
@@ -290,7 +308,7 @@ func (c Conversations) Encode() (chats []*pb_chat.Chat) {
 }
 
 //AddUnread adds unread count
-func (c Conversations) AddUnread(unread map[uint]uint64) {
+func (c Conversations) AddUnread(unread map[uint64]uint64) {
 	for _, ch := range c {
 		ch.UnreadCount = 0
 		count, ok := unread[ch.ID]
@@ -305,7 +323,7 @@ func (c *Conversation) GetMember(user_id uint64) *Member {
 		return nil
 	}
 	for _, m := range c.Members {
-		if m.UserID == uint(user_id) {
+		if m.UserID == user_id {
 			return m
 		}
 	}
@@ -318,4 +336,10 @@ func (c *conversationRepositoryImpl) DeleteConversation(id uint64) error {
 
 func (c *conversationRepositoryImpl) SetConversationStatus(req *pb_chat.SetStatusMessage) error {
 	return c.db.Model(&Conversation{}).Where("id = ?", req.ConversationId).UpdateColumn("status", req.Status).Error
+}
+
+func (c *conversationRepositoryImpl) CheckMessageExists(instagramID string) (bool, error) {
+	var count int
+	err := db.New().Model(&Message{}).Where("instagram_id = ?", instagramID).Count(&count).Error
+	return count != 0, err
 }

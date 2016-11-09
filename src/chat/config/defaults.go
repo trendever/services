@@ -19,7 +19,11 @@ type Settings struct {
 	Receiver      string
 	UploadService string `mapstructure:"upload_service"`
 	SentryDSN     string
-	Nats          nats.Config
+	RPC           struct {
+		Core    string
+		Checker string
+	}
+	Nats nats.Config
 }
 
 var settings = &Settings{}

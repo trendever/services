@@ -16,7 +16,7 @@ message GetProfileRequest {
 	string name = 2;
 }
 
-// biography and external_url are provided only for requests by id
+// biography and external_url are provided only for requests by id for now
 message GetProfileReply {
 	uint64 id = 1;
 	string name = 2;

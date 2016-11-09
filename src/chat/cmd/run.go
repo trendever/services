@@ -29,7 +29,7 @@ var cmdRun = &cobra.Command{
 		db.Init(&conf.DB)
 
 		repository := models.NewConversationRepository(db.New())
-		nats.Init(&conf.Nats, false)
+		nats.Init(&conf.Nats, true)
 
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)
 		s := rpc.Serve(conf.Host + ":" + conf.Port)

@@ -1923,7 +1923,6 @@ func (m *SearchUserReply) GetResult() []*User {
 }
 
 type ReadUserReply struct {
-	// todo: remove id
 	Id   int64 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
 	User *User `protobuf:"bytes,2,opt,name=user" json:"user,omitempty"`
 }
