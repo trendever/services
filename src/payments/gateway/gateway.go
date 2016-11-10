@@ -31,6 +31,7 @@ type PaymentGateway interface {
 type CardGateway interface {
 	Add(info *payment.UserInfo) (string, error)
 	GetCards(info *payment.UserInfo) ([]*payment.Card, error)
+	DelCard(string, *payment.UserInfo) error
 }
 
 // Loader is loader (config2gateway)

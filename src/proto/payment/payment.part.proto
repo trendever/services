@@ -13,6 +13,8 @@ service PaymentService {
   rpc AddCard(AddCardRequest) returns (AddCardReply) {}
 
   rpc GetCards(GetCardsRequest) returns (GetCardsReply) {}
+
+  rpc DelCard(DelCardRequest) returns (DelCardReply) {}
 }
 
 message OrderData {
@@ -130,6 +132,18 @@ message GetCardsRequest {
 }
 
 message GetCardsReply {
+  repeated Card cards = 1;
+  Errors error = 2;
+  string error_message = 3;
+}
+
+message DelCardRequest {
+  UserInfo user = 1;
+  string gateway = 2;
+  string card_id = 3;
+}
+
+message DelCardReply {
   repeated Card cards = 1;
   Errors error = 2;
   string error_message = 3;

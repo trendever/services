@@ -40,5 +40,18 @@ func (c *Ewallet) GetCards(info *payment.UserInfo) ([]*payment.Card, error) {
 	}
 
 	return result, nil
+}
 
+// DelCard just deletes card
+func (c *Ewallet) DelCard(cardID string, info *payment.UserInfo) error {
+	resp, err := c.vwDelCard(cardID, info)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Success {
+		return fmt.Errorf("Error (%v) while GetCards", resp.ErrCode)
+	}
+
+	return nil
 }

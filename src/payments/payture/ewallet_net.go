@@ -14,6 +14,7 @@ const (
 	vwInitPath     = "/vwapi/Init"
 	vwAddPath      = "/vwapi/Add"
 	vwCardsPath    = "/vwapi/GetList"
+	vwDelCardPath  = "/vwapi/Remove"
 )
 
 type payDef struct {
@@ -44,6 +45,12 @@ type vwCardsResponse struct {
 		NoCVV      bool     `xml:"NoCVV,attr"`
 		Expired    bool     `xml:"Expired,attr"`
 	} `xml:"Item"`
+}
+
+type vwDelCardResponse struct {
+	XMLName xml.Name `xml:"Init"`
+	Success bool     `xml:"Success,attr"`
+	ErrCode string   `xml:"ErrCode,attr"`
 }
 
 // Init request
@@ -81,6 +88,24 @@ func (ew *Ewallet) vwCards(user *payment.UserInfo) (*vwCardsResponse, error) {
 
 	resp := vwCardsResponse{}
 	err := xmlRequest(ew.URL+vwCardsPath, &resp, data, params)
+	return &resp, err
+}
+
+func (ew *Ewallet) vwDelCard(cardID string, user *payment.UserInfo) (*vwDelCardResponse, error) {
+	params := map[string]string{
+		"VWID": ew.KeyAdd,
+	}
+
+	login, password := ew.creds(user.UserId)
+
+	data := map[string]string{
+		"VWUserLgn": login,
+		"VWUserPsw": password,
+		"CardId":    cardID,
+	}
+
+	resp := vwDelCardResponse{}
+	err := xmlRequest(ew.URL+vwDelCardPath, &resp, data, params)
 	return &resp, err
 }
 
