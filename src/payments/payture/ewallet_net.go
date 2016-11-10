@@ -12,6 +12,7 @@ const (
 	sessionTypeAdd = "Add"
 	sessionTypePay = "Pay"
 	vwInitPath     = "/vwapi/Init"
+	vwPayPath      = "/vwapi/Pay"
 	vwAddPath      = "/vwapi/Add"
 	vwCardsPath    = "/vwapi/GetList"
 	vwDelCardPath  = "/vwapi/Remove"
@@ -75,8 +76,16 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 		data["Amount"] = fmt.Sprintf("%v", pay.amount)
 	}
 
+	var path string
+	switch sessionType {
+	case sessionTypeAdd:
+		path = vwInitPath
+	case sessionTypePay:
+		path = vwPayPath
+	}
+
 	resp := vwInitResponse{}
-	err := xmlRequest(ew.URL+vwInitPath, &resp, data, params)
+	err := xmlRequest(ew.URL+path, &resp, data, params)
 	return &resp, err
 }
 
