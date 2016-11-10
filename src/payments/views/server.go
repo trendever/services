@@ -61,6 +61,7 @@ func Init() {
 func (ps *paymentServer) gw(name string) (gateway.Gateway, error) {
 	gw, found := ps.gateways[name]
 	if !found {
+		log.Debug("Gateway %v not found, available ones: %v", name, ps.gateways)
 		return nil, fmt.Errorf("Unknown gateway (%v)", name)
 	}
 
