@@ -34,6 +34,7 @@ func (c *Ewallet) GetCards(info *payment.UserInfo) ([]*payment.Card, error) {
 	result := make([]*payment.Card, len(resp.Items))
 	for i, item := range resp.Items {
 		result[i] = &payment.Card{
+			Id:     item.CardID,
 			Name:   item.CardName,
 			Active: item.Status == "IsActive",
 		}
