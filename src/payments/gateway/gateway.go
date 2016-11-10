@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"payments/models"
+	"proto/payment"
 )
 
 // Gateways contains all registered gw after LoadAll is called
@@ -14,7 +15,7 @@ var Loaders []Loader
 type Gateway interface {
 
 	// create buying session
-	Buy(sess *models.Payment, ipAddr string) (*models.Session, error)
+	Buy(sess *models.Payment, info *payment.UserInfo) (*models.Session, error)
 
 	// get redirect URL for this session
 	Redirect(*models.Session) string
@@ -26,7 +27,7 @@ type Gateway interface {
 
 // Loader is loader (config2gateway)
 type Loader interface {
-	Load() (enabled bool, gw Gateway, err error)
+	Load() (gw []Gateway, err error)
 }
 
 // LoadAll calls all loaders to get all gateways
@@ -34,14 +35,14 @@ func LoadAll() error {
 
 	for _, loader := range Loaders {
 
-		enabled, gateway, err := loader.Load()
+		gws, err := loader.Load()
 		if err != nil {
 			return err
-		} else if !enabled {
-			continue
 		}
 
-		Gateways[gateway.GatewayType()] = gateway
+		for _, gw := range gws {
+			Gateways[gw.GatewayType()] = gw
+		}
 	}
 
 	return nil

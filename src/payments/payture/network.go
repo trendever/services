@@ -39,8 +39,24 @@ func encodeData(data map[string]string) string {
 	return strings.Join(dataParams, ";")
 }
 
-func (c *Client) xmlRequest(method string, decodeTo interface{}, data, extraParams map[string]string) error {
+func xmlRequest(url string, decodeTo interface{}, data, params map[string]string) error {
 
+	body, err := request(url, params)
+
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Payture resp body (for %v): %v", url, string(body))
+
+	err = xml.Unmarshal(body, decodeTo)
+
+	log.Debug("Payture unmarshal: %+v", decodeTo)
+
+	return err
+}
+
+func (c *InPay) xmlRequest(method string, decodeTo interface{}, data, extraParams map[string]string) error {
 	params := map[string]string{
 		"Key":  c.Key,
 		"Data": encodeData(data),
@@ -50,17 +66,7 @@ func (c *Client) xmlRequest(method string, decodeTo interface{}, data, extraPara
 		params[k] = v
 	}
 
-	body, err := request(fmt.Sprintf("%v/apim/%v", c.URL, method), params)
+	url := fmt.Sprintf("%v/apim/%v", c.URL, method)
 
-	if err != nil {
-		return err
-	}
-
-	log.Debug("Payture resp body: %v", string(body))
-
-	err = xml.Unmarshal(body, decodeTo)
-
-	log.Debug("Payture unmarshal: %+v", decodeTo)
-
-	return err
+	return xmlRequest(url, decodeTo, data, params)
 }

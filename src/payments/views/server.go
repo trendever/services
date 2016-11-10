@@ -142,33 +142,48 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 
 func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderRequest) (*payment.BuyOrderReply, error) {
 
-	// Step0: find pay
-	pay, err := ps.repo.GetPayByID(uint(req.PayId))
-	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
-	}
+	var Payment *models.Payment
+	var Gateway gateway.Gateway
 
-	// Step0.55: cancelled pays shall not proceed
-	if pay.Cancelled {
-		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: "Payment is cancelled, aborting"}, nil
-	}
+	if req.PayId > 0 {
+		// Step0: find pay
+		pay, err := ps.repo.GetPayByID(uint(req.PayId))
+		if err != nil {
+			return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+		}
 
-	// Step0.6: check if TX is already finished
-	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
-	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
-	}
-	if finished > 0 {
-		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: "payments: This pay is already payed"}, nil
-	}
+		// Step0.55: cancelled pays shall not proceed
+		if pay.Cancelled {
+			return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: "Payment is cancelled, aborting"}, nil
+		}
 
-	gw, err := ps.gw(pay.GatewayType)
-	if err != nil {
-		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+		// Step0.6: check if TX is already finished
+		finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
+		if err != nil {
+			return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+		}
+		if finished > 0 {
+			return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: "payments: This pay is already payed"}, nil
+		}
+
+		gw, err := ps.gw(pay.GatewayType)
+		if err != nil {
+			return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+		}
+
+		Payment = pay
+		Gateway = gw
+	} else {
+		gw, err := ps.gw(req.Gateway)
+		if err != nil {
+			return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+		}
+
+		Gateway = gw
 	}
 
 	// Step1: init TX
-	sess, err := gw.Buy(pay, req.Ip)
+	sess, err := Gateway.Buy(Payment, req.User)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -180,7 +195,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	}
 
 	// Step3: redirect client
-	return &payment.BuyOrderReply{RedirectUrl: gw.Redirect(sess)}, nil
+	return &payment.BuyOrderReply{RedirectUrl: Gateway.Redirect(sess)}, nil
 
 }
 

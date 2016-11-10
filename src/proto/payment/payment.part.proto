@@ -76,9 +76,18 @@ message CreateOrderReply {
   string error_message = 3;
 }
 
+message UserInfo {
+  string ip = 1;
+  uint64 user_id = 2;
+  string phone = 3;
+}
+
 message BuyOrderRequest {
   uint64 pay_id = 1;
-  string ip = 2;
+  UserInfo user = 2;
+
+  // use only when pay_id == 0
+  string gateway = 3;
 }
 
 message BuyOrderReply {

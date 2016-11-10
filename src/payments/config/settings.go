@@ -26,18 +26,24 @@ type Settings struct {
 		URL     string
 		Key     string
 	}
-	PaytureEwallet struct {
-		URL      string
-		Login    string
-		Password string
-	}
-	HTTP struct {
+	Ewallet Ewallet
+	HTTP    struct {
 		Listen   string // http-server bind addr (like :7780)
 		Public   string // public-accessible URL of http-server root (like http://te.com:7780/)
 		Redirect string // success redirect URL. Format string: 1st %v -- success bool; 2nd -- lead id (may be zero)
 	}
 
 	PeriodicCheck int // how often do we check unfinished txs; secs
+}
+
+// Ewallet cfg
+type Ewallet struct {
+	Sandbox  bool
+	URL      string
+	KeyAdd   string // add card operation
+	KeyPay   string // pay operation
+	Password string
+	Secret   string // non-zero string to generate passwords
 }
 
 var settings = &Settings{}

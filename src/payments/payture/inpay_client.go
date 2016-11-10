@@ -5,8 +5,8 @@ import (
 	"payments/gateway"
 )
 
-// Client def
-type Client struct {
+// InPay def
+type InPay struct {
 	URL string
 	Key string
 }
@@ -20,34 +20,32 @@ func init() {
 }
 
 // GetSandboxClient returns testing client
-func GetSandboxClient() *Client {
-
-	return &Client{
+func GetSandboxClient() *InPay {
+	return &InPay{
 		URL: "https://sandbox2.payture.com",
 		Key: "Merchant",
 	}
-
 }
 
 // GetClient returns payture service client
-func GetClient() *Client {
+func GetClient() *InPay {
 
 	if config.Get().Payture.Sandbox {
 		return GetSandboxClient()
 	}
 
-	return &Client{
+	return &InPay{
 		URL: config.Get().Payture.URL,
 		Key: config.Get().Payture.Key,
 	}
 }
 
 // Load gateway from config
-func (cl *Loader) Load() (enabled bool, gw gateway.Gateway, err error) {
+func (cl *Loader) Load() (gw []gateway.Gateway, err error) {
 	client := GetClient()
 	if client.URL == "" || client.Key == "" {
-		return false, nil, nil
+		return nil, nil
 	}
 
-	return true, client, nil
+	return []gateway.Gateway{client}, nil
 }

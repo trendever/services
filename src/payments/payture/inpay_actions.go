@@ -23,7 +23,7 @@ const (
 const gatewayType = "payture"
 
 // GatewayType for this pkg
-func (c *Client) GatewayType() string {
+func (c *InPay) GatewayType() string {
 	return gatewayType
 }
 
@@ -46,7 +46,11 @@ type payStatusResponse struct {
 }
 
 // Buy request
-func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error) {
+func (c *InPay) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
+
+	if info == nil || pay == nil {
+		return nil, fmt.Errorf("payments/payture: got nil userInfo or pay")
+	}
 
 	var res initResponse
 
@@ -69,7 +73,7 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		"SessionType": "Pay",
 		"OrderID":     uniqueID,
 		"Amount":      fmt.Sprintf("%v", amount),
-		"IP":          ipAddr,
+		"IP":          info.Ip,
 
 		// callback URL; seems not to work in sandbox mode
 		// or work at all? file support to change it
@@ -96,18 +100,18 @@ func (c *Client) Buy(pay *models.Payment, ipAddr string) (*models.Session, error
 		ExternalID:  res.SessionID,
 		UniqueID:    uniqueID,
 		Amount:      res.Amount,
-		IP:          ipAddr,
+		IP:          info.Ip,
 		GatewayType: gatewayType,
 	}, nil
 }
 
 // Redirect returns client-redirectable redirect link
-func (c *Client) Redirect(sess *models.Session) string {
+func (c *InPay) Redirect(sess *models.Session) string {
 	return fmt.Sprintf("%v/apim/Pay?SessionId=%v", c.URL, sess.ExternalID)
 }
 
 // CheckStatus checks given session status
-func (c *Client) CheckStatus(sess *models.Session) (finished bool, err error) {
+func (c *InPay) CheckStatus(sess *models.Session) (finished bool, err error) {
 	var res payStatusResponse
 
 	err = c.xmlRequest(payStatusMethod, &res, nil, map[string]string{

@@ -181,7 +181,11 @@ func CreatePayment(c *soso.Context) {
 	defer cancel()
 	resp, err := paymentServiceClient.BuyOrder(ctx, &payment.BuyOrderRequest{
 		PayId: uint64(payID),
-		Ip:    c.RemoteIP,
+		User: &payment.UserInfo{
+			Ip:     c.RemoteIP,
+			UserId: c.Token.UID,
+			// phone not needed here
+		},
 	})
 
 	if err != nil { // RPC errors

@@ -25,3 +25,7 @@ nats:
 payture:
   key: "MerchantTrendeverp2p"
   url: "https://sandbox2.payture.com"
+
+ewallet:
+  sandbox: true
+  secret: cococo
