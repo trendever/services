@@ -24,10 +24,6 @@ type EwalletPay struct {
 type EwalletLoader struct {
 }
 
-func init() {
-	gateway.Loaders = append(gateway.Loaders, &EwalletLoader{})
-}
-
 // GetSandboxEwallet returns testing client
 func GetSandboxEwallet() *Ewallet {
 

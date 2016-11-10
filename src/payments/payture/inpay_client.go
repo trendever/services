@@ -17,6 +17,7 @@ type Loader struct {
 
 func init() {
 	gateway.Loaders = append(gateway.Loaders, &Loader{})
+	gateway.Loaders = append(gateway.Loaders, &EwalletLoader{})
 }
 
 // GetSandboxClient returns testing client
