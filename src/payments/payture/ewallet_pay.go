@@ -50,7 +50,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Sess
 	}
 	return &models.Session{
 		PaymentID:   pay.ID,
-		ExternalID:  res.SessionID,
+		ExternalID:  res.MerchantOrderID,
 		UniqueID:    res.SessionID,
 		Amount:      res.Amount,
 		IP:          info.Ip,

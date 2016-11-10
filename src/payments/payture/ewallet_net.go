@@ -32,12 +32,13 @@ type vwInitResponse struct {
 }
 
 type vwPayResponse struct {
-	XMLName   xml.Name `xml:"Pay"`
-	Success   bool     `xml:"Success,attr"`
-	OrderID   string   `xml:"OrderId,attr"`
-	Amount    uint64   `xml:"Amount,attr"`
-	SessionID string   `xml:"SessionId,attr"`
-	ErrCode   string   `xml:"ErrCode,attr"`
+	XMLName         xml.Name `xml:"Pay"`
+	Success         bool     `xml:"Success,attr"`
+	OrderID         string   `xml:"OrderId,attr"`
+	Amount          uint64   `xml:"Amount,attr"`
+	SessionID       string   `xml:"SessionId,attr"`
+	ErrCode         string   `xml:"ErrCode,attr"`
+	MerchantOrderID string   `xml:"MerchantOrderId,attr"`
 }
 
 type vwCardsResponse struct {

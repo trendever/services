@@ -63,12 +63,14 @@ func main() {
 	defer cancel()
 
 	fmt.Println("Do calling")
+	then := time.Now()
 
 	result := call.Call([]reflect.Value{
 		reflect.ValueOf(ctx),
 		argument,
 	})
 
+	fmt.Printf("Request took %v\n", time.Since(then).String())
 	fmt.Printf("Error is: %v\n", result[1].Interface())
 	spew.Dump(result[0].Interface())
 }
