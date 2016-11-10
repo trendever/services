@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"payments/models"
 	"proto/payment"
+
+	"github.com/pborman/uuid"
 )
 
 // Buy request
 func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
 
 	pd := &payDef{
-		orderID: fmt.Sprintf("pay_%v", pay.ID),
+		orderID: uuid.New(),
 	}
 
 	switch payment.Currency(pay.Currency) {

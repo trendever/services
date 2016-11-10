@@ -68,6 +68,7 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 		"VWUserPsw":   password,
 		"PhoneNumber": user.Phone,
 		"IP":          user.Ip,
+		"CardId":      pay.cardID,
 	}
 
 	resp := vwInitResponse{}
