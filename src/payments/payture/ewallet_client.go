@@ -46,7 +46,9 @@ func GetEwallet() *Ewallet {
 	cfg := config.Get()
 
 	if cfg.Ewallet.Sandbox {
-		return GetSandboxEwallet()
+		client := GetSandboxEwallet()
+		client.Secret = cfg.Ewallet.Secret
+		return client
 	}
 
 	return &Ewallet{
