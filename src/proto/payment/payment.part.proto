@@ -31,6 +31,9 @@ message OrderData {
   uint64 lead_id = 7;
   string shop_card_number = 10;
 
+  // non-p2p payment
+  string card_id = 15;
+
   // in trendcoins
   uint64 commission_fee = 11;
   // user id, usually supplier

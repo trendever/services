@@ -8,7 +8,52 @@ import (
 
 // Buy request
 func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
-	return nil, fmt.Errorf("Not yet implemented")
+
+	pd := &payDef{
+		orderID: fmt.Sprintf("pay_%v", pay.ID),
+	}
+
+	switch payment.Currency(pay.Currency) {
+	case payment.Currency_RUB:
+		// must convert to cops (1/100 of rub)
+		pd.amount = pay.Amount * 100
+	case payment.Currency_COP:
+		pd.amount = pay.Amount
+	default:
+		// unknown currency! panic
+		return nil, fmt.Errorf("Unsupported currency %v (%v)", pay.Currency, payment.Currency_name[pay.Currency])
+	}
+
+	if pay.CardID != "" {
+		pd.cardID = pay.CardID
+	} else { // find first active card
+		cards, err := c.GetCards(info)
+		if err != nil {
+			return nil, err
+		}
+		card, err := firstActive(cards)
+		if err != nil {
+			return nil, err
+		}
+		pd.cardID = card.Id
+	}
+
+	res, err := c.vwInit(sessionTypePay, c.KeyAdd, info, pd)
+	if err != nil {
+		return nil, err
+	}
+
+	if !res.Success {
+		return nil, fmt.Errorf("Error (%v) while AddCard init", res.ErrCode)
+	}
+	return &models.Session{
+		PaymentID:   pay.ID,
+		ExternalID:  res.SessionID,
+		UniqueID:    res.SessionID,
+		Amount:      res.Amount,
+		IP:          info.Ip,
+		GatewayType: vwGwType,
+	}, nil
 }
 
 // Redirect returns client-redirectable redirect link

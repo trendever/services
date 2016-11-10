@@ -27,6 +27,9 @@ type Payment struct {
 	Amount         uint64
 	Currency       int32
 
+	// non-p2p params
+	CardID string
+
 	// in coins
 	CommissionFee uint64
 	// user id, usually supplier
@@ -115,6 +118,7 @@ func DecodePayment(pay *payment.OrderData) *Payment {
 		ServiceName:    pay.ServiceName,
 		ServiceData:    pay.ServiceData,
 		Comment:        pay.Comment,
+		CardID:         pay.CardId,
 
 		// Money
 		Amount:   pay.Amount,
@@ -137,6 +141,7 @@ func (pay *Payment) Encode() *payment.OrderData {
 		ServiceName:    pay.ServiceName,
 		ServiceData:    pay.ServiceData,
 		Comment:        pay.Comment,
+		CardId:         pay.CardID,
 
 		// Money
 		Amount:   pay.Amount,

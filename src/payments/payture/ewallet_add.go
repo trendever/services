@@ -43,6 +43,16 @@ func (c *Ewallet) GetCards(info *payment.UserInfo) ([]*payment.Card, error) {
 	return result, nil
 }
 
+func firstActive(cards []*payment.Card) (*payment.Card, error) {
+	for _, card := range cards {
+		if card.Active {
+			return card, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Found no active card")
+}
+
 // DelCard just deletes card
 func (c *Ewallet) DelCard(cardID string, info *payment.UserInfo) error {
 	resp, err := c.vwDelCard(cardID, info)
