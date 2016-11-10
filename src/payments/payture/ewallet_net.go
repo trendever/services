@@ -43,7 +43,7 @@ type vwCardsResponse struct {
 		Status     string   `xml:"Status,attr"`
 		NoCVV      bool     `xml:"NoCVV,attr"`
 		Expired    bool     `xml:"Expired,attr"`
-	}
+	} `xml:"Item"`
 }
 
 // Init request
