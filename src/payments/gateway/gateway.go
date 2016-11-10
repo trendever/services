@@ -13,7 +13,11 @@ var Loaders []Loader
 
 // Gateway interface (1-step payment)
 type Gateway interface {
+	GatewayType() string
+}
 
+// PaymentGateway payment functions
+type PaymentGateway interface {
 	// create buying session
 	Buy(sess *models.Payment, info *payment.UserInfo) (*models.Session, error)
 
@@ -21,8 +25,12 @@ type Gateway interface {
 	Redirect(*models.Session) string
 
 	CheckStatus(*models.Session) (finished bool, err error)
+}
 
-	GatewayType() string
+// CardGateway adittional gw type
+type CardGateway interface {
+	Add(info *payment.UserInfo) (string, error)
+	GetCards(info *payment.UserInfo) error
 }
 
 // Loader is loader (config2gateway)

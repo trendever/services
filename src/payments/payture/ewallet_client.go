@@ -7,19 +7,11 @@ import (
 	"payments/gateway"
 )
 
+const vwGwType = "payture_ewallet"
+
 // Ewallet def
 type Ewallet struct {
 	config.Ewallet
-}
-
-// EwalletAdd part
-type EwalletAdd struct {
-	Ewallet
-}
-
-// EwalletPay part
-type EwalletPay struct {
-	Ewallet
 }
 
 // EwalletLoader loads this gw
@@ -64,7 +56,11 @@ func (cl *EwalletLoader) Load() (gw []gateway.Gateway, err error) {
 	}
 
 	return []gateway.Gateway{
-		&EwalletAdd{*client},
-		&EwalletPay{*client},
+		client,
 	}, nil
+}
+
+// GatewayType for this pkg
+func (c *Ewallet) GatewayType() string {
+	return vwGwType
 }

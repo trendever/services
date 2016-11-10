@@ -2,49 +2,25 @@ package payture
 
 import (
 	"fmt"
-	"payments/models"
 	"proto/payment"
 )
 
-const addGatewayType = "payture_ewallet_add"
+// Add new card (redirect user)
+func (c *Ewallet) Add(info *payment.UserInfo) (string, error) {
 
-// GatewayType for this pkg
-func (c *EwalletAdd) GatewayType() string {
-	return addGatewayType
-}
-
-// Buy request
-func (c *EwalletAdd) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
-
-	if pay != nil {
-		return nil, fmt.Errorf("Adding card do not require payment")
-	}
-
-	resp, err := c.Ewallet.vwInit(sessionTypeAdd, c.KeyAdd, info, nil)
+	resp, err := c.vwInit(sessionTypeAdd, c.KeyAdd, info, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf("Error (%v) while AddCard init", resp.ErrCode)
+		return "", fmt.Errorf("Error (%v) while AddCard init", resp.ErrCode)
 	}
 
-	return &models.Session{
-		ExternalID:  resp.SessionID,
-		UniqueID:    resp.SessionID,
-		IP:          info.Ip,
-		GatewayType: addGatewayType,
-	}, nil
+	return fmt.Sprintf("%v%v?SessionId=%v", c.URL, vwAddPath, resp.SessionID), nil
 }
 
-// Redirect returns client-redirectable redirect link
-func (c *EwalletAdd) Redirect(sess *models.Session) string {
-	return fmt.Sprintf("%v%v?SessionId=%v", c.URL, vwAddPath, sess.ExternalID)
-}
-
-// CheckStatus checks given session status
-func (c *EwalletAdd) CheckStatus(sess *models.Session) (finished bool, err error) {
-	// no need to check that shit, right?
-	sess.Finished = true
-	return true, nil
+// GetCards checks given session status
+func (c *Ewallet) GetCards(info *payment.UserInfo) (err error) {
+	return nil
 }

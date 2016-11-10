@@ -9,6 +9,8 @@ service PaymentService {
   rpc GetOrder(GetOrderRequest) returns (GetOrderReply) {}
 
   rpc UpdateServiceData(UpdateServiceDataRequest) returns (UpdateServiceDataReply) {}
+
+  rpc AddCard(AddCardRequest) returns (AddCardReply) {}
 }
 
 message OrderData {
@@ -109,6 +111,16 @@ message CancelOrderReply {
   string error_message = 3;
 }
 
+message AddCardRequest {
+  UserInfo user = 1;
+  string gateway = 2;
+}
+
+message AddCardReply {
+  string redirect_url = 1;
+  Errors error = 2;
+  string error_message = 33;
+}
 
 enum Currency {
   RUB = 0;
