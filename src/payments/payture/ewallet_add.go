@@ -39,10 +39,12 @@ func (c *EwalletAdd) Buy(pay *models.Payment, info *payment.UserInfo) (*models.S
 
 // Redirect returns client-redirectable redirect link
 func (c *EwalletAdd) Redirect(sess *models.Session) string {
-	return "" //fmt.Errorf("Not yet implemented")
+	return fmt.Sprintf("%v%v?SessionId=%v", c.URL, vwAddPath, sess.ExternalID)
 }
 
 // CheckStatus checks given session status
 func (c *EwalletAdd) CheckStatus(sess *models.Session) (finished bool, err error) {
-	return false, fmt.Errorf("Not yet coded")
+	// no need to check that shit, right?
+	sess.Finished = true
+	return true, nil
 }

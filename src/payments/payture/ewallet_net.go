@@ -12,6 +12,7 @@ const (
 	sessionTypeAdd = "Add"
 	sessionTypePay = "Pay"
 	vwInitPath     = "/vwapi/Init"
+	vwAddPath      = "/vwapi/Add"
 )
 
 type payDef struct {
