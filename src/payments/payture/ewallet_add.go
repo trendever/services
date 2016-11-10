@@ -35,7 +35,7 @@ func (c *Ewallet) GetCards(info *payment.UserInfo) ([]*payment.Card, error) {
 	for i, item := range resp.Items {
 		result[i] = &payment.Card{
 			Name:   item.CardName,
-			Active: item.Status == "IsActive" && item.NoCVV && !item.Expired,
+			Active: item.Status == "IsActive",
 		}
 	}
 
