@@ -41,6 +41,10 @@ func encodeData(data map[string]string) string {
 
 func xmlRequest(url string, decodeTo interface{}, data, params map[string]string) error {
 
+	if len(data) > 0 {
+		params["Data"] = encodeData(data)
+	}
+
 	body, err := request(url, params)
 
 	if err != nil {
@@ -58,8 +62,7 @@ func xmlRequest(url string, decodeTo interface{}, data, params map[string]string
 
 func (c *InPay) xmlRequest(method string, decodeTo interface{}, data, extraParams map[string]string) error {
 	params := map[string]string{
-		"Key":  c.Key,
-		"Data": encodeData(data),
+		"Key": c.Key,
 	}
 
 	for k, v := range extraParams {
