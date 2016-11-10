@@ -26,12 +26,12 @@ func (c *EwalletAdd) Buy(pay *models.Payment, info *payment.UserInfo) (*models.S
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf("Error (%v) while AddCard init", resp.ErrorCode)
+		return nil, fmt.Errorf("Error (%v) while AddCard init", resp.ErrCode)
 	}
 
 	return &models.Session{
-		ExternalID:  res.SessionID,
-		UniqueID:    res.SessionID,
+		ExternalID:  resp.SessionID,
+		UniqueID:    resp.SessionID,
 		IP:          info.Ip,
 		GatewayType: addGatewayType,
 	}, nil
