@@ -62,6 +62,7 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 	login, password := ew.creds(user.UserId)
 
 	data := map[string]string{
+		"OrderId":     pay.orderID,
 		"SessionType": sessionType,
 		"VWUserLgn":   login,
 		"VWUserPsw":   password,
