@@ -40,7 +40,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Sess
 		pd.cardID = card.Id
 	}
 
-	res, err := c.vwInit(sessionTypePay, c.KeyPay, info, pd)
+	res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd)
 	if err != nil {
 		return nil, err
 	}
@@ -65,5 +65,5 @@ func (c *Ewallet) Redirect(sess *models.Session) string {
 
 // CheckStatus checks given session status
 func (c *Ewallet) CheckStatus(sess *models.Session) (finished bool, err error) {
-	return false, fmt.Errorf("Not yet coded")
+	return true, fmt.Errorf("Not yet coded")
 }

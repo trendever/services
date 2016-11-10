@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"time"
 	"utils/rpc"
 
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 )
@@ -57,7 +59,7 @@ func main() {
 
 	fmt.Printf("%#v\n", argument.Interface())
 
-	ctx, cancel := rpc.DefaultContext()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	fmt.Println("Do calling")

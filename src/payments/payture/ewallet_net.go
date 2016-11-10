@@ -27,6 +27,13 @@ type payDef struct {
 type vwInitResponse struct {
 	XMLName   xml.Name `xml:"Init"`
 	Success   bool     `xml:"Success,attr"`
+	SessionID string   `xml:"SessionId,attr"`
+	ErrCode   string   `xml:"ErrCode,attr"`
+}
+
+type vwPayResponse struct {
+	XMLName   xml.Name `xml:"Pay"`
+	Success   bool     `xml:"Success,attr"`
 	OrderID   string   `xml:"OrderId,attr"`
 	Amount    uint64   `xml:"Amount,attr"`
 	SessionID string   `xml:"SessionId,attr"`
@@ -55,7 +62,7 @@ type vwDelCardResponse struct {
 }
 
 // Init request
-func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwInitResponse, error) {
+func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo) (*vwInitResponse, error) {
 	params := map[string]string{
 		"VWID": key,
 	}
@@ -70,22 +77,30 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 		"IP":          user.Ip,
 	}
 
-	if pay != nil {
-		data["OrderId"] = pay.orderID
-		data["CardId"] = pay.cardID
-		data["Amount"] = fmt.Sprintf("%v", pay.amount)
-	}
-
-	var path string
-	switch sessionType {
-	case sessionTypeAdd:
-		path = vwInitPath
-	case sessionTypePay:
-		path = vwPayPath
-	}
-
 	resp := vwInitResponse{}
-	err := xmlRequest(ew.URL+path, &resp, data, params)
+	err := xmlRequest(ew.URL+vwInitPath, &resp, data, params)
+	return &resp, err
+}
+
+func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwPayResponse, error) {
+	params := map[string]string{
+		"VWID": key,
+	}
+
+	login, password := ew.creds(user.UserId)
+
+	data := map[string]string{
+		"SessionType": sessionType,
+		"VWUserLgn":   login,
+		"VWUserPsw":   password,
+		"PhoneNumber": user.Phone,
+		"OrderId":     pay.orderID,
+		"CardId":      pay.cardID,
+		"Amount":      fmt.Sprintf("%v", pay.amount),
+	}
+
+	resp := vwPayResponse{}
+	err := xmlRequest(ew.URL+vwPayPath, &resp, data, params)
 	return &resp, err
 }
 
