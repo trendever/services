@@ -38,7 +38,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Sess
 		pd.cardID = card.Id
 	}
 
-	res, err := c.vwInit(sessionTypePay, c.KeyAdd, info, pd)
+	res, err := c.vwInit(sessionTypePay, c.KeyPay, info, pd)
 	if err != nil {
 		return nil, err
 	}
