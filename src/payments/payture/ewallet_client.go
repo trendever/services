@@ -1,6 +1,8 @@
 package payture
 
 import (
+	"errors"
+
 	"payments/config"
 	"payments/gateway"
 )
@@ -56,7 +58,7 @@ func GetEwallet() *Ewallet {
 func (cl *EwalletLoader) Load() (gw []gateway.Gateway, err error) {
 	client := GetEwallet()
 	if client.URL == "" || client.KeyAdd == "" || client.KeyPay == "" || client.Password == "" || client.Secret == "" {
-		return nil, nil
+		return nil, errors.New("Incorrect config")
 	}
 
 	return []gateway.Gateway{
