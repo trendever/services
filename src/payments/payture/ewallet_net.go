@@ -48,7 +48,7 @@ type vwCardsResponse struct {
 }
 
 type vwDelCardResponse struct {
-	XMLName xml.Name `xml:"Init"`
+	XMLName xml.Name `xml:"Remove"`
 	Success bool     `xml:"Success,attr"`
 	ErrCode string   `xml:"ErrCode,attr"`
 }
