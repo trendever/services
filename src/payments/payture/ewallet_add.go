@@ -21,6 +21,24 @@ func (c *Ewallet) Add(info *payment.UserInfo) (string, error) {
 }
 
 // GetCards checks given session status
-func (c *Ewallet) GetCards(info *payment.UserInfo) (err error) {
-	return nil
+func (c *Ewallet) GetCards(info *payment.UserInfo) ([]*payment.Card, error) {
+	resp, err := c.vwCards(info)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("Error (%v) while GetCards", resp.ErrCode)
+	}
+
+	result := make([]*payment.Card, len(resp.Items))
+	for i, item := range resp.Items {
+		result[i] = &payment.Card{
+			Name:   item.CardName,
+			Active: item.Status == "IsActive" && item.NoCVV && !item.Expired,
+		}
+	}
+
+	return result, nil
+
 }

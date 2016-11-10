@@ -13,6 +13,7 @@ const (
 	sessionTypePay = "Pay"
 	vwInitPath     = "/vwapi/Init"
 	vwAddPath      = "/vwapi/Add"
+	vwCardsPath    = "/vwapi/GetList"
 )
 
 type payDef struct {
@@ -28,6 +29,21 @@ type vwInitResponse struct {
 	Amount    uint64   `xml:"Amount,attr"`
 	SessionID string   `xml:"SessionId,attr"`
 	ErrCode   string   `xml:"ErrCode,attr"`
+}
+
+type vwCardsResponse struct {
+	XMLName xml.Name `xml:"GetList"`
+	Success bool     `xml:"Success,attr"`
+	ErrCode string   `xml:"ErrCode,attr"`
+	Items   []struct {
+		XMLName    xml.Name `xml:"Item"`
+		CardName   string   `xml:"CardName,attr"`
+		CardID     string   `xml:"CardId,attr"`
+		CardHolder string   `xml:"CardHolder,attr"`
+		Status     string   `xml:"Status,attr"`
+		NoCVV      bool     `xml:"NoCVV,attr"`
+		Expired    bool     `xml:"Expired,attr"`
+	}
 }
 
 // Init request
@@ -48,6 +64,23 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 
 	resp := vwInitResponse{}
 	err := xmlRequest(ew.URL+vwInitPath, &resp, data, params)
+	return &resp, err
+}
+
+func (ew *Ewallet) vwCards(user *payment.UserInfo) (*vwCardsResponse, error) {
+	params := map[string]string{
+		"VWID": ew.KeyAdd,
+	}
+
+	login, password := ew.creds(user.UserId)
+
+	data := map[string]string{
+		"VWUserLgn": login,
+		"VWUserPsw": password,
+	}
+
+	resp := vwCardsResponse{}
+	err := xmlRequest(ew.URL+vwCardsPath, &resp, data, params)
 	return &resp, err
 }
 

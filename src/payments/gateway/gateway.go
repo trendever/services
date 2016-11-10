@@ -30,7 +30,7 @@ type PaymentGateway interface {
 // CardGateway adittional gw type
 type CardGateway interface {
 	Add(info *payment.UserInfo) (string, error)
-	GetCards(info *payment.UserInfo) error
+	GetCards(info *payment.UserInfo) ([]*payment.Card, error)
 }
 
 // Loader is loader (config2gateway)

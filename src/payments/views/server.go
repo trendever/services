@@ -177,7 +177,23 @@ func (ps *paymentServer) AddCard(_ context.Context, req *payment.AddCardRequest)
 
 	// Step2: redirect client
 	return &payment.AddCardReply{RedirectUrl: redirectURL}, nil
+}
 
+func (ps *paymentServer) GetCards(_ context.Context, req *payment.GetCardsRequest) (*payment.GetCardsReply, error) {
+
+	Gateway, err := ps.crd(req.Gateway)
+	if err != nil {
+		return &payment.GetCardsReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step1: init TX
+	cards, err := Gateway.GetCards(req.User)
+	if err != nil {
+		return &payment.GetCardsReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step2: redirect client
+	return &payment.GetCardsReply{Cards: cards}, nil
 }
 
 func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderRequest) (*payment.BuyOrderReply, error) {

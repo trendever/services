@@ -11,6 +11,8 @@ service PaymentService {
   rpc UpdateServiceData(UpdateServiceDataRequest) returns (UpdateServiceDataReply) {}
 
   rpc AddCard(AddCardRequest) returns (AddCardReply) {}
+
+  rpc GetCards(GetCardsRequest) returns (GetCardsReply) {}
 }
 
 message OrderData {
@@ -119,7 +121,24 @@ message AddCardRequest {
 message AddCardReply {
   string redirect_url = 1;
   Errors error = 2;
-  string error_message = 33;
+  string error_message = 3;
+}
+
+message GetCardsRequest {
+  UserInfo user = 1;
+  string gateway = 2;
+}
+
+message GetCardsReply {
+  repeated Card cards = 1;
+  Errors error = 2;
+  string error_message = 3;
+}
+
+message Card {
+  string name = 1;
+  string id = 2;
+  bool active = 3;
 }
 
 enum Currency {
