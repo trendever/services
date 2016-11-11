@@ -255,6 +255,54 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 
 }
 
+func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequest) (*payment.BuyAsyncReply, error) {
+
+	create, err := ps.CreateOrder(ctx, &payment.CreateOrderRequest{
+		Data: req.Data,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if create.Error != payment.Errors_OK {
+		return &payment.BuyAsyncReply{
+			Error:        create.Error,
+			ErrorMessage: create.ErrorMessage,
+		}, nil
+	}
+
+	// Step0: find pay
+	Payment, err := ps.repo.GetPayByID(uint(create.Id))
+	if err != nil {
+		return &payment.BuyAsyncReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	Gateway, err := ps.gw(Payment.GatewayType)
+	if err != nil {
+		return &payment.BuyAsyncReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// now -- async part
+
+	go func() {
+		// Step1: init TX
+		sess, err := Gateway.Buy(Payment, req.User)
+		if err != nil {
+			log.Errorf("Warning! Async Buy returnted err, this should not happen: %v", err)
+		}
+
+		// Step2: save session
+		err = ps.repo.CreateSess(sess)
+		if err != nil {
+			log.Errorf("Warning! Save session returnted err, this should not happen: %v", err)
+		}
+
+	}()
+
+	return &payment.BuyAsyncReply{}, nil
+}
+
 func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrderRequest) (*payment.CancelOrderReply, error) {
 
 	// Step0: find pay

@@ -4,6 +4,8 @@ service PaymentService {
 
   rpc BuyOrder(BuyOrderRequest) returns (BuyOrderReply) {}
 
+  rpc BuyAsync(BuyAsyncRequest) returns (BuyAsyncReply) {}
+
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply) {}
 
   rpc GetOrder(GetOrderRequest) returns (GetOrderReply) {}
@@ -103,6 +105,16 @@ message BuyOrderReply {
   string redirect_url = 1;
   Errors error = 2;
   string error_message = 3;
+}
+
+message BuyAsyncRequest {
+  OrderData data = 1;
+  UserInfo user = 2;
+}
+
+message BuyAsyncReply {
+  Errors error = 1;
+  string error_message = 2;
 }
 
 message CancelOrderRequest {
