@@ -1,6 +1,8 @@
 service AuthService {
     //creates new user
     rpc RegisterNewUser(NewUserRequest) returns (UserReply) {}
+    //creates fake user
+    rpc RegisterFakeUser(FakeUserRequest) returns (LoginReply) {}
     //login user and return JWT token
     rpc Login(LoginRequest) returns (LoginReply) {}
     //sends password to user as sms message
@@ -17,6 +19,8 @@ message NewUserRequest {
     //country code, by default RU
     string country = 4;
 }
+
+message FakeUserRequest{}
 
 message UserReply {
     string phone_number = 1;

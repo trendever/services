@@ -3,6 +3,7 @@ package views
 import (
 	"core/api"
 	"core/models"
+	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/net/context"
@@ -44,6 +45,23 @@ func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUs
 		}
 		user = *searchUser
 	}
+
+	return &core.ReadUserReply{
+		Id:   int64(user.ID),
+		User: user.PrivateEncode(),
+	}, err
+}
+
+func (s userServer) CreateFakeUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
+	user := models.User{}.Decode(request.User)
+	err := db.New().Create(&user).Error
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = db.New().Model(&models.User{}).Where("id = ?", user.ID).Update("name", fmt.Sprintf("customer_%v", user.ID)).Error
 
 	return &core.ReadUserReply{
 		Id:   int64(user.ID),
@@ -102,4 +120,31 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 		return &core.SetEmailReply{Error: "unknown UserId"}, nil
 	}
 	return &core.SetEmailReply{}, nil
+}
+
+func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
+	_, found, err := models.FindUserMatchAny(0, 0, req.Name, req.Name, "", req.Phone)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if found {
+		return &core.SetDataReply{}, errors.New("User exists")
+	}
+
+	updateMap := map[string]interface{}{}
+	updateMap["phone"] = req.Phone
+	updateMap["instagram_username"] = req.Name
+	updateMap["name"] = req.Name
+
+	res := db.New().Model(&models.User{}).Where("id = ?", req.UserId).UpdateColumns(updateMap)
+
+	if res.Error != nil {
+		//update user error
+		return &core.SetDataReply{}, errors.New("Failed to update user")
+	}
+
+	return &core.SetDataReply{}, nil
 }

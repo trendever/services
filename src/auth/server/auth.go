@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/dvsekhvalnov/jose2go"
-	"github.com/ttacon/libphonenumber"
 	"golang.org/x/net/context"
 	auth_protocol "proto/auth"
 	core_protocol "proto/core"
@@ -16,6 +15,8 @@ import (
 	"time"
 	"utils/log"
 	"utils/nats"
+	"utils/phone"
+	"utils/rpc"
 )
 
 const (
@@ -46,7 +47,7 @@ func NewAuthServer(core core_protocol.UserServiceClient, sms sms_protocol.SmsSer
 //RegisterNewUser creates new user
 func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol.NewUserRequest) (*auth_protocol.UserReply, error) {
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		log.Debug("invalid phone number %v", phoneNumber)
@@ -61,7 +62,11 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 		Name:              request.Username,
 		InstagramUsername: request.InstagramUsername,
 	}
-	userExists, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	userExists, err := s.core.ReadUser(rpcContext, userRequest)
 	if err != nil {
 		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
 		return nil, err
@@ -79,7 +84,9 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 			Name:              request.Username,
 		},
 	}
-	resp, err := s.core.FindOrCreateUser(context.Background(), newUser)
+
+	resp, err := s.core.FindOrCreateUser(rpcContext, newUser)
+
 	if err != nil {
 		log.Errorf("failed to create user with phone %v: %v", phoneNumber, err)
 		return nil, err
@@ -100,11 +107,42 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 
 }
 
+func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protocol.FakeUserRequest) (*auth_protocol.LoginReply, error) {
+	newUser := &core_protocol.CreateUserRequest{
+		User: &core_protocol.User{
+			IsFake: true,
+		},
+	}
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := s.core.CreateFakeUser(rpcContext, newUser)
+
+	if err != nil {
+		return &auth_protocol.LoginReply{
+			ErrorCode:    auth_protocol.ErrorCodes_WRONG_CREDENTIALS,
+			ErrorMessage: "Something goes wrong",
+		}, err
+	}
+
+	token, err := s.getToken(uint64(resp.Id))
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	go nats.Publish(NatsLoginSubject, resp.Id)
+
+	return &auth_protocol.LoginReply{Token: token}, nil
+}
+
 //Login returns JWT token for user
 func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequest) (*auth_protocol.LoginReply, error) {
 
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		log.Debug("invalid phone number %v", phoneNumber)
@@ -117,7 +155,11 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	userRequest := &core_protocol.ReadUserRequest{
 		Phone: phoneNumber,
 	}
-	resp, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 	if err != nil {
 		log.Errorf("failed to read user with phone %v: %v", phoneNumber, err)
@@ -145,14 +187,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 		return s.wrongCredentialsReply(), nil
 	}
 
-	tokenPayload, err := json.Marshal(&auth_protocol.Token{UID: uint64(resp.Id), Exp: time.Now().Add(DefaultTokenExp).Unix()})
-
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	token, err := jose.Sign(string(tokenPayload), jose.HS256, s.sharedKey)
+	token, err := s.getToken(uint64(resp.Id))
 
 	if err != nil {
 		log.Error(err)
@@ -169,7 +204,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 func (s *authServer) SendNewSmsPassword(ctx context.Context, request *auth_protocol.SmsPasswordRequest) (*auth_protocol.SmsPasswordReply, error) {
 
 	//todo: add country to request
-	phoneNumber, err := checkPhoneNumber(request.PhoneNumber, "")
+	phoneNumber, err := phone.CheckNumber(request.PhoneNumber, "")
 
 	if err != nil {
 		return &auth_protocol.SmsPasswordReply{
@@ -181,7 +216,10 @@ func (s *authServer) SendNewSmsPassword(ctx context.Context, request *auth_proto
 	userRequest := &core_protocol.ReadUserRequest{
 		Phone: phoneNumber,
 	}
-	resp, err := s.core.ReadUser(context.Background(), userRequest)
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 	if err != nil {
 		log.Error(err)
@@ -237,7 +275,7 @@ func (s *authServer) GetNewToken(ctx context.Context, req *auth_protocol.NewToke
 	// https://github.com/search?l=go&q=org%3Atrendever+GetNewToken&type=Code
 	if userID == 0 {
 		//todo: add country to request
-		phoneNumber, err := checkPhoneNumber(req.PhoneNumber, "")
+		phoneNumber, err := phone.CheckNumber(req.PhoneNumber, "")
 
 		userRequest := &core_protocol.ReadUserRequest{
 			Phone: phoneNumber,
@@ -246,7 +284,9 @@ func (s *authServer) GetNewToken(ctx context.Context, req *auth_protocol.NewToke
 			return nil, err
 		}
 
-		resp, err := s.core.ReadUser(context.Background(), userRequest)
+		rpcContext, cancel := rpc.DefaultContext()
+		defer cancel()
+		resp, err := s.core.ReadUser(rpcContext, userRequest)
 
 		if err != nil {
 			log.Error(err)
@@ -307,8 +347,12 @@ func (s *authServer) sendSMSWithPassword(uid uint, phone string) error {
 		return err
 	}
 	log.Debug("%s", wr.String())
+
+	rpcContext, cancel := rpc.DefaultContext()
+	defer cancel()
+
 	_, err = s.sms.SendSMS(
-		context.Background(),
+		rpcContext,
 		&sms_protocol.SendSMSRequest{
 			Phone: phone,
 			Msg:   wr.String(),
@@ -321,23 +365,6 @@ func (s *authServer) wrongCredentialsReply() *auth_protocol.LoginReply {
 		ErrorCode:    auth_protocol.ErrorCodes_WRONG_CREDENTIALS,
 		ErrorMessage: "Wrong credentials",
 	}
-}
-
-func checkPhoneNumber(phoneNumber, country string) (string, error) {
-	if country == "" {
-		country = "RU"
-	}
-
-	number, err := libphonenumber.Parse(phoneNumber, country)
-	if err != nil {
-		return "", err
-	}
-
-	if !libphonenumber.IsValidNumber(number) {
-		return "", errors.New("Phone number isn't valid")
-	}
-
-	return libphonenumber.Format(number, libphonenumber.E164), nil
 }
 
 func (s *authServer) getToken(uid uint64) (string, error) {

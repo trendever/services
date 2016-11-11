@@ -43,6 +43,8 @@ type User struct {
 	IsSeller bool `sql:"default:false"`
 	// ability to join any chat
 	SuperSeller bool `sql:"default:false"`
+	// ability to be fake one
+	IsFake bool `sql:"default:false"`
 
 	LastLogin time.Time
 
@@ -108,9 +110,9 @@ func (u User) Stringify() string {
 	name := u.getName()
 	addr := u.getAddr()
 
+	log.Debug("USER %v", u)
+
 	switch {
-	case u.ID == 0:
-		return "Deleted user"
 	case name != "":
 		return name
 	case addr != "":
