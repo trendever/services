@@ -30,12 +30,7 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 
 	// we want to redirect client NOW
 	// status will be reported afterwards by chat message
-	go func() {
-		err := ps.CheckStatus(sess)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
+	ps.CheckStatusAsync(sess)
 
 	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.Payment.LeadID, success))
 }
@@ -61,10 +56,7 @@ func (ps *paymentServer) HandleNotification(c *gin.Context) {
 			return
 		}
 
-		err = ps.CheckStatus(sess)
-		if err != nil {
-			log.Error(err)
-		}
+		ps.CheckStatusAsync(sess)
 
 	}()
 }
@@ -83,7 +75,7 @@ func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
 	go ps.shed.process(session)
 }
 
-func (ps *paymentServer) CheckStatus(session *models.Session) error {
+func (ps *paymentServer) checkStatus(session *models.Session) error {
 
 	// Step0: skip already finished sessions
 	if session.Finished {
@@ -135,11 +127,7 @@ func (ps *paymentServer) CheckStatuses() error {
 
 	// check them
 	for _, sess := range toCheck {
-		err := ps.CheckStatus(&sess)
-		if err != nil {
-			// this errors are not fatal; let's just log them
-			log.Error(err)
-		}
+		ps.CheckStatusAsync(&sess)
 	}
 
 	return nil

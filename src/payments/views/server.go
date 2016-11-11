@@ -278,6 +278,15 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 		return &payment.BuyAsyncReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
+	// Step0.6: check if TX is already finished
+	finished, err := ps.repo.FinishedSessionsForPayID(Payment.ID)
+	if err != nil {
+		return &payment.BuyAsyncReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	}
+	if finished > 0 {
+		return &payment.BuyAsyncReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: "payments: This pay is already payed"}, nil
+	}
+
 	Gateway, err := ps.gw(Payment.GatewayType)
 	if err != nil {
 		return &payment.BuyAsyncReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil

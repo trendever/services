@@ -44,7 +44,7 @@ func createScheduler(server *paymentServer) *checkerScheduler {
 // process session; run this in a separate routine
 func (c *checkerScheduler) process(sess *models.Session) {
 
-	var retries = 5
+	var retries = 1
 
 	for retries > 0 {
 		c.processingLock.RLock()
@@ -98,7 +98,7 @@ func (c *checkerScheduler) work(sess *models.Session) {
 	c.processingLock.Unlock()
 
 	// do stuff
-	err := c.server.CheckStatus(sess)
+	err := c.server.checkStatus(sess)
 	if err != nil {
 		log.Warn("Error: %v", err)
 	}
