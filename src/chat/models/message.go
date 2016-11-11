@@ -14,7 +14,7 @@ import (
 type Message struct {
 	db.Model
 	ConversationID uint
-	InstagramID    string `gorm:"index;unique"`
+	InstagramID    string `gorm:"index;unique;default:null"`
 	MemberID       sql.NullInt64
 	Member         *Member
 	Parts          []*MessagePart
