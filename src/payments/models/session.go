@@ -15,9 +15,10 @@ type Session struct {
 	IP          string
 	GatewayType string `gorm:"index"`
 
-	State    string `gorm:"index"`
-	Finished bool   `gorm:"index" sql:"default:false"` // session can be finished, but unsuccessfully
-	Success  bool   `gorm:"index" sql:"default:false"`
+	State         string `gorm:"index"`
+	Finished      bool   `gorm:"index" sql:"default:false"` // session can be finished, but unsuccessfully
+	Success       bool   `gorm:"index" sql:"default:false"`
+	FailureReason string
 
 	// I wonder why payture wants 2 unique ids;
 	UniqueID   string `gorm:"index"` // this one is used to check pay status
