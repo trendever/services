@@ -18,6 +18,7 @@ func Migrate(db *gorm.DB) error {
 	db.Model(&Conversation{}).Where("status IS NULL or status = ''").Update("status", "active")
 	db.New().Model(&Member{}).AddUniqueIndex("once_per_conv", "user_id", "conversation_id")
 	db.New().Exec("DROP INDEX IF EXISTS idx_messages_instagram_id")
+	db.New().Exec("DROP INDEX IF EXISTS messages_instagram_id_key")
 	db.New().Exec("CREATE UNIQUE INDEX unique_message_id ON messages(instagram_id) WHERE (instagram_id != '' AND instagram_id IS NOT NULL)")
 	return nil
 }
