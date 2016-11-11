@@ -216,6 +216,11 @@ type SendTextResponse struct {
 	ThreadID string
 }
 
+type BroadcastTextResponse struct {
+	Message
+	Threads []Thread `json:"threads"`
+}
+
 // ThreadItems contains messages from the chat
 type ThreadItems []ThreadItem
 

@@ -1,6 +1,7 @@
 package instagram
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -242,17 +243,25 @@ func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, 
 }
 
 //BroadcastText sends text to given chat
-func (ig *Instagram) BroadcastText(threadID, message string) (*Message, error) {
+func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, _ error) {
 
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
-	var object Message
+	var object BroadcastTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":       message,
 		"thread_ids": fmt.Sprintf("[%v]", threadID),
 	}, &object)
 
-	return &object, err
+	if err != nil {
+		return "", err
+	}
+
+	if object.Message.Message != "" {
+		return "", errors.New(object.Message.Message)
+	}
+
+	return object.Threads[0].NewestCursor, nil
 }
 
 // SendText sends text to given user

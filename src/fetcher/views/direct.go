@@ -68,15 +68,15 @@ func sendDirectToNewChat(req *bot.SendDirectRequest, act *models.Activity, worke
 func sendDirectToChat(req *bot.SendDirectRequest, act *models.Activity, worker *fetcher.Worker) error {
 	// find existing thread info
 	info, err := models.GetThreadInfo(act.ThreadID)
-
-	if info.Notified { // all ok; do nothing
-		return nil
+	if err != nil {
+		return fmt.Errorf("Failed to load or create thread info: %v", err)
 	}
 
-	err = worker.SendDirectMsg(info.ThreadID, req.Text)
+	messageID, err := worker.SendDirectMsg(info.ThreadID, req.Text)
 	if err != nil {
 		return fmt.Errorf("Could not send shiet: %v", err)
 	}
+	log.Debug("message id: %v", messageID)
 
 	// set notified
 	// update only one column not to conflict with direct message crawling

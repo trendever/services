@@ -233,10 +233,8 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 }
 
 // SendDirectMsg sends text to a new chat
-func (w *Worker) SendDirectMsg(threadID, message string) error {
-
-	_, err := w.api().BroadcastText(threadID, message)
-	return err
+func (w *Worker) SendDirectMsg(threadID, message string) (messageID string, _ error) {
+	return w.api().BroadcastText(threadID, message)
 }
 
 // SendDirectMsgToUser sends text to user
