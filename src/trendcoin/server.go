@@ -7,7 +7,10 @@ import (
 	"time"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
+
+const NotifyTopic = "coins.balance_notify"
 
 type TrendcoinServer struct {
 	requestChan chan *TransactionsRequest
@@ -67,7 +70,37 @@ func (s *TrendcoinServer) MakeTransactions(_ context.Context, in *proto.MakeTran
 	req.AnswerChan = make(chan *proto.MakeTransactionsReply)
 	s.requestChan <- req
 	ans := <-req.AnswerChan
+	if ans.Error == "" {
+		go s.balanceNotify(req.Transactions)
+	}
 	return ans, nil
+}
+
+func (s *TrendcoinServer) balanceNotify(transactions TransactionsSlice) {
+	var users []uint64
+	for _, tx := range transactions {
+		if tx.Source != 0 {
+			users = append(users, tx.Source)
+		}
+		if tx.Destination != 0 {
+			users = append(users, tx.Destination)
+		}
+	}
+	var accounts []Account
+	err := db.New().Where("user_id in (?)", users).Find(&accounts).Error
+	if err != nil {
+		log.Errorf("failed to load users balances: %v", err)
+		return
+	}
+	for _, acc := range accounts {
+		err := nats.StanPublish(NotifyTopic, &proto.BalanceNotify{
+			UserId:  acc.UserID,
+			Balance: acc.Balance,
+		})
+		if err != nil {
+			log.Errorf("failed to notify about user balance: %v", err)
+		}
+	}
 }
 
 func (s *TrendcoinServer) loop() {

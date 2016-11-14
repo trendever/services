@@ -13,8 +13,9 @@ import (
 const PaymentName = "coins_refill"
 
 type PaymentData struct {
-	UserID uint64 `json:"user_id"`
-	Amount uint64 `json:"amount"`
+	UserID     uint64 `json:"user_id"`
+	Amount     uint64 `json:"amount"`
+	AutoRefill bool   `json:"auto_refill"`
 }
 
 func (s *TrendcoinServer) subscribe() {
@@ -31,7 +32,7 @@ func (s *TrendcoinServer) subscribe() {
 			Group:          "trendcoin",
 			DurableName:    "trendcoin",
 			AckTimeout:     time.Second * 15,
-			DecodedHandler: s.NatsTransactions,
+			DecodedHandler: s.NatsRefill,
 		},
 	)
 }
@@ -59,12 +60,14 @@ func (s *TrendcoinServer) NatsTransactions(in *trendcoin.MakeTransactionsRequest
 }
 
 func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowledged bool) {
-	if in.Data.ServiceName != PaymentName || in.Event != payment.Event_PaySuccess {
+	if in.Data.ServiceName != PaymentName {
 		return true
 	}
-	log.Debug("got payment notification with data %v", in.Data.ServiceData)
+	log.Debug("got payment notification %+v", in)
+
 	var data PaymentData
 	err := json.Unmarshal([]byte(in.Data.ServiceData), &data)
+	log.Debug("event %v, notification data %+v", in.Event.String(), data)
 	if err != nil {
 		log.Errorf("failed to unmarshal data of payment %v: %v", in.Id, err)
 		return true
@@ -73,13 +76,32 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 		log.Errorf("invalid refill data %+v", data)
 		return true
 	}
-	return s.NatsTransactions(&trendcoin.MakeTransactionsRequest{
-		Transactions: []*trendcoin.TransactionData{{
-			Destination:    data.UserID,
-			Amount:         data.Amount,
-			AllowEmptySide: true,
-			Reason:         fmt.Sprintf("refilled with payment @%v", in.Id),
-			IdempotencyKey: fmt.Sprintf("payment %v", in.Id),
-		}},
-	})
+
+	switch in.Event {
+	case payment.Event_PaySuccess:
+		return s.NatsTransactions(&trendcoin.MakeTransactionsRequest{
+			Transactions: []*trendcoin.TransactionData{{
+				Destination:    data.UserID,
+				Amount:         data.Amount,
+				AllowEmptySide: true,
+				Reason:         fmt.Sprintf("refilled with payment @%v", in.Id),
+				IdempotencyKey: fmt.Sprintf("payment %v", in.Id),
+			}},
+			IsAutorefill: data.AutoRefill,
+		})
+
+	case payment.Event_PayFailed:
+		if data.AutoRefill {
+			err := nats.StanPublish(NotifyTopic, &trendcoin.BalanceNotify{
+				UserId:     data.UserID,
+				Autorefill: true,
+				Failed:     true,
+			})
+			if err != nil {
+				log.Errorf("failed to notify about failed autorefill: %v", err)
+				return false
+			}
+		}
+	}
+	return true
 }
