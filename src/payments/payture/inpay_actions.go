@@ -127,7 +127,7 @@ func (c *InPay) CheckStatus(sess *models.Session) (finished bool, err error) {
 	}
 
 	sess.Success = (res.State == successState)
-	sess.Finished = (res.ErrCode == timeoutError)
+	sess.Finished = (res.ErrCode == timeoutError || sess.Success)
 	sess.State = res.State
 
 	finished = sess.Finished
