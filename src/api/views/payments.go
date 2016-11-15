@@ -84,12 +84,14 @@ func CreateOrder(c *soso.Context) {
 			Currency: payment.Currency(currency),
 
 			LeadId:         uint64(leadID),
-			UserId:         c.Token.UID,
 			ShopCardNumber: shopCardNumber,
 
 			Gateway:     "payture",
 			ServiceName: "api",
 			ServiceData: string(data),
+		},
+		Info: &payment.UserInfo{
+			UserId: c.Token.UID,
 		},
 	}
 

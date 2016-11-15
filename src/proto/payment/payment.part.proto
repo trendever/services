@@ -23,7 +23,6 @@ message OrderData {
   uint64 amount = 1;
   Currency currency = 2;
   string gateway = 3;
-  uint64 user_id = 4;
 
   // payment of our service
   string service_name = 5;
@@ -46,8 +45,15 @@ message OrderData {
   string comment = 14;
 }
 
+message UserInfo {
+  string ip = 1;
+  uint64 user_id = 2;
+  string phone = 3;
+}
+
 message CreateOrderRequest {
   OrderData data = 1;
+  UserInfo info = 2;
 }
 
 message GetOrderRequest {
@@ -72,6 +78,7 @@ message PaymentNotification {
   OrderData data = 2;
   Event event = 3;
   uint64 invoker_user_id = 4;
+  UserInfo info = 5;
 }
 
 enum Event {
@@ -85,12 +92,6 @@ message CreateOrderReply {
   uint64 id = 1;
   Errors error = 2;
   string error_message = 3;
-}
-
-message UserInfo {
-  string ip = 1;
-  uint64 user_id = 2;
-  string phone = 3;
 }
 
 message BuyOrderRequest {

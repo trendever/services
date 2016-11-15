@@ -150,6 +150,7 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	err = nats.StanPublish(natsStream, &payment.PaymentNotification{
 		Id:    uint64(pay.ID),
 		Data:  pay.Encode(),
+		Info:  pay.Info(),
 		Event: payment.Event_Created,
 	})
 	if err != nil {
@@ -361,6 +362,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 		Data:          pay.Encode(),
 		Event:         payment.Event_Cancelled,
 		InvokerUserId: req.UserId,
+		Info:          pay.Info(),
 	})
 	if err != nil {
 		return &payment.CancelOrderReply{Error: payment.Errors_NATS_FAILED, ErrorMessage: err.Error()}, nil

@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
+	"proto/payment"
 )
 
 // Session once-used pay sess
@@ -63,4 +64,19 @@ func (r *RepoImpl) SaveSess(p *Session) error {
 // SavePay saves payment
 func (r *RepoImpl) SavePay(p *Payment) error {
 	return r.DB.Save(p).Error
+}
+
+// Info get user info for this order
+func (sess *Session) Info() *payment.UserInfo {
+
+	var info = &payment.UserInfo{}
+	if sess.Payment != nil {
+		info = sess.Payment.Info()
+	}
+
+	if sess.IP != "" {
+		info.Ip = sess.IP
+	}
+
+	return info
 }

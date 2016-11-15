@@ -92,6 +92,8 @@ func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
 // NewPayment generates a payment infocard by request
 func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 	data := r.Data
+	info := r.Info
+
 	// Check credit cards first
 	if data.ShopCardNumber != "" && !validate(data.ShopCardNumber) {
 		return nil, fmt.Errorf("Invalid credit card (%v) (Luhn failed)", data.ShopCardNumber)
@@ -105,7 +107,13 @@ func NewPayment(r *payment.CreateOrderRequest) (*Payment, error) {
 		return nil, fmt.Errorf("Empty gateway info")
 	}
 
-	return DecodePayment(data), nil
+	pay := DecodePayment(data)
+
+	if info != nil {
+		pay.UserID = info.UserId
+	}
+
+	return pay, nil
 }
 
 // DecodePayment protobuf.OrderData -> models.Payment
@@ -123,7 +131,6 @@ func DecodePayment(pay *payment.OrderData) *Payment {
 		// Money
 		Amount:   pay.Amount,
 		Currency: int32(pay.Currency),
-		UserID:   pay.UserId,
 		LeadID:   pay.LeadId,
 
 		CommissionFee:    pay.CommissionFee,
@@ -146,11 +153,17 @@ func (pay *Payment) Encode() *payment.OrderData {
 		// Money
 		Amount:   pay.Amount,
 		Currency: payment.Currency(pay.Currency),
-		UserId:   pay.UserID,
 		LeadId:   pay.LeadID,
 
 		CommissionFee:    pay.CommissionFee,
 		CommissionSource: pay.CommissionSource,
+	}
+}
+
+// Info get user info for this order
+func (pay *Payment) Info() *payment.UserInfo {
+	return &payment.UserInfo{
+		UserId: pay.UserID,
 	}
 }
 

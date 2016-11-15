@@ -207,10 +207,12 @@ func BuyCoins(c *soso.Context) {
 			Amount:      uint64(offer.Amount),
 			Currency:    payment.Currency(currency),
 			Gateway:     gateway,
-			UserId:      c.Token.UID,
 			ServiceName: "coins_refill",
 			ServiceData: fmt.Sprintf(`{"user_id": %v, "amount": %v}`, c.Token.UID, offer.Amount),
 			Comment:     fmt.Sprintf("%v trendcoins", offer.Amount),
+		},
+		Info: &payment.UserInfo{
+			UserId: c.Token.UID,
 		},
 	})
 

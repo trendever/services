@@ -117,7 +117,7 @@ func sendSession(event *payment.PaymentNotification) error {
 	}
 
 	_, err = sendStatusMessage(
-		event.Data.UserId,
+		event.Info.UserId,
 		data.ConversationId,
 		string(message),
 		newPayment,
@@ -206,7 +206,7 @@ func sendPayment(event *payment.PaymentNotification) error {
 	}
 
 	id, err := sendStatusMessage(
-		event.Data.UserId,
+		event.Info.UserId,
 		data.ConversationId,
 		string(message),
 		newOrder,

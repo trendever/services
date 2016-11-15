@@ -102,6 +102,7 @@ func (ps *paymentServer) checkStatus(session *models.Session) error {
 			Id:    uint64(session.PaymentID),
 			Data:  session.Payment.Encode(),
 			Event: event,
+			Info:  session.Info(),
 		})
 		if err != nil {
 			return err
