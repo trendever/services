@@ -118,7 +118,6 @@ func handleBalanceNotify(notify *trendcoin.BalanceNotify) bool {
 			Amount:      uint64(offer.Amount),
 			Currency:    payment.Currency(currency),
 			Gateway:     "payture_ewallet",
-			UserId:      notify.UserId,
 			ServiceName: "coins_refill",
 			ServiceData: fmt.Sprintf(`{"user_id": %v, "amount": %v, "autorefill": true}`, notify.UserId, offer.Amount),
 			Comment:     fmt.Sprintf("%v trendcoins autorefill", offer.Amount),
@@ -222,7 +221,7 @@ func handleNewSession(userID uint) {
 	}
 }
 
-// notifies about lead event via NATS, changes related conversation status
+// NotifyAboutLeadEvent notifies about lead event via NATS, changes related conversation status
 func NotifyAboutLeadEvent(lead *models.Lead, event string) {
 
 	log.Debug("Notifying about lead %v event", lead.ID)
