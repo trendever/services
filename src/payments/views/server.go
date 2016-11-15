@@ -291,12 +291,25 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 		sess, err := Gateway.Buy(Payment, req.User, true)
 		if err != nil {
 			log.Errorf("Warning! Async Buy returnted err, this should not happen: %v", err)
+			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+				Id:    uint64(Payment.ID),
+				Data:  Payment.Encode(),
+				Event: payment.Event_PayFailed,
+				Info:  Payment.Info(),
+			}))
 		}
 
 		// Step2: save session
 		err = ps.repo.CreateSess(sess)
 		if err != nil {
 			log.Errorf("Warning! Save session returnted err, this should not happen: %v", err)
+			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+				Id:    uint64(sess.PaymentID),
+				Data:  sess.Payment.Encode(),
+				Event: payment.Event_PayFailed,
+				Info:  sess.Info(),
+			}))
+
 		}
 
 	}()
