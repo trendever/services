@@ -8,7 +8,7 @@ import (
 // Add new card (redirect user)
 func (c *Ewallet) Add(info *payment.UserInfo) (string, error) {
 
-	resp, err := c.vwInit(sessionTypeAdd, c.KeyAdd, info)
+	resp, err := c.vwInit(sessionTypeAdd, c.KeyAdd, info, nil)
 	if err != nil {
 		return "", err
 	}

@@ -58,7 +58,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 	}
 
 	if !res.Success {
-		log.Errorf("Error (%v) while AddCard init (pay id=%v)", res.ErrCode, pay.ID)
+		log.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
 		session.FailureReason = res.ErrCode
 	}
 

@@ -32,13 +32,14 @@ type vwInitResponse struct {
 }
 
 type vwPayResponse struct {
-	XMLName         xml.Name `xml:"Pay"`
-	Success         bool     `xml:"Success,attr"`
-	OrderID         string   `xml:"OrderId,attr"`
-	Amount          uint64   `xml:"Amount,attr"`
-	SessionID       string   `xml:"SessionId,attr"`
-	ErrCode         string   `xml:"ErrCode,attr"`
-	MerchantOrderID string   `xml:"MerchantOrderId,attr"`
+	XMLName   xml.Name `xml:"Pay"`
+	Success   bool     `xml:"Success,attr"`
+	SessionID string   `xml:"SessionId,attr"`
+	ErrCode   string   `xml:"ErrCode,attr"`
+
+	OrderID         string `xml:"OrderId,attr"`
+	Amount          uint64 `xml:"Amount,attr"`
+	MerchantOrderID string `xml:"MerchantOrderId,attr"`
 }
 
 type vwCardsResponse struct {
@@ -63,7 +64,7 @@ type vwDelCardResponse struct {
 }
 
 // Init request
-func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo) (*vwInitResponse, error) {
+func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwInitResponse, error) {
 	params := map[string]string{
 		"VWID": key,
 	}
@@ -79,6 +80,12 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo) (*vwI
 		"VWUserPsw":   password,
 		"PhoneNumber": user.Phone,
 		"IP":          user.Ip,
+	}
+
+	if pay != nil {
+		data["OrderId"] = pay.orderID
+		data["CardId"] = pay.cardID
+		data["Amount"] = fmt.Sprintf("%v", pay.amount)
 	}
 
 	resp := vwInitResponse{}
