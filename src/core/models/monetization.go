@@ -2,6 +2,7 @@ package models
 
 import (
 	"core/conf"
+	"fmt"
 	"proto/core"
 	"time"
 	"utils/db"
@@ -9,7 +10,7 @@ import (
 )
 
 // duration multiplier for plans periods
-const PlansBaseDuration = time.Minute
+var PlansBaseDuration = time.Minute
 
 type MonetizationPlan struct {
 	db.Model
@@ -73,8 +74,13 @@ var defaultIniPlan = MonetizationPlan{
 
 var InitialPlan MonetizationPlan
 
-func LoadOrCreateInitialPlan() error {
-	name := conf.GetSettings().InitialPlanName
+func InitializeMonetization() error {
+	var err error
+	PlansBaseDuration, err = time.ParseDuration(conf.GetSettings().Monetization.PlansBaseDuration)
+	if err != nil {
+		return fmt.Errorf("failed to parce PlansBaseDuration: %v", err)
+	}
+	name := conf.GetSettings().Monetization.InitialPlanName
 	if name == "" {
 		name = "init"
 	}

@@ -76,7 +76,7 @@ func (s *Service) Run(cli *cli.Context) {
 		r := gin.Default()
 		qor.Init(r) //start qor
 
-		if err := models.LoadOrCreateInitialPlan(); err != nil {
+		if err := models.InitializeMonetization(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create initial monetization plan: %v", err))
 		}
 		models.ReloadAnswers()

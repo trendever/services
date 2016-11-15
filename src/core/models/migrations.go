@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"time"
 	"utils/db"
-	"utils/log"
 )
 
 //Migrate runs migrations
 func Migrate() error {
-
 	db.New().Model(&UsersProducts{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
 	db.New().Model(&UsersProducts{}).AddForeignKey("product_id", "products_product(id)", "CASCADE", "RESTRICT")
 
@@ -88,16 +86,18 @@ func Migrate() error {
 
 	db.New().Model(&ChatTemplate{}).Where("source IS NULL OR source = ''").UpdateColumn("source", "any")
 
-	setInitialPlan()
+	err := setInitialPlan()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func setInitialPlan() {
-	err := LoadOrCreateInitialPlan()
+func setInitialPlan() error {
+	err := InitializeMonetization()
 	if err != nil {
-		log.Errorf("failed to load or create initial monetization plan")
-		return
+		return fmt.Errorf("failed to init monetization: %v", err)
 	}
 	updateMap := map[string]interface{}{
 		"plan_id":          InitialPlan.ID,
@@ -109,7 +109,7 @@ func setInitialPlan() {
 	if InitialPlan.SubscriptionPeriod != 0 {
 		updateMap["plan_expires_at"] = time.Now().Add(PlansBaseDuration * time.Duration(InitialPlan.SubscriptionPeriod))
 	}
-	db.New().Model(&Shop{}).Where("plan_id IS NULL OR plan_id = 0").UpdateColumns(updateMap)
+	return db.New().Model(&Shop{}).Where("plan_id IS NULL OR plan_id = 0").UpdateColumns(updateMap).Error
 }
 
 func relationsIndices() {
@@ -118,7 +118,6 @@ func relationsIndices() {
 	// already exist with another name
 	//db.New().Model(&ProductItem{}).AddIndex("products_index", "product_id")
 	db.New().Model(&ImageCandidate{}).AddIndex("products_index", "product_id")
-
 }
 
 func migrateTagrel() {

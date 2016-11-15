@@ -1,7 +1,6 @@
 debug: true
 appHost: :3004
 siteURL: http://localhost
-InitialPlanName: init
 
 nats:
   url: nats://nats:4222
@@ -27,6 +26,11 @@ db:
   host:     db
   port:     5432
   base:     postgres
+
+monetization:
+  initialPlanName: init
+  plansBaseDuration: 1m
+  subscriptionCheckTick: 5m
 
 bitly:
   login: o_v1v8rptir

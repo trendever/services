@@ -42,8 +42,12 @@ var notifyDomains = []string{"email", "sms", "push"}
 
 func RegisterNotifyTemplate(name string) error {
 	for _, domain := range notifyDomains {
-		RegisterTemplate(domain, name)
+		err := RegisterTemplate(domain, name)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // TemplateTypes contains types that correspond to available send actions
