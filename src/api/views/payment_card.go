@@ -96,7 +96,7 @@ func CreatePaymentCard(c *soso.Context) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	_, err := paymentServiceClient.AddCard(ctx, &payment.AddCardRequest{
+	res, err := paymentServiceClient.AddCard(ctx, &payment.AddCardRequest{
 		User: &payment.UserInfo{
 			UserId: c.Token.UID,
 			Ip:     c.RemoteIP,
@@ -109,6 +109,7 @@ func CreatePaymentCard(c *soso.Context) {
 	}
 
 	c.SuccessResponse(map[string]interface{}{
-		"success": true,
+		"success":      true,
+		"redirect_url": res.RedirectUrl,
 	})
 }
