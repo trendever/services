@@ -46,17 +46,18 @@ func (s *TrendcoinServer) NatsTransactions(in *trendcoin.MakeTransactionsRequest
 		}
 	}
 	res, _ := s.MakeTransactions(nil, in)
-	// in case of external(db) error we want receive this request again later
-	externalErr := true
 	if res.Error != "" {
+		// in case of external(db) error we want receive this request again later
+		externalErr := true
 		for _, cur := range LogicalErrors {
 			if res.Error == cur.Error() {
 				externalErr = false
 				break
 			}
 		}
+		return !externalErr
 	}
-	return !externalErr
+	return true
 }
 
 func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowledged bool) {
