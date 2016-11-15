@@ -42,6 +42,10 @@ func GetPaymentCards(c *soso.Context) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
+	if res.Error > 0 {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.ErrorMessage))
+		return
+	}
 
 	c.SuccessResponse(map[string]interface{}{
 		"cards": res.Cards,
@@ -67,8 +71,9 @@ func DeletePaymentCard(c *soso.Context) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	_, err := paymentServiceClient.DelCard(ctx, &payment.DelCardRequest{
-		CardId: cardID,
+	res, err := paymentServiceClient.DelCard(ctx, &payment.DelCardRequest{
+		Gateway: useGw,
+		CardId:  cardID,
 		User: &payment.UserInfo{
 			UserId: c.Token.UID,
 			Ip:     c.RemoteIP,
@@ -77,6 +82,10 @@ func DeletePaymentCard(c *soso.Context) {
 
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if res.Error > 0 {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.ErrorMessage))
 		return
 	}
 
@@ -97,6 +106,7 @@ func CreatePaymentCard(c *soso.Context) {
 	defer cancel()
 
 	res, err := paymentServiceClient.AddCard(ctx, &payment.AddCardRequest{
+		Gateway: useGw,
 		User: &payment.UserInfo{
 			UserId: c.Token.UID,
 			Ip:     c.RemoteIP,
@@ -105,6 +115,10 @@ func CreatePaymentCard(c *soso.Context) {
 
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if res.Error > 0 {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.ErrorMessage))
 		return
 	}
 
