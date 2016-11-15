@@ -78,7 +78,7 @@ func InitializeMonetization() error {
 	var err error
 	PlansBaseDuration, err = time.ParseDuration(conf.GetSettings().Monetization.PlansBaseDuration)
 	if err != nil {
-		return fmt.Errorf("failed to parce PlansBaseDuration: %v", err)
+		return fmt.Errorf("failed to parce PlansBaseDuration '%v': %v", conf.GetSettings().Monetization.PlansBaseDuration, err)
 	}
 	name := conf.GetSettings().Monetization.InitialPlanName
 	if name == "" {
