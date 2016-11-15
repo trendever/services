@@ -48,6 +48,7 @@ var (
 		&models.CoinsOffer{},
 		&models.MonetizationPlan{},
 		&models.AutoAnswer{},
+		&models.AutorefillInfo{},
 	}
 )
 

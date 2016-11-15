@@ -23,6 +23,7 @@ func init() {
 		soso.Route{"coins_offers", "monetization", GetCoinsOffers},
 		soso.Route{"buy_coins", "monetization", BuyCoins},
 		soso.Route{"subscribe", "monetization", SubscribeToPlan},
+		soso.Route{"set_autorefill", "monetization", SetAutorefill},
 	)
 }
 
@@ -131,6 +132,37 @@ func GetCoinsOffers(c *soso.Context) {
 		return
 	}
 	c.SuccessResponse(res)
+}
+
+func SetAutorefill(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	offerID, _ := c.RequestMap["offer_id"].(float64)
+	if offerID <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid offer id"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := monetizationServiceClient.SetAutorefill(ctx, &core.SetAutorefillRequest{
+		UserId:  c.Token.UID,
+		OfferId: uint64(offerID),
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if res.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.Error))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
 }
 
 func BuyCoins(c *soso.Context) {

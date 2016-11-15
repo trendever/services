@@ -6,6 +6,8 @@ service MonetizationService {
     rpc GetCoinsOffers(GetCoinsOffersRequest) returns (GetCoinsOffersReply) {}
     // subscribe shop to plan
     rpc Subscribe(SubscribeRequest) returns (SubscribeReply) {}
+    // sets autorefill coins offer for user
+    rpc SetAutorefill(SetAutorefillRequest) returns (SetAutorefillReply) {}
 }
 
 message GetPlanRequest{
@@ -67,4 +69,13 @@ message SubscribeRequest {
 message SubscribeReply {
     bool ok = 1;
     string error = 2;
+}
+
+message SetAutorefillRequest {
+    uint64 user_id = 1;
+    uint64 offer_id = 2;
+}
+
+message SetAutorefillReply {
+    string error = 1;
 }

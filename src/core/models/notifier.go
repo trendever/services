@@ -231,6 +231,17 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 	return errors.New(strErr)
 }
 
+// loads user from db, appends him to context as 'user' and calls NotifyUserAbout method
+func (n *Notifier) NotifyUserByID(userID uint64, about string, context map[string]interface{}) error {
+	var user User
+	err := db.New().First(&user, "id = ?", userID).Error
+	if err != nil {
+		return fmt.Errorf("failed to load user %v: %v", userID, err)
+	}
+	context["user"] = &user
+	return n.NotifyUserAbout(&user, about, context)
+}
+
 func (n *Notifier) NotifySellerAboutLead(seller *User, lead *Lead) error {
 	url, err := mkShortChatUrl(seller.ID, lead.ID)
 	if err != nil {

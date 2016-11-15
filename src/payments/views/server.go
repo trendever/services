@@ -116,7 +116,7 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	// Step2: Save pay
 	if pay.CommissionFee != 0 {
 		err := coins.CheckWriteOff(
-			pay.CommissionSource, pay.CommissionFee, "payment commission",
+			pay.CommissionSource, pay.CommissionFee, "payment commission", false,
 			func() error {
 				return ps.repo.CreatePay(pay)
 			},

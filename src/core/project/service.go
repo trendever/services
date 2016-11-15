@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"utils/coins"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -78,11 +79,11 @@ func (s *Service) Run(cli *cli.Context) {
 		if err := models.LoadOrCreateInitialPlan(); err != nil {
 			log.Fatal(fmt.Errorf("Failed to load/create initial monetization plan: %v", err))
 		}
+		models.ReloadAnswers()
 
 		// Start api
 		api.Start()
-
-		models.ReloadAnswers()
+		coins.SetGRPCCli(api.TrendcoinServiceClient)
 
 		// Initial gin web server
 		if err := r.Run(settings.AppHost); err != nil {

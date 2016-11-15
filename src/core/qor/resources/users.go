@@ -50,6 +50,7 @@ func initUserResource(res *admin.Resource) {
 				{"IsAdmin", "IsSeller", "SuperSeller", "IsScout", "Confirmed"},
 				{"Caption"},
 				{"Slogan"},
+				{"Balance"},
 			},
 		},
 		&admin.Section{

@@ -57,11 +57,12 @@ func PostTransactions(transactions ...*trendcoin.TransactionData) error {
 
 // Tries to write-off coins, calls callback if success, refunds coins if cb returns an error.
 // Requires both grpcCli set and active stan connection.
-func CheckWriteOff(userID, amount uint64, reason string, cb func() error) error {
+func CheckWriteOff(userID, amount uint64, reason string, allowCredit bool, cb func() error) error {
 	txIDs, err := PerformTransactions(&trendcoin.TransactionData{
 		Source:         userID,
 		Amount:         amount,
 		AllowEmptySide: true,
+		AllowCredit:    allowCredit,
 		Reason:         reason,
 	})
 	if err != nil {

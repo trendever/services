@@ -89,6 +89,22 @@ func (s *monetizationServer) GetCoinsOffers(_ context.Context, in *core.GetCoins
 	return ret, nil
 }
 
+func (s *monetizationServer) SetAutorefill(_ context.Context, in *core.SetAutorefillRequest) (*core.SetAutorefillReply, error) {
+	autorefill := models.AutorefillInfo{
+		UserID: in.UserId,
+	}
+	err := db.New().Where(models.AutorefillInfo{
+		UserID: in.UserId,
+	}).Assign(models.AutorefillInfo{
+		CoinsOffer: in.OfferId,
+	}).FirstOrCreate(&autorefill).Error
+	if err != nil {
+		log.Errorf("failed to create or update autorefill info: %v", err)
+		return &core.SetAutorefillReply{Error: err.Error()}, nil
+	}
+	return &core.SetAutorefillReply{}, nil
+}
+
 func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequest) (ret *core.SubscribeReply, _ error) {
 	ret = &core.SubscribeReply{}
 
@@ -174,8 +190,18 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 		return nil
 	}
 
+	allowCredit := false
+	var autorefill models.AutorefillInfo
+	res := db.New().Where("user_id = ?", shop.SupplierID).First(&autorefill)
+	if !res.RecordNotFound() {
+		if res.Error != nil {
+			log.Errorf("failed to load autorefill info: %v", res.Error)
+		}
+		// allow credit for users with autorefill
+		allowCredit = true
+	}
 	err := coins.CheckWriteOff(
-		uint64(shop.SupplierID), plan.SubscriptionPrice, "subscription fee",
+		uint64(shop.SupplierID), plan.SubscriptionPrice, "subscription fee", allowCredit,
 		func() error {
 			return db.New().Model(&shop).UpdateColumn(updateMap).Error
 		},
@@ -190,12 +216,12 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 }
 
 func (s *monetizationServer) loop() {
-	for now := range time.Tick(time.Minute) {
+	for now := range time.Tick(5 * time.Minute) {
 		log.Debug("checking subscriptions...")
 		var shops []*models.Shop
 		err := db.New().Preload("Plan").
 			Where("plan_expires_at < ?", now).
-			//ignore plans without expiration
+			// ignore plans without expiration
 			Where("plan_expires_at != ? AND plan_expires_at IS NOT NULL", time.Time{}).
 			Where("NOT suspended").
 			Find(&shops).Error
@@ -204,17 +230,21 @@ func (s *monetizationServer) loop() {
 			continue
 		}
 		for _, shop := range shops {
+			// shop without subscription autorenewal, just suspend it
 			if !shop.AutoRenewal {
 				err := db.New().Model(shop).UpdateColumn("suspended", true).Error
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
+				} else {
+					go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
+						"shop": shop,
+					})
 				}
-				go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
-					"shop": shop,
-				})
 				continue
 			}
+
 			err := subscribe(shop, &shop.Plan, true)
+
 			switch {
 			case err == nil:
 				go notifySupplierAboutSubscription(shop, subscriptionNotifyTopic, map[string]interface{}{
@@ -223,16 +253,16 @@ func (s *monetizationServer) loop() {
 				})
 
 			case err.Error() == "insufficient funds":
-				// @TODO autorefill coins
 				log.Errorf("shop %v should be suspended due to not able to pay the subscription fee", shop.ID)
 				err := db.New().Model(shop).UpdateColumn("suspended", true).Error
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
+				} else {
+					go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
+						"shop":    shop,
+						"renewal": true,
+					})
 				}
-				go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
-					"shop":    shop,
-					"renewal": true,
-				})
 
 			default:
 				log.Errorf("failed to renew subscription if shop %v: %v", shop.ID, err)

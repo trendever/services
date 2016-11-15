@@ -18,6 +18,7 @@ rpc:
   checker: checker:2013
   telegram: telegram:4040
   trendcoin: trendcoin:2014
+  payments: payments:7777
 
 db:
   debug:    true

@@ -38,6 +38,14 @@ func RegisterTemplate(domain, name string) error {
 	return nil
 }
 
+var notifyDomains = []string{"email", "sms", "push"}
+
+func RegisterNotifyTemplate(name string) error {
+	for _, domain := range notifyDomains {
+		RegisterTemplate(domain, name)
+	}
+}
+
 // TemplateTypes contains types that correspond to available send actions
 
 // templateIDRegexp is used to match only correct templates: alphanumeric symbols and _

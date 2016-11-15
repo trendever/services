@@ -59,16 +59,16 @@ type Settings struct {
 	InitialPlanName string
 
 	RPC struct {
-		Listen         string
-		ListenNotifier string `mapstructure:"listen_notifier"`
-		Mail           string
-		SMS            string
-		Chat           string
-		Auth           string
-		Push           string
-		Telegram       string
-		Checker        string
-		Trendcoin      string
+		Listen    string
+		Mail      string
+		SMS       string
+		Chat      string
+		Auth      string
+		Push      string
+		Telegram  string
+		Checker   string
+		Trendcoin string
+		Payments  string
 	}
 
 	DB   db.Settings
