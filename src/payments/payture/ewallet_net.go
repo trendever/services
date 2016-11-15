@@ -68,7 +68,10 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo) (*vwI
 		"VWID": key,
 	}
 
-	login, password := ew.creds(user.UserId)
+	login, password, err := ew.creds(user.UserId)
+	if err != nil {
+		return nil, err
+	}
 
 	data := map[string]string{
 		"SessionType": sessionType,
@@ -79,7 +82,7 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo) (*vwI
 	}
 
 	resp := vwInitResponse{}
-	err := xmlRequest(ew.URL+vwInitPath, &resp, data, params)
+	err = xmlRequest(ew.URL+vwInitPath, &resp, data, params)
 	return &resp, err
 }
 
@@ -88,7 +91,10 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 		"VWID": key,
 	}
 
-	login, password := ew.creds(user.UserId)
+	login, password, err := ew.creds(user.UserId)
+	if err != nil {
+		return nil, err
+	}
 
 	data := map[string]string{
 		"SessionType": sessionType,
@@ -101,7 +107,7 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 	}
 
 	resp := vwPayResponse{}
-	err := xmlRequest(ew.URL+vwPayPath, &resp, data, params)
+	err = xmlRequest(ew.URL+vwPayPath, &resp, data, params)
 	return &resp, err
 }
 
@@ -110,7 +116,10 @@ func (ew *Ewallet) vwCards(user *payment.UserInfo) (*vwCardsResponse, error) {
 		"VWID": ew.KeyAdd,
 	}
 
-	login, password := ew.creds(user.UserId)
+	login, password, err := ew.creds(user.UserId)
+	if err != nil {
+		return nil, err
+	}
 
 	data := map[string]string{
 		"VWUserLgn": login,
@@ -118,7 +127,7 @@ func (ew *Ewallet) vwCards(user *payment.UserInfo) (*vwCardsResponse, error) {
 	}
 
 	resp := vwCardsResponse{}
-	err := xmlRequest(ew.URL+vwCardsPath, &resp, data, params)
+	err = xmlRequest(ew.URL+vwCardsPath, &resp, data, params)
 	return &resp, err
 }
 
@@ -127,7 +136,10 @@ func (ew *Ewallet) vwDelCard(cardID string, user *payment.UserInfo) (*vwDelCardR
 		"VWID": ew.KeyAdd,
 	}
 
-	login, password := ew.creds(user.UserId)
+	login, password, err := ew.creds(user.UserId)
+	if err != nil {
+		return nil, err
+	}
 
 	data := map[string]string{
 		"VWUserLgn": login,
@@ -136,12 +148,16 @@ func (ew *Ewallet) vwDelCard(cardID string, user *payment.UserInfo) (*vwDelCardR
 	}
 
 	resp := vwDelCardResponse{}
-	err := xmlRequest(ew.URL+vwDelCardPath, &resp, data, params)
+	err = xmlRequest(ew.URL+vwDelCardPath, &resp, data, params)
 	return &resp, err
 }
 
 // generate login && password by UID
-func (ew *Ewallet) creds(userID uint64) (string, string) {
+func (ew *Ewallet) creds(userID uint64) (string, string, error) {
+
+	if userID == 0 {
+		return "", "", fmt.Errorf("payments: got zero userID for ewallet stuff")
+	}
 
 	login := fmt.Sprintf("tndvrid_%v", userID)
 
@@ -152,5 +168,5 @@ func (ew *Ewallet) creds(userID uint64) (string, string) {
 
 	password := hex.EncodeToString(h.Sum(nil))
 
-	return login, password
+	return login, password, nil
 }
