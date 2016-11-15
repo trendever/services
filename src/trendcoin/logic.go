@@ -59,12 +59,12 @@ func (t *Transaction) Perform(tx *gorm.DB) error {
 	if t.Source != 0 {
 		source := Account{UserID: t.Source}
 		res := tx.Find(&source)
-		// source account should exist
-		// @CHECK or not? if credit is allowed it may be fine
+		// source account should exist at least if credit isn't allowed
 		if res.RecordNotFound() {
-			return InvalidSourceError
-		}
-		if res.Error != nil {
+			if !t.AllowCredit {
+				return InvalidSourceError
+			}
+		} else if res.Error != nil {
 			return fmt.Errorf("failed to load source account: %v", res.Error)
 		}
 		if !t.AllowCredit && source.Balance < int64(t.Amount) {

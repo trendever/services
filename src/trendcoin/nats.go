@@ -67,7 +67,6 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 
 	var data PaymentData
 	err := json.Unmarshal([]byte(in.Data.ServiceData), &data)
-	log.Debug("event %v, notification data %+v", in.Event.String(), data)
 	if err != nil {
 		log.Errorf("failed to unmarshal data of payment %v: %v", in.Id, err)
 		return true
