@@ -10,7 +10,7 @@ import (
 )
 
 // Buy request
-func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
+func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (*models.Session, error) {
 
 	pd := &payDef{
 		orderID: uuid.New(),
@@ -72,7 +72,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Sess
 
 // Redirect returns client-redirectable redirect link
 func (c *Ewallet) Redirect(sess *models.Session) string {
-	return ""
+	return fmt.Sprintf("%v%v?SessionId=%v", c.URL, vwPayPath, sess.ExternalID)
 }
 
 // CheckStatus checks given session status

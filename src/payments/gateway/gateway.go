@@ -19,8 +19,7 @@ type Gateway interface {
 // PaymentGateway payment functions
 type PaymentGateway interface {
 	// create buying session
-	Buy(sess *models.Payment, info *payment.UserInfo) (*models.Session, error)
-
+	Buy(sess *models.Payment, info *payment.UserInfo, async bool) (*models.Session, error)
 	// get redirect URL for this session
 	Redirect(*models.Session) string
 

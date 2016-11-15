@@ -46,7 +46,11 @@ type payStatusResponse struct {
 }
 
 // Buy request
-func (c *InPay) Buy(pay *models.Payment, info *payment.UserInfo) (*models.Session, error) {
+func (c *InPay) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (*models.Session, error) {
+
+	if async {
+		return nil, fmt.Errorf("payments/payture: payture gate does not support async payments")
+	}
 
 	if info == nil || pay == nil {
 		return nil, fmt.Errorf("payments/payture: got nil userInfo or pay")

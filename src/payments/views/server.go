@@ -240,7 +240,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	}
 
 	// Step1: init TX
-	sess, err := Gateway.Buy(Payment, req.User)
+	sess, err := Gateway.Buy(Payment, req.User, false)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -288,7 +288,7 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 
 	go func() {
 		// Step1: init TX
-		sess, err := Gateway.Buy(Payment, req.User)
+		sess, err := Gateway.Buy(Payment, req.User, true)
 		if err != nil {
 			log.Errorf("Warning! Async Buy returnted err, this should not happen: %v", err)
 		}
