@@ -72,7 +72,8 @@ func (ps *paymentServer) PeriodicCheck() {
 }
 
 func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
-	go ps.shed.process(session)
+	//go ps.shed.process(session)
+	go ps.checkStatus(session)
 }
 
 func (ps *paymentServer) checkStatus(session *models.Session) error {
