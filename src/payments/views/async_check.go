@@ -11,7 +11,7 @@ import (
 const (
 	// time to wait processing if it's 2 requests to process at the same time
 	recheckDelay = time.Second * 30
-	workerNum    = 32
+	workerNum    = 4
 )
 
 // Async checker:
@@ -44,7 +44,7 @@ func createScheduler(server *paymentServer) *checkerScheduler {
 // process session; run this in a separate routine
 func (c *checkerScheduler) process(sess *models.Session) {
 
-	var retries = 1
+	var retries = 2
 
 	for retries > 0 {
 		c.processingLock.RLock()

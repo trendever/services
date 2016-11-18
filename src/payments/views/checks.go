@@ -62,18 +62,15 @@ func (ps *paymentServer) HandleNotification(c *gin.Context) {
 }
 
 func (ps *paymentServer) PeriodicCheck() {
-	for {
+	for range time.Tick(time.Second * time.Duration(config.Get().PeriodicCheck)) {
 		log.Debug("Starting PeriodicCheck")
 		ps.CheckStatuses()
 		log.Debug("Finished PeriodicCheck")
-
-		<-time.After(time.Second * time.Duration(config.Get().PeriodicCheck))
 	}
 }
 
 func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
-	//go ps.shed.process(session)
-	go ps.checkStatus(session)
+	go ps.shed.process(session)
 }
 
 func (ps *paymentServer) checkStatus(session *models.Session) error {
@@ -129,7 +126,8 @@ func (ps *paymentServer) CheckStatuses() error {
 
 	// check them
 	for _, sess := range toCheck {
-		ps.CheckStatusAsync(&sess)
+		var copy = sess
+		ps.CheckStatusAsync(&copy)
 	}
 
 	return nil
