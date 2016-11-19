@@ -145,6 +145,17 @@ func SetAutorefill(c *soso.Context) {
 		return
 	}
 
+	balance, err := coinsBalance(c.Token.UID)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	if balance <= 0 {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("you should have positive balance to do this"))
+		return
+	}
+
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 

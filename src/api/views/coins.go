@@ -25,22 +25,29 @@ func CoinsBalance(c *soso.Context) {
 		return
 	}
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	res, err := coinsServiceClient.Balance(ctx, &trendcoin.BalanceRequest{UserId: c.Token.UID})
+	balance, err := coinsBalance(c.Token.UID)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
-	if res.Error != "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.Error))
-		return
-	}
 
 	c.SuccessResponse(map[string]interface{}{
-		"balance": res.Balance,
+		"balance": balance,
 	})
+}
+
+func coinsBalance(userID uint64) (int64, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	res, err := coinsServiceClient.Balance(ctx, &trendcoin.BalanceRequest{UserId: userID})
+	if err != nil {
+		return 0, err
+	}
+	if res.Error != "" {
+		return 0, errors.New(res.Error)
+	}
+	return res.Balance, nil
 }
 
 func CoinsLog(c *soso.Context) {

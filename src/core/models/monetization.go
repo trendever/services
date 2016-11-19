@@ -3,6 +3,8 @@ package models
 import (
 	"core/conf"
 	"fmt"
+	"github.com/jinzhu/gorm"
+	"github.com/qor/validations"
 	"proto/core"
 	"time"
 	"utils/db"
@@ -41,6 +43,15 @@ func (offer CoinsOffer) Encode() *core.CoinsOffer {
 		Amount:   offer.Amount,
 		Price:    offer.Price,
 		Currency: offer.Currency,
+	}
+}
+
+func (offer CoinsOffer) Validate(db *gorm.DB) {
+	if offer.Amount == 0 {
+		db.AddError(validations.NewError(offer, "Amount", "Zero amount"))
+	}
+	if offer.Price == 0 {
+		db.AddError(validations.NewError(offer, "Price", "Zero price"))
 	}
 }
 
