@@ -1,10 +1,10 @@
 package payture
 
 import (
+	"errors"
 	"fmt"
 	"payments/models"
 	"proto/payment"
-	"utils/log"
 
 	"github.com/pborman/uuid"
 )
@@ -31,8 +31,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 	default:
 		// unknown currency! panic
 		session.FailureReason = "Bad currency"
-		log.Errorf("Unsupported currency %v (%v)", pay.Currency, payment.Currency_name[pay.Currency])
-		return &session, nil
+		return &session, fmt.Errorf("Unsupported currency %v (%v)", pay.Currency, payment.Currency_name[pay.Currency])
 	}
 
 	if pay.CardID != "" {
@@ -41,12 +40,12 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		cards, err := c.GetCards(info)
 		if err != nil {
 			session.FailureReason = fmt.Sprintf("Network error while fetching cards: %v", err)
-			return &session, nil
+			return &session, errors.New(session.FailureReason)
 		}
 		card, err := firstActive(cards)
 		if err != nil {
 			session.FailureReason = fmt.Sprintf("No active card error: %v", err)
-			return &session, nil
+			return &session, errors.New(session.FailureReason)
 		}
 		pd.cardID = card.Id
 	}
@@ -54,18 +53,18 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 	res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd)
 	if err != nil {
 		session.FailureReason = fmt.Sprintf("Network error: %v", err)
-		return &session, nil
-	}
-
-	if !res.Success {
-		log.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
-		session.FailureReason = res.ErrCode
+		return &session, errors.New(session.FailureReason)
 	}
 
 	session.ExternalID = res.MerchantOrderID
 	session.UniqueID = res.SessionID
 	session.Amount = res.Amount
 	session.Success = res.Success
+
+	if !res.Success {
+		session.FailureReason = res.ErrCode
+		return &session, fmt.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
+	}
 
 	return &session, nil
 }
