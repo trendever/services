@@ -36,7 +36,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 
 	if pay.CardID != "" {
 		pd.cardID = pay.CardID
-	} else { // find first active card
+	} else if async { // find first active card
 		cards, err := c.GetCards(info)
 		if err != nil {
 			session.FailureReason = fmt.Sprintf("Network error while fetching cards: %v", err)
