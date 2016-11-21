@@ -50,7 +50,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		pd.cardID = card.Id
 	}
 
-	res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd)
+	res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd, async)
 	if err != nil {
 		session.FailureReason = fmt.Sprintf("Network error: %v", err)
 		return &session, errors.New(session.FailureReason)

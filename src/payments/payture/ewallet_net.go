@@ -103,7 +103,7 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 	return &resp, err
 }
 
-func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwPayResponse, error) {
+func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *payDef, async bool) (*vwPayResponse, error) {
 	params := map[string]string{
 		"VWID": key,
 	}
@@ -127,8 +127,13 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 		data["CardId"] = pay.cardID
 	}
 
+	var path = vwInitPath
+	if async {
+		path = vwPayPath
+	}
+
 	resp := vwPayResponse{}
-	err = xmlRequest(ew.URL+vwPayPath, &resp, data, params)
+	err = xmlRequest(ew.URL+path, &resp, data, params)
 	return &resp, err
 }
 
