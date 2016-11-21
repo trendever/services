@@ -190,7 +190,7 @@ func BuyCoins(c *soso.Context) {
 
 	gateway, _ := c.RequestMap["gateway"].(string)
 	if gateway == "" {
-		gateway = "payture"
+		gateway = "payture_ewallet"
 	}
 
 	offersResp, err := getCoinsOffers("", uint64(offerID))
