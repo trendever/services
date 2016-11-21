@@ -103,7 +103,7 @@ func (c *Ewallet) CheckStatus(sess *models.Session) (bool, error) {
 	}
 
 	sess.Success = (res.State == successState)
-	sess.Finished = (res.ErrCode == timeoutError || res.ErrCode == notfoundError || sess.Success)
+	sess.Finished = (res.ErrCode == timeoutError || res.ErrCode == notFoundError || sess.Success)
 	sess.State = res.State
 	sess.FailureReason = res.ErrCode
 

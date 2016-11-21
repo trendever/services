@@ -34,7 +34,7 @@ type vwInitResponse struct {
 }
 
 type vwPayResponse struct {
-	XMLName   xml.Name `xml:"Pay"`
+	XMLName   xml.Name `xml:"Response"`
 	Success   bool     `xml:"Success,attr"`
 	SessionID string   `xml:"SessionId,attr"`
 	ErrCode   string   `xml:"ErrCode,attr"`
