@@ -50,20 +50,37 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		pd.cardID = card.Id
 	}
 
-	res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd, async)
-	if err != nil {
-		session.FailureReason = fmt.Sprintf("Network error: %v", err)
-		return &session, errors.New(session.FailureReason)
-	}
+	if async {
+		res, err := c.vwPayAsync(sessionTypePay, c.KeyPay, info, pd)
+		if err != nil {
+			session.FailureReason = fmt.Sprintf("Network error: %v", err)
+			return &session, errors.New(session.FailureReason)
+		}
 
-	session.ExternalID = res.MerchantOrderID
-	session.UniqueID = res.SessionID
-	session.Amount = res.Amount
-	session.Success = res.Success
+		session.ExternalID = res.MerchantOrderID
+		session.UniqueID = res.SessionID
+		session.Amount = res.Amount
+		session.Success = res.Success
 
-	if !res.Success {
-		session.FailureReason = res.ErrCode
-		return &session, fmt.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
+		if !res.Success {
+			session.FailureReason = res.ErrCode
+			return &session, fmt.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
+		}
+	} else {
+		res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd)
+		if err != nil {
+			session.FailureReason = fmt.Sprintf("Network error: %v", err)
+			return &session, errors.New(session.FailureReason)
+		}
+
+		session.UniqueID = res.SessionID
+		session.Success = res.Success
+
+		if !res.Success {
+			session.FailureReason = res.ErrCode
+			return &session, fmt.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
+		}
+
 	}
 
 	return &session, nil
