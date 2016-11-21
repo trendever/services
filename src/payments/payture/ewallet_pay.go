@@ -61,6 +61,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		session.UniqueID = res.SessionID
 		session.Amount = res.Amount
 		session.Success = res.Success
+		session.Finished = true
 
 		if !res.Success {
 			session.FailureReason = res.ErrCode

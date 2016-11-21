@@ -313,6 +313,13 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 
 		}
 
+		log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+			Id:    uint64(sess.PaymentID),
+			Data:  sess.Payment.Encode(),
+			Event: payment.Event_PaySuccess,
+			Info:  sess.Info(),
+		}))
+
 	}()
 
 	return &payment.BuyAsyncReply{}, nil
