@@ -73,7 +73,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 			return &session, errors.New(session.FailureReason)
 		}
 
-		session.UniqueID = res.SessionID
+		session.UniqueID = res.OrderID
 		session.ExternalID = res.SessionID
 		session.Success = res.Success
 

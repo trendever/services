@@ -28,8 +28,9 @@ type payDef struct {
 type vwInitResponse struct {
 	XMLName   xml.Name `xml:"Init"`
 	Success   bool     `xml:"Success,attr"`
-	SessionID string   `xml:"SessionId,attr"`
 	ErrCode   string   `xml:"ErrCode,attr"`
+	SessionID string   `xml:"SessionId,attr"`
+	OrderID   string   `xml:"OrderId,attr"`
 }
 
 type vwPayResponse struct {
