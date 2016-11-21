@@ -51,7 +51,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 	}
 
 	if async {
-		res, err := c.vwPayAsync(sessionTypePay, c.KeyPay, info, pd)
+		res, err := c.vwPayAsync(info, pd)
 		if err != nil {
 			session.FailureReason = fmt.Sprintf("Network error: %v", err)
 			return &session, errors.New(session.FailureReason)
@@ -67,7 +67,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 			return &session, fmt.Errorf("Error (%v) while Pay init (pay id=%v)", res.ErrCode, pay.ID)
 		}
 	} else {
-		res, err := c.vwPay(sessionTypePay, c.KeyPay, info, pd)
+		res, err := c.vwPay(info, pd)
 		if err != nil {
 			session.FailureReason = fmt.Sprintf("Network error: %v", err)
 			return &session, errors.New(session.FailureReason)

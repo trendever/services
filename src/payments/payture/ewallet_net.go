@@ -103,9 +103,9 @@ func (ew *Ewallet) vwInit(sessionType, key string, user *payment.UserInfo, pay *
 	return &resp, err
 }
 
-func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwInitResponse, error) {
+func (ew *Ewallet) vwPay(user *payment.UserInfo, pay *payDef) (*vwInitResponse, error) {
 	params := map[string]string{
-		"VWID": key,
+		"VWID": ew.KeyAdd,
 	}
 
 	login, password, err := ew.creds(user.UserId)
@@ -114,7 +114,7 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 	}
 
 	data := map[string]string{
-		"SessionType": sessionType,
+		"SessionType": sessionTypePay,
 		"VWUserLgn":   login,
 		"VWUserPsw":   password,
 		"PhoneNumber": user.Phone,
@@ -132,9 +132,9 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 	return &resp, err
 }
 
-func (ew *Ewallet) vwPayAsync(sessionType, key string, user *payment.UserInfo, pay *payDef) (*vwPayResponse, error) {
+func (ew *Ewallet) vwPayAsync(user *payment.UserInfo, pay *payDef) (*vwPayResponse, error) {
 	params := map[string]string{
-		"VWID": key,
+		"VWID": ew.KeyPay,
 	}
 
 	login, password, err := ew.creds(user.UserId)
@@ -143,7 +143,7 @@ func (ew *Ewallet) vwPayAsync(sessionType, key string, user *payment.UserInfo, p
 	}
 
 	data := map[string]string{
-		"SessionType": sessionType,
+		"SessionType": sessionTypePay,
 		"VWUserLgn":   login,
 		"VWUserPsw":   password,
 		"PhoneNumber": user.Phone,
