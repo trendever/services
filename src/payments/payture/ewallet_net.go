@@ -70,7 +70,7 @@ type vwPayStatusResponse struct {
 	Success bool     `xml:"Success,attr"`
 	OrderID string   `xml:"OrderId,attr"`
 	Amount  uint64   `xml:"Amount,attr"`
-	State   string   `xml:"State,attr"`
+	State   string   `xml:"Status,attr"`
 	ErrCode string   `xml:"ErrCode,attr"`
 }
 
