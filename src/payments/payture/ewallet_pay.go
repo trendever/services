@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"payments/models"
 	"proto/payment"
+	"utils/log"
 
 	"github.com/pborman/uuid"
 )
@@ -100,6 +101,7 @@ func (c *Ewallet) CheckStatus(sess *models.Session) (bool, error) {
 	if sess.UniqueID == "" {
 		// wat
 		sess.Finished = true
+		sess.Success = false
 		sess.FailureReason = "Wat? Nil UniqueID"
 		log.Errorf(sess.FailureReason)
 		return true, nil
