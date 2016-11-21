@@ -17,6 +17,10 @@ type Account struct {
 	Balance int64
 }
 
+func (a Account) TableName() string {
+	return "coins_balance"
+}
+
 type Transaction struct {
 	ID             uint64    `gorm:"primary_key"`
 	CreatedAt      time.Time `gorm:"index"`
@@ -69,6 +73,14 @@ func (slice TransactionsSlice) Encode() []*proto.Transaction {
 
 func Migrate(drop bool) {
 	db := db.New()
+
+	// @TODO one-time drop, remove it after some revisions
+	var count uint
+	db.New().Table("information_schema.table_constraints").Where("table_name='transactions' and constraint_name = 'transactions_destination_accounts_user_id_foreign'").Count(&count)
+	if count > 0 {
+		drop = true
+	}
+
 	if drop {
 		log.Warn("Droping tables")
 		err := db.DropTableIfExists(dbModels...).Error
@@ -79,8 +91,8 @@ func Migrate(drop bool) {
 	if err := db.AutoMigrate(dbModels...).Error; err != nil {
 		log.Fatal(err)
 	}
-	db.Model(&Transaction{}).AddForeignKey("source", "accounts(user_id)", "RESTRICT", "RESTRICT")
-	db.Model(&Transaction{}).AddForeignKey("destination", "accounts(user_id)", "RESTRICT", "RESTRICT")
+	db.Model(&Transaction{}).AddForeignKey("source", "coins_balance(user_id)", "RESTRICT", "RESTRICT")
+	db.Model(&Transaction{}).AddForeignKey("destination", "coins_balance(user_id)", "RESTRICT", "RESTRICT")
 	db.Exec(`
 CREATE OR REPLACE FUNCTION raise_modify_exception() RETURNS trigger AS
 $x$
