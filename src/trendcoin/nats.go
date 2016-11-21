@@ -39,10 +39,18 @@ func (s *TrendcoinServer) subscribe() {
 
 func (s *TrendcoinServer) NatsTransactions(in *trendcoin.MakeTransactionsRequest) (acknowledged bool) {
 	log.Debug("got transactions request via nats: %+v", in)
+	success, externalError := s.asyncTransactions(in)
+	if success || !externalError {
+		return true
+	}
+	return false
+}
+
+func (s *TrendcoinServer) asyncTransactions(in *trendcoin.MakeTransactionsRequest) (success, externalError bool) {
 	for _, tx := range in.Transactions {
 		if tx.IdempotencyKey == "" {
-			log.Errorf("nats transaction request %+v without IdempotencyKey ignored", in)
-			return true
+			log.Errorf("async transaction request %+v without IdempotencyKey ignored", in)
+			return false, false
 		}
 	}
 	res, _ := s.MakeTransactions(nil, in)
@@ -55,9 +63,9 @@ func (s *TrendcoinServer) NatsTransactions(in *trendcoin.MakeTransactionsRequest
 				break
 			}
 		}
-		return !externalErr
+		return false, externalErr
 	}
-	return true
+	return true, false
 }
 
 func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowledged bool) {
@@ -79,7 +87,7 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 
 	switch in.Event {
 	case payment.Event_PaySuccess:
-		return s.NatsTransactions(&trendcoin.MakeTransactionsRequest{
+		success, externalError := s.asyncTransactions(&trendcoin.MakeTransactionsRequest{
 			Transactions: []*trendcoin.TransactionData{{
 				Destination:    data.UserID,
 				Amount:         data.Amount,
@@ -89,6 +97,16 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 			}},
 			IsAutorefill: data.AutoRefill,
 		})
+		// everything went fine, notify should have been sent by MakeTransactions()
+		if success {
+			return true
+		}
+		// external error, retry later
+		if externalError {
+			return false
+		}
+		// probably invalid data, send notify just like with failed pay
+		fallthrough
 
 	case payment.Event_PayFailed:
 		if data.AutoRefill {
