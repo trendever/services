@@ -80,6 +80,7 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 		log.Errorf("failed to unmarshal data of payment %v: %v", in.Id, err)
 		return true
 	}
+	log.Debug("payment data: %+v", data)
 	if data.Amount == 0 || data.UserID == 0 {
 		log.Errorf("invalid refill data %+v", data)
 		return true
