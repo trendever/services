@@ -16,8 +16,9 @@ const (
 )
 
 const (
-	successState = "Charged"
-	timeoutError = "ORDER_TIME_OUT"
+	successState  = "Charged"
+	timeoutError  = "ORDER_TIME_OUT"
+	notfoundError = "ORDER_NOT_FOUND"
 )
 
 const gatewayType = "payture"
@@ -131,8 +132,9 @@ func (c *InPay) CheckStatus(sess *models.Session) (finished bool, err error) {
 	}
 
 	sess.Success = (res.State == successState)
-	sess.Finished = (res.ErrCode == timeoutError || sess.Success)
+	sess.Finished = (res.ErrCode == timeoutError || res.ErrCode == notfoundError || sess.Success)
 	sess.State = res.State
+	sess.FailureReason = res.ErrCode
 
 	finished = sess.Finished
 
