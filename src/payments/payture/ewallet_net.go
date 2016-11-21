@@ -119,8 +119,11 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 		"VWUserPsw":   password,
 		"PhoneNumber": user.Phone,
 		"OrderId":     pay.orderID,
-		"CardId":      pay.cardID,
 		"Amount":      fmt.Sprintf("%v", pay.amount),
+	}
+
+	if pay.cardID != "" {
+		data["CardId"] = pay.cardID
 	}
 
 	resp := vwPayResponse{}
