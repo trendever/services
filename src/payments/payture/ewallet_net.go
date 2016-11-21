@@ -120,6 +120,7 @@ func (ew *Ewallet) vwPay(sessionType, key string, user *payment.UserInfo, pay *p
 		"PhoneNumber": user.Phone,
 		"OrderId":     pay.orderID,
 		"Amount":      fmt.Sprintf("%v", pay.amount),
+		"IP":          user.Ip,
 	}
 
 	if pay.cardID != "" {
