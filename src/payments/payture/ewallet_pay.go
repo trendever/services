@@ -97,6 +97,14 @@ func (c *Ewallet) Redirect(sess *models.Session) string {
 // CheckStatus checks given session status
 func (c *Ewallet) CheckStatus(sess *models.Session) (bool, error) {
 
+	if sess.UniqueID == "" {
+		// wat
+		sess.Finished = true
+		sess.FailureReason = "Wat? Nil UniqueID"
+		log.Errorf(sess.FailureReason)
+		return true, nil
+	}
+
 	res, err := c.vwPayStatus(sess.UniqueID)
 	if err != nil {
 		return false, err
