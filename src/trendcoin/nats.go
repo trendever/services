@@ -15,7 +15,7 @@ const PaymentName = "coins_refill"
 type PaymentData struct {
 	UserID     uint64 `json:"user_id"`
 	Amount     uint64 `json:"amount"`
-	AutoRefill bool   `json:"auto_refill"`
+	Autorefill bool   `json:"autorefill"`
 }
 
 func (s *TrendcoinServer) subscribe() {
@@ -96,7 +96,7 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 				Reason:         fmt.Sprintf("refilled with payment @%v", in.Id),
 				IdempotencyKey: fmt.Sprintf("payment %v", in.Id),
 			}},
-			IsAutorefill: data.AutoRefill,
+			IsAutorefill: data.Autorefill,
 		})
 		// everything went fine, notify should have been sent by MakeTransactions()
 		if success {
@@ -110,7 +110,7 @@ func (s *TrendcoinServer) NatsRefill(in *payment.PaymentNotification) (acknowled
 		fallthrough
 
 	case payment.Event_PayFailed:
-		if data.AutoRefill {
+		if data.Autorefill {
 			err := nats.StanPublish(NotifyTopic, &trendcoin.BalanceNotify{
 				UserId:     data.UserID,
 				Autorefill: true,
