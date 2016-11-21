@@ -75,8 +75,20 @@ func (c *Ewallet) Redirect(sess *models.Session) string {
 }
 
 // CheckStatus checks given session status
-func (c *Ewallet) CheckStatus(sess *models.Session) (finished bool, err error) {
-	// no need to do any futher checks; just mark as finished
-	sess.Finished = true
-	return true, nil
+func (c *Ewallet) CheckStatus(sess *models.Session) (bool, error) {
+
+	res, err := c.vwPayStatus(sess.UniqueID)
+	if err != nil {
+		return false, err
+	}
+
+	if !res.Success && res.OrderID == "" {
+		return false, fmt.Errorf("Unsuccessfull vwPayStatus: errCode=%v", res.ErrCode)
+	}
+
+	sess.Success = (res.State == successState)
+	sess.Finished = (res.ErrCode == timeoutError || sess.Success)
+	sess.State = res.State
+
+	return sess.Finished, nil
 }

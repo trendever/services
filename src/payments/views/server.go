@@ -290,7 +290,8 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 		// Step1: init TX
 		sess, err := Gateway.Buy(Payment, req.User, true)
 		if err != nil {
-			log.Errorf("Warning! Async Buy returnted err, this should not happen: %v", err)
+
+			log.Errorf("Warning! Async Buy returnted err: %v", err)
 			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
 				Id:    uint64(Payment.ID),
 				Data:  Payment.Encode(),

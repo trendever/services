@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	sessionTypeAdd = "Add"
-	sessionTypePay = "Pay"
-	vwInitPath     = "/vwapi/Init"
-	vwPayPath      = "/vwapi/Pay"
-	vwAddPath      = "/vwapi/Add"
-	vwCardsPath    = "/vwapi/GetList"
-	vwDelCardPath  = "/vwapi/Remove"
+	sessionTypeAdd  = "Add"
+	sessionTypePay  = "Pay"
+	vwInitPath      = "/vwapi/Init"
+	vwPayPath       = "/vwapi/Pay"
+	vwAddPath       = "/vwapi/Add"
+	vwCardsPath     = "/vwapi/GetList"
+	vwDelCardPath   = "/vwapi/Remove"
+	vwPayStatusPath = "/vwapi/PayStatus"
 )
 
 type payDef struct {
@@ -60,6 +61,15 @@ type vwCardsResponse struct {
 type vwDelCardResponse struct {
 	XMLName xml.Name `xml:"Remove"`
 	Success bool     `xml:"Success,attr"`
+	ErrCode string   `xml:"ErrCode,attr"`
+}
+
+type vwPayStatusResponse struct {
+	XMLName xml.Name `xml:"PayStatus"`
+	Success bool     `xml:"Success,attr"`
+	OrderID string   `xml:"OrderId,attr"`
+	Amount  uint64   `xml:"Amount,attr"`
+	State   string   `xml:"State,attr"`
 	ErrCode string   `xml:"ErrCode,attr"`
 }
 
@@ -156,6 +166,20 @@ func (ew *Ewallet) vwDelCard(cardID string, user *payment.UserInfo) (*vwDelCardR
 
 	resp := vwDelCardResponse{}
 	err = xmlRequest(ew.URL+vwDelCardPath, &resp, data, params)
+	return &resp, err
+}
+
+func (ew *Ewallet) vwPayStatus(orderID string) (*vwPayStatusResponse, error) {
+	params := map[string]string{
+		"VWID": ew.KeyAdd,
+	}
+
+	data := map[string]string{
+		"OrderId": orderID,
+	}
+
+	resp := vwPayStatusResponse{}
+	err := xmlRequest(ew.URL+vwPayStatusPath, &resp, data, params)
 	return &resp, err
 }
 
