@@ -102,6 +102,7 @@ func (c *InPay) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (*m
 
 	return &models.Session{
 		PaymentID:   pay.ID,
+		Payment:     pay,
 		ExternalID:  res.SessionID,
 		UniqueID:    uniqueID,
 		Amount:      res.Amount,

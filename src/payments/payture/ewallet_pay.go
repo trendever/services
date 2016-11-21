@@ -18,6 +18,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 
 	session := models.Session{
 		PaymentID:   pay.ID,
+		Payment:     pay,
 		IP:          info.Ip,
 		GatewayType: vwGwType,
 	}
@@ -99,10 +100,6 @@ func (c *Ewallet) CheckStatus(sess *models.Session) (bool, error) {
 	res, err := c.vwPayStatus(sess.UniqueID)
 	if err != nil {
 		return false, err
-	}
-
-	if !res.Success && res.OrderID == "" {
-		return false, fmt.Errorf("Unsuccessfull vwPayStatus: errCode=%v", res.ErrCode)
 	}
 
 	sess.Success = (res.State == successState)
