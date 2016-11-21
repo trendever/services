@@ -71,12 +71,12 @@ func (s *TrendcoinServer) MakeTransactions(_ context.Context, in *proto.MakeTran
 	s.requestChan <- req
 	ans := <-req.AnswerChan
 	if ans.Error == "" {
-		go s.balanceNotify(req.Transactions)
+		go s.balanceNotify(req.Transactions, in.IsAutorefill)
 	}
 	return ans, nil
 }
 
-func (s *TrendcoinServer) balanceNotify(transactions TransactionsSlice) {
+func (s *TrendcoinServer) balanceNotify(transactions TransactionsSlice, isAutorefill bool) {
 	var users []uint64
 	for _, tx := range transactions {
 		if tx.Source != 0 {
@@ -94,8 +94,9 @@ func (s *TrendcoinServer) balanceNotify(transactions TransactionsSlice) {
 	}
 	for _, acc := range accounts {
 		err := nats.StanPublish(NotifyTopic, &proto.BalanceNotify{
-			UserId:  acc.UserID,
-			Balance: acc.Balance,
+			UserId:     acc.UserID,
+			Balance:    acc.Balance,
+			Autorefill: isAutorefill,
 		})
 		if err != nil {
 			log.Errorf("failed to notify about user balance: %v", err)
