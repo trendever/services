@@ -2,7 +2,7 @@ service AccountStoreService {
 	rpc Add(AddRequest) returns (AddReply) {}
 	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
 	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
-	rpc GetValid(GetValidRequest) returns (GetValidReply) {}
+	rpc Get(GetRequest) returns (GetReply) {}
 	rpc GetByName(GetByNameRequest) returns (GetByNameReply) {}
 }
 
@@ -49,12 +49,12 @@ message MarkInvalidRequest {
 message MarkInvalidReply {
 }
 
-message GetValidRequest {
+message GetRequest {
     repeated Role roles = 1;
     bool include_invalids = 2;
 }
 
-message GetValidReply {
+message GetReply {
   repeated Account accounts = 1;
 }
 

@@ -11,14 +11,12 @@ import (
 var service *svc
 
 type svc struct {
-	repo AccountRepo
-	ig   InstagramAccess
+	ig InstagramAccess
 }
 
 func main() {
 	service = &svc{ // use real db adapter anywhere but not in tests
-		repo: &AccountRepoImpl{},
-		ig:   &InstagramAccessImpl{},
+		ig: &InstagramAccessImpl{},
 	}
 	cli.Main(service)
 }

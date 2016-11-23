@@ -8,41 +8,40 @@ import (
 // Account contains instagram account cookie
 type Account struct {
 	InstagramUsername string `gorm:"primary_key"`
+	Role              accountstore.Role
 	Cookie            string `gorm:"text"`
 	Valid             bool   `sql:"default:false"`
 }
 
-// AccountRepo generic db access
-type AccountRepo interface {
-	Create(*Account) error
-	Save(*Account) error
-	FindValid() ([]Account, error)
-	FindByName(string) (*Account, error)
-}
-
-// AccountRepoImpl is real db access
-type AccountRepoImpl struct {
-}
-
 // Create new acc
-func (r *AccountRepoImpl) Create(acc *Account) error {
+func Create(acc *Account) error {
 	return db.New().Create(acc).Error
 }
 
 // Save it
-func (r *AccountRepoImpl) Save(acc *Account) error {
+func Save(acc *Account) error {
 	return db.New().Save(acc).Error
 }
 
-// FindValid returns valid only
-func (r *AccountRepoImpl) FindValid() ([]Account, error) {
+// Find returns valid only
+func Find(validOnly bool, roles []accountstore.Role) ([]Account, error) {
 	var out []Account
-	err := db.New().Where("valid != FALSE").Find(&out).Error
+	req := db.New()
+
+	if validOnly {
+		req = req.Where("valid != FALSE")
+	}
+
+	if len(roles) > 0 {
+		req = req.Where("role in (?)", roles)
+	}
+
+	err := req.Find(&out).Error
 	return out, err
 }
 
 // FindByName returns account by username
-func (r *AccountRepoImpl) FindByName(name string) (*Account, error) {
+func FindByName(name string) (*Account, error) {
 	var out Account
 	err := db.New().Where("instagram_username = ?", name).Find(&out).Error
 	return &out, err
@@ -63,6 +62,7 @@ func (acc *Account) Encode() *accountstore.Account {
 		InstagramUsername: acc.InstagramUsername,
 		Cookie:            acc.Cookie,
 		Valid:             acc.Valid,
+		Role:              acc.Role,
 	}
 }
 
@@ -71,5 +71,6 @@ func (acc *Account) EncodePrivate() *accountstore.Account {
 	return &accountstore.Account{
 		InstagramUsername: acc.InstagramUsername,
 		Valid:             acc.Valid,
+		Role:              acc.Role,
 	}
 }

@@ -20,7 +20,7 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 	}
 
 	// save Creates if not exists
-	err = s.repo.Save(account)
+	err = Save(account)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +37,14 @@ func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*acco
 
 func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest) (*accountstore.MarkInvalidReply, error) {
 
-	account, err := s.repo.FindByName(in.InstagramUsername)
+	account, err := FindByName(in.InstagramUsername)
 	if err != nil {
 		return nil, err
 	}
 
 	account.Valid = false
 
-	err = s.repo.Save(account)
+	err = Save(account)
 	if err != nil {
 		return nil, err
 	}
@@ -52,27 +52,26 @@ func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest
 	return &accountstore.MarkInvalidReply{}, nil
 }
 
-func (s *svc) GetValid(_ context.Context, in *accountstore.GetValidRequest) (*accountstore.GetValidReply, error) {
+func (s *svc) Get(_ context.Context, in *accountstore.GetRequest) (*accountstore.GetReply, error) {
 
-	accounts, err := s.repo.FindValid()
+	accounts, err := Find(!in.IncludeInvalids, in.Roles)
 	if err != nil {
 		return nil, err
 	}
 
-	return &accountstore.GetValidReply{
+	return &accountstore.GetReply{
 		Accounts: EncodeAll(accounts),
 	}, nil
 }
 
 func (s *svc) GetByName(_ context.Context, in *accountstore.GetByNameRequest) (*accountstore.GetByNameReply, error) {
 
-	account, err := s.repo.FindByName(in.InstagramUsername)
+	account, err := FindByName(in.InstagramUsername)
 	if err != nil {
 		return nil, err
 	}
 
 	if in.HidePrivate {
-
 		return &accountstore.GetByNameReply{
 			Account: account.EncodePrivate(),
 		}, nil
