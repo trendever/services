@@ -6,10 +6,24 @@ service AccountStoreService {
 	rpc GetByName(GetByNameRequest) returns (GetByNameReply) {}
 }
 
+
+enum Role {
+    // real user, probably shop
+    User = 0;
+
+    Savetrend = 1;
+    Wantit = 2;
+
+    // minor bots
+    AuxPrivate = 3; // any bots for fetching purposes
+    AuxPublic = 4;  // public bots, for example to create chats
+}
+
 message Account {
   string instagram_username = 1;
   string cookie = 2;
   bool valid = 3;
+  Role role = 4;
 }
 
 message AddRequest {
@@ -36,6 +50,8 @@ message MarkInvalidReply {
 }
 
 message GetValidRequest {
+    repeated Role roles = 1;
+    bool include_invalids = 2;
 }
 
 message GetValidReply {

@@ -54,13 +54,16 @@ type Settings struct {
 
 	MarketSMS string
 
-	CoreAddr     string
-	AuthAddr     string
-	ChatAddr     string
-	PaymentsAddr string
-	SMSAddr      string
-	CoinsAddr    string
-	CheckerAddr  string
+	API struct {
+		Core         string
+		Auth         string
+		Chat         string
+		Payments     string
+		SMS          string
+		Coins        string
+		Checker      string
+		AccountStore string
+	}
 
 	Elastic elastic.Settings
 

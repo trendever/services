@@ -1,12 +1,15 @@
 debug: true
 channelport: 8081
-coreaddr: core:3005
-authaddr: auth:8433
-chataddr: chat:2010
-smsaddr:  sms:12326
-coinsaddr: trendcoin:2014
-checkeraddr: checker:2013
-paymentsaddr: payments:7777
+
+api:
+  core: core:3005
+  auth: auth:8433
+  chat: chat:2010
+  sms:  sms:12326
+  coins: trendcoin:2014
+  checker: checker:2013
+  payments: payments:7777
+  accountstore: accountstore:5409
 
 marketSMS: "Your ad could be here"
 
