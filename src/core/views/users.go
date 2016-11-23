@@ -61,7 +61,7 @@ func (s userServer) CreateFakeUser(ctx context.Context, request *core.CreateUser
 		return nil, err
 	}
 
-	err = db.New().Model(&models.User{}).Where("id = ?", user.ID).Update("name", fmt.Sprintf("customer_%v", user.ID)).Error
+	err = db.New().Model(&models.User{}).Where("id = ?", user.ID).Update("name", fmt.Sprintf("Client%v", user.ID)).Error
 
 	return &core.ReadUserReply{
 		Id:   int64(user.ID),
@@ -136,8 +136,12 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 
 	updateMap := map[string]interface{}{}
 	updateMap["phone"] = req.Phone
-	updateMap["instagram_username"] = req.Name
-	updateMap["name"] = req.Name
+	updateMap["isFake"] = false
+
+	if req.Name != "" {
+		updateMap["instagram_username"] = req.Name
+		updateMap["name"] = req.Name
+	}
 
 	res := db.New().Model(&models.User{}).Where("id = ?", req.UserId).UpdateColumns(updateMap)
 

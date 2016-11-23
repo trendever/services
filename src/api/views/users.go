@@ -142,11 +142,6 @@ func SetData(c *soso.Context) {
 		request.Name = value
 	}
 
-	if request.Name == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Enter user name"))
-		return
-	}
-
 	if phone, ok := c.RequestMap["phone"].(string); ok {
 		phoneNumber, err := p.CheckNumber(phone, "")
 
