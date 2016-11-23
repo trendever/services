@@ -72,7 +72,7 @@ func initUserResource(res *admin.Resource) {
 	res.Scope(&admin.Scope{
 		Name: "Only confirmed users",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("confirmed = ?", true)
+			return db.Where("confirmed AND phone != '' AND phone IS NOT NULL")
 		},
 	})
 
