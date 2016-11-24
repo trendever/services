@@ -4,8 +4,8 @@ service AccountStoreService {
 	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
 	rpc Get(GetRequest) returns (GetReply) {}
 	rpc GetByName(GetByNameRequest) returns (GetByNameReply) {}
+  rpc DebugTryInvalidate(DebugTryInvalidateRequest) returns (DebugTryInvalidateReply) {}
 }
-
 
 enum Role {
     // real user, probably shop
@@ -66,3 +66,12 @@ message GetByNameRequest {
 message GetByNameReply {
   Account account = 1;
 }
+
+message DebugTryInvalidateRequest {
+  string instagram_username = 1;
+  uint64 requests = 2;
+}
+
+message DebugTryInvalidateReply {
+}
+

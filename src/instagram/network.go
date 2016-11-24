@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,6 +20,16 @@ var (
 
 // DoResponseLogging enables full json body output
 var DoResponseLogging = false
+
+func getToken(cook []*http.Cookie) (string, error) {
+	for _, cookie := range cook {
+		if cookie.Name == "csrftoken" {
+			return cookie.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("Cookie csrftoken not found")
+}
 
 // Request for Login method. Needs to get the authorization cookies.
 func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login bool) (*http.Response, error) {
@@ -41,7 +52,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login 
 
 	// add auth token if needed
 	if !login {
-		for _, cookie := range ig.cookies {
+		for _, cookie := range ig.Cookies {
 			req.AddCookie(cookie)
 		}
 	}
@@ -95,7 +106,7 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 				return nil, ErrorCheckpointRequired
 			}
 			// relogin
-			ig.isLoggedIn = false
+			ig.LoggedIn = false
 			err = ig.Login()
 			if err != nil {
 				return nil, err

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"instagram"
+	"time"
 )
 
 // InstagramAccess is mockable instagram adapter
@@ -26,6 +27,14 @@ func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
 	api, err := instagram.NewInstagram(login, password)
 	if err == instagram.ErrorCheckpointRequired {
 		account.Valid = false
+
+		sentCode, err := api.SendCode(true)
+		if err != nil {
+			return nil, err
+		}
+
+		account.CodeSent = time.Now().Unix()
+		account.CodeSentBy = sentCode
 	} else if err != nil {
 		return nil, err
 	}
@@ -41,7 +50,14 @@ func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
-func (r *InstagramAccessImpl) VerifyCode(*Account) error {
+func (r *InstagramAccessImpl) VerifyCode(acc *Account) error {
+
+	api, err := instagram.Restore(acc.Cookie)
+	if err != nil {
+		return err
+	}
+
+	_ = api
 
 	return fmt.Errorf("Error! Not implemented")
 }

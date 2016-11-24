@@ -17,25 +17,24 @@ func (ig *Instagram) Login() error {
 	}
 	defer resp.Body.Close()
 
-	// get csrftoken
-	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
-		}
+	token, err := getToken(resp.Cookies())
+	if err != nil {
+		return err
 	}
+	ig.Token = token
 
-	if ig.userName == "" || ig.password == "" {
+	if ig.Username == "" || ig.Password == "" {
 		return fmt.Errorf("Empty username or password")
 	}
 
 	// login
 	login := &Login{
-		DeviceId:          ig.deviceID,
-		PhoneId:           ig.phoneID,
-		Guid:              ig.uuid,
-		UserName:          ig.userName,
-		Password:          ig.password,
-		Csrftoken:         ig.token,
+		DeviceId:          ig.DeviceID,
+		PhoneId:           ig.PhoneID,
+		Guid:              ig.UUID,
+		UserName:          ig.Username,
+		Password:          ig.Password,
+		Csrftoken:         ig.Token,
 		LoginAttemptCount: "0",
 	}
 
@@ -53,28 +52,55 @@ func (ig *Instagram) Login() error {
 	// get new csrftoken
 	for _, cookie := range cookies {
 		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
+			ig.Token = cookie.Value
 		}
 	}
 
-	ig.cookies = cookies
+	ig.Cookies = cookies
 
 	if loginResp.Status == "fail" {
 		if loginResp.Message.Message == "checkpoint_required" {
-			ig.checkpointURL = loginResp.CheckpointURL
+			ig.CheckpointURL = loginResp.CheckpointURL
 			return ErrorCheckpointRequired
 		}
 		return errors.New(loginResp.Message.Message)
 	}
 
-	ig.userNameID = loginResp.LoggedInUser.Pk
-	ig.rankToken = fmt.Sprintf("%d_%v", ig.userNameID, ig.uuid)
-	ig.isLoggedIn = true
+	ig.UserNameID = loginResp.LoggedInUser.Pk
+	ig.RankToken = fmt.Sprintf("%d_%v", ig.UserNameID, ig.UUID)
+	ig.LoggedIn = true
 
 	return nil
 }
 
 // SendCode sends checkpoint code
-func (ig *Instagram) SendCode() {
+func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 
+	methods, err := ig.checkpointStep1()
+	if err != nil {
+		return "", err
+	}
+
+	var useMethod string
+	for _, method := range methods {
+		switch {
+		case
+			useMethod == "",
+			method == MethodEmail && preferEmail,
+			method == MethodSms && !preferEmail:
+
+			/*_*/ useMethod = method
+		}
+	}
+
+	if useMethod == "" {
+		return "", fmt.Errorf("There are available methods (%v), but none can be selected", methods)
+	}
+
+	err = ig.checkpointStep2(useMethod)
+	if err != nil {
+		return "", err
+	}
+
+	return useMethod, nil
 }

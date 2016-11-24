@@ -11,6 +11,8 @@ type Account struct {
 	Role              accountstore.Role
 	Cookie            string `gorm:"text"`
 	Valid             bool   `sql:"default:false"`
+	CodeSent          int64
+	CodeSentBy        string
 }
 
 // Create new acc

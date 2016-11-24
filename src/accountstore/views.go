@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
+	"instagram"
+	"math/rand"
 	"proto/accountstore"
+	"utils/log"
 	"utils/rpc"
 )
 
@@ -80,4 +84,27 @@ func (s *svc) GetByName(_ context.Context, in *accountstore.GetByNameRequest) (*
 	return &accountstore.GetByNameReply{
 		Account: account.Encode(),
 	}, nil
+}
+
+func (s *svc) DebugTryInvalidate(_ context.Context, in *accountstore.DebugTryInvalidateRequest) (*accountstore.DebugTryInvalidateReply, error) {
+
+	acc, err := FindByName(in.InstagramUsername)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := instagram.Restore(acc.Cookie)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := uint64(0); i < in.Requests; i++ {
+		go func() {
+			if _, err := api.SearchUsers(fmt.Sprintf("%v", rand.Intn(32))); err != nil {
+				log.Error(err)
+			}
+		}()
+	}
+
+	return &accountstore.DebugTryInvalidateReply{}, nil
 }

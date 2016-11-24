@@ -7,19 +7,10 @@ import (
 // Save encodes connection to saveable string
 func (ig *Instagram) Save() (string, error) {
 
-	enc := map[string]interface{}{
-		"userName":      ig.userName,
-		"token":         ig.token,
-		"uuid":          ig.uuid,
-		"phoneID":       ig.phoneID,
-		"deviceID":      ig.deviceID,
-		"cookies":       ig.cookies,
-		"userNameID":    ig.userNameID,
-		"rankToken":     ig.rankToken,
-		"checkpointURL": ig.checkpointURL,
-	}
+	var copy = *ig
+	copy.Password = ""
 
-	bytes, err := json.Marshal(enc)
+	bytes, err := json.Marshal(&copy)
 	if err != nil {
 		return "", err
 	}

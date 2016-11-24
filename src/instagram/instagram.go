@@ -9,32 +9,33 @@ import (
 
 // Instagram defines client
 type Instagram struct {
-	userName      string
-	password      string
-	token         string
-	isLoggedIn    bool
-	uuid          string
-	deviceID      string
-	phoneID       string
-	userNameID    int64
-	rankToken     string
-	checkpointURL string
-	cookies       []*http.Cookie
+	Username          string
+	Password          string
+	Token             string
+	LoggedIn          bool
+	UUID              string
+	DeviceID          string
+	PhoneID           string
+	UserNameID        int64
+	RankToken         string
+	CheckpointURL     string
+	Cookies           []*http.Cookie
+	CheckpointCookies []*http.Cookie
 }
 
 // NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
-		userName:   userName,
-		password:   password,
-		token:      "",
-		isLoggedIn: false,
-		uuid:       generateUUID(true),
-		phoneID:    generateUUID(true),
-		deviceID:   generateDeviceID(userName),
-		userNameID: 0,
-		rankToken:  "",
-		cookies:    nil,
+		Username:   userName,
+		Password:   password,
+		Token:      "",
+		LoggedIn:   false,
+		UUID:       generateUUID(true),
+		PhoneID:    generateUUID(true),
+		DeviceID:   generateDeviceID(userName),
+		UserNameID: 0,
+		RankToken:  "",
+		Cookies:    nil,
 	}
 
 	err := i.Login()
@@ -43,12 +44,12 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 
 // IsLoggedIn returns if last request does not have auth error
 func (ig *Instagram) IsLoggedIn() bool {
-	return ig.isLoggedIn
+	return ig.LoggedIn
 }
 
 // GetUserName (will you guess what?) returns set-up username
 func (ig *Instagram) GetUserName() string {
-	return ig.userName
+	return ig.Username
 }
 
 // GetMediaLikers returns likers of given media
@@ -100,7 +101,7 @@ func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 
 	endpoint := fmt.Sprintf(
 		"/users/search/?ig_sig_key_version=%v&is_typeahead=true&query=%v&rank_token=%v",
-		SigKeyVersion, query, ig.rankToken,
+		SigKeyVersion, query, ig.RankToken,
 	)
 
 	var object SearchUsers
@@ -125,7 +126,7 @@ func (ig *Instagram) GetUserTags(userNameID int64) (*UserTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/usertags/%d/feed/?rank_token=%v&ranked_content=false",
-		userNameID, ig.rankToken,
+		userNameID, ig.RankToken,
 	)
 
 	var object UserTags
@@ -139,7 +140,7 @@ func (ig *Instagram) SearchTags(query string) (*SearchTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/tags/search/?is_typeahead=true&q=%v&rank_token=%v",
-		query, ig.rankToken,
+		query, ig.RankToken,
 	)
 
 	var object SearchTags
@@ -153,7 +154,7 @@ func (ig *Instagram) TagFeed(tag, maxID string) (*TagFeed, error) {
 
 	endpoint := fmt.Sprintf(
 		"/feed/tag/%v/?rank_token=%v&ranked_content=false&max_id=%v",
-		tag, ig.rankToken, maxID,
+		tag, ig.RankToken, maxID,
 	)
 
 	var object TagFeed
