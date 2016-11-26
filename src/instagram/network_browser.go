@@ -67,6 +67,8 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 	}
 
 	if DoResponseLogging {
+		log.Debug("URL: %v", addr)
+		log.Debug("Cookies: %v", req.Cookies())
 		log.Debug("URL Values: %v", vals.Encode())
 		log.Debug("Checkpoint POST result: %v", string(response))
 	}
@@ -120,7 +122,7 @@ func (ig *Instagram) checkpointStep2(method string) error {
 		return fmt.Errorf("Incorrect method supplied")
 	}
 
-	body, cookies, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
+	body, _, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
 	if err != nil {
 		return err
 	}
@@ -129,7 +131,6 @@ func (ig *Instagram) checkpointStep2(method string) error {
 		return fmt.Errorf("Code input form not found")
 	}
 
-	ig.CheckpointCookies = cookies
 	return nil
 }
 
