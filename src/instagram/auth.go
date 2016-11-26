@@ -104,3 +104,9 @@ func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 
 	return useMethod, nil
 }
+
+// CheckCode tries to submit instagram checkpont code
+func (ig *Instagram) CheckCode(code string) error {
+
+	return ig.checkpointSubmit(code)
+}

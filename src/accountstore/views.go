@@ -36,7 +36,14 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 
 func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*accountstore.ConfirmReply, error) {
 
-	return &accountstore.ConfirmReply{}, nil
+	account, err := FindByName(in.InstagramUsername)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.ig.VerifyCode(account, in.Code)
+
+	return &accountstore.ConfirmReply{}, err
 }
 
 func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest) (*accountstore.MarkInvalidReply, error) {

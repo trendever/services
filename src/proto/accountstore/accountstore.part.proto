@@ -37,6 +37,7 @@ message AddReply {
 
 message ConfirmRequest {
   string instagram_username = 1;
+  string code = 2;
 }
 
 message ConfirmReply {

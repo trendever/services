@@ -46,6 +46,7 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Add("Accept-Language", "en-US")
 	req.Header.Add("Origin", "https://i.instagram.com")
+	req.Header.Add("Connection", "keep-alive")
 	if referer != "" {
 		req.Header.Add("Referer", referer)
 	}

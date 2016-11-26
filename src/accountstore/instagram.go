@@ -9,7 +9,7 @@ import (
 // InstagramAccess is mockable instagram adapter
 type InstagramAccess interface {
 	Login(login, password string) (*Account, error)
-	VerifyCode(*Account) error
+	VerifyCode(*Account, string) error
 }
 
 // InstagramAccessImpl is real instagram connector
@@ -50,14 +50,16 @@ func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
-func (r *InstagramAccessImpl) VerifyCode(acc *Account) error {
+func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
 	api, err := instagram.Restore(acc.Cookie)
 	if err != nil {
 		return err
 	}
 
-	_ = api
+	if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
+		return fmt.Errorf("Timeout error")
+	}
 
-	return fmt.Errorf("Error! Not implemented")
+	return api.CheckCode(code)
 }
