@@ -76,6 +76,10 @@ func (l Lead) TableName() string {
 	return "products_leads"
 }
 
+func (l Lead) IsNew() bool {
+	return l.State == "NEW" || l.State == "EMPTY"
+}
+
 //Encode returns LeadInfo
 func (l *Lead) Encode() *core.LeadInfo {
 	state, _ := core.LeadStatus_value[l.State]

@@ -152,6 +152,7 @@ func newMessage(req *chat.NewMessageRequest) {
 		log.Error(err)
 		return
 	}
+	newLead := lead.IsNew()
 
 	users := map[*models.User]bool{}
 	for _, msg := range req.Messages {
@@ -159,6 +160,10 @@ func newMessage(req *chat.NewMessageRequest) {
 			users[&lead.Customer] = true
 		} else {
 			models.SendAutoAnswers(msg, lead)
+		}
+
+		if newLead {
+			continue
 		}
 
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
