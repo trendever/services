@@ -24,14 +24,16 @@ const (
 	MethodEmail = "email"
 )
 
-func browserRequest(method, addr, referer string, cookies []*http.Cookie, params map[string]string) (string, []*http.Cookie, error) {
-
+func encode(params map[string]string) string {
 	vals := url.Values{}
 	for k, v := range params {
 		vals.Add(k, v)
 	}
 
-	body := vals.Encode()
+	return vals.Encode()
+}
+
+func browserRequest(method, addr, referer string, cookies []*http.Cookie, body string) (string, []*http.Cookie, error) {
 
 	client := &fixedhttp.Client{}
 	req, err := fixedhttp.NewRequest(method, addr, bytes.NewReader([]byte(body)))
@@ -82,8 +84,8 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 
 	if DoResponseLogging {
 		log.Debug("URL: %v", addr)
-		log.Debug("URL Values: %v", vals.Encode())
 		log.Debug("REQ headers: %v", req.Header)
+		log.Debug("REQ params: %v", body)
 		log.Debug("RESP headers: %v", resp.Header)
 		log.Debug("Checkpoint POST result: %v", string(response))
 	}
@@ -94,7 +96,7 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 // step1: grab cookies and available login methods
 func (ig *Instagram) checkpointStep1() ([]string, error) {
 
-	body, cookies, err := browserRequest("GET", ig.CheckpointURL, "", nil, nil)
+	body, cookies, err := browserRequest("GET", ig.CheckpointURL, "", nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +139,7 @@ func (ig *Instagram) checkpointStep2(method string) error {
 		return fmt.Errorf("Incorrect method supplied")
 	}
 
-	body, cookies, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
+	body, cookies, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, encode(values))
 	if err != nil {
 		return err
 	}
@@ -159,12 +161,10 @@ func (ig *Instagram) checkpointSubmit(code string) error {
 		return err
 	}
 
-	values := map[string]string{
-		"csrfmiddlewaretoken": token,
-		"response_code":       code,
-	}
+	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
+	params := fmt.Sprintf("response_code=%v&csrfmiddlewaretoken=%v", code, token)
 
-	body, _, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
+	body, _, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
 	if err != nil {
 		return err
 	}
