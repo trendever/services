@@ -1,0 +1,11 @@
+--- cookie.go.orig	2016-11-28 01:14:38.903563762 +0300
++++ cookie.go	2016-11-28 01:14:45.565478110 +0300
+@@ -302,7 +302,7 @@
+ }
+ 
+ func validCookieValueByte(b byte) bool {
+-	return 0x20 <= b && b < 0x7f && b != '"' && b != ';' && b != '\\'
++	return (0x20 <= b && b < 0x7f && b != '"' && b != ';') || b == '\\'
+ }
+ 
+ // path-av           = "Path=" path-value

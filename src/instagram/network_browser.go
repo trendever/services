@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"strings"
 	"utils/log"
+
+	// use custom-patched http pkg to allow using backslashes in cookies
+	fixedhttp "instagram/http"
+	http "net/http"
 )
 
 // Emulate WebView browser
-
-// According to https://github.com/huttarichard/instagram-private-api/blob/master/client/v1/web/challenge.js,
-//  iphone UA is the best choice to send requests
-var userAgent = fmt.Sprintf("Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_3 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13G34 Instagram %v (iPhone7,2; iPhone OS 9_3_3; cs_CZ; cs-CZ; scale=2.00; 750x1334)", Version)
+var checkpointUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_3 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13G34 Instagram " +
+	Version +
+	" (iPhone7,2; iPhone OS 9_3_3; cs_CZ; cs-CZ; scale=2.00; 750x1334)"
 
 // Possible checkpoint methods
 const (
@@ -31,22 +33,28 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 
 	body := vals.Encode()
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, addr, bytes.NewReader([]byte(body)))
+	client := &fixedhttp.Client{}
+	req, err := fixedhttp.NewRequest(method, addr, bytes.NewReader([]byte(body)))
 	if err != nil {
 		return "", nil, err
 	}
 
 	for _, cookie := range cookies {
-		req.AddCookie(cookie)
+		req.AddCookie((*fixedhttp.Cookie)(cookie))
 	}
 
 	// fill-in headers
-	req.Header.Add("User-Agent", userAgent)
-	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	req.Header.Add("Accept-Language", "en-US")
-	req.Header.Add("Origin", "https://i.instagram.com")
-	req.Header.Add("Connection", "keep-alive")
+	for k, v := range map[string]string{
+		"User-Agent":                checkpointUserAgent,
+		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		"Accept-Language":           "en-US,en;q=0.5",
+		"Connection":                "keep-alive",
+		"Origin":                    "https://i.instagram.com",
+		"Upgrade-Insecure-Requests": "1",
+	} {
+		req.Header.Add(k, v)
+	}
+
 	if referer != "" {
 		req.Header.Add("Referer", referer)
 	}
@@ -66,14 +74,21 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, params
 		return "", nil, err
 	}
 
+	gotCook := resp.Cookies()
+	resCook := []*http.Cookie{}
+	for _, v := range gotCook {
+		resCook = append(resCook, (*http.Cookie)(v))
+	}
+
 	if DoResponseLogging {
 		log.Debug("URL: %v", addr)
-		log.Debug("Cookies: %v", req.Cookies())
 		log.Debug("URL Values: %v", vals.Encode())
+		log.Debug("REQ headers: %v", req.Header)
+		log.Debug("RESP headers: %v", resp.Header)
 		log.Debug("Checkpoint POST result: %v", string(response))
 	}
 
-	return string(response), resp.Cookies(), nil
+	return string(response), concatCookies(cookies, resCook), nil
 }
 
 // step1: grab cookies and available login methods
@@ -122,7 +137,7 @@ func (ig *Instagram) checkpointStep2(method string) error {
 		return fmt.Errorf("Incorrect method supplied")
 	}
 
-	body, _, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
+	body, cookies, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, values)
 	if err != nil {
 		return err
 	}
@@ -130,6 +145,8 @@ func (ig *Instagram) checkpointStep2(method string) error {
 	if !strings.Contains(body, `<input id="id_response_code" inputmode="numeric" name="response_code"`) {
 		return fmt.Errorf("Code input form not found")
 	}
+
+	ig.CheckpointCookies = cookies
 
 	return nil
 }
@@ -157,4 +174,24 @@ func (ig *Instagram) checkpointSubmit(code string) error {
 
 	// ig.checkpointCookies = nil
 	return nil
+}
+
+func concatCookies(oldCook, newCook []*http.Cookie) []*http.Cookie {
+
+	var (
+		res    = newCook
+		setted = map[string]bool{}
+	)
+
+	for _, cook := range newCook {
+		setted[cook.Name] = true
+	}
+
+	for _, cook := range oldCook {
+		if !setted[cook.Name] {
+			res = append(res, cook)
+		}
+	}
+
+	return res
 }
