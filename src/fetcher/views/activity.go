@@ -1,19 +1,18 @@
 package views
 
 import (
-	"fetcher/api"
-	"fetcher/models"
-
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
+	"fetcher/models"
 	"proto/bot"
 	"utils/db"
 	"utils/log"
 )
 
 // Init binds server
-func Init() {
-	bot.RegisterFetcherServiceServer(api.GrpcServer, fetcherServer{})
+func Init(srv *grpc.Server) {
+	bot.RegisterFetcherServiceServer(srv, fetcherServer{})
 }
 
 type fetcherServer struct{}

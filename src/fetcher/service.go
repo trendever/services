@@ -7,7 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	"fetcher/api"
 	"fetcher/conf"
 	"fetcher/fetcher"
 	"fetcher/models"
@@ -15,9 +14,10 @@ import (
 
 	"utils/db"
 	"utils/log"
+	"utils/nats"
+	"utils/rpc"
 
 	"github.com/codegangsta/cli"
-	"utils/nats"
 )
 
 func main() {
@@ -59,23 +59,22 @@ func main() {
 
 // Run main stuff
 func Run() error {
-	db.Init(&conf.GetSettings().DB)
-
-	// init api
-	api.Start()
-	nats.Init(&conf.GetSettings().Nats, true)
-	views.Init()
+	config := conf.GetSettings()
+	db.Init(&config.DB)
 
 	rand.Seed(time.Now().Unix())
-
-	// interrupt
-	interrupt := make(chan os.Signal)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
-
 	err := fetcher.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// init api
+	nats.Init(&conf.GetSettings().Nats, true)
+	views.Init(rpc.Serve(config.RPC))
+
+	// interrupt
+	interrupt := make(chan os.Signal)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	// wait for terminating
 	<-interrupt

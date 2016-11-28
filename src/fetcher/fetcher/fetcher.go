@@ -11,6 +11,16 @@ import (
 func Start() error {
 	settings := conf.GetSettings()
 
+	// parse timeouts
+	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
+	if err != nil {
+		return err
+	}
+	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
+	if err != nil {
+		return err
+	}
+
 	// connections pool
 	var apis []*instagram.Instagram
 
@@ -25,16 +35,6 @@ func Start() error {
 			return err
 		}
 		apis = append(apis, api)
-	}
-
-	// parse timeouts
-	min, err := time.ParseDuration(settings.Instagram.TimeoutMin)
-	if err != nil {
-		return err
-	}
-	max, err := time.ParseDuration(settings.Instagram.TimeoutMax)
-	if err != nil {
-		return err
 	}
 
 	// run goroutine
