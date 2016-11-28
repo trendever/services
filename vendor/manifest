@@ -1034,7 +1034,7 @@
 		{
 			"importpath": "google.golang.org/grpc",
 			"repository": "https://github.com/grpc/grpc-go",
-			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
+			"revision": "eca2ad68af4d7bf894ada6bd263133f069a441d5",
 			"branch": "master"
 		},
 		{
