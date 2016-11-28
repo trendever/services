@@ -44,6 +44,10 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 	return &bot.SendDirectReply{}, nil
 }
 
+func (s fetcherServer) CreateThread(context.Context, *bot.CreateThreadRequest) (*bot.CreateThreadReply, error) {
+	return &bot.CreateThreadReply{Error: "not impemented"}, nil
+}
+
 func sendDirectToNewChat(req *bot.SendDirectRequest, act *models.Activity, worker *fetcher.Worker) error {
 	res, err := worker.SendDirectMsgToUser(act.UserID, req.Text)
 	if err != nil {

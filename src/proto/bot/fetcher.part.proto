@@ -3,6 +3,10 @@ service FetcherService {
   rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
 
   rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
+
+  // Сreates new direct thread with passed params.
+  // It uses aditional bot user to achieve separate threads with same users, bot should leave thread in a little while
+  rpc CreateThread (CreateThreadRequest) returns (CreateThreadReply) {}
 }
 
 message RetrieveActivitiesRequest {
@@ -53,4 +57,18 @@ message DirectMessageNotify {
   // id of possible related post
   // if it's aviable, it probably mean, that this message was comment to media share
   string related_media = 5;
+}
+
+message CreateThreadRequest {
+  // inviter instagram id
+  uint64 inviter = 1;
+  // instagram id of other members
+  repeated uint64 participant = 2;
+  string caption = 3;
+  // initial comment message
+  string init_message = 4;
+}
+
+message CreateThreadReply {
+  string error = 1;
 }
