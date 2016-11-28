@@ -42,6 +42,7 @@ func initPlansResource(res *admin.Resource) {
 		Rows: [][]string{
 			{"Name", "PrimaryCurrency"},
 			{"About"},
+			{"DirectbotEnabled"},
 			{"SubscriptionPeriod", "SubscriptionPrice"},
 			{"TransactionCommission", "CoinsExchangeRateForCommissionCharge"},
 			{"Public"},

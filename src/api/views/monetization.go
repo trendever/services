@@ -102,11 +102,15 @@ func GetMonetizationPlansList(c *soso.Context) {
 	}
 
 	currency, _ := c.RequestMap["currency"].(string)
+	withBot, _ := c.RequestMap["with_bot"].(bool)
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	res, err := monetizationServiceClient.GetPlansList(ctx, &core.GetPlansListRequest{Currency: currency})
+	res, err := monetizationServiceClient.GetPlansList(ctx, &core.GetPlansListRequest{
+		Currency: currency,
+		WithBot:  withBot,
+	})
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return

@@ -18,6 +18,7 @@ type MonetizationPlan struct {
 	db.Model
 	Name               string
 	About              string `gorm:"text"`
+	DirectbotEnabled   bool
 	PrimaryCurrency    string
 	SubscriptionPeriod uint64
 	// in coins, zero if plan has no subscription fee
@@ -66,6 +67,7 @@ func (plan MonetizationPlan) Encode() *core.MonezationPlan {
 		TransactionCommission: plan.TransactionCommission,
 		CoinsExchangeRate:     plan.CoinsExchangeRate,
 		Public:                plan.Public,
+		DirectbotEnabled:      plan.DirectbotEnabled,
 	}
 	return ret
 }

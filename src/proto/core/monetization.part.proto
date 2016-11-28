@@ -14,10 +14,6 @@ message GetPlanRequest{
     uint64 id = 1;
 }
 
-message GetPlansListRequest{
-    string currency = 1;
-}
-
 message MonezationPlan {
     uint64 id = 1;
     string name = 2;
@@ -28,11 +24,19 @@ message MonezationPlan {
     double transaction_commission = 7;
     double coins_exchange_rate = 8;
     bool   public = 9;
+
+    bool directbot_enabled = 10;
 }
 
 message GetPlanReply {
     MonezationPlan plan = 1;
     string error = 2;
+}
+
+
+message GetPlansListRequest{
+    string currency = 1;
+    bool with_bot = 2;
 }
 
 message GetPlansListReply {

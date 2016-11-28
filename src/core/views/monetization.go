@@ -53,6 +53,9 @@ func (s *monetizationServer) GetPlansList(_ context.Context, in *core.GetPlansLi
 	if in.Currency != "" {
 		scope = scope.Where("primary_currency = ?", in.Currency)
 	}
+	if in.WithBot {
+		scope = scope.Where("directbot_enabled")
+	}
 	err := scope.Find(&plans, "public").Error
 	if err != nil {
 		log.Errorf("failed to load monetization plans: %v", err)
