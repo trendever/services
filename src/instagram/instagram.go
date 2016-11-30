@@ -10,25 +10,25 @@ import (
 // Instagram defines client
 type Instagram struct {
 	Username          string
-	Password          string
-	Token             string
+	password          string
 	LoggedIn          bool
-	UUID              string
-	DeviceID          string
-	PhoneID           string
 	UserNameID        int64
 	RankToken         string
 	CheckpointURL     string
 	Cookies           []*http.Cookie
 	CheckpointCookies []*http.Cookie
+
+	// needed only for auth, but leave it there to make auth more stable
+	UUID     string
+	DeviceID string
+	PhoneID  string
 }
 
 // NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
 		Username:   userName,
-		Password:   password,
-		Token:      "",
+		password:   password,
 		LoggedIn:   false,
 		UUID:       generateUUID(true),
 		PhoneID:    generateUUID(true),
@@ -47,9 +47,9 @@ func (ig *Instagram) IsLoggedIn() bool {
 	return ig.LoggedIn
 }
 
-// GetUserName (will you guess what?) returns set-up username
-func (ig *Instagram) GetUserName() string {
-	return ig.Username
+// SetPassword for this instance (use for restored accs)
+func (ig *Instagram) SetPassword(pwd string) {
+	ig.password = pwd
 }
 
 // GetMediaLikers returns likers of given media

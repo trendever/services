@@ -8,6 +8,7 @@ import (
 // Account contains instagram account cookie
 type Account struct {
 	InstagramUsername string `gorm:"primary_key"`
+	InstagramID       uint64 `gorm:"index"`
 	Role              accountstore.Role
 	Cookie            string `gorm:"text"`
 	Valid             bool   `sql:"default:false"`
@@ -42,10 +43,10 @@ func Find(validOnly bool, roles []accountstore.Role) ([]Account, error) {
 	return out, err
 }
 
-// FindByName returns account by username
-func FindByName(name string) (*Account, error) {
+// FindAccount returns account by template
+func FindAccount(template *Account) (*Account, error) {
 	var out Account
-	err := db.New().Where("instagram_username = ?", name).Find(&out).Error
+	err := db.New().Where(template).Find(&out).Error
 	return &out, err
 }
 

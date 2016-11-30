@@ -2,10 +2,8 @@ package instagram
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/url"
-	"strings"
 	"utils/log"
 
 	// use custom-patched http pkg to allow using backslashes in cookies
@@ -91,107 +89,4 @@ func browserRequest(method, addr, referer string, cookies []*http.Cookie, body s
 	}
 
 	return string(response), concatCookies(cookies, resCook), nil
-}
-
-// step1: grab cookies and available login methods
-func (ig *Instagram) checkpointStep1() ([]string, error) {
-
-	body, cookies, err := browserRequest("GET", ig.CheckpointURL, "", nil, "")
-	if err != nil {
-		return nil, err
-	}
-
-	var methods []string
-	if strings.Contains(body, `<input type="submit" name="sms" class="checkpoint-button-neutral" value="`) {
-		methods = append(methods, MethodSms)
-	}
-	if strings.Contains(body, `<input type="submit" name="email" class="checkpoint-button-neutral" value="`) {
-		methods = append(methods, MethodEmail)
-	}
-
-	if len(methods) == 0 {
-		return nil, fmt.Errorf("Could not start checkpoint process")
-	}
-
-	ig.CheckpointCookies = cookies
-
-	return methods, nil
-}
-
-// step2: send code using given method
-func (ig *Instagram) checkpointStep2(method string) error {
-
-	token, err := getToken(ig.CheckpointCookies)
-	if err != nil {
-		return err
-	}
-
-	values := map[string]string{
-		"csrfmiddlewaretoken": token,
-	}
-
-	switch method {
-	case MethodSms:
-		values["sms"] = "Verify by SMS"
-	case MethodEmail:
-		values["email"] = "Verify by Email"
-	default:
-		return fmt.Errorf("Incorrect method supplied")
-	}
-
-	body, cookies, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, encode(values))
-	if err != nil {
-		return err
-	}
-
-	if !strings.Contains(body, `<input id="id_response_code" inputmode="numeric" name="response_code"`) {
-		return fmt.Errorf("Code input form not found")
-	}
-
-	ig.CheckpointCookies = cookies
-
-	return nil
-}
-
-// step2: submit code
-func (ig *Instagram) checkpointSubmit(code string) error {
-
-	token, err := getToken(ig.CheckpointCookies)
-	if err != nil {
-		return err
-	}
-
-	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
-	params := fmt.Sprintf("response_code=%v&csrfmiddlewaretoken=%v", code, token)
-
-	body, _, err := browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
-	if err != nil {
-		return err
-	}
-
-	// @TODO: how to check if everything is ok?
-	_ = body
-
-	// ig.checkpointCookies = nil
-	return nil
-}
-
-func concatCookies(oldCook, newCook []*http.Cookie) []*http.Cookie {
-
-	var (
-		res    = newCook
-		setted = map[string]bool{}
-	)
-
-	for _, cook := range newCook {
-		setted[cook.Name] = true
-	}
-
-	for _, cook := range oldCook {
-		if !setted[cook.Name] {
-			res = append(res, cook)
-		}
-	}
-
-	return res
 }

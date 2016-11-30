@@ -50,7 +50,7 @@ func Start() error {
 
 		fetcherWorker := &Worker{
 			pool:     pool,
-			username: api.GetUserName(),
+			username: api.Username,
 		}
 
 		fetcherWorker.start()

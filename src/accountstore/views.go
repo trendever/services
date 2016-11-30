@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
-	"instagram"
-	"math/rand"
 	"proto/accountstore"
-	"utils/log"
 	"utils/rpc"
 )
 
@@ -36,7 +33,10 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 
 func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*accountstore.ConfirmReply, error) {
 
-	account, err := FindByName(in.InstagramUsername)
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+		InstagramID:       in.InstagramId,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,10 @@ func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*acco
 
 func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest) (*accountstore.MarkInvalidReply, error) {
 
-	account, err := FindByName(in.InstagramUsername)
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+		InstagramID:       in.InstagramId,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -63,55 +66,40 @@ func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest
 	return &accountstore.MarkInvalidReply{}, nil
 }
 
-func (s *svc) Get(_ context.Context, in *accountstore.GetRequest) (*accountstore.GetReply, error) {
+func (s *svc) Search(_ context.Context, in *accountstore.SearchRequest) (*accountstore.SearchReply, error) {
 
 	accounts, err := Find(!in.IncludeInvalids, in.Roles)
 	if err != nil {
 		return nil, err
 	}
 
-	return &accountstore.GetReply{
+	return &accountstore.SearchReply{
 		Accounts: EncodeAll(accounts),
 	}, nil
 }
 
-func (s *svc) GetByName(_ context.Context, in *accountstore.GetByNameRequest) (*accountstore.GetByNameReply, error) {
+func (s *svc) Get(_ context.Context, in *accountstore.GetRequest) (*accountstore.GetReply, error) {
 
-	account, err := FindByName(in.InstagramUsername)
-	if err != nil {
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+		InstagramID:       in.InstagramId,
+	})
+	if err == gorm.ErrRecordNotFound {
+		return &accountstore.GetReply{
+			Found: false,
+		}, nil
+	} else if err != nil {
 		return nil, err
 	}
 
 	if in.HidePrivate {
-		return &accountstore.GetByNameReply{
+		return &accountstore.GetReply{
 			Account: account.EncodePrivate(),
 		}, nil
 	}
 
-	return &accountstore.GetByNameReply{
+	return &accountstore.GetReply{
+		Found:   true,
 		Account: account.Encode(),
 	}, nil
-}
-
-func (s *svc) DebugTryInvalidate(_ context.Context, in *accountstore.DebugTryInvalidateRequest) (*accountstore.DebugTryInvalidateReply, error) {
-
-	acc, err := FindByName(in.InstagramUsername)
-	if err != nil {
-		return nil, err
-	}
-
-	api, err := instagram.Restore(acc.Cookie)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := uint64(0); i < in.Requests; i++ {
-		go func() {
-			if _, err := api.SearchUsers(fmt.Sprintf("%v", rand.Intn(32))); err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
-	return &accountstore.DebugTryInvalidateReply{}, nil
 }

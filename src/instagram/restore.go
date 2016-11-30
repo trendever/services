@@ -8,7 +8,7 @@ import (
 func (ig *Instagram) Save() (string, error) {
 
 	var copy = *ig
-	copy.Password = ""
+	copy.password = ""
 
 	bytes, err := json.Marshal(&copy)
 	if err != nil {
@@ -19,15 +19,17 @@ func (ig *Instagram) Save() (string, error) {
 }
 
 // Restore previously saved
-func Restore(cookieJar string) (*Instagram, error) {
+func Restore(cookieJar, password string) (*Instagram, error) {
 
-	var res Instagram
-	err := json.Unmarshal([]byte(cookieJar), &res)
+	var res *Instagram
+	err := json.Unmarshal([]byte(cookieJar), res)
 	if err != nil {
 		return nil, err
 	}
 
-	// @TODO: test ping
+	res.password = password
 
-	return &res, nil
+	// test request
+	_, err = res.GetRecentActivity()
+	return res, err
 }
