@@ -35,13 +35,20 @@ func RetrieveAccount(c *soso.Context) {
 	{ // get current user instagram ID
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
-		resp, err := userServiceClient.ReadUser(ctx, &core.ReadUserRequest{})
+		resp, err := userServiceClient.ReadUser(ctx, &core.ReadUserRequest{
+			Id: c.Token.UID,
+		})
 		if err != nil {
 			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 			return
 		}
 
 		instagramID = resp.User.InstagramId
+	}
+
+	if instagramID == 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram ID"))
+		return
 	}
 
 	ctx, cancel := rpc.DefaultContext()
