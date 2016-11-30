@@ -105,3 +105,46 @@ func AddAccount(c *soso.Context) {
 	})
 
 }
+
+func Confirm(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+
+	// get current user instagram ID
+	user, err := GetUser(c.Token.UID, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	instagramUsername := user.InstagramUsername
+
+	if instagramUsername == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram username"))
+		return
+	}
+
+	code, ok := c.RequestMap["code"].(string)
+	if !ok || code == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No code supplied"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	_, err = accountStoreServiceClient.Confirm(ctx, &accountstore.ConfirmRequest{
+		InstagramUsername: instagramUsername,
+		Code:              code,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"success": true,
+	})
+
+}
