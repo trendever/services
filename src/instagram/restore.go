@@ -21,8 +21,8 @@ func (ig *Instagram) Save() (string, error) {
 // Restore previously saved
 func Restore(cookieJar, password string) (*Instagram, error) {
 
-	var res *Instagram
-	err := json.Unmarshal([]byte(cookieJar), res)
+	var res Instagram
+	err := json.Unmarshal([]byte(cookieJar), &res)
 	if err != nil {
 		return nil, err
 	}
@@ -30,6 +30,6 @@ func Restore(cookieJar, password string) (*Instagram, error) {
 	res.password = password
 
 	// test request
-	_, err = res.GetRecentActivity()
-	return res, err
+	_, err = (&res).GetRecentActivity()
+	return &res, err
 }
