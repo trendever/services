@@ -5,8 +5,6 @@ import (
 	"github.com/ttacon/libphonenumber"
 )
 
-
->>>>>>> master
 func CheckNumber(phoneNumber, country string) (string, error) {
 	if country == "" {
 		country = "RU"
