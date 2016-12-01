@@ -123,10 +123,6 @@ func (s userServer) SetEmail(_ context.Context, req *core.SetEmailRequest) (*cor
 }
 
 func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.SetDataReply, error) {
-<<<<<<< HEAD
-
-=======
->>>>>>> master
 	_, found, err := models.FindUserMatchAny(0, 0, req.Name, req.Name, "", req.Phone)
 
 	if err != nil {
@@ -140,17 +136,12 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 
 	updateMap := map[string]interface{}{}
 	updateMap["phone"] = req.Phone
-<<<<<<< HEAD
-	updateMap["instagram_username"] = req.Name
-	updateMap["name"] = req.Name
-=======
 	updateMap["isFake"] = false
 
 	if req.Name != "" {
 		updateMap["instagram_username"] = req.Name
 		updateMap["name"] = req.Name
 	}
->>>>>>> master
 
 	res := db.New().Model(&models.User{}).Where("id = ?", req.UserId).UpdateColumns(updateMap)
 
