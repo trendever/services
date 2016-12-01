@@ -180,3 +180,56 @@ func SetData(c *soso.Context) {
 		"status": "success",
 	})
 }
+
+func SetData(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+
+	request := &core.SetDataRequest{}
+
+	request.UserId = c.Token.UID
+
+	if value, ok := c.RequestMap["name"].(string); ok {
+		value = strings.Trim(value, " \r\n\t")
+		if !nameValidator.MatchString(value) {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid user name"))
+			return
+		}
+		request.Name = value
+	}
+
+	if phone, ok := c.RequestMap["phone"].(string); ok {
+		phoneNumber, err := p.CheckNumber(phone, "")
+
+		if err != nil {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+			return
+		}
+
+		request.Phone = phoneNumber
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := userServiceClient.SetData(ctx, request)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	smsRequest := &auth.SmsPasswordRequest{PhoneNumber: request.Phone}
+	_, err = authServiceClient.SendNewSmsPassword(ctx, smsRequest)
+
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
+}
