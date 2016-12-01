@@ -162,12 +162,12 @@ func (pool *AccountsPool) Invalidate(id uint64) {
 	pool.Lock()
 	defer pool.Unlock()
 
-	info, ok := pool.idMap[id]
+	meta, ok := pool.idMap[id]
 	if !ok {
 		log.Errorf("can not remove unknown account %v", id)
 		return
 	}
-	info.stopper.Stop()
+	meta.stopper.Stop()
 	delete(pool.idMap, id)
 }
 
@@ -190,17 +190,11 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 		return
 	}
 
-	info, ok := pool.idMap[ig.UserNameID]
+	meta, ok := pool.idMap[ig.UserNameID]
 	// we have this account already
 	if ok {
-		if acc.Role != pool.role {
-			pool.delAcc(info)
-			return
-		}
-		// update data
-		*info.ig = *ig
-		// @CHECK do we need to restart worker?
-		return
+		// part of account data changed probably, easiest way to update it in worker is simple restart
+		pool.delAcc(meta)
 	}
 
 	if acc.Role == pool.role {
@@ -255,6 +249,7 @@ func (pool *AccountsPool) Stop() {
 			global.pools[k] = global.pools[len(global.pools)-1]
 			global.pools[len(global.pools)-1] = nil
 			global.pools = global.pools[:len(global.pools)-1]
+			break
 		}
 	}
 	global.Unlock()
