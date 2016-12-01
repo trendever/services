@@ -15,6 +15,6 @@ syntax = "proto3";
 package $pkg;
 EOF
 
-protoc --proto_path="$PWD" --go_out=plugins=grpc:. "${proto}"
+protoc --proto_path="$PWD" --gofast_out=plugins=grpc:. "${proto}"
 rm "${proto}"
 
