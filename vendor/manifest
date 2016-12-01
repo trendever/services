@@ -458,7 +458,7 @@
 		{
 			"importpath": "github.com/mitchellh/mapstructure",
 			"repository": "https://github.com/mitchellh/mapstructure",
-			"revision": "21a35fb16463dfb7c8eee579c65d995d95e64d1e",
+			"revision": "f3009df150dadf309fdee4a54ed65c124afad715",
 			"branch": "master"
 		},
 		{

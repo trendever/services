@@ -1,6 +1,7 @@
 package mapstructure
 
 import (
+	"encoding/json"
 	"io"
 	"reflect"
 	"sort"
@@ -9,14 +10,17 @@ import (
 )
 
 type Basic struct {
-	Vstring string
-	Vint    int
-	Vuint   uint
-	Vbool   bool
-	Vfloat  float64
-	Vextra  string
-	vsilent bool
-	Vdata   interface{}
+	Vstring     string
+	Vint        int
+	Vuint       uint
+	Vbool       bool
+	Vfloat      float64
+	Vextra      string
+	vsilent     bool
+	Vdata       interface{}
+	VjsonInt    int
+	VjsonFloat  float64
+	VjsonNumber json.Number
 }
 
 type BasicSquash struct {
@@ -36,6 +40,13 @@ type EmbeddedPointer struct {
 type EmbeddedSquash struct {
 	Basic   `mapstructure:",squash"`
 	Vunique string
+}
+
+type SliceAlias []string
+
+type EmbeddedSlice struct {
+	SliceAlias `mapstructure:"slice_alias"`
+	Vunique    string
 }
 
 type SquashOnNonStructType struct {
@@ -109,13 +120,16 @@ func TestBasicTypes(t *testing.T) {
 	t.Parallel()
 
 	input := map[string]interface{}{
-		"vstring": "foo",
-		"vint":    42,
-		"Vuint":   42,
-		"vbool":   true,
-		"Vfloat":  42.42,
-		"vsilent": true,
-		"vdata":   42,
+		"vstring":     "foo",
+		"vint":        42,
+		"Vuint":       42,
+		"vbool":       true,
+		"Vfloat":      42.42,
+		"vsilent":     true,
+		"vdata":       42,
+		"vjsonInt":    json.Number("1234"),
+		"vjsonFloat":  json.Number("1234.5"),
+		"vjsonNumber": json.Number("1234.5"),
 	}
 
 	var result Basic
@@ -155,6 +169,18 @@ func TestBasicTypes(t *testing.T) {
 
 	if result.Vdata != 42 {
 		t.Error("vdata should be valid")
+	}
+
+	if result.VjsonInt != 1234 {
+		t.Errorf("vjsonint value should be 1234: %#v", result.VjsonInt)
+	}
+
+	if result.VjsonFloat != 1234.5 {
+		t.Errorf("vjsonfloat value should be 1234.5: %#v", result.VjsonFloat)
+	}
+
+	if !reflect.DeepEqual(result.VjsonNumber, json.Number("1234.5")) {
+		t.Errorf("vjsonnumber value should be '1234.5': %T, %#v", result.VjsonNumber, result.VjsonNumber)
 	}
 }
 
@@ -252,8 +278,41 @@ func TestDecode_EmbeddedPointer(t *testing.T) {
 
 	var result EmbeddedPointer
 	err := Decode(input, &result)
-	if err == nil {
-		t.Fatal("should get error")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := EmbeddedPointer{
+		Basic: &Basic{
+			Vstring: "innerfoo",
+		},
+		Vunique: "bar",
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Fatalf("bad: %#v", result)
+	}
+}
+
+func TestDecode_EmbeddedSlice(t *testing.T) {
+	t.Parallel()
+
+	input := map[string]interface{}{
+		"slice_alias": []string{"foo", "bar"},
+		"vunique":     "bar",
+	}
+
+	var result EmbeddedSlice
+	err := Decode(input, &result)
+	if err != nil {
+		t.Fatalf("got an err: %s", err.Error())
+	}
+
+	if !reflect.DeepEqual(result.SliceAlias, SliceAlias([]string{"foo", "bar"})) {
+		t.Errorf("slice value: %#v", result.SliceAlias)
+	}
+
+	if result.Vunique != "bar" {
+		t.Errorf("vunique value should be 'bar': %#v", result.Vunique)
 	}
 }
 
@@ -837,10 +896,10 @@ func TestSliceToMap(t *testing.T) {
 	t.Parallel()
 
 	input := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"foo": "bar",
 		},
-		map[string]interface{}{
+		{
 			"bar": "baz",
 		},
 	}
