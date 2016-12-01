@@ -47,6 +47,7 @@ type AccountMeta struct {
 	ready chan *instagram.Instagram
 	// stopper for individual workers
 	stopper *stopper.Stopper
+	wait    sync.WaitGroup
 }
 
 func (acc *AccountMeta) Get() (*instagram.Instagram, error) {
@@ -205,25 +206,29 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 // adds account to pool and starts individualWorker(if any),
 // pool should be already locked on higher level
 func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
-	data := &AccountMeta{ig: ig, stopper: stopper.NewStopper()}
-	pool.idMap[ig.UserNameID] = data
+	meta := &AccountMeta{ig: ig, stopper: stopper.NewStopper()}
+	pool.idMap[ig.UserNameID] = meta
 
+	meta.wait.Add(1)
 	go func() {
 		for {
 			select {
 			case pool.ready <- ig:
 				pool.randomTimeout()
-			case data.ready <- ig:
+			case meta.ready <- ig:
 				pool.randomTimeout()
-			case <-data.stopper.Chan():
+			case <-meta.stopper.Chan():
+				meta.wait.Done()
 				return
 			}
 		}
 	}()
 
 	if pool.individualWorker != nil {
+		meta.wait.Add(1)
 		go func() {
-			pool.individualWorker(data, data.stopper.Chan())
+			pool.individualWorker(meta, meta.stopper.Chan())
+			meta.wait.Done()
 		}()
 	}
 }
@@ -232,6 +237,7 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 // pool should be already locked on higher level
 func (pool *AccountsPool) delAcc(acc *AccountMeta) {
 	acc.stopper.Stop()
+	acc.wait.Wait()
 	delete(pool.idMap, acc.ig.UserNameID)
 }
 
