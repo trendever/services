@@ -19,7 +19,7 @@ type LoginResponse struct {
 		HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
 		ProfilePicURL              string `json:"profile_pic_url"`
 		FullName                   string `json:"full_name"`
-		Pk                         int64  `json:"pk"`
+		Pk                         uint64 `json:"pk"`
 		IsPrivate                  bool   `json:"is_private"`
 	} `json:"logged_in_user"`
 }

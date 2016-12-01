@@ -12,7 +12,7 @@ type Instagram struct {
 	Username          string
 	password          string
 	LoggedIn          bool
-	UserNameID        int64
+	UserNameID        uint64
 	RankToken         string
 	CheckpointURL     string
 	Cookies           []*http.Cookie
