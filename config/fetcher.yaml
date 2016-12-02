@@ -16,6 +16,7 @@ nats:
   stanID: fetcher1
 
 instagram:
+  storeAddr: accountstore:5409
   timeoutMin: 10s
   timeoutMax: 15s
   responseLogging: true
