@@ -19,6 +19,7 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 	if err != nil {
 		return nil, err
 	}
+	account.Role = in.Role
 
 	// save Creates if not exists
 	err = Save(account)

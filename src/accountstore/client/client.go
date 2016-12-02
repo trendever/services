@@ -16,13 +16,13 @@ import (
 
 func init() {
 	nats.StanSubscribe(&nats.StanSubscription{
-		Subject:        "accounts.notify",
+		Subject:        "accountstore.notify",
 		DecodedHandler: handleNotify,
 	})
 }
 
 var global struct {
-	sync.RWMutex
+	sync.Mutex
 	pools []*AccountsPool
 }
 
@@ -50,11 +50,19 @@ type AccountMeta struct {
 	wait    sync.WaitGroup
 }
 
-func (acc *AccountMeta) Get() (*instagram.Instagram, error) {
+func (meta *AccountMeta) Get() *instagram.Instagram {
+	return meta.ig
+}
+
+func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
 	select {
-	case ig := <-acc.ready:
-		return ig, nil
-	case <-acc.stopper.Chan():
+	case ig := <-meta.ready:
+		if ig.LoggedIn {
+			return ig, nil
+		}
+		meta.pool.Invalidate(ig.UserNameID)
+		return nil, errors.New("account is logged off")
+	case <-meta.stopper.Chan():
 		return nil, errors.New("account is stopped")
 	}
 }
@@ -69,7 +77,7 @@ func InitPoll(
 	storeCli accountstore.AccountStoreServiceClient,
 	poolWorker func(pool *AccountsPool, stopChan chan struct{}),
 	individualWorker func(acc *AccountMeta, stopChan chan struct{}),
-	settings Settings,
+	settings *Settings,
 ) (*AccountsPool, error) {
 
 	min, err := time.ParseDuration(settings.TimeoutMin)
@@ -86,6 +94,7 @@ func InitPoll(
 		storeCli:         storeCli,
 		individualWorker: individualWorker,
 		stopper:          stopper.NewStopper(),
+		role:             role,
 		timeout: struct {
 			min int
 			max int
@@ -183,11 +192,11 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	defer pool.Unlock()
 
 	if !acc.Valid {
-		info, ok := pool.idMap[ig.UserNameID]
+		meta, ok := pool.idMap[ig.UserNameID]
 		if !ok {
 			return
 		}
-		pool.delAcc(info)
+		pool.delAcc(meta)
 		return
 	}
 
@@ -206,7 +215,12 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 // adds account to pool and starts individualWorker(if any),
 // pool should be already locked on higher level
 func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
-	meta := &AccountMeta{ig: ig, stopper: stopper.NewStopper()}
+	meta := &AccountMeta{
+		ig:      ig,
+		pool:    pool,
+		ready:   make(chan *instagram.Instagram),
+		stopper: stopper.NewStopper(),
+	}
 	pool.idMap[ig.UserNameID] = meta
 
 	meta.wait.Add(1)
@@ -243,8 +257,8 @@ func (pool *AccountsPool) delAcc(acc *AccountMeta) {
 
 func (pool *AccountsPool) Stop() {
 	pool.Lock()
-	for _, acc := range pool.idMap {
-		pool.delAcc(acc)
+	for _, meta := range pool.idMap {
+		pool.delAcc(meta)
 	}
 	pool.stopper.Stop()
 	pool.Unlock()
@@ -261,7 +275,19 @@ func (pool *AccountsPool) Stop() {
 	global.Unlock()
 }
 
+// stops all active pools
+func StopAll() {
+	for {
+		global.Lock()
+		for _, pool := range global.pools {
+			go pool.Stop()
+		}
+		global.Unlock()
+	}
+}
+
 func handleNotify(acc *accountstore.Account) bool {
+	log.Debug("instagram account notify: %+v", acc)
 	global.Lock()
 	for _, pool := range global.pools {
 		pool.update(acc)

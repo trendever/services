@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 var service *svc
@@ -26,6 +27,7 @@ func (s *svc) Load() {
 	log.Init(settings.Debug, "accountstore", settings.SentryDSN)
 	db.Init(settings.DB)
 	instagram.DoResponseLogging = settings.InstagramDebug
+	nats.Init(&settings.Nats, true)
 }
 
 func (s *svc) Start() {
