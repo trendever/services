@@ -410,13 +410,16 @@ func shopID(supplierID uint64) (uint64, error) {
 
 func notifyChat(mention *bot.Activity) error {
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
+	//ctx, cancel := rpc.DefaultContext()
+	//defer cancel()
+	//
+	//_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
+	//	ActivityPk: mention.Pk,
+	//	Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+	//})
+	//
+	//return err
 
-	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ActivityPk: mention.Pk,
-		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
-	})
-
-	return err
+	// @TODO
+	return nil
 }
