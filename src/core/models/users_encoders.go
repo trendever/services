@@ -29,6 +29,8 @@ func (u *User) PrivateEncode() *core.User {
 		HasPhone:           u.Phone != "",
 		Seller:             u.IsSeller,
 		Confirmed:          u.Confirmed,
+		IsFake:             u.IsFake,
+		IsAdmin:            u.IsAdmin,
 	}
 }
 

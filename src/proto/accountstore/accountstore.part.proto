@@ -29,6 +29,7 @@ message Account {
 message AddRequest {
   string instagram_username = 1;
   string password = 2;
+  Role role = 3;
 }
 
 message AddReply {

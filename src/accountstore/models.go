@@ -3,7 +3,11 @@ package main
 import (
 	"proto/accountstore"
 	"utils/db"
+	"utils/log"
+	"utils/nats"
 )
+
+const NotifyTopic = "accountstore.notify"
 
 // Account contains instagram account cookie
 type Account struct {
@@ -16,13 +20,13 @@ type Account struct {
 	CodeSentBy        string
 }
 
-// Create new acc
-func Create(acc *Account) error {
-	return db.New().Create(acc).Error
-}
-
 // Save it
 func Save(acc *Account) error {
+	err := nats.StanPublish(NotifyTopic, acc)
+	if err != nil {
+		log.Errorf("failed to notify about account: %v", err)
+		// @TODO inconsistent state... what now?
+	}
 	return db.New().Save(acc).Error
 }
 
@@ -63,6 +67,7 @@ func EncodeAll(accs []Account) []*accountstore.Account {
 func (acc *Account) Encode() *accountstore.Account {
 	return &accountstore.Account{
 		InstagramUsername: acc.InstagramUsername,
+		InstagramId:       acc.InstagramID,
 		Cookie:            acc.Cookie,
 		Valid:             acc.Valid,
 		Role:              acc.Role,
@@ -73,6 +78,7 @@ func (acc *Account) Encode() *accountstore.Account {
 func (acc *Account) EncodePrivate() *accountstore.Account {
 	return &accountstore.Account{
 		InstagramUsername: acc.InstagramUsername,
+		InstagramId:       acc.InstagramID,
 		Valid:             acc.Valid,
 		Role:              acc.Role,
 	}

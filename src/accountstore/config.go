@@ -2,6 +2,7 @@ package main
 
 import (
 	"utils/db"
+	"utils/nats"
 )
 
 var settings = Settings{}
@@ -13,4 +14,5 @@ type Settings struct {
 	SentryDSN      string
 	Listen         string
 	InstagramDebug bool
+	Nats           nats.Config
 }

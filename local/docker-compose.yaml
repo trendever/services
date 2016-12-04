@@ -82,6 +82,8 @@ services:
     depends_on:
       - db
     command: sh -c './bin/auth migrate && exec ./bin/auth start'
+    ports:
+      - 127.0.0.1:8433:8433
   api:
     image: debian:jessie
     volumes_from:

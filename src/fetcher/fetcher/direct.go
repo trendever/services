@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"accountstore/client"
 	"fetcher/models"
 	"fmt"
 	"instagram"
@@ -10,21 +11,7 @@ import (
 )
 
 // direct activity: accept PM invites; read && parse them
-func (w *Worker) directActivity() {
-
-	for {
-
-		err := w.checkNewMessages()
-		if err != nil {
-			log.Error(err)
-		}
-
-		w.next()
-	}
-}
-
-func (w *Worker) checkNewMessages() error {
-
+func checkDirect(meta *client.AccountMeta) error {
 	// get non-pending shiet
 	// check which threads got updated since last time
 	// get them
@@ -35,13 +22,21 @@ func (w *Worker) checkNewMessages() error {
 
 collectLoop:
 	for {
-		resp, err := w.api().Inbox(cursor)
+		ig, err := meta.Delayed()
+		if err != nil {
+			return err
+		}
+		resp, err := ig.Inbox(cursor)
 		if err != nil {
 			return err
 		}
 
 		if resp.PendingRequestsTotal > 0 {
-			_, err := w.api().DirectThreadApproveAll()
+			ig, err := meta.Delayed()
+			if err != nil {
+				return err
+			}
+			_, err = ig.DirectThreadApproveAll()
 			// do nothing else now
 			return err
 		}
@@ -69,7 +64,7 @@ collectLoop:
 	}
 
 	for it := len(threads) - 1; it >= 0; it-- {
-		err := w.processThread(&threads[it])
+		err := processThread(meta, &threads[it])
 		if err != nil {
 			return err
 		}
@@ -78,12 +73,11 @@ collectLoop:
 	return nil
 }
 
-func (w *Worker) processThread(info *models.ThreadInfo) error {
+func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	var (
 		threadID = info.ThreadID
 		resp     *instagram.DirectThreadResponse
 		msgs     []instagram.ThreadItem
-		err      error
 	)
 	log.Debug("Processing thread %v, last checked was %v", threadID, info.LastCheckedID)
 	defer log.Debug("Processing thread %v end", threadID)
@@ -91,7 +85,11 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 	// populate new messages
 	cursor := ""
 	for {
-		resp, err = w.api().DirectThread(threadID, cursor)
+		ig, err := meta.Delayed()
+		if err != nil {
+			return err
+		}
+		resp, err = ig.DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
@@ -135,7 +133,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 		case "media_share":
 			// there was older media without comment
 			if relatedMedia != nil {
-				if err := w.fillDirect(message, &resp.Thread, ""); err != nil {
+				if err := fillDirect(message, &resp.Thread, meta.Get().Username, ""); err != nil {
 					return err
 				}
 			}
@@ -160,7 +158,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 					comment = message.Text
 					notify.RelatedMedia = relatedMedia.MediaShare.ID
 				}
-				if err := w.fillDirect(relatedMedia, &resp.Thread, comment); err != nil {
+				if err := fillDirect(relatedMedia, &resp.Thread, meta.Get().Username, comment); err != nil {
 					return err
 				}
 				relatedMedia = nil
@@ -182,7 +180,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 
 	// some unfinished stuff
 	if relatedMedia != nil {
-		if err := w.fillDirect(relatedMedia, &resp.Thread, ""); err != nil {
+		if err := fillDirect(relatedMedia, &resp.Thread, meta.Get().Username, ""); err != nil {
 			return err
 		}
 		err := models.SaveLastCheckedID(threadID, msgs[0].ItemID)
@@ -195,7 +193,7 @@ func (w *Worker) processThread(info *models.ThreadInfo) error {
 }
 
 // fill database model by direct message
-func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, comment string) error {
+func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, mentioned, comment string) error {
 
 	share := item.MediaShare
 
@@ -222,7 +220,7 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		UserID:            item.UserID,
 		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
-		MentionedUsername: w.username,
+		MentionedUsername: mentioned,
 		Type:              "direct",
 		Comment:           comment,
 		MediaID:           share.ID,
@@ -230,15 +228,4 @@ func (w *Worker) fillDirect(item *instagram.ThreadItem, thread *instagram.Thread
 		ThreadID:          thread.ThreadID,
 	}
 	return act.Create()
-}
-
-// SendDirectMsg sends text to a new chat
-func (w *Worker) SendDirectMsg(threadID, message string) (messageID string, _ error) {
-	return w.api().BroadcastText(threadID, message)
-}
-
-// SendDirectMsgToUser sends text to user
-func (w *Worker) SendDirectMsgToUser(userID uint64, message string) (*instagram.SendTextResponse, error) {
-	res, err := w.api().SendText(userID, message)
-	return res, err
 }

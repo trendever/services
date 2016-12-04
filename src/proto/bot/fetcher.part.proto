@@ -17,8 +17,11 @@ message RetrieveActivitiesRequest {
 }
 
 message SendDirectRequest {
-  string activity_pk = 1;
+  uint64 sender_id = 1;
   string text = 2;
+  // only one of two followed fields need to be setted
+  string thread_id = 3;
+  uint64 reciever_id = 4;
 }
 
 message RetrieveActivitiesReply {

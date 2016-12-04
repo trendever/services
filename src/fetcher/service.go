@@ -61,6 +61,7 @@ func main() {
 func Run() error {
 	config := conf.GetSettings()
 	db.Init(&config.DB)
+	nats.Init(&conf.GetSettings().Nats, true)
 
 	rand.Seed(time.Now().Unix())
 	err := fetcher.Start()
@@ -69,7 +70,6 @@ func Run() error {
 	}
 
 	// init api
-	nats.Init(&conf.GetSettings().Nats, true)
 	views.Init(rpc.Serve(config.RPC))
 
 	// interrupt
