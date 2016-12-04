@@ -132,7 +132,7 @@ func (r CardRepositoryImpl) GetShopSellers(shopID uint) ([]uint, error) {
 
 	var result []uint
 
-	err := r.DB.Table("products_shops_sellers").Where("shop_id = ?", shopID).Pluck("seller_id", &result).Error
+	err := r.DB.Table("products_shops_sellers").Where("shop_id = ?", shopID).Pluck("user_id", &result).Error
 
 	return result, err
 }
