@@ -142,7 +142,7 @@ func LoadProducts(ids []uint64) (products map[uint64]*models.ElasticProduct, err
 SELECT
 	product.id, product.updated_at, product.deleted_at,
 	product.code, product.title, product.instagram_image_caption, product.is_sale,
-	shop.id, shop.updated_at, shop.deleted_at,
+	shop.id, shop.updated_at, shop.deleted_at, shop.location,
 	supplier.id, supplier.updated_at, supplier.deleted_at,
 	supplier.instagram_username, supplier.instagram_fullname,
 	mentioner.id, mentioner.updated_at, mentioner.deleted_at,
@@ -169,7 +169,7 @@ WHERE
 		err = rows.Scan(
 			&p.Meta.ID, &times[0], &times[1],
 			&p.Data.Code, &p.Data.Title, &p.Data.Caption, &p.Data.Sale,
-			&shop_id, &times[2], &times[3],
+			&shop_id, &times[2], &times[3], &p.Data.Shop.Location,
 			&p.Data.Shop.Supplier, &times[4], &times[5],
 			&p.Data.Shop.Name, &p.Data.Shop.FullName,
 			&mentioner_id, &times[6], &times[7],

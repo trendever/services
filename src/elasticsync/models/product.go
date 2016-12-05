@@ -84,6 +84,9 @@ const ProductIndex = `{
 					},
 					"full_name": {
 						"type": "string"
+					},
+					"location": {
+						"type": "string"
 					}
 				}
 			},
@@ -181,6 +184,7 @@ type ElasticProductData struct {
 		Supplier uint64 `json:"supplier"`
 		Name     string `json:"name,omitempty"`
 		FullName string `json:"full_name,omitempty"`
+		Location string `json:"location,omitempty"`
 	} `json:"shop,omitempty"`
 	Mentioner struct {
 		ID       uint64 `json:"id"`
