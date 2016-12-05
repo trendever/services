@@ -25,6 +25,9 @@ type Shop struct {
 	SupplierLastLogin time.Time
 	oldSupplier       uint
 
+	// @TODO separate data somehow, there is no need to carry it all the time
+	Location         string `gorm:"type:text"`
+	WorkingTime      string `gorm:"type:text"`
 	ShippingRules    string `gorm:"type:text"`
 	PaymentRules     string `gorm:"type:text"`
 	InstagramWebsite string `gorm:"type:text"`
@@ -96,6 +99,8 @@ func (s Shop) Encode() *core.Shop {
 		InstagramAvatarUrl: s.Supplier.InstagramAvatarURL,
 		InstagramCaption:   s.Supplier.InstagramCaption,
 		InstagramWebsite:   s.InstagramWebsite,
+		Location:           s.Location,
+		WorkingTime:        s.WorkingTime,
 		ShippingRules:      s.ShippingRules,
 		PaymentRules:       s.PaymentRules,
 		Caption:            s.Supplier.Caption,

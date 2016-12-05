@@ -41,6 +41,9 @@ message Shop {
   // DO NOT use this field to determinate whether shop has active plan, check "suspended" field instead
   int64 plan_expires_at = 20;
   bool auto_renewal = 21;
+
+  string location = 22;
+  string working_time = 23;
 }
 
 
