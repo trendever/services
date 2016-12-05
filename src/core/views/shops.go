@@ -36,7 +36,13 @@ func (s shopServer) GetShopProfile(_ context.Context, req *core.ShopProfileReque
 		return
 	}
 
+	count, err := models.GetShopProductsCount(uint64(shop.ID))
+	if err != nil {
+		return
+	}
+
 	reply.Shop = shop.Encode()
+	reply.ProductsCount = count
 
 	return
 }

@@ -44,7 +44,5 @@ func GetShopProfile(c *soso.Context) {
 		return
 	}
 
-	c.SuccessResponse(map[string]interface{}{
-		"shop": resp.Shop,
-	})
+	c.SuccessResponse(resp)
 }

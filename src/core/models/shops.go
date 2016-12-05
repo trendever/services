@@ -255,6 +255,11 @@ func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint64, err error) {
 	return
 }
 
+func GetShopProductsCount(shopID uint64) (count uint64, err error) {
+	err = db.New().Model(Product{}).Where("shop_id = ?", shopID).Count(&count).Error
+	return
+}
+
 // FindOrCreateShopForSupplier func
 func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID uint64, deleted bool, err error) {
 	scope := db.New().Where("supplier_id = ?", supplier.ID)
