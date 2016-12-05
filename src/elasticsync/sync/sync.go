@@ -166,7 +166,7 @@ WHERE
 	for rows.Next() {
 		p := &models.ElasticProduct{}
 		var alter_name string
-		err = rows.Scan(
+		err = db.NilScan(rows,
 			&p.Meta.ID, &times[0], &times[1],
 			&p.Data.Code, &p.Data.Title, &p.Data.Caption, &p.Data.Sale,
 			&shop_id, &times[2], &times[3], &p.Data.Shop.Location,
@@ -243,7 +243,7 @@ func LoadProductsTags(product_ids []uint64, products map[uint64]*models.ElasticP
 	// current item index
 	var itemCur int
 	for rows.Next() {
-		err := rows.Scan(
+		err := db.NilScan(rows,
 			&tag.ID, &tag.Name,
 			&tag.UpdatedAt, &tag.DeletedAt,
 			&tag.Hidden, &tag.ProductID, &tag.ItemID,
@@ -295,7 +295,7 @@ func LoadProductsItems(product_ids []uint64, products map[uint64]*models.Elastic
 	var cur *models.ElasticProduct = products[product_ids[0]]
 	for rows.Next() {
 		item := &models.ElasticProductItem{}
-		err = rows.Scan(
+		err = db.NilScan(rows,
 			&item.ID, &itemMeta.ProductID, &itemMeta.UpdatedAt, &itemMeta.DeletedAt,
 			&item.Name, &item.Price, &item.DiscountPrice,
 		)
@@ -337,7 +337,7 @@ func LoadProductsImages(product_ids []uint64, products map[uint64]*models.Elasti
 
 	var cur *models.ElasticProduct = products[product_ids[0]]
 	for rows.Next() {
-		err = rows.Scan(
+		err = db.NilScan(rows,
 			&image.ProductID, &image.UpdatedAt, &image.DeletedAt,
 			&image.URL, &image.Name,
 		)

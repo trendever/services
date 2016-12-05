@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"time"
@@ -31,6 +32,36 @@ type Model struct {
 // New database conn
 func New() *gorm.DB {
 	return connection.New()
+}
+
+func NilScan(rows *sql.Rows, args ...interface{}) (err error) {
+	cp := make([]interface{}, len(args), len(args))
+
+	type replaced struct {
+		orig *string
+		null sql.NullString
+	}
+	reps := []replaced{}
+	for i, arg := range args {
+		switch arg := arg.(type) {
+		case *string:
+			reps = append(reps, replaced{
+				orig: arg,
+			})
+			cp[i] = &reps[len(reps)-1].null
+		default:
+			cp[i] = arg
+		}
+	}
+	err = rows.Scan(cp...)
+	if err != nil {
+		return
+	}
+
+	for _, rep := range reps {
+		*rep.orig = rep.null.String
+	}
+	return
 }
 
 // Init initializes db connection
