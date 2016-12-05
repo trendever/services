@@ -9,12 +9,13 @@ lastCheckedFile: 'wantit.last'
 
 directNotificationText: "%v, спасибо за @wantit, теперь скачай приложение Trendever - там в чатах ждет заказ."
 
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: wantit1
+
 instagram:
-  timeoutMin: 500
-  timeoutMax: 2000
-  reloginTimeout: 10000
-  pollTimeout: 10000
-  users:
-    - username: nmstrs2
-      password: pass4ig
-  wantitUser: nmstrs2
+  storeAddr: accountstore:5409
+  timeoutMin: 10s
+  timeoutMax: 15s
+  responseLogging: false

@@ -143,7 +143,7 @@ type MediaShare struct {
 		IsUnpublished              bool   `json:"is_unpublished"`
 		ProfilePicURL              string `json:"profile_pic_url"`
 		FullName                   string `json:"full_name"`
-		Pk                         int64  `json:"pk"`
+		Pk                         uint64 `json:"pk"`
 		IsPrivate                  bool   `json:"is_private"`
 	} `json:"user"`
 	OrganicTrackingToken         string        `json:"organic_tracking_token"`

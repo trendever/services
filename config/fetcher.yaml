@@ -20,10 +20,3 @@ instagram:
   timeoutMin: 10s
   timeoutMax: 15s
   responseLogging: true
-  users:
-    - username: nmstrs1
-      password: pass4ig
-    - username: nmstrs2
-      password: pass4ig
-    - username: happierall2
-      password: 555777

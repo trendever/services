@@ -54,6 +54,10 @@ func (meta *AccountMeta) Get() *instagram.Instagram {
 	return meta.ig
 }
 
+func (meta *AccountMeta) Role() accountstore.Role {
+	return meta.pool.role
+}
+
 func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
 	select {
 	case ig := <-meta.ready:
@@ -93,6 +97,7 @@ func InitPoll(
 		idMap:            make(map[uint64]*AccountMeta),
 		storeCli:         storeCli,
 		individualWorker: individualWorker,
+		ready:            make(chan *instagram.Instagram),
 		stopper:          stopper.NewStopper(),
 		role:             role,
 		timeout: struct {

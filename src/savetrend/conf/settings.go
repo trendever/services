@@ -1,10 +1,12 @@
 package conf
 
 import (
+	"accountstore/client"
 	"fmt"
 	"github.com/spf13/viper"
 	"utils/config"
 	"utils/log"
+	"utils/nats"
 )
 
 var (
@@ -47,16 +49,12 @@ type Settings struct {
 	MandibleURL            string
 	LastCheckedFile        string
 	DirectNotificationText string
+	Nats                   nats.Config
 }
 
+// Instagram config
 type Instagram struct {
-	TimeoutMin     int
-	TimeoutMax     int
-	ReloginTimeout int
-	PollTimeout    int
-	TrendUser      string
-	Users          []struct {
-		Username string
-		Password string
-	}
+	client.Settings `mapstructure:",squash"`
+	StoreAddr       string
+	ResponseLogging bool
 }

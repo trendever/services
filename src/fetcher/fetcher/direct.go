@@ -5,6 +5,7 @@ import (
 	"fetcher/models"
 	"fmt"
 	"instagram"
+	"proto/accountstore"
 	"proto/bot"
 	"utils/log"
 	"utils/nats"
@@ -95,23 +96,19 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		}
 
 		if info.LaterThan(resp.Thread.OldestCursor) {
-			log.Debug("last checked is older then oldest cursor")
 			msgs = append(msgs, resp.Thread.Items...)
 			cursor = resp.Thread.OldestCursor
 			if !resp.Thread.HasOlder {
-				log.Debug("Reached end of the thread %v", threadID)
 				break
 			}
 			continue
 		}
 
 		if info.LastCheckedID == resp.Thread.OldestCursor {
-			log.Debug("last checked match oldest cursor")
 			msgs = append(msgs, resp.Thread.Items...)
 			break
 		}
 
-		log.Debug("last checked should be somewhere in middle")
 		for it, msg := range resp.Thread.Items {
 			if !info.LaterThan(msg.ItemID) {
 				msgs = append(msgs, resp.Thread.Items[:it]...)
@@ -133,7 +130,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		case "media_share":
 			// there was older media without comment
 			if relatedMedia != nil {
-				if err := fillDirect(message, &resp.Thread, meta.Get().Username, ""); err != nil {
+				if err := fillDirect(message, &resp.Thread, meta, ""); err != nil {
 					return err
 				}
 			}
@@ -158,7 +155,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 					comment = message.Text
 					notify.RelatedMedia = relatedMedia.MediaShare.ID
 				}
-				if err := fillDirect(relatedMedia, &resp.Thread, meta.Get().Username, comment); err != nil {
+				if err := fillDirect(relatedMedia, &resp.Thread, meta, comment); err != nil {
 					return err
 				}
 				relatedMedia = nil
@@ -180,7 +177,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 
 	// some unfinished stuff
 	if relatedMedia != nil {
-		if err := fillDirect(relatedMedia, &resp.Thread, meta.Get().Username, ""); err != nil {
+		if err := fillDirect(relatedMedia, &resp.Thread, meta, ""); err != nil {
 			return err
 		}
 		err := models.SaveLastCheckedID(threadID, msgs[0].ItemID)
@@ -193,9 +190,10 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 }
 
 // fill database model by direct message
-func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, mentioned, comment string) error {
+func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
 
 	share := item.MediaShare
+	ig := meta.Get()
 
 	// find username
 	var username = ""
@@ -213,6 +211,12 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, mentioned,
 		return nil
 	}
 
+	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserNameID {
+		// ignore media with someone else's posts for shops
+		log.Debug("ignoring medaishare %v with foreign post", item.ItemID)
+		return nil
+	}
+
 	log.Debug("Filling in new direct story")
 
 	act := &models.Activity{
@@ -220,7 +224,8 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, mentioned,
 		UserID:            item.UserID,
 		UserName:          username,
 		UserImageURL:      share.User.ProfilePicURL,
-		MentionedUsername: mentioned,
+		MentionedUsername: ig.Username,
+		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "direct",
 		Comment:           comment,
 		MediaID:           share.ID,

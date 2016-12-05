@@ -20,6 +20,7 @@ type Activity struct {
 	UserName          string // commentary owner username
 	UserImageURL      string
 	MentionedUsername string // mention tag. @saveit, for instance
+	MentionedRole     bot.MentionedRole
 	Type              string
 	Comment           string
 	ThreadID          string `gorm:"index"` // optional field: direct thread ID
@@ -73,6 +74,7 @@ func (act *Activity) Encode() *bot.Activity {
 		UserImageUrl:      act.UserImageURL,
 		UserName:          act.UserName,
 		MentionedUsername: act.MentionedUsername,
+		MetionedRole:      act.MentionedRole,
 		Type:              act.Type,
 		Comment:           act.Comment,
 		CreatedAt:         act.CreatedAt.Unix(),

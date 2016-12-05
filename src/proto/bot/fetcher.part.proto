@@ -9,11 +9,22 @@ service FetcherService {
   rpc CreateThread (CreateThreadRequest) returns (CreateThreadReply) {}
 }
 
+// @TODO MentionedRole should be suhnonized with accountstore roles. any way to get normal imports?..
+enum MentionedRole {
+  User = 0;
+  Savetrend = 1;
+  Wantit = 2;
+}
+
+message RetriveCond {
+  MentionedRole role = 1;
+  repeated string type = 2;
+}
+
 message RetrieveActivitiesRequest {
-  string mention_name = 1;
+  repeated RetriveCond conds = 1;
   int64 after_id = 2;
-  repeated string type = 4;
-  int64 limit = 5;
+  int64 limit = 3;
 }
 
 message SendDirectRequest {
@@ -42,6 +53,7 @@ message Activity {
   string user_name = 6;
   string user_image_url = 7;
   string mentioned_username = 8;
+  MentionedRole metioned_role = 13;
 
   string type = 9;
   string comment = 10;

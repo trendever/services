@@ -9,12 +9,13 @@ mandibleURL: 'http://mandible:8089/'
 lastCheckedFile: 'savetrend.last'
 directNotificationText: "%v, спасибо за @savetrend, теперь скачай приложение Trendever - там в профиле сохранилось это фото."
 
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: savetrend1
+
 instagram:
-  timeoutMin: 500
-  timeoutMax: 2000
-  reloginTimeout: 10000
-  pollTimeout: 10000
-  users:
-  - username: nmstrs1
-    password: pass4ig
-  trendUser: nmstrs1
+  storeAddr: accountstore:5409
+  timeoutMin: 10s
+  timeoutMax: 15s
+  responseLogging: false

@@ -57,6 +57,15 @@ func Start() error {
 	}
 
 	_, err = client.InitPoll(
+		accountstore.Role_User, cli,
+		nil, primaryWorker,
+		&settings.Instagram.Settings,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init acoounts pool: %v", err)
+	}
+
+	_, err = client.InitPoll(
 		accountstore.Role_AuxPublic, cli,
 		nil, nil,
 		&settings.Instagram.Settings,

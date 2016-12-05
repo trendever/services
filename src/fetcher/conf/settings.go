@@ -57,8 +57,4 @@ type Instagram struct {
 	client.Settings `mapstructure:",squash"`
 	StoreAddr       string
 	ResponseLogging bool
-	Users           []struct {
-		Username string
-		Password string
-	}
 }

@@ -4,6 +4,7 @@ import (
 	"accountstore/client"
 	"fetcher/models"
 	"instagram"
+	"proto/bot"
 	"strings"
 	"utils/log"
 )
@@ -28,7 +29,7 @@ func getActivity(meta *client.AccountMeta) error {
 
 	// fetch old stories
 	for _, story := range append(ract.OldStories, ract.NewStories...) {
-		err := fillFeed(story, ig.Username)
+		err := fillFeed(story, meta)
 		if err != nil {
 			return err
 		}
@@ -37,7 +38,7 @@ func getActivity(meta *client.AccountMeta) error {
 }
 
 // fill database model
-func fillFeed(stories instagram.RecentActivityStories, mentionName string) error {
+func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta) error {
 
 	log.Debug("Fetching new story")
 
@@ -49,7 +50,8 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 		UserID:       stories.Args.ProfileID,
 		UserImageURL: stories.Args.ProfileImage,
 
-		MentionedUsername: mentionName,
+		MentionedUsername: meta.Get().Username,
+		MentionedRole:     bot.MentionedRole(meta.Role()),
 
 		UserName: txt.userName,
 		Type:     txt.textType,

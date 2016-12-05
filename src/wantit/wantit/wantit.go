@@ -16,11 +16,14 @@ import (
 	"wantit/api"
 	"wantit/conf"
 
+	"accountstore/client"
 	"instagram"
+	"proto/accountstore"
 	"proto/bot"
 	"proto/core"
 	"utils/log"
 	"utils/mandible"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -35,7 +38,7 @@ type ProjectService struct{}
 
 var (
 	lastChecked = int64(0)
-	pool        *instagram.Pool
+	pool        *client.AccountsPool
 	settings    = conf.GetSettings()
 	// @TODO products with big id will have more symbols
 	codeRegexp     = regexp.MustCompile("t[a-z]+[0-9]{4}($|[^0-9])")
@@ -48,10 +51,24 @@ func (svc *ProjectService) ResetLastChecked() error {
 }
 
 // Run fetching
-func (svc *ProjectService) Run() error {
+func (svc *ProjectService) Run() (err error) {
 
 	rand.Seed(time.Now().Unix())
 	api.Start()
+
+	nats.Init(&settings.Nats, true)
+
+	conn := rpc.Connect(settings.Instagram.StoreAddr)
+	cli := accountstore.NewAccountStoreServiceClient(conn)
+	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
+	pool, err = client.InitPoll(
+		accountstore.Role_AuxPrivate, cli,
+		nil, nil,
+		&settings.Instagram.Settings,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init acoounts pool: %v", err)
+	}
 
 	// interrupt
 	interrupt := make(chan os.Signal)
@@ -62,11 +79,6 @@ func (svc *ProjectService) Run() error {
 	// with getFreeApi()
 	restoreLastChecked()
 	go registerOrders()
-
-	err := registerApis()
-	if err != nil {
-		return err
-	}
 
 	// wait for terminating
 	<-interrupt
@@ -98,29 +110,8 @@ func saveLastChecked() {
 	ioutil.WriteFile(conf.GetSettings().LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
 }
 
-func registerApis() error {
-
-	pool = instagram.NewPool(&instagram.PoolSettings{
-		TimeoutMin:     settings.Instagram.TimeoutMin,
-		TimeoutMax:     settings.Instagram.TimeoutMax,
-		ReloginTimeout: settings.Instagram.ReloginTimeout,
-	})
-
-	// open connection and append connections pool
-	for _, user := range settings.Instagram.Users {
-
-		api, err := instagram.NewInstagram(user.Username, user.Password)
-		if err != nil {
-			return err
-		}
-
-		pool.Add(api)
-	}
-
-	return nil
-}
-
 func registerOrders() {
+	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
 
 	for {
 		log.Debug("Checking for new mention orders (last processed at %v)...", lastChecked)
@@ -155,8 +146,9 @@ func registerOrders() {
 			}
 
 		}
-
-		time.Sleep(time.Millisecond * time.Duration(settings.Instagram.PollTimeout))
+		if len(res.Result) == 0 {
+			time.Sleep(timeout)
+		}
 	}
 }
 
@@ -164,10 +156,18 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
-		AfterId:     lastChecked,
-		Type:        []string{"mentioned", "direct"},
-		MentionName: conf.GetSettings().Instagram.WantitUser,
-		Limit:       100, //@CHECK this number
+		Conds: []*bot.RetriveCond{
+			{
+				Role: bot.MentionedRole_Wantit,
+				Type: []string{"mentioned", "direct"},
+			},
+			{
+				Role: bot.MentionedRole_User,
+				Type: []string{"commented", "direct"},
+			},
+		},
+		AfterId: lastChecked,
+		Limit:   100, //@CHECK this number
 	})
 }
 
@@ -187,7 +187,11 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	// get product media
-	medias, err := pool.GetFree().GetMedia(mediaID)
+	ig, err := pool.GetFree()
+	if err != nil {
+		return true, err
+	}
+	medias, err := ig.GetMedia(mediaID)
 	if err != nil {
 		if strings.Contains(err.Error(), "Media not found or unavailable") {
 			return false, err
@@ -230,7 +234,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 
 	// check if self-mention
 	if mention.UserName == productMedia.User.Username {
-		log.Debug("Skipping order creation: @%v under own post (user=%v)", settings.Instagram.WantitUser, productMedia.User.Username)
+		log.Debug("Skipping order creation: @%v under own post (user=%v)", mention.MentionedUsername, productMedia.User.Username)
 		return false, nil
 	}
 
@@ -281,10 +285,14 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	defer cancel()
 	log.Debug("Creating new order (productId=%v)", productID)
 
-	// indicate it's direct lead if it is
-	source := "wantit"
-	if mention.DirectThreadId != "" {
+	var source string
+	switch mention.Type {
+	case "commented":
+		source = "comment"
+	case "direct":
 		source = "direct"
+	default:
+		source = "wantit"
 	}
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
@@ -370,7 +378,11 @@ func coreUser(instagramID int64, instagramUsername string) (*core.User, error) {
 	}
 
 	// secondly, get this user profile
-	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
+	ig, err := pool.GetFree()
+	if err != nil {
+		return nil, err
+	}
+	userInfo, err := ig.GetUserNameInfo(instagramID)
 	if err != nil {
 		return nil, err
 	}
