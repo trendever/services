@@ -97,7 +97,7 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	}
 
 	// Step0: check if Lead already has open order
-	canOpen, err := ps.repo.CanCreateOrder(uint(req.Data.LeadId))
+	canOpen, err := ps.repo.CanCreateOrder(req.Data.LeadId)
 	if err != nil {
 		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	} else if !canOpen {
@@ -215,7 +215,7 @@ func (ps *paymentServer) DelCard(_ context.Context, req *payment.DelCardRequest)
 func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderRequest) (*payment.BuyOrderReply, error) {
 
 	// Step0: find pay
-	Payment, err := ps.repo.GetPayByID(uint(req.PayId))
+	Payment, err := ps.repo.GetPayByID(req.PayId)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -274,7 +274,7 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 	}
 
 	// Step0: find pay
-	Payment, err := ps.repo.GetPayByID(uint(create.Id))
+	Payment, err := ps.repo.GetPayByID(create.Id)
 	if err != nil {
 		return &payment.BuyAsyncReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -328,7 +328,7 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrderRequest) (*payment.CancelOrderReply, error) {
 
 	// Step0: find pay
-	pay, err := ps.repo.GetPayByID(uint(req.PayId))
+	pay, err := ps.repo.GetPayByID(req.PayId)
 	if err != nil {
 		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -395,7 +395,7 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 func (ps *paymentServer) GetOrder(_ context.Context, req *payment.GetOrderRequest) (*payment.GetOrderReply, error) {
 
 	// Step0: find pay
-	pay, err := ps.repo.GetPayByID(uint(req.Id))
+	pay, err := ps.repo.GetPayByID(req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -407,6 +407,6 @@ func (ps *paymentServer) GetOrder(_ context.Context, req *payment.GetOrderReques
 
 func (ps *paymentServer) UpdateServiceData(_ context.Context, req *payment.UpdateServiceDataRequest) (*payment.UpdateServiceDataReply, error) {
 
-	err := ps.repo.UpdateServiceData(uint(req.Id), req.NewData)
+	err := ps.repo.UpdateServiceData(req.Id, req.NewData)
 	return &payment.UpdateServiceDataReply{}, err
 }

@@ -6,12 +6,12 @@ import (
 	"proto/payment"
 
 	"github.com/durango/go-credit-card"
-	"github.com/jinzhu/gorm"
+	"utils/db"
 )
 
 // Payment defines payment order info
 type Payment struct {
-	gorm.Model
+	db.Model
 
 	UserID    uint64 // that's client id
 	LeadID    uint64 `gorm:"index"`
@@ -37,14 +37,14 @@ type Payment struct {
 }
 
 // GetPayByID returns payment by ID
-func (r *RepoImpl) GetPayByID(id uint) (*Payment, error) {
+func (r *RepoImpl) GetPayByID(id uint64) (*Payment, error) {
 	var result Payment
 	err := r.DB.Where("id = ?", id).Find(&result).Error
 	return &result, err
 }
 
 // FinishedSessionsForPayID returns num of successfull payments with given pay ID
-func (r *RepoImpl) FinishedSessionsForPayID(payID uint) (int, error) {
+func (r *RepoImpl) FinishedSessionsForPayID(payID uint64) (int, error) {
 
 	var count int
 	err := r.DB.
@@ -63,30 +63,59 @@ func (r *RepoImpl) CreatePay(p *Payment) error {
 }
 
 // UpdateServiceData service data can be upgraded
-func (r *RepoImpl) UpdateServiceData(id uint, data string) error {
+func (r *RepoImpl) UpdateServiceData(id uint64, data string) error {
 	return r.DB.Model(&Payment{}).Where("id = ?", id).Update("service_data", data).Error
 }
 
 // CanCreateOrder shows if you can create another order for this leadID
-func (r *RepoImpl) CanCreateOrder(leadID uint) (bool, error) {
+func (r *RepoImpl) CanCreateOrder(leadID uint64) (bool, error) {
 
 	if leadID == 0 {
 		return true, nil
 	}
 
-	var count int
+	// 1: can create if there are not uncancelled orders
+	var ids []uint64
 	err := r.DB.
 		Model(&Payment{}).
-		Joins("LEFT JOIN sessions as sess ON payments.id = sess.payment_id").
-		Where("lead_id = ? and not cancelled and (finished ISNULL or not finished)", leadID).
-		Count(&count).
+		Where("lead_id = ? and not cancelled", leadID).
+		Pluck("id", &ids).
+		Error
+	if err != nil {
+		return false, err
+	}
+	if len(ids) == 0 {
+		return true, nil
+	}
+
+	// 2: we have orders; they all are either opened, either successfull. cancelled ones are already filtered
+	var (
+		sessions []Session
+		unclosed = map[uint64]bool{}
+	)
+
+	// mark all the leads should be closed if we really want to create a new one
+	for _, id := range ids {
+		unclosed[id] = true
+	}
+
+	err = r.DB.
+		Model(&Session{}).
+		Where("payment_id in (?)", ids).
+		Find(&sessions).
 		Error
 
 	if err != nil {
 		return false, err
 	}
 
-	return count == 0, nil
+	for _, sess := range sessions {
+		if sess.Success {
+			delete(unclosed, sess.PaymentID)
+		}
+	}
+
+	return len(unclosed) == 0, nil
 }
 
 // NewPayment generates a payment infocard by request

@@ -18,7 +18,7 @@ const (
 // guarranty that only one pay with given id is checked at this time
 
 type checkerScheduler struct {
-	processingNow  map[uint]bool
+	processingNow  map[uint64]bool
 	processingLock sync.RWMutex
 	workerChain    chan *models.Session
 	workers        uint
@@ -30,7 +30,7 @@ type checkerScheduler struct {
 func createScheduler(server *paymentServer) *checkerScheduler {
 
 	shed := &checkerScheduler{
-		processingNow: make(map[uint]bool),
+		processingNow: make(map[uint64]bool),
 		workerChain:   make(chan *models.Session, 64),
 		done:          make(chan bool), // no buffer there so stop() waits until workers are stopped
 		server:        server,

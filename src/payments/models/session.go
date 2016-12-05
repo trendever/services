@@ -1,15 +1,15 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"proto/payment"
+	"utils/db"
 )
 
 // Session once-used pay sess
 type Session struct {
-	gorm.Model
+	db.Model
 
-	PaymentID uint
+	PaymentID uint64
 	Payment   *Payment
 
 	Amount      uint64

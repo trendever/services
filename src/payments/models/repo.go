@@ -8,16 +8,16 @@ import (
 type Repo interface {
 
 	// pay part
-	GetPayByID(uint) (*Payment, error)
+	GetPayByID(uint64) (*Payment, error)
 	CreatePay(*Payment) error
 	SavePay(*Payment) error
-	CanCreateOrder(leadID uint) (bool, error)
-	UpdateServiceData(uint, string) error
+	CanCreateOrder(leadID uint64) (bool, error)
+	UpdateServiceData(uint64, string) error
 
 	// sess part
 	CreateSess(*Session) error
 	GetSessByUID(string) (*Session, error)
-	FinishedSessionsForPayID(pay uint) (int, error)
+	FinishedSessionsForPayID(pay uint64) (int, error)
 	SaveSess(*Session) error
 	GetUnfinished() ([]Session, error)
 }
