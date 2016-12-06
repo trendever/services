@@ -6,7 +6,7 @@ import "time"
 // it will be included as creation date in index settings
 // index will be recreated if old data is lower than this
 // unix time, ms
-const IndexUpdatedAt = 1475677155 * 1000
+const IndexUpdatedAt = 1475677400 * 1000
 const ProductIndex = `{
 "settings": {
 	"number_of_shards": 1,

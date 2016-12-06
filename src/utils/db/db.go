@@ -41,7 +41,7 @@ func NilScan(rows *sql.Rows, args ...interface{}) (err error) {
 		orig *string
 		null sql.NullString
 	}
-	reps := []replaced{}
+	reps := make([]replaced, 0, len(args))
 	for i, arg := range args {
 		switch arg := arg.(type) {
 		case *string:
