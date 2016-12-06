@@ -28,6 +28,11 @@ func init() {
 		Handler: newMessage,
 	})
 	nats.Subscribe(&nats.Subscription{
+		Subject: "core.notify.message",
+		Group:   "core",
+		Handler: notifySellerAboutUnreadedMessage,
+	})
+	nats.Subscribe(&nats.Subscription{
 		Subject: "auth.login",
 		Group:   "core",
 		Handler: handleUserLogin,
@@ -178,6 +183,34 @@ func newMessage(req *chat.NewMessageRequest) {
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
+	}
+}
+
+func notifySellerAboutUnreadedMessage(msg *chat.Message) {
+	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Customer")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if lead.State == core.LeadStatus_NEW.String() {
+		return
+	}
+
+	ids := []uint{}
+	for _, seller := range lead.Shop.Sellers {
+		ids = append(ids, seller.ID)
+	}
+
+	var sellers []models.User
+	db.New().
+		Where("EXISTS (SELECT 1 FROM products_shops_sellers WHERE user_id = id AND shop_id = ?", lead.ShopID).
+		Where("NOT EXISTS (SELECT 1 FROM push_tokens WHERE user_id = id)").Find(&sellers)
+
+	n := models.GetNotifier()
+
+	for _, seller := range sellers {
+		log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead, msg))
 	}
 }
 
