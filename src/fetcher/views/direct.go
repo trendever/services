@@ -12,6 +12,11 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 	return &bot.SendDirectReply{}, nil
 }
 
-func (s fetcherServer) CreateThread(context.Context, *bot.CreateThreadRequest) (*bot.CreateThreadReply, error) {
-	return &bot.CreateThreadReply{Error: "not impemented"}, nil
+func (s fetcherServer) CreateThread(ctx context.Context, in *bot.CreateThreadRequest) (*bot.CreateThreadReply, error) {
+	// @TODO timeout?
+	tid, err := fetcher.CreateThread(in.Inviter, in.Participant, in.Caption, in.InitMessage)
+	if err != nil {
+		return &bot.CreateThreadReply{Error: err.Error()}, nil
+	}
+	return &bot.CreateThreadReply{ThreadId: tid}, nil
 }

@@ -26,7 +26,9 @@ type sendRequest struct {
 
 var global = struct {
 	sync.RWMutex
-	msgChans map[uint64]chan sendRequest
+	pubPool   *client.AccountsPool
+	usersPool *client.AccountsPool
+	msgChans  map[uint64]chan sendRequest
 }{
 	msgChans: map[uint64]chan sendRequest{},
 }
@@ -56,7 +58,7 @@ func Start() error {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
 	}
 
-	_, err = client.InitPoll(
+	global.usersPool, err = client.InitPoll(
 		accountstore.Role_User, cli,
 		nil, primaryWorker,
 		&settings.Instagram.Settings,
@@ -65,9 +67,9 @@ func Start() error {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
 	}
 
-	_, err = client.InitPoll(
+	global.pubPool, err = client.InitPoll(
 		accountstore.Role_AuxPublic, cli,
-		nil, nil,
+		nil, pubWorker,
 		&settings.Instagram.Settings,
 	)
 	if err != nil {
@@ -106,7 +108,7 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 				continue
 			}
 			if req.receiverID != 0 {
-				res, err := ig.SendText(req.receiverID, req.text)
+				res, err := ig.SendText(req.text, req.receiverID)
 				req.reply <- sendReply{threadID: res.ThreadID, error: err}
 				continue
 			}
@@ -140,4 +142,18 @@ func SendDirect(senderID, receiverID uint64, threadID, text string) (msgID strin
 	}
 	reply := <-replyChan
 	return reply.msgID, reply.error
+}
+
+func pubWorker(meta *client.AccountMeta, stopChan chan struct{}) {
+	for {
+		select {
+		case <-stopChan:
+			return
+		default:
+			err := leaveAllThreads(meta)
+			if err != nil {
+				log.Errorf("pub bot: failed to leave threads: %v", err)
+			}
+		}
+	}
 }

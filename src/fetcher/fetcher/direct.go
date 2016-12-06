@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"errors"
 	"fetcher/models"
 	"fmt"
 	"instagram"
@@ -233,4 +234,67 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		ThreadID:          thread.ThreadID,
 	}
 	return act.Create()
+}
+
+func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID string, err error) {
+	// @TODO timeouts?..
+	ig, found := global.usersPool.Get(inviter)
+	bot, err := global.pubPool.GetFree()
+	participants = append(participants, bot.UserNameID)
+	if err != nil {
+		return
+	}
+	if !found {
+		return "", fmt.Errorf("inviter account %v unaviable", inviter)
+	}
+	res, err := ig.SendText(initMsg, participants...)
+	if err != nil {
+		return
+	}
+	_, err = ig.DirectUpdateTitle(res.ThreadID, caption)
+	return res.ThreadID, err
+}
+
+func leaveAllThreads(meta *client.AccountMeta) error {
+	ig, err := meta.Delayed()
+	if err != nil {
+		return err
+	}
+
+	cursor := ""
+	for {
+		resp, err := ig.Inbox(cursor)
+		if err != nil {
+			return err
+		}
+
+		if resp.PendingRequestsTotal > 0 {
+			ig, err := meta.Delayed()
+			if err != nil {
+				return err
+			}
+			_, err = ig.DirectThreadApproveAll()
+			return err
+		}
+
+		for _, thread := range resp.Inbox.Threads {
+			if len(thread.Users) < 2 {
+				continue
+			}
+			ig, err := meta.Delayed()
+			if err != nil {
+				return err
+			}
+			_, err = ig.DirectThreadAction(thread.ThreadID, instagram.ActionLeave)
+			if err != nil {
+				return err
+			}
+		}
+		if !resp.Inbox.HasOlder {
+			return nil
+		}
+		cursor = resp.Inbox.OldestCursor
+	}
+
+	return errors.New("unreachable point reached in leaveAllThreads()")
 }

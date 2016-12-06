@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 // Instagram defines client
@@ -233,6 +235,18 @@ func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadA
 	return &object, err
 }
 
+func (ig *Instagram) DirectUpdateTitle(threadID, title string) (*Message, error) {
+
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/update_title/", threadID)
+
+	var object Message
+	err := ig.postRequest(endpoint, map[string]string{
+		"thread_title": title,
+	}, &object)
+
+	return &object, err
+}
+
 // DirectThreadApproveAll allows to accept all the threads
 func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, error) {
 
@@ -266,17 +280,20 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 	return object.Threads[0].NewestCursor, nil
 }
 
-// SendText sends text to given user
-func (ig *Instagram) SendText(userID uint64, message string) (*SendTextResponse, error) {
-
+// SendText sends text to given user(-s)
+func (ig *Instagram) SendText(message string, userIDs ...uint64) (*SendTextResponse, error) {
 	endpoint := "/direct_v2/threads/broadcast/text/"
+
+	strs := make([]string, len(userIDs), len(userIDs))
+	for i, id := range userIDs {
+		strs[i] = strconv.FormatUint(id, 10)
+	}
 
 	var object SendTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":            message,
-		"recipient_users": fmt.Sprintf("[[%v]]", userID),
+		"recipient_users": fmt.Sprintf("[[%v]]", strings.Join(strs, ",")),
 	}, &object)
 
 	return &object, err
-
 }

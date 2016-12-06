@@ -86,4 +86,5 @@ message CreateThreadRequest {
 
 message CreateThreadReply {
   string error = 1;
+  string thread_id = 2;
 }
