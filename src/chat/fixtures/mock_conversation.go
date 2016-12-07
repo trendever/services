@@ -6,6 +6,7 @@ package fixtures
 import (
 	models "chat/models"
 	gomock "github.com/golang/mock/gomock"
+	chat "proto/chat"
 )
 
 // Mock of ConversationRepository interface
@@ -59,6 +60,17 @@ func (_mr *_MockConversationRepositoryRecorder) AddMessages(arg0 interface{}, ar
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AddMessages", _s...)
 }
 
+func (_m *MockConversationRepository) CheckMessageExists(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "CheckMessageExists", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConversationRepositoryRecorder) CheckMessageExists(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckMessageExists", arg0)
+}
+
 func (_m *MockConversationRepository) Create(_param0 *models.Conversation) error {
 	ret := _m.ctrl.Call(_m, "Create", _param0)
 	ret0, _ := ret[0].(error)
@@ -67,6 +79,27 @@ func (_m *MockConversationRepository) Create(_param0 *models.Conversation) error
 
 func (_mr *_MockConversationRepositoryRecorder) Create(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Create", arg0)
+}
+
+func (_m *MockConversationRepository) DeleteConversation(_param0 uint64) error {
+	ret := _m.ctrl.Call(_m, "DeleteConversation", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockConversationRepositoryRecorder) DeleteConversation(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteConversation", arg0)
+}
+
+func (_m *MockConversationRepository) GetByDirectThread(_param0 string) (*models.Conversation, error) {
+	ret := _m.ctrl.Call(_m, "GetByDirectThread", _param0)
+	ret0, _ := ret[0].(*models.Conversation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConversationRepositoryRecorder) GetByDirectThread(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetByDirectThread", arg0)
 }
 
 func (_m *MockConversationRepository) GetByID(_param0 uint) (*models.Conversation, error) {
@@ -135,9 +168,9 @@ func (_mr *_MockConversationRepositoryRecorder) GetTotalUnread(arg0 interface{})
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetTotalUnread", arg0)
 }
 
-func (_m *MockConversationRepository) GetUnread(_param0 []uint64, _param1 uint64) (map[uint]uint64, error) {
+func (_m *MockConversationRepository) GetUnread(_param0 []uint64, _param1 uint64) (map[uint64]uint64, error) {
 	ret := _m.ctrl.Call(_m, "GetUnread", _param0, _param1)
-	ret0, _ := ret[0].(map[uint]uint64)
+	ret0, _ := ret[0].(map[uint64]uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -171,6 +204,16 @@ func (_mr *_MockConversationRepositoryRecorder) RemoveMembers(arg0 interface{}, 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveMembers", _s...)
 }
 
+func (_m *MockConversationRepository) SetConversationStatus(_param0 *chat.SetStatusMessage) error {
+	ret := _m.ctrl.Call(_m, "SetConversationStatus", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockConversationRepositoryRecorder) SetConversationStatus(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetConversationStatus", arg0)
+}
+
 func (_m *MockConversationRepository) TotalMessages(_param0 *models.Conversation) uint64 {
 	ret := _m.ctrl.Call(_m, "TotalMessages", _param0)
 	ret0, _ := ret[0].(uint64)
@@ -179,6 +222,16 @@ func (_m *MockConversationRepository) TotalMessages(_param0 *models.Conversation
 
 func (_mr *_MockConversationRepositoryRecorder) TotalMessages(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TotalMessages", arg0)
+}
+
+func (_m *MockConversationRepository) UpdateMember(_param0 *models.Member) error {
+	ret := _m.ctrl.Call(_m, "UpdateMember", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockConversationRepositoryRecorder) UpdateMember(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateMember", arg0)
 }
 
 func (_m *MockConversationRepository) UpdateMessage(_param0 uint64, _param1 []*models.MessagePart) (*models.Message, error) {
