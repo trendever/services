@@ -142,6 +142,8 @@ func AddBot(c *soso.Context) {
 		return
 	}
 
+	preferEmail, _ := c.RequestMap["prefer_email"].(bool)
+
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := accountStoreServiceClient.Add(ctx, &accountstore.AddRequest{
@@ -149,6 +151,7 @@ func AddBot(c *soso.Context) {
 		Password:          password,
 		Role:              accountstore.Role(role),
 		OwnerId:           c.Token.UID,
+		PreferEmail:       preferEmail,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

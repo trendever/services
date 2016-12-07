@@ -31,6 +31,7 @@ message AddRequest {
   string password = 2;
   Role role = 3;
   uint64 owner_id = 4;
+  bool prefer_email = 5;
 }
 
 message AddReply {

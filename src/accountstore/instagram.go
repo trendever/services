@@ -9,8 +9,8 @@ import (
 
 // InstagramAccess is mockable instagram adapter
 type InstagramAccess interface {
-	Login(login, password string) (*Account, error)
-	SendCode(*Account, string) error
+	Login(login, password string, preferEmail bool) (*Account, error)
+	SendCode(*Account, string, bool) error
 	VerifyCode(*Account, string) error
 }
 
@@ -19,7 +19,7 @@ type InstagramAccessImpl struct {
 }
 
 // Login with given login:pass, return an Account (probably invalid -- confirmation needed)
-func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
+func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*Account, error) {
 
 	var account *Account
 
@@ -49,7 +49,7 @@ func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
 	if err == instagram.ErrorCheckpointRequired {
 		account.Valid = false
 
-		err := r.sendCode(api, account)
+		err := r.sendCode(api, account, preferEmail)
 		if err != nil {
 			return nil, err
 		}
@@ -68,8 +68,8 @@ func (r *InstagramAccessImpl) Login(login, password string) (*Account, error) {
 	return account, nil
 }
 
-func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account) error {
-	sentCode, err := api.SendCode(true)
+func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account, preferEmail bool) error {
+	sentCode, err := api.SendCode(preferEmail)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account) e
 }
 
 // SendCode sends instagram checkpoint code
-func (r *InstagramAccessImpl) SendCode(acc *Account, password string) error {
+func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmail bool) error {
 
 	api, err := instagram.Restore(acc.Cookie, "")
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string) error {
 	}
 
 	api.SetPassword(password)
-	return r.sendCode(api, acc)
+	return r.sendCode(api, acc, preferEmail)
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid

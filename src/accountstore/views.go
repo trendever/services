@@ -14,7 +14,7 @@ func (s *svc) StartServer() {
 
 func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore.AddReply, error) {
 
-	account, err := s.ig.Login(in.InstagramUsername, in.Password)
+	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.PreferEmail)
 	if err != nil {
 		return nil, err
 	}
