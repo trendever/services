@@ -22,7 +22,7 @@ type Waiter interface {
 
 type queue struct {
 	sync.Mutex
-	stack   *common.FifoStack
+	stack   *common.Queue
 	delay   time.Duration
 	inbox   chan *models.Message
 	chatMap map[uint]time.Time
@@ -33,7 +33,7 @@ func NewWaiter(delay time.Duration) Waiter {
 	q.delay = delay
 	q.chatMap = make(map[uint]time.Time)
 	q.inbox = make(chan *models.Message, 100)
-	q.stack = &common.FifoStack{}
+	q.stack = &common.Queue{}
 	q.start()
 	return q
 }
