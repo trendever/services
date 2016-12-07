@@ -72,9 +72,9 @@ func EncodeAll(accs []Account, private bool) []*accountstore.Account {
 	out := make([]*accountstore.Account, len(accs))
 	for i, acc := range accs {
 		if private {
-			out[i] = acc.Encode()
-		} else {
 			out[i] = acc.EncodePrivate()
+		} else {
+			out[i] = acc.Encode()
 		}
 	}
 	return out
