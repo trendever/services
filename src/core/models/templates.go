@@ -57,7 +57,7 @@ var templateIDRegexp = regexp.MustCompile("^[[:word:]]+$")
 
 // BaseTemplate model
 type BaseNotifierTemplate struct {
-	gorm.Model
+	ID uint64 `gorm:"primary_key"`
 
 	// Template fields
 	TemplateName string

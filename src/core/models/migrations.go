@@ -73,9 +73,7 @@ func Migrate() error {
 
 	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
 
-	var count uint
-	db.New().Table("information_schema.columns").Where("table_name='chat_template_messages' and column_name = 'case_id'").Count(&count)
-	if count > 0 {
+	if db.HasColumn(&ChatTemplateMessage{}, "case_id") {
 		db.New().Exec(`
 			UPDATE chat_template_messages msg
 			SET template_id = c.template_id
@@ -89,6 +87,13 @@ func Migrate() error {
 	err := setInitialPlan()
 	if err != nil {
 		return err
+	}
+
+	if db.HasColumn(&EmailTemplate{}, "deleted_at") {
+		for _, table := range []interface{}{&PushTemplate{}, &SMSTemplate{}, &EmailTemplate{}} {
+			db.New().Delete(table, "deleted_at IS NOT NULL")
+			db.New().Model(table).DropColumn("deleted_at").DropColumn("created_at").DropColumn("updated_at")
+		}
 	}
 
 	return nil

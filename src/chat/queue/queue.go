@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	//EventNotifySeller is a notification about a not answered message
-	EventNotifySeller = "core.notify.message"
+	//EventUnreadNotify is a notification about a not answered message
+	EventUnreadNotify = "core.notify.message"
 )
 
 type Waiter interface {
@@ -53,12 +53,10 @@ func (q *queue) inboxLoop() {
 			log.Errorf("Message without a loaded member!")
 			continue
 		}
-		switch {
-		case msg.Member.Role == chat.MemberRole_CUSTOMER.String():
-			q.add(msg)
-		case msg.Member.Role == chat.MemberRole_SELLER.String() ||
-			msg.Member.Role == chat.MemberRole_SUPER_SELLER.String():
+		if msg.Member.Role == chat.MemberRole_CUSTOMER.String() {
 			q.answer(msg)
+		} else {
+			q.add(msg)
 		}
 	}
 }
@@ -87,15 +85,14 @@ func (q *queue) answer(msg *models.Message) {
 func (q *queue) queueLoop() {
 	for {
 		t, ok := q.nextOutTime()
+		now := time.Now()
 		if !ok {
-			t = time.Now().Add(time.Minute)
+			t = now.Add(time.Minute)
 		}
-
-		if t.Before(time.Now()) || t.Equal(time.Now()) {
-			q.notify()
+		if t.After(now) {
+			<-time.After(t.Sub(now))
 		} else {
-			log.Debug("Queue wait to %v", t.String())
-			<-time.After(t.Sub(time.Now()))
+			q.notify()
 		}
 
 	}
@@ -127,6 +124,7 @@ func (q *queue) notify() {
 	}
 
 	delete(q.chatMap, msg.ConversationID)
-	nats.Publish(EventNotifySeller, msg.Encode())
+	nats.Publish(EventUnreadNotify, msg.Encode())
+	log.Debug("Notify about message %v", msg.ID)
 	log.Debug("Notify about message %v", msg.ID)
 }

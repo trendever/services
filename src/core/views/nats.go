@@ -30,7 +30,7 @@ func init() {
 	nats.Subscribe(&nats.Subscription{
 		Subject: "core.notify.message",
 		Group:   "core",
-		Handler: notifySellerAboutUnreadedMessage,
+		Handler: notifyAboutUnreadMessage,
 	})
 	nats.Subscribe(&nats.Subscription{
 		Subject: "auth.login",
@@ -186,32 +186,22 @@ func newMessage(req *chat.NewMessageRequest) {
 	}
 }
 
-func notifySellerAboutUnreadedMessage(msg *chat.Message) {
+func notifyAboutUnreadMessage(msg *chat.Message) {
 	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Customer")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	if lead.State == core.LeadStatus_NEW.String() {
+	var count uint64
+	err = db.New().Model(&models.PushToken{}).Where("user_id = ?", lead.CustomerID).Count(&count).Error
+	if err != nil {
+		log.Errorf("failed to determinate whether user have active push tokens: %v", err)
 		return
 	}
 
-	ids := []uint{}
-	for _, seller := range lead.Shop.Sellers {
-		ids = append(ids, seller.ID)
-	}
-
-	var sellers []models.User
-	db.New().
-		Where("EXISTS (SELECT 1 FROM products_shops_sellers WHERE user_id = id AND shop_id = ?", lead.ShopID).
-		Where("NOT EXISTS (SELECT 1 FROM push_tokens WHERE user_id = id)").Find(&sellers)
-
 	n := models.GetNotifier()
-
-	for _, seller := range sellers {
-		log.Error(n.NotifySellerAboutUnreadMessage(&seller, lead, msg))
-	}
+	log.Error(n.NotifyAboutUnreadMessage(&lead.Customer, lead, msg))
 }
 
 func handleUserLogin(userID uint) {

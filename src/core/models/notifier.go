@@ -20,7 +20,7 @@ func init() {
 	topics := []string{
 		"notify_seller_about_lead",
 		"notify_customer_about_lead",
-		"notify_seller_about_unread_message",
+		"notify_about_unread_message",
 		"notify_user_about_new_messages",
 		"call_supplier_to_chat",
 		"call_customer_to_chat",
@@ -292,16 +292,16 @@ func (n *Notifier) NotifyCustomerAboutLead(customer *User, lead *Lead) error {
 	)
 }
 
-func (n *Notifier) NotifySellerAboutUnreadMessage(seller *User, lead *Lead, msg *chat.Message) error {
-	url, err := mkShortChatUrl(seller.ID, lead.ID)
+func (n *Notifier) NotifyAboutUnreadMessage(user *User, lead *Lead, msg *chat.Message) error {
+	url, err := mkShortChatUrl(user.ID, lead.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get lead url: %v", err)
 	}
 	return n.NotifyUserAbout(
-		seller,
-		"notify_seller_about_unread_message",
+		user,
+		"notify_about_unread_message",
 		map[string]interface{}{
-			"Seller":  seller,
+			"User":    user,
 			"URL":     url,
 			"Lead":    lead,
 			"Message": msg,
