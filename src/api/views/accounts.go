@@ -81,9 +81,11 @@ func ListAccounts(c *soso.Context) {
 	}
 
 	withInvalids, _ := c.RequestMap["with_invalids"].(bool)
+	withNonOwned, _ := c.RequestMap["with_non_owned"].(bool)
 
 	req := accountstore.SearchRequest{
 		IncludeInvalids: withInvalids,
+		OwnerId:         c.Token.UID,
 	}
 
 	roleName, ok := c.RequestMap["role"].(string)
@@ -96,8 +98,8 @@ func ListAccounts(c *soso.Context) {
 		req.Roles = []accountstore.Role{accountstore.Role(role)}
 	}
 
-	if !user.IsAdmin {
-		req.OwnerId = c.Token.UID
+	if user.IsAdmin && withNonOwned {
+		req.OwnerId = 0
 	}
 
 	ctx, cancel := rpc.DefaultContext()
