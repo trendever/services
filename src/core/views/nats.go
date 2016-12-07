@@ -200,6 +200,10 @@ func notifyAboutUnreadMessage(msg *chat.Message) {
 		return
 	}
 
+	if count != 0 {
+		return
+	}
+
 	n := models.GetNotifier()
 	log.Error(n.NotifyAboutUnreadMessage(&lead.Customer, lead, msg))
 }
