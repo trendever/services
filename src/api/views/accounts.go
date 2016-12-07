@@ -17,9 +17,8 @@ func init() {
 		SocketRoutes,
 		soso.Route{"add", "account", AddBot},
 		soso.Route{"list", "account", ListAccounts},
-
-		//		soso.Route{"account", "invalidate", MarkInvalid},
 		soso.Route{"account", "confirm", Confirm},
+		//		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
 
@@ -89,7 +88,7 @@ func ListAccounts(c *soso.Context) {
 	}
 
 	roleName, ok := c.RequestMap["role"].(string)
-	if ok && user.IsAdmin {
+	if ok && user.IsAdmin && roleName > "" {
 		role, ok := accountstore.Role_value[roleName]
 		if !ok {
 			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown role"))
