@@ -239,7 +239,7 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID string, err error) {
 	// @TODO timeouts?..
 	ig, found := global.usersPool.Get(inviter)
-	bot, err := global.pubPool.GetFree()
+	bot, err := global.pubPool.GetRandom()
 	participants = append(participants, bot.UserNameID)
 	if err != nil {
 		return
@@ -247,12 +247,15 @@ func CreateThread(inviter uint64, participants []uint64, caption, initMsg string
 	if !found {
 		return "", fmt.Errorf("inviter account %v unaviable", inviter)
 	}
-	res, err := ig.SendText(initMsg, participants...)
+	tid, err := ig.SendText(initMsg, participants...)
 	if err != nil {
-		return
+		return "", err
 	}
-	_, err = ig.DirectUpdateTitle(res.ThreadID, caption)
-	return res.ThreadID, err
+	_, err = ig.DirectUpdateTitle(tid, caption)
+	if err != nil {
+		log.Errorf("set title for thread %v failed:", tid, err)
+	}
+	return tid, nil
 }
 
 func leaveAllThreads(meta *client.AccountMeta) error {

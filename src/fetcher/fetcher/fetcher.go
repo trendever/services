@@ -108,8 +108,8 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 				continue
 			}
 			if req.receiverID != 0 {
-				res, err := ig.SendText(req.text, req.receiverID)
-				req.reply <- sendReply{threadID: res.ThreadID, error: err}
+				tid, err := ig.SendText(req.text, req.receiverID)
+				req.reply <- sendReply{threadID: tid, error: err}
 				continue
 			}
 			req.reply <- sendReply{error: errors.New("destination is unspecified")}

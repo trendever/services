@@ -241,7 +241,7 @@ func (ig *Instagram) DirectUpdateTitle(threadID, title string) (*Message, error)
 
 	var object Message
 	err := ig.postRequest(endpoint, map[string]string{
-		"thread_title": title,
+		"title": title,
 	}, &object)
 
 	return &object, err
@@ -281,7 +281,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 }
 
 // SendText sends text to given user(-s)
-func (ig *Instagram) SendText(message string, userIDs ...uint64) (*SendTextResponse, error) {
+func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, err error) {
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
 	strs := make([]string, len(userIDs), len(userIDs))
@@ -289,11 +289,19 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (*SendTextRespo
 		strs[i] = strconv.FormatUint(id, 10)
 	}
 
-	var object SendTextResponse
-	err := ig.postRequest(endpoint, map[string]string{
+	var object BroadcastTextResponse
+	err = ig.postRequest(endpoint, map[string]string{
 		"text":            message,
 		"recipient_users": fmt.Sprintf("[[%v]]", strings.Join(strs, ",")),
 	}, &object)
 
-	return &object, err
+	if err != nil {
+		return "", err
+	}
+
+	if len(object.Threads) == 0 {
+		return "", errors.New("no threads info in responce")
+	}
+
+	return object.Threads[0].ThreadID, nil
 }
