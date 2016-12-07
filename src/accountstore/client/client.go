@@ -28,8 +28,10 @@ var global struct {
 
 type AccountsPool struct {
 	sync.RWMutex
-	role     accountstore.Role
-	idMap    map[uint64]*AccountMeta
+	role  accountstore.Role
+	idMap map[uint64]*AccountMeta
+	// used to get random account
+	idSlice  []uint64
 	storeCli accountstore.AccountStoreServiceClient
 	ready    chan *instagram.Instagram
 	timeout  struct {
@@ -95,6 +97,7 @@ func InitPoll(
 
 	pool := &AccountsPool{
 		idMap:            make(map[uint64]*AccountMeta),
+		idSlice:          make([]uint64, 0),
 		storeCli:         storeCli,
 		individualWorker: individualWorker,
 		ready:            make(chan *instagram.Instagram),
@@ -151,6 +154,17 @@ func (pool *AccountsPool) Get(id uint64) (acc *instagram.Instagram, found bool) 
 	return info.ig, found
 }
 
+func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
+	pool.RLock()
+	defer pool.RUnlock()
+	count := len(pool.idMap)
+	if count == 0 {
+		return nil, errors.New("no account aviable")
+	}
+	meta := pool.idMap[pool.idSlice[rand.Intn(count)]]
+	return meta.ig, nil
+}
+
 func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
 	for {
 		select {
@@ -182,8 +196,7 @@ func (pool *AccountsPool) Invalidate(id uint64) {
 		log.Errorf("can not remove unknown account %v", id)
 		return
 	}
-	meta.stopper.Stop()
-	delete(pool.idMap, id)
+	pool.delAcc(meta, false)
 }
 
 func (pool *AccountsPool) update(acc *accountstore.Account) {
@@ -201,7 +214,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 		if !ok {
 			return
 		}
-		pool.delAcc(meta)
+		pool.delAcc(meta, true)
 		return
 	}
 
@@ -209,7 +222,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	// we have this account already
 	if ok {
 		// part of account data changed probably, easiest way to update it in worker is simple restart
-		pool.delAcc(meta)
+		pool.delAcc(meta, true)
 	}
 
 	if acc.Role == pool.role {
@@ -227,6 +240,7 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 		stopper: stopper.NewStopper(),
 	}
 	pool.idMap[ig.UserNameID] = meta
+	pool.idSlice = append(pool.idSlice, ig.UserNameID)
 
 	meta.wait.Add(1)
 	go func() {
@@ -254,16 +268,26 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 
 // removes account from pool and sends stop signal to related gorutines,
 // pool should be already locked on higher level
-func (pool *AccountsPool) delAcc(acc *AccountMeta) {
+func (pool *AccountsPool) delAcc(acc *AccountMeta, sync bool) {
 	acc.stopper.Stop()
-	acc.wait.Wait()
 	delete(pool.idMap, acc.ig.UserNameID)
+	for it, id := range pool.idSlice {
+		if id == acc.ig.UserNameID {
+			pool.idSlice = append(pool.idSlice[:it], pool.idSlice[it+1:]...)
+		}
+	}
+	if sync {
+		acc.wait.Wait()
+	}
 }
 
 func (pool *AccountsPool) Stop() {
 	pool.Lock()
 	for _, meta := range pool.idMap {
-		pool.delAcc(meta)
+		pool.delAcc(meta, false)
+	}
+	for _, meta := range pool.idMap {
+		meta.wait.Wait()
 	}
 	pool.stopper.Stop()
 	pool.Unlock()
