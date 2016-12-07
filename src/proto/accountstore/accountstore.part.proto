@@ -3,7 +3,6 @@ service AccountStoreService {
 	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
 	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
 	rpc Search(SearchRequest) returns (SearchReply) {}
-	rpc Get(GetRequest) returns (GetReply) {}
 }
 
 enum Role {
@@ -24,12 +23,14 @@ message Account {
   string cookie = 3;
   bool valid = 4;
   Role role = 5;
+  uint64 owner_id = 6;
 }
 
 message AddRequest {
   string instagram_username = 1;
   string password = 2;
   Role role = 3;
+  uint64 owner_id = 4;
 }
 
 message AddReply {
@@ -56,20 +57,12 @@ message MarkInvalidReply {
 message SearchRequest {
   repeated Role roles = 1;
   bool include_invalids = 2;
+  string instagram_username = 3;
+  uint64 instagram_id = 4;
+  bool hide_private = 5;
+  uint64 owner_id = 6;
 }
 
 message SearchReply {
   repeated Account accounts = 1;
 }
-
-message GetRequest {
-  string instagram_username = 1;
-  uint64 instagram_id = 2;
-  bool hide_private = 3;
-}
-
-message GetReply {
-  Account account = 1;
-  bool found = 2;
-}
-

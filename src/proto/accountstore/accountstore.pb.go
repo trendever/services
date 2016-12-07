@@ -18,8 +18,6 @@
 		MarkInvalidReply
 		SearchRequest
 		SearchReply
-		GetRequest
-		GetReply
 */
 package accountstore
 
@@ -83,6 +81,7 @@ type Account struct {
 	Cookie            string `protobuf:"bytes,3,opt,name=cookie,proto3" json:"cookie,omitempty"`
 	Valid             bool   `protobuf:"varint,4,opt,name=valid,proto3" json:"valid,omitempty"`
 	Role              Role   `protobuf:"varint,5,opt,name=role,proto3,enum=accountstore.Role" json:"role,omitempty"`
+	OwnerId           uint64 `protobuf:"varint,6,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 }
 
 func (m *Account) Reset()                    { *m = Account{} }
@@ -94,6 +93,7 @@ type AddRequest struct {
 	InstagramUsername string `protobuf:"bytes,1,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
 	Password          string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	Role              Role   `protobuf:"varint,3,opt,name=role,proto3,enum=accountstore.Role" json:"role,omitempty"`
+	OwnerId           uint64 `protobuf:"varint,4,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 }
 
 func (m *AddRequest) Reset()                    { *m = AddRequest{} }
@@ -148,8 +148,12 @@ func (*MarkInvalidReply) ProtoMessage()               {}
 func (*MarkInvalidReply) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{6} }
 
 type SearchRequest struct {
-	Roles           []Role `protobuf:"varint,1,rep,packed,name=roles,enum=accountstore.Role" json:"roles,omitempty"`
-	IncludeInvalids bool   `protobuf:"varint,2,opt,name=include_invalids,json=includeInvalids,proto3" json:"include_invalids,omitempty"`
+	Roles             []Role `protobuf:"varint,1,rep,packed,name=roles,enum=accountstore.Role" json:"roles,omitempty"`
+	IncludeInvalids   bool   `protobuf:"varint,2,opt,name=include_invalids,json=includeInvalids,proto3" json:"include_invalids,omitempty"`
+	InstagramUsername string `protobuf:"bytes,3,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
+	InstagramId       uint64 `protobuf:"varint,4,opt,name=instagram_id,json=instagramId,proto3" json:"instagram_id,omitempty"`
+	HidePrivate       bool   `protobuf:"varint,5,opt,name=hide_private,json=hidePrivate,proto3" json:"hide_private,omitempty"`
+	OwnerId           uint64 `protobuf:"varint,6,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 }
 
 func (m *SearchRequest) Reset()                    { *m = SearchRequest{} }
@@ -173,34 +177,6 @@ func (m *SearchReply) GetAccounts() []*Account {
 	return nil
 }
 
-type GetRequest struct {
-	InstagramUsername string `protobuf:"bytes,1,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
-	InstagramId       uint64 `protobuf:"varint,2,opt,name=instagram_id,json=instagramId,proto3" json:"instagram_id,omitempty"`
-	HidePrivate       bool   `protobuf:"varint,3,opt,name=hide_private,json=hidePrivate,proto3" json:"hide_private,omitempty"`
-}
-
-func (m *GetRequest) Reset()                    { *m = GetRequest{} }
-func (m *GetRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetRequest) ProtoMessage()               {}
-func (*GetRequest) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{9} }
-
-type GetReply struct {
-	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
-	Found   bool     `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`
-}
-
-func (m *GetReply) Reset()                    { *m = GetReply{} }
-func (m *GetReply) String() string            { return proto.CompactTextString(m) }
-func (*GetReply) ProtoMessage()               {}
-func (*GetReply) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{10} }
-
-func (m *GetReply) GetAccount() *Account {
-	if m != nil {
-		return m.Account
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterType((*Account)(nil), "accountstore.Account")
 	proto.RegisterType((*AddRequest)(nil), "accountstore.AddRequest")
@@ -211,8 +187,6 @@ func init() {
 	proto.RegisterType((*MarkInvalidReply)(nil), "accountstore.MarkInvalidReply")
 	proto.RegisterType((*SearchRequest)(nil), "accountstore.SearchRequest")
 	proto.RegisterType((*SearchReply)(nil), "accountstore.SearchReply")
-	proto.RegisterType((*GetRequest)(nil), "accountstore.GetRequest")
-	proto.RegisterType((*GetReply)(nil), "accountstore.GetReply")
 	proto.RegisterEnum("accountstore.Role", Role_name, Role_value)
 }
 
@@ -231,7 +205,6 @@ type AccountStoreServiceClient interface {
 	Confirm(ctx context.Context, in *ConfirmRequest, opts ...grpc.CallOption) (*ConfirmReply, error)
 	MarkInvalid(ctx context.Context, in *MarkInvalidRequest, opts ...grpc.CallOption) (*MarkInvalidReply, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchReply, error)
-	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetReply, error)
 }
 
 type accountStoreServiceClient struct {
@@ -278,15 +251,6 @@ func (c *accountStoreServiceClient) Search(ctx context.Context, in *SearchReques
 	return out, nil
 }
 
-func (c *accountStoreServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetReply, error) {
-	out := new(GetReply)
-	err := grpc.Invoke(ctx, "/accountstore.AccountStoreService/Get", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for AccountStoreService service
 
 type AccountStoreServiceServer interface {
@@ -294,7 +258,6 @@ type AccountStoreServiceServer interface {
 	Confirm(context.Context, *ConfirmRequest) (*ConfirmReply, error)
 	MarkInvalid(context.Context, *MarkInvalidRequest) (*MarkInvalidReply, error)
 	Search(context.Context, *SearchRequest) (*SearchReply, error)
-	Get(context.Context, *GetRequest) (*GetReply, error)
 }
 
 func RegisterAccountStoreServiceServer(s *grpc.Server, srv AccountStoreServiceServer) {
@@ -373,24 +336,6 @@ func _AccountStoreService_Search_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccountStoreService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AccountStoreServiceServer).Get(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/accountstore.AccountStoreService/Get",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccountStoreServiceServer).Get(ctx, req.(*GetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _AccountStoreService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "accountstore.AccountStoreService",
 	HandlerType: (*AccountStoreServiceServer)(nil),
@@ -410,10 +355,6 @@ var _AccountStoreService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Search",
 			Handler:    _AccountStoreService_Search_Handler,
-		},
-		{
-			MethodName: "Get",
-			Handler:    _AccountStoreService_Get_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -467,6 +408,11 @@ func (m *Account) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintAccountstore(dAtA, i, uint64(m.Role))
 	}
+	if m.OwnerId != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintAccountstore(dAtA, i, uint64(m.OwnerId))
+	}
 	return i, nil
 }
 
@@ -501,6 +447,11 @@ func (m *AddRequest) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x18
 		i++
 		i = encodeVarintAccountstore(dAtA, i, uint64(m.Role))
+	}
+	if m.OwnerId != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintAccountstore(dAtA, i, uint64(m.OwnerId))
 	}
 	return i, nil
 }
@@ -675,6 +626,32 @@ func (m *SearchRequest) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i++
 	}
+	if len(m.InstagramUsername) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintAccountstore(dAtA, i, uint64(len(m.InstagramUsername)))
+		i += copy(dAtA[i:], m.InstagramUsername)
+	}
+	if m.InstagramId != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintAccountstore(dAtA, i, uint64(m.InstagramId))
+	}
+	if m.HidePrivate {
+		dAtA[i] = 0x28
+		i++
+		if m.HidePrivate {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.OwnerId != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintAccountstore(dAtA, i, uint64(m.OwnerId))
+	}
 	return i, nil
 }
 
@@ -704,83 +681,6 @@ func (m *SearchReply) MarshalTo(dAtA []byte) (int, error) {
 			}
 			i += n
 		}
-	}
-	return i, nil
-}
-
-func (m *GetRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.InstagramUsername) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintAccountstore(dAtA, i, uint64(len(m.InstagramUsername)))
-		i += copy(dAtA[i:], m.InstagramUsername)
-	}
-	if m.InstagramId != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintAccountstore(dAtA, i, uint64(m.InstagramId))
-	}
-	if m.HidePrivate {
-		dAtA[i] = 0x18
-		i++
-		if m.HidePrivate {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
-	return i, nil
-}
-
-func (m *GetReply) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetReply) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Account != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintAccountstore(dAtA, i, uint64(m.Account.Size()))
-		n3, err := m.Account.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if m.Found {
-		dAtA[i] = 0x10
-		i++
-		if m.Found {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
 	}
 	return i, nil
 }
@@ -832,6 +732,9 @@ func (m *Account) Size() (n int) {
 	if m.Role != 0 {
 		n += 1 + sovAccountstore(uint64(m.Role))
 	}
+	if m.OwnerId != 0 {
+		n += 1 + sovAccountstore(uint64(m.OwnerId))
+	}
 	return n
 }
 
@@ -848,6 +751,9 @@ func (m *AddRequest) Size() (n int) {
 	}
 	if m.Role != 0 {
 		n += 1 + sovAccountstore(uint64(m.Role))
+	}
+	if m.OwnerId != 0 {
+		n += 1 + sovAccountstore(uint64(m.OwnerId))
 	}
 	return n
 }
@@ -916,6 +822,19 @@ func (m *SearchRequest) Size() (n int) {
 	if m.IncludeInvalids {
 		n += 2
 	}
+	l = len(m.InstagramUsername)
+	if l > 0 {
+		n += 1 + l + sovAccountstore(uint64(l))
+	}
+	if m.InstagramId != 0 {
+		n += 1 + sovAccountstore(uint64(m.InstagramId))
+	}
+	if m.HidePrivate {
+		n += 2
+	}
+	if m.OwnerId != 0 {
+		n += 1 + sovAccountstore(uint64(m.OwnerId))
+	}
 	return n
 }
 
@@ -927,35 +846,6 @@ func (m *SearchReply) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovAccountstore(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *GetRequest) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.InstagramUsername)
-	if l > 0 {
-		n += 1 + l + sovAccountstore(uint64(l))
-	}
-	if m.InstagramId != 0 {
-		n += 1 + sovAccountstore(uint64(m.InstagramId))
-	}
-	if m.HidePrivate {
-		n += 2
-	}
-	return n
-}
-
-func (m *GetReply) Size() (n int) {
-	var l int
-	_ = l
-	if m.Account != nil {
-		l = m.Account.Size()
-		n += 1 + l + sovAccountstore(uint64(l))
-	}
-	if m.Found {
-		n += 2
 	}
 	return n
 }
@@ -1118,6 +1008,25 @@ func (m *Account) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerId", wireType)
+			}
+			m.OwnerId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.OwnerId |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipAccountstore(dAtA[iNdEx:])
@@ -1241,6 +1150,25 @@ func (m *AddRequest) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.Role |= (Role(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerId", wireType)
+			}
+			m.OwnerId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.OwnerId |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1772,6 +1700,93 @@ func (m *SearchRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.IncludeInvalids = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InstagramUsername", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAccountstore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InstagramUsername = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InstagramId", wireType)
+			}
+			m.InstagramId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.InstagramId |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HidePrivate", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HidePrivate = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerId", wireType)
+			}
+			m.OwnerId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAccountstore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.OwnerId |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipAccountstore(dAtA[iNdEx:])
@@ -1853,227 +1868,6 @@ func (m *SearchReply) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipAccountstore(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthAccountstore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowAccountstore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InstagramUsername", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAccountstore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAccountstore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.InstagramUsername = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InstagramId", wireType)
-			}
-			m.InstagramId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAccountstore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.InstagramId |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HidePrivate", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAccountstore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.HidePrivate = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipAccountstore(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthAccountstore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetReply) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowAccountstore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetReply: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetReply: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAccountstore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthAccountstore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Account == nil {
-				m.Account = &Account{}
-			}
-			if err := m.Account.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Found", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAccountstore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Found = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipAccountstore(dAtA[iNdEx:])
@@ -2203,42 +1997,41 @@ var (
 func init() { proto.RegisterFile("accountstore.proto", fileDescriptorAccountstore) }
 
 var fileDescriptorAccountstore = []byte{
-	// 592 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x54, 0xcd, 0x6e, 0xd3, 0x4c,
-	0x14, 0xcd, 0xd4, 0x6e, 0xea, 0xde, 0xa4, 0xf9, 0xfc, 0x5d, 0xa0, 0x32, 0x06, 0x45, 0xae, 0x17,
-	0x55, 0x40, 0xa2, 0x88, 0xb2, 0xea, 0x8e, 0xb4, 0x42, 0x55, 0x91, 0x90, 0xa8, 0x23, 0xc4, 0x32,
-	0x72, 0x3d, 0x13, 0x3a, 0xaa, 0xe3, 0x09, 0x63, 0x3b, 0xd0, 0x15, 0xe2, 0x0d, 0x78, 0x15, 0xde,
-	0x82, 0x25, 0x8f, 0x80, 0xc2, 0x8a, 0xb7, 0x40, 0xe3, 0x71, 0xdc, 0x3a, 0x34, 0xfc, 0x49, 0xdd,
-	0xe5, 0xde, 0x7b, 0x74, 0xcf, 0xf1, 0xb9, 0x67, 0x02, 0x18, 0x46, 0x91, 0xc8, 0x93, 0x2c, 0xcd,
-	0x84, 0x64, 0x3b, 0x13, 0x29, 0x32, 0x81, 0xed, 0xcb, 0x3d, 0xff, 0x13, 0x81, 0xb5, 0xbe, 0x6e,
-	0xe0, 0x03, 0x40, 0x9e, 0xa4, 0x59, 0xf8, 0x5a, 0x86, 0xe3, 0x61, 0x9e, 0x32, 0x99, 0x84, 0x63,
-	0xe6, 0x10, 0x8f, 0xf4, 0xd6, 0x83, 0xff, 0xab, 0xc9, 0xcb, 0x72, 0x80, 0x5b, 0xd0, 0xbe, 0x80,
-	0x73, 0xea, 0xac, 0x78, 0xa4, 0x67, 0x06, 0xad, 0xaa, 0x77, 0x44, 0x71, 0x13, 0x9a, 0x91, 0x10,
-	0x67, 0x9c, 0x39, 0x46, 0xb1, 0xa5, 0xac, 0xf0, 0x26, 0xac, 0x4e, 0xc3, 0x98, 0x53, 0xc7, 0xf4,
-	0x48, 0xcf, 0x0a, 0x74, 0x81, 0xdb, 0x60, 0x4a, 0x11, 0x33, 0x67, 0xd5, 0x23, 0xbd, 0xce, 0x2e,
-	0xee, 0xd4, 0xc4, 0x07, 0x22, 0x66, 0x41, 0x31, 0xf7, 0xdf, 0x03, 0xf4, 0x29, 0x0d, 0xd8, 0x9b,
-	0x9c, 0xa5, 0x7f, 0xad, 0xda, 0x05, 0x6b, 0x12, 0xa6, 0xe9, 0x5b, 0x21, 0xb5, 0xe2, 0xf5, 0xa0,
-	0xaa, 0x2b, 0x01, 0xc6, 0x6f, 0x04, 0x6c, 0x83, 0x55, 0x08, 0x98, 0xc4, 0xe7, 0x6a, 0x5f, 0xc2,
-	0x18, 0x3d, 0x10, 0x94, 0x15, 0xfb, 0xac, 0xa0, 0xaa, 0xfd, 0x29, 0x74, 0x0e, 0x44, 0x32, 0xe2,
-	0x72, 0xfc, 0x8f, 0x62, 0xff, 0xc0, 0x62, 0x04, 0x33, 0x52, 0xdc, 0xda, 0xe0, 0xe2, 0xb7, 0xdf,
-	0x81, 0x76, 0xc5, 0x3b, 0x89, 0xcf, 0xfd, 0x11, 0xe0, 0xf3, 0x50, 0x9e, 0x1d, 0x25, 0x85, 0xcf,
-	0xd7, 0xa6, 0xc5, 0x47, 0xb0, 0x6b, 0x3c, 0x8a, 0x9b, 0xc2, 0xc6, 0x80, 0x85, 0x32, 0x3a, 0x9d,
-	0xd3, 0xf6, 0x60, 0x55, 0x99, 0x98, 0x3a, 0xc4, 0x33, 0x96, 0xb8, 0xac, 0x01, 0x78, 0x0f, 0x6c,
-	0x9e, 0x44, 0x71, 0x4e, 0xd9, 0x90, 0xeb, 0x95, 0x69, 0x69, 0xf1, 0x7f, 0x65, 0xbf, 0x64, 0x4a,
-	0xfd, 0x27, 0xd0, 0x9a, 0xb3, 0xa8, 0xa3, 0x3c, 0x02, 0x6b, 0xbe, 0xb5, 0xa0, 0x69, 0xed, 0xde,
-	0xaa, 0xd3, 0x94, 0x91, 0x0f, 0x2a, 0x98, 0xff, 0x81, 0x00, 0x1c, 0xb2, 0xec, 0xfa, 0x0e, 0xb5,
-	0x05, 0xed, 0x53, 0x4e, 0xd9, 0x70, 0x22, 0xf9, 0x34, 0xcc, 0xf4, 0xc1, 0xac, 0xa0, 0xa5, 0x7a,
-	0x2f, 0x74, 0xcb, 0x3f, 0x06, 0xab, 0x90, 0xa0, 0x3e, 0xe1, 0x21, 0xac, 0x95, 0xda, 0x0a, 0xd6,
-	0xa5, 0x5f, 0x30, 0x47, 0xa9, 0x37, 0x35, 0x12, 0x79, 0x42, 0x4b, 0x8b, 0x74, 0x71, 0xff, 0x19,
-	0x98, 0xca, 0x52, 0xb4, 0xc0, 0x54, 0x62, 0xed, 0x06, 0x6e, 0xc0, 0xfa, 0x20, 0x9c, 0xb2, 0x4c,
-	0xb2, 0x84, 0xda, 0x04, 0x01, 0x9a, 0xaf, 0xc2, 0x24, 0xe3, 0x99, 0xbd, 0x82, 0x1d, 0x80, 0x7e,
-	0xfe, 0xae, 0x54, 0x63, 0x1b, 0x0a, 0xaa, 0xea, 0xfc, 0x24, 0xe6, 0x91, 0x6d, 0xee, 0x7e, 0x5f,
-	0x81, 0x1b, 0x25, 0xed, 0x40, 0x69, 0x18, 0x30, 0x39, 0xe5, 0x11, 0xc3, 0x3d, 0x30, 0xfa, 0x94,
-	0xa2, 0xb3, 0x20, 0xb0, 0x7a, 0xa2, 0xee, 0xe6, 0x15, 0x13, 0x95, 0x8d, 0x06, 0x3e, 0x85, 0xb5,
-	0x32, 0xa9, 0x78, 0xb7, 0x0e, 0xaa, 0x3f, 0x1c, 0xd7, 0x5d, 0x32, 0xd5, 0x6b, 0x8e, 0xa1, 0x75,
-	0x29, 0x78, 0xe8, 0xd5, 0xc1, 0x3f, 0x67, 0xdf, 0xed, 0xfe, 0x02, 0xa1, 0x57, 0xee, 0x43, 0x53,
-	0x27, 0x0a, 0xef, 0xd4, 0xb1, 0xb5, 0x34, 0xbb, 0xb7, 0xaf, 0x1e, 0xea, 0x1d, 0x7b, 0x60, 0x1c,
-	0xb2, 0x6c, 0xd1, 0x98, 0x8b, 0x94, 0x2d, 0x1a, 0x33, 0x3f, 0xbe, 0xdf, 0xd8, 0xb7, 0x3f, 0xcf,
-	0xba, 0xe4, 0xcb, 0xac, 0x4b, 0xbe, 0xce, 0xba, 0xe4, 0xe3, 0xb7, 0x6e, 0xe3, 0xa4, 0x59, 0xfc,
-	0x7d, 0x3f, 0xfe, 0x11, 0x00, 0x00, 0xff, 0xff, 0x34, 0x1c, 0x88, 0x31, 0xd4, 0x05, 0x00, 0x00,
+	// 571 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x54, 0x4d, 0x6e, 0xd3, 0x40,
+	0x14, 0xee, 0xd4, 0x6e, 0xe2, 0xbc, 0xa4, 0xc1, 0x3c, 0xa0, 0x72, 0x0d, 0x8a, 0x5c, 0x2f, 0xaa,
+	0x80, 0x44, 0x25, 0xc2, 0x8a, 0x1d, 0x69, 0xc5, 0x22, 0x48, 0x48, 0xe0, 0x08, 0xb1, 0x8c, 0x5c,
+	0xcf, 0x94, 0x8e, 0xea, 0x78, 0xc2, 0xd8, 0x4e, 0xe9, 0x2d, 0x58, 0x73, 0x08, 0xce, 0xc1, 0x82,
+	0x05, 0x47, 0x40, 0xe1, 0x0a, 0x1c, 0x00, 0x8d, 0xc7, 0x31, 0x35, 0x6d, 0xaa, 0x16, 0x89, 0x9d,
+	0xdf, 0x8f, 0xde, 0xf7, 0x7d, 0xef, 0x7d, 0x63, 0xc0, 0x30, 0x8a, 0x44, 0x9e, 0x64, 0x69, 0x26,
+	0x24, 0xdb, 0x9b, 0x49, 0x91, 0x09, 0xec, 0x9c, 0xcf, 0xf9, 0xdf, 0x08, 0x34, 0x87, 0x3a, 0x81,
+	0x8f, 0x01, 0x79, 0x92, 0x66, 0xe1, 0x7b, 0x19, 0x4e, 0x27, 0x79, 0xca, 0x64, 0x12, 0x4e, 0x99,
+	0x43, 0x3c, 0xd2, 0x6f, 0x05, 0xb7, 0xab, 0xca, 0xdb, 0xb2, 0x80, 0x3b, 0xd0, 0xf9, 0xd3, 0xce,
+	0xa9, 0xb3, 0xee, 0x91, 0xbe, 0x19, 0xb4, 0xab, 0xdc, 0x88, 0xe2, 0x16, 0x34, 0x22, 0x21, 0x4e,
+	0x38, 0x73, 0x8c, 0x62, 0x4a, 0x19, 0xe1, 0x5d, 0xd8, 0x98, 0x87, 0x31, 0xa7, 0x8e, 0xe9, 0x91,
+	0xbe, 0x15, 0xe8, 0x00, 0x77, 0xc1, 0x94, 0x22, 0x66, 0xce, 0x86, 0x47, 0xfa, 0xdd, 0x01, 0xee,
+	0xd5, 0xc8, 0x07, 0x22, 0x66, 0x41, 0x51, 0xc7, 0x6d, 0xb0, 0xc4, 0x69, 0xc2, 0xa4, 0x02, 0x6d,
+	0x14, 0xa0, 0xcd, 0x22, 0x1e, 0x51, 0xff, 0x33, 0x01, 0x18, 0x52, 0x1a, 0xb0, 0x0f, 0x39, 0x4b,
+	0x6f, 0xac, 0xc8, 0x05, 0x6b, 0x16, 0xa6, 0xe9, 0xa9, 0x90, 0x5a, 0x4d, 0x2b, 0xa8, 0xe2, 0x8a,
+	0x9c, 0x71, 0x03, 0x72, 0x66, 0x9d, 0xdc, 0x2e, 0x58, 0x05, 0xb7, 0x59, 0x7c, 0xa6, 0xa0, 0x12,
+	0xc6, 0xe8, 0x81, 0xa0, 0xac, 0x80, 0xb2, 0x82, 0x2a, 0xf6, 0xe7, 0xd0, 0x3d, 0x10, 0xc9, 0x11,
+	0x97, 0xd3, 0x7f, 0xd4, 0x71, 0x8d, 0xcb, 0x20, 0x98, 0x91, 0xc2, 0xd6, 0x77, 0x29, 0xbe, 0xfd,
+	0x2e, 0x74, 0x2a, 0xdc, 0x59, 0x7c, 0xe6, 0x1f, 0x01, 0xbe, 0x0a, 0xe5, 0xc9, 0x28, 0x29, 0xce,
+	0xf3, 0xdf, 0xb8, 0xf8, 0x08, 0x76, 0x0d, 0x47, 0x61, 0xff, 0x22, 0xb0, 0x39, 0x66, 0xa1, 0x8c,
+	0x8e, 0x97, 0xb8, 0x7d, 0xd8, 0x50, 0x0b, 0x4e, 0x1d, 0xe2, 0x19, 0x2b, 0x2e, 0xa0, 0x1b, 0xf0,
+	0x21, 0xd8, 0x3c, 0x89, 0xe2, 0x9c, 0xb2, 0x09, 0xd7, 0x33, 0xd3, 0x72, 0xc7, 0xb7, 0xca, 0x7c,
+	0x09, 0x95, 0xae, 0x10, 0x63, 0x5c, 0x57, 0x8c, 0x79, 0x71, 0xb1, 0x3b, 0xd0, 0x39, 0xe6, 0x94,
+	0x4d, 0x66, 0x92, 0xcf, 0xc3, 0x4c, 0x9b, 0xd9, 0x0a, 0xda, 0x2a, 0xf7, 0x5a, 0xa7, 0xae, 0xf2,
+	0xef, 0x73, 0x68, 0x2f, 0x55, 0x2b, 0x97, 0x3c, 0x01, 0x6b, 0xa9, 0xb2, 0x90, 0xdd, 0x1e, 0xdc,
+	0xab, 0xcb, 0x2e, 0x9f, 0x6e, 0x50, 0xb5, 0x3d, 0x7a, 0x09, 0xa6, 0xda, 0x05, 0x5a, 0x60, 0x2a,
+	0xda, 0xf6, 0x1a, 0x6e, 0x42, 0x6b, 0x1c, 0xce, 0x59, 0x26, 0x59, 0x42, 0x6d, 0x82, 0x00, 0x8d,
+	0x77, 0x61, 0x92, 0xf1, 0xcc, 0x5e, 0xc7, 0x2e, 0xc0, 0x30, 0xff, 0x58, 0xf2, 0xb2, 0x0d, 0xd5,
+	0xaa, 0xe2, 0xfc, 0x30, 0xe6, 0x91, 0x6d, 0x0e, 0xbe, 0xac, 0xc3, 0x9d, 0x12, 0x61, 0xac, 0xe0,
+	0xc6, 0x4c, 0xce, 0x79, 0xc4, 0xf0, 0x19, 0x18, 0x43, 0x4a, 0xd1, 0xf9, 0x8b, 0x4b, 0xf5, 0xee,
+	0xdc, 0xad, 0x4b, 0x2a, 0xea, 0xaa, 0x6b, 0xf8, 0x02, 0x9a, 0xa5, 0xc7, 0xf0, 0x41, 0xbd, 0xa9,
+	0x6e, 0x79, 0xd7, 0x5d, 0x51, 0xd5, 0x63, 0xde, 0x40, 0xfb, 0x9c, 0x65, 0xd0, 0xab, 0x37, 0x5f,
+	0x74, 0xad, 0xdb, 0xbb, 0xa2, 0x43, 0x8f, 0xdc, 0x87, 0x86, 0x5e, 0x3d, 0xde, 0xaf, 0xf7, 0xd6,
+	0x6c, 0xe8, 0x6e, 0x5f, 0x5e, 0x2c, 0x66, 0xec, 0xdb, 0x5f, 0x17, 0x3d, 0xf2, 0x7d, 0xd1, 0x23,
+	0x3f, 0x16, 0x3d, 0xf2, 0xe9, 0x67, 0x6f, 0xed, 0xb0, 0x51, 0xfc, 0x74, 0x9f, 0xfe, 0x0e, 0x00,
+	0x00, 0xff, 0xff, 0x7f, 0x39, 0x15, 0xe8, 0x8a, 0x05, 0x00, 0x00,
 }

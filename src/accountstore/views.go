@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"proto/accountstore"
 	"utils/rpc"
@@ -19,7 +18,9 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 	if err != nil {
 		return nil, err
 	}
+
 	account.Role = in.Role
+	account.OwnerID = in.OwnerId
 
 	// save Creates if not exists
 	err = Save(account)
@@ -69,38 +70,12 @@ func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest
 
 func (s *svc) Search(_ context.Context, in *accountstore.SearchRequest) (*accountstore.SearchReply, error) {
 
-	accounts, err := Find(!in.IncludeInvalids, in.Roles)
+	accounts, err := Find(in)
 	if err != nil {
 		return nil, err
 	}
 
 	return &accountstore.SearchReply{
-		Accounts: EncodeAll(accounts),
-	}, nil
-}
-
-func (s *svc) Get(_ context.Context, in *accountstore.GetRequest) (*accountstore.GetReply, error) {
-
-	account, err := FindAccount(&Account{
-		InstagramUsername: in.InstagramUsername,
-		InstagramID:       in.InstagramId,
-	})
-	if err == gorm.ErrRecordNotFound {
-		return &accountstore.GetReply{
-			Found: false,
-		}, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	if in.HidePrivate {
-		return &accountstore.GetReply{
-			Account: account.EncodePrivate(),
-		}, nil
-	}
-
-	return &accountstore.GetReply{
-		Found:   true,
-		Account: account.Encode(),
+		Accounts: EncodeAll(accounts, in.HidePrivate),
 	}, nil
 }

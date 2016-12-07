@@ -15,100 +15,15 @@ var accountStoreServiceClient = accountstore.NewAccountStoreServiceClient(api.Ac
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"retrieve", "account", RetrieveAccount},
-		soso.Route{"add", "account", AddAccount},
-
-		// admins methods
+		soso.Route{"add", "account", AddBot},
 		soso.Route{"list", "account", ListAccounts},
-		soso.Route{"add_bot", "account", AddBot},
 
 		//		soso.Route{"account", "invalidate", MarkInvalid},
-		//		soso.Route{"account", "confirm", Confirm},
+		soso.Route{"account", "confirm", Confirm},
 	)
 }
 
-// RetrieveAccount gets this account bot
-func RetrieveAccount(c *soso.Context) {
-	if c.Token == nil {
-		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
-		return
-	}
-
-	// get current user instagram ID
-	user, err := GetUser(c.Token.UID, false)
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	instagramID := user.InstagramId
-
-	if instagramID == 0 {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram ID"))
-		return
-	}
-
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	resp, err := accountStoreServiceClient.Get(ctx, &accountstore.GetRequest{
-		InstagramId: instagramID,
-	})
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	c.SuccessResponse(map[string]interface{}{
-		"account": resp.Account,
-		"found":   resp.Found,
-	})
-
-}
-
-func AddAccount(c *soso.Context) {
-	if c.Token == nil {
-		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
-		return
-	}
-
-	// get current user instagram ID
-	user, err := GetUser(c.Token.UID, false)
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	instagramUsername := user.InstagramUsername
-
-	if instagramUsername == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram username"))
-		return
-	}
-
-	password, ok := c.RequestMap["password"].(string)
-	if !ok || password == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No password supplied"))
-		return
-	}
-
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	resp, err := accountStoreServiceClient.Add(ctx, &accountstore.AddRequest{
-		InstagramUsername: instagramUsername,
-		Password:          password,
-		Role:              accountstore.Role_User,
-	})
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	c.SuccessResponse(map[string]interface{}{
-		"success":   true,
-		"need_code": resp.NeedCode,
-	})
-}
-
+// Confirm user -- apply instagram checkpoint
 func Confirm(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
@@ -152,6 +67,7 @@ func Confirm(c *soso.Context) {
 
 }
 
+// ListAccounts returns list of available accs
 func ListAccounts(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
@@ -163,24 +79,25 @@ func ListAccounts(c *soso.Context) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
-	if !user.IsAdmin {
-		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("Only admins can do it"))
-		return
-	}
 
 	withInvalids, _ := c.RequestMap["with_invalids"].(bool)
 
 	req := accountstore.SearchRequest{
 		IncludeInvalids: withInvalids,
 	}
+
 	roleName, ok := c.RequestMap["role"].(string)
-	if ok {
+	if ok && user.IsAdmin {
 		role, ok := accountstore.Role_value[roleName]
 		if !ok {
 			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown role"))
 			return
 		}
 		req.Roles = []accountstore.Role{accountstore.Role(role)}
+	}
+
+	if !user.IsAdmin {
+		req.OwnerId = c.Token.UID
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -193,6 +110,7 @@ func ListAccounts(c *soso.Context) {
 	c.SuccessResponse(res.Accounts)
 }
 
+// AddBot routine
 func AddBot(c *soso.Context) {
 	if c.Token == nil {
 		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
@@ -201,10 +119,6 @@ func AddBot(c *soso.Context) {
 	user, err := GetUser(c.Token.UID, false)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
-	if !user.IsAdmin {
-		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("Only admins can do it"))
 		return
 	}
 
@@ -222,8 +136,8 @@ func AddBot(c *soso.Context) {
 		return
 	}
 
-	if role == int32(accountstore.Role_User) {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("you can not add user like this"))
+	if !user.IsAdmin && role != int32(accountstore.Role_User) {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("only admins can add bots"))
 		return
 	}
 
@@ -233,6 +147,7 @@ func AddBot(c *soso.Context) {
 		InstagramUsername: username,
 		Password:          password,
 		Role:              accountstore.Role(role),
+		OwnerId:           c.Token.UID,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
