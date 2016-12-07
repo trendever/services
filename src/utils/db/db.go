@@ -34,6 +34,12 @@ func New() *gorm.DB {
 	return connection.New()
 }
 
+func HasColumn(model interface{}, column string) bool {
+	var count uint
+	New().Table("information_schema.columns").Where("table_name = ? and column_name = ?", New().NewScope(model).TableName(), column).Count(&count)
+	return count > 0
+}
+
 func NilScan(rows *sql.Rows, args ...interface{}) (err error) {
 	cp := make([]interface{}, len(args), len(args))
 
