@@ -3,7 +3,7 @@ package common
 import "testing"
 
 func TestPopPush(t *testing.T) {
-	stack := &FifoStack{}
+	stack := &Queue{}
 	item1, item2, item3 := "item1", "item2", "item3"
 
 	stack.Push(item1)
