@@ -1,6 +1,6 @@
 rpc: :12326
-# telegram | mts | atompark
-sender: telegram
+# dummy | mts | atompark
+sender: dummy
 
 debug: true
 

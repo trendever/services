@@ -2,15 +2,19 @@ package server
 
 import (
 	"fmt"
+	"golang.org/x/net/context"
+	"proto/bot"
 	"proto/sms"
+	"sms/conf"
 	"sms/models"
 	"utils/log"
-
-	"golang.org/x/net/context"
+	"utils/rpc"
 )
 
 type smsServer struct {
 	sender        Sender
+	telegramCli   bot.TelegramServiceClient
+	telegramRoom  string
 	smsRepository models.SmsRepository
 }
 
@@ -43,8 +47,12 @@ func GetSender(name string) (Sender, error) {
 
 //NewSmsServer returns new instance of *sms.SmsServiceServer
 func NewSmsServer(sender Sender, smsRepository models.SmsRepository) sms.SmsServiceServer {
+	s := conf.GetSettings().Telegram
+	conn := rpc.Connect(s.RPC)
 	return &smsServer{
 		sender:        sender,
+		telegramCli:   bot.NewTelegramServiceClient(conn),
+		telegramRoom:  s.Channel,
 		smsRepository: smsRepository,
 	}
 }
@@ -74,6 +82,16 @@ func (ss *smsServer) SendSMS(ctx context.Context, in *sms.SendSMSRequest) (*sms.
 		// save updated data to db
 		if err := ss.smsRepository.Update(smsDbObj); err != nil {
 			log.Error(err)
+		}
+
+		ctx, cancel := rpc.DefaultContext()
+		defer cancel()
+		_, err := ss.telegramCli.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+			Channel: ss.telegramRoom,
+			Message: fmt.Sprintf("SMS for %v with status '%v':\n%v", smsDbObj.Phone, smsDbObj.SmsStatus, smsDbObj.Message),
+		})
+		if err != nil {
+			log.Errorf("failed to notify about new message: %v", err)
 		}
 	})()
 
