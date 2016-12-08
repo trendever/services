@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"instagram"
 	"math/rand"
 	"proto/accountstore"
@@ -109,11 +108,17 @@ func InitPoll(
 		}{min: int(min), max: int(max)},
 	}
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	res, err := storeCli.Search(ctx, &accountstore.SearchRequest{Roles: []accountstore.Role{role}})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load instagram accounts: %v", err)
+	var res *accountstore.SearchReply
+	for {
+		ctx, cancel := rpc.DefaultContext()
+		res, err = storeCli.Search(ctx, &accountstore.SearchRequest{Roles: []accountstore.Role{role}})
+		cancel()
+		if err != nil {
+			log.Errorf("failed to load instagram accounts: %v\n try to reconnect after 5 seconds", err)
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
 
 	for _, acc := range res.Accounts {
