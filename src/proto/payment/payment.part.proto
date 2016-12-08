@@ -4,19 +4,88 @@ service PaymentService {
 
   rpc BuyOrder(BuyOrderRequest) returns (BuyOrderReply) {}
 
+  rpc BuyAsync(BuyAsyncRequest) returns (BuyAsyncReply) {}
+
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply) {}
+
+  rpc GetOrder(GetOrderRequest) returns (GetOrderReply) {}
+
+  rpc UpdateServiceData(UpdateServiceDataRequest) returns (UpdateServiceDataReply) {}
+
+  rpc AddCard(AddCardRequest) returns (AddCardReply) {}
+
+  rpc GetCards(GetCardsRequest) returns (GetCardsReply) {}
+
+  rpc DelCard(DelCardRequest) returns (DelCardReply) {}
+}
+
+message OrderData {
+  uint64 amount = 1;
+  Currency currency = 2;
+  string gateway = 3;
+
+  // payment of our service
+  string service_name = 5;
+  string service_data = 6;
+
+  // p2p payment
+  uint64 lead_id = 7;
+  string shop_card_number = 10;
+
+  // non-p2p payment
+  string card_id = 15;
+
+  // in trendcoins
+  uint64 commission_fee = 11;
+  // user id, usually supplier
+  uint64 commission_source = 12;
+
+  bool cancelled = 13;
+
+  string comment = 14;
+}
+
+message UserInfo {
+  string ip = 1;
+  uint64 user_id = 2;
+  string phone = 3;
 }
 
 message CreateOrderRequest {
-  uint64 amount = 1;
-  Currency currency = 2;
+  OrderData data = 1;
+  UserInfo info = 2;
+}
 
-  uint64 lead_id = 3;
-  uint64 user_id = 4;
-  uint64 conversation_id = 5;
-  Direction direction = 6;
+message GetOrderRequest {
+  uint64 id = 1;
+}
 
-  string shop_card_number = 7;
+message GetOrderReply {
+  OrderData order = 1;
+  // @TODO: some other fields, like open, finished sessions and etc
+}
+
+message UpdateServiceDataRequest {
+  uint64 id = 1;
+  string new_data = 2;
+}
+
+message UpdateServiceDataReply {
+}
+
+message PaymentNotification {
+  uint64 id = 1;
+  OrderData data = 2;
+  Event event = 3;
+  uint64 invoker_user_id = 4;
+  UserInfo info = 5;
+}
+
+enum Event {
+  Created = 0;
+  Cancelled = 1;
+  PayFailed = 2;
+  PaySuccess = 3;
 }
 
 message CreateOrderReply {
@@ -27,11 +96,10 @@ message CreateOrderReply {
 
 message BuyOrderRequest {
   uint64 pay_id = 1;
-  string ip = 2;
+  UserInfo user = 2;
 
-  // parameters to check permissions
-  uint64 lead_id = 3;
-  Direction direction = 4;
+  // use only when pay_id == 0
+  string gateway = 3;
 }
 
 message BuyOrderReply {
@@ -40,12 +108,18 @@ message BuyOrderReply {
   string error_message = 3;
 }
 
+message BuyAsyncRequest {
+  OrderData data = 1;
+  UserInfo user = 2;
+}
+
+message BuyAsyncReply {
+  Errors error = 1;
+  string error_message = 2;
+}
+
 message CancelOrderRequest {
   uint64 pay_id = 1;
-
-  // parameters to check permissions
-  uint64 lead_id = 3;
-  Direction direction = 4;
 
   // userID just to log it
   uint64 user_id = 5;
@@ -57,25 +131,44 @@ message CancelOrderReply {
   string error_message = 3;
 }
 
-// chat messages
-message ChatMessageNewOrder {
-  uint64 pay_id = 1;
-  uint64 amount = 2;
-  Currency currency = 3;
+message AddCardRequest {
+  UserInfo user = 1;
+  string gateway = 2;
 }
 
-message ChatMessagePaymentFinished {
-  uint64 pay_id = 1;
-  bool success = 3;
-  bool failure = 4;
-  uint64 amount = 5;
-  Currency currency = 6;
-  Direction direction = 7;
+message AddCardReply {
+  string redirect_url = 1;
+  Errors error = 2;
+  string error_message = 3;
 }
 
-message ChatMessageOrderCancelled {
-  uint64 pay_id = 1;
-  uint64 user_id = 2;
+message GetCardsRequest {
+  UserInfo user = 1;
+  string gateway = 2;
+}
+
+message GetCardsReply {
+  repeated Card cards = 1;
+  Errors error = 2;
+  string error_message = 3;
+}
+
+message DelCardRequest {
+  UserInfo user = 1;
+  string gateway = 2;
+  string card_id = 3;
+}
+
+message DelCardReply {
+  repeated Card cards = 1;
+  Errors error = 2;
+  string error_message = 3;
+}
+
+message Card {
+  string name = 1;
+  string id = 2;
+  bool active = 3;
 }
 
 enum Currency {
@@ -93,11 +186,20 @@ enum Errors {
   ALREADY_PAYED = 3;
   PAY_CANCELLED = 4;
   ANOTHER_OPEN_ORDER = 5;
+  ALREADY_CANCELLED = 6;
 
+  UNKNOWN_ERROR = 126;
   // external errors
   INIT_FAILED = 127;
   PAY_FAILED = 128;
   CHAT_DOWN = 129;
+  COINS_DOWN = 130;
+  // commission source lacks funds
+  CANT_PAY_FEE = 131;
+  // refund fails
+  // realy bad in case of Create order: commission was writed off, but pay wasn't created
+  REFUND_ERROR = 132;
+  NATS_FAILED = 133;
 }
 
 enum Direction {

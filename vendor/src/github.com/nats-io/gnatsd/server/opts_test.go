@@ -15,6 +15,7 @@ func TestDefaultOptions(t *testing.T) {
 		Host:               DEFAULT_HOST,
 		Port:               DEFAULT_PORT,
 		MaxConn:            DEFAULT_MAX_CONNECTIONS,
+		HTTPHost:           DEFAULT_HOST,
 		PingInterval:       DEFAULT_PING_INTERVAL,
 		MaxPingsOut:        DEFAULT_PING_MAX_OUT,
 		TLSTimeout:         float64(TLS_TIMEOUT) / float64(time.Second),
@@ -168,24 +169,25 @@ func TestTLSConfigFile(t *testing.T) {
 
 func TestMergeOverrides(t *testing.T) {
 	golden := &Options{
-		Host:           "localhost",
-		Port:           2222,
-		Username:       "derek",
-		Password:       "spooky",
-		AuthTimeout:    1.0,
-		Debug:          true,
-		Trace:          true,
-		Logtime:        false,
-		HTTPPort:       DEFAULT_HTTP_PORT,
-		LogFile:        "/tmp/gnatsd.log",
-		PidFile:        "/tmp/gnatsd.pid",
-		ProfPort:       6789,
-		Syslog:         true,
-		RemoteSyslog:   "udp://foo.com:33",
-		MaxControlLine: 2048,
-		MaxPayload:     65536,
-		MaxConn:        100,
-		MaxPending:     10000000,
+		Host:               "localhost",
+		Port:               2222,
+		Username:           "derek",
+		Password:           "spooky",
+		AuthTimeout:        1.0,
+		Debug:              true,
+		Trace:              true,
+		Logtime:            false,
+		HTTPPort:           DEFAULT_HTTP_PORT,
+		LogFile:            "/tmp/gnatsd.log",
+		PidFile:            "/tmp/gnatsd.pid",
+		ProfPort:           6789,
+		Syslog:             true,
+		RemoteSyslog:       "udp://foo.com:33",
+		MaxControlLine:     2048,
+		MaxPayload:         65536,
+		MaxConn:            100,
+		MaxPending:         10000000,
+		ClusterNoAdvertise: true,
 	}
 	fopts, err := ProcessConfigFile("./configs/test.conf")
 	if err != nil {
@@ -194,11 +196,12 @@ func TestMergeOverrides(t *testing.T) {
 
 	// Overrides via flags
 	opts := &Options{
-		Port:     2222,
-		Password: "spooky",
-		Debug:    true,
-		HTTPPort: DEFAULT_HTTP_PORT,
-		ProfPort: 6789,
+		Port:               2222,
+		Password:           "spooky",
+		Debug:              true,
+		HTTPPort:           DEFAULT_HTTP_PORT,
+		ProfPort:           6789,
+		ClusterNoAdvertise: true,
 	}
 	merged := MergeOptions(fopts, opts)
 
@@ -276,6 +279,45 @@ func TestRouteFlagOverride(t *testing.T) {
 	}
 }
 
+func TestClusterFlagsOverride(t *testing.T) {
+	routeFlag := "nats-route://ruser:top_secret@127.0.0.1:7246"
+	rurl, _ := url.Parse(routeFlag)
+
+	// In this test, we override the cluster listen string. Note that in
+	// the golden options, the cluster other infos correspond to what
+	// is recovered from the configuration file, this explains the
+	// discrepency between ClusterListenStr and the rest.
+	// The server would then process the ClusterListenStr override and
+	// correctly override ClusterHost/ClustherPort/etc..
+	golden := &Options{
+		Host:               "127.0.0.1",
+		Port:               7222,
+		ClusterHost:        "127.0.0.1",
+		ClusterPort:        7244,
+		ClusterListenStr:   "nats://127.0.0.1:8224",
+		ClusterUsername:    "ruser",
+		ClusterPassword:    "top_secret",
+		ClusterAuthTimeout: 0.5,
+		Routes:             []*url.URL{rurl},
+	}
+
+	fopts, err := ProcessConfigFile("./configs/srv_a.conf")
+	if err != nil {
+		t.Fatalf("Received an error reading config file: %v\n", err)
+	}
+
+	// Overrides via flags
+	opts := &Options{
+		ClusterListenStr: "nats://127.0.0.1:8224",
+	}
+	merged := MergeOptions(fopts, opts)
+
+	if !reflect.DeepEqual(golden, merged) {
+		t.Fatalf("Options are incorrect.\nexpected: %+v\ngot: %+v",
+			golden, merged)
+	}
+}
+
 func TestRouteFlagOverrideWithMultiple(t *testing.T) {
 	routeFlag := "nats-route://ruser:top_secret@127.0.0.1:8246, nats-route://ruser:top_secret@127.0.0.1:8266"
 	rurls := RoutesFromStr(routeFlag)
@@ -319,9 +361,12 @@ func TestListenConfig(t *testing.T) {
 	// Normal clients
 	host := "10.0.1.22"
 	port := 4422
-
+	monHost := "127.0.0.1"
 	if opts.Host != host {
 		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, host)
+	}
+	if opts.HTTPHost != monHost {
+		t.Fatalf("Received incorrect host %q, expected %q\n", opts.HTTPHost, monHost)
 	}
 	if opts.Port != port {
 		t.Fatalf("Received incorrect port %v, expected %v\n", opts.Port, port)
@@ -368,6 +413,9 @@ func TestListenPortOnlyConfig(t *testing.T) {
 	if opts.Host != DEFAULT_HOST {
 		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, DEFAULT_HOST)
 	}
+	if opts.HTTPHost != DEFAULT_HOST {
+		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, DEFAULT_HOST)
+	}
 	if opts.Port != port {
 		t.Fatalf("Received incorrect port %v, expected %v\n", opts.Port, port)
 	}
@@ -385,8 +433,29 @@ func TestListenPortWithColonConfig(t *testing.T) {
 	if opts.Host != DEFAULT_HOST {
 		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, DEFAULT_HOST)
 	}
+	if opts.HTTPHost != DEFAULT_HOST {
+		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, DEFAULT_HOST)
+	}
 	if opts.Port != port {
 		t.Fatalf("Received incorrect port %v, expected %v\n", opts.Port, port)
+	}
+}
+
+func TestListenMonitoringDefault(t *testing.T) {
+	opts := &Options{
+		Host: "10.0.1.22",
+	}
+	processOptions(opts)
+
+	host := "10.0.1.22"
+	if opts.Host != host {
+		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, host)
+	}
+	if opts.HTTPHost != host {
+		t.Fatalf("Received incorrect host %q, expected %q\n", opts.Host, host)
+	}
+	if opts.Port != DEFAULT_PORT {
+		t.Fatalf("Received incorrect port %v, expected %v\n", opts.Port, DEFAULT_PORT)
 	}
 }
 

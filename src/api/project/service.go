@@ -41,7 +41,7 @@ func (s *Service) Run() error {
 	metrics.Init(settings.Metrics.Addr, settings.Metrics.User, settings.Metrics.Password, settings.Metrics.DBName)
 	cache.Init()
 	SosoObj.HandleList(views.SocketRoutes)
-	nats.Init(settings.NatsURL)
+	nats.Init(&settings.Nats, false)
 	elastic.Init(&settings.Elastic)
 	http.Handle("/channel/", GetMainHandler())
 

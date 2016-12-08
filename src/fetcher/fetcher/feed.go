@@ -1,10 +1,11 @@
 package fetcher
 
 import (
+	"accountstore/client"
 	"fetcher/models"
 	"instagram"
+	"proto/bot"
 	"strings"
-	"time"
 	"utils/log"
 )
 
@@ -15,35 +16,29 @@ type textField struct {
 }
 
 // get activity: fetch and parse instagram feed
-func (w *Worker) getActivity() {
-
-	// little log
-	log.Debug("Start fetching feed activity")
-
-	for {
-		// get recent activity
-		ract, err := w.api().GetRecentActivity()
-		if err != nil {
-			log.Warn("Got error %v while fetching recent activitity with user %v", err, w.username)
-			time.Sleep(time.Second)
-			continue
-		}
-
-		// fetch old stories
-		for _, story := range append(ract.OldStories, ract.NewStories...) {
-			err := fillFeed(story, w.username)
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
-		// sleep
-		w.next()
+func getActivity(meta *client.AccountMeta) error {
+	ig, err := meta.Delayed()
+	if err != nil {
+		return err
 	}
+	// get recent activity
+	ract, err := ig.GetRecentActivity()
+	if err != nil {
+		return err
+	}
+
+	// fetch old stories
+	for _, story := range append(ract.OldStories, ract.NewStories...) {
+		err := fillFeed(story, meta)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // fill database model
-func fillFeed(stories instagram.RecentActivityStories, mentionName string) error {
+func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta) error {
 
 	log.Debug("Fetching new story")
 
@@ -55,7 +50,8 @@ func fillFeed(stories instagram.RecentActivityStories, mentionName string) error
 		UserID:       stories.Args.ProfileID,
 		UserImageURL: stories.Args.ProfileImage,
 
-		MentionedUsername: mentionName,
+		MentionedUsername: meta.Get().Username,
+		MentionedRole:     bot.MentionedRole(meta.Role()),
 
 		UserName: txt.userName,
 		Type:     txt.textType,

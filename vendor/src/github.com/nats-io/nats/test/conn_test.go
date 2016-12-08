@@ -37,8 +37,14 @@ func TestConnectionStatus(t *testing.T) {
 	if nc.Status() != nats.CONNECTED {
 		t.Fatal("Should have status set to CONNECTED")
 	}
+	if !nc.IsConnected() {
+		t.Fatal("Should have status set to CONNECTED")
+	}
 	nc.Close()
 	if nc.Status() != nats.CLOSED {
+		t.Fatal("Should have status set to CLOSED")
+	}
+	if !nc.IsClosed() {
 		t.Fatal("Should have status set to CLOSED")
 	}
 }
@@ -1214,5 +1220,78 @@ func TestUseDefaultTimeout(t *testing.T) {
 	defer nc.Close()
 	if nc.Opts.Timeout != nats.DefaultTimeout {
 		t.Fatalf("Expected Timeout to be set to %v, got %v", nats.DefaultTimeout, nc.Opts.Timeout)
+	}
+}
+
+func TestNoRaceOnLastError(t *testing.T) {
+	s := RunDefaultServer()
+	defer s.Shutdown()
+
+	dch := func(c *nats.Conn) {
+		// Just access LastError to make sure that there is no race
+		if c.LastError() != nil {
+			if c.LastError().Error() == "" {
+			}
+		}
+	}
+	nc, err := nats.Connect(nats.DefaultURL,
+		nats.DisconnectHandler(dch),
+		nats.ReconnectWait(5*time.Millisecond))
+	if err != nil {
+		t.Fatalf("Unable to connect: %v\n", err)
+	}
+	defer nc.Close()
+
+	for i := 0; i < 10; i++ {
+		s.Shutdown()
+		time.Sleep(10 * time.Millisecond)
+		s = RunDefaultServer()
+	}
+	s.Shutdown()
+}
+
+func TestUseCustomDialer(t *testing.T) {
+	s := RunDefaultServer()
+	defer s.Shutdown()
+
+	dialer := &net.Dialer{
+		Timeout:   10 * time.Second,
+		DualStack: true,
+	}
+	opts := &nats.Options{
+		Servers: []string{nats.DefaultURL},
+		Dialer:  dialer,
+	}
+	nc, err := opts.Connect()
+	if err != nil {
+		t.Fatalf("Unexpected error on connect: %v", err)
+	}
+	defer nc.Close()
+	if nc.Opts.Dialer != dialer {
+		t.Fatalf("Expected Dialer to be set to %v, got %v", dialer, nc.Opts.Dialer)
+	}
+
+	// Should be possible to set via variadic func based Option setter
+	dialer2 := &net.Dialer{
+		Timeout:   5 * time.Second,
+		DualStack: true,
+	}
+	nc2, err := nats.Connect(nats.DefaultURL, nats.Dialer(dialer2))
+	if err != nil {
+		t.Fatalf("Unexpected error on connect: %v", err)
+	}
+	defer nc2.Close()
+	if !nc2.Opts.Dialer.DualStack {
+		t.Fatalf("Expected for dialer to be customized to use dual stack support")
+	}
+
+	// By default, dialer still uses the DefaultTimeout
+	nc3, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Unexpected error on connect: %v", err)
+	}
+	defer nc3.Close()
+	if nc3.Opts.Dialer.Timeout != nats.DefaultTimeout {
+		t.Fatalf("Expected DialTimeout to be set to %v, got %v", nats.DefaultTimeout, nc.Opts.Dialer.Timeout)
 	}
 }

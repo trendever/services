@@ -5,7 +5,7 @@
 
 * Install go and [gb](https://getgb.io/).
 * Clone this repository and run `gb build`.
-* Install docker and docker-compose; enter local/ directory; launch `docker-compose start`. Everything should be running now.
+* Install docker and docker-compose; enter local/ directory; launch `docker-compose up` then `docker-compose start`. Everything should be running now.
 
 # Default configs
 

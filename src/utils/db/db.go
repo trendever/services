@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"time"
@@ -20,9 +21,53 @@ type Settings struct {
 	Debug    bool
 }
 
+// similar to gorm.Model but with uint64 key
+type Model struct {
+	ID        uint64 `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+}
+
 // New database conn
 func New() *gorm.DB {
 	return connection.New()
+}
+
+func HasColumn(model interface{}, column string) bool {
+	var count uint
+	New().Table("information_schema.columns").Where("table_name = ? and column_name = ?", New().NewScope(model).TableName(), column).Count(&count)
+	return count > 0
+}
+
+func NilScan(rows *sql.Rows, args ...interface{}) (err error) {
+	cp := make([]interface{}, len(args), len(args))
+
+	type replaced struct {
+		orig *string
+		null sql.NullString
+	}
+	reps := make([]replaced, 0, len(args))
+	for i, arg := range args {
+		switch arg := arg.(type) {
+		case *string:
+			reps = append(reps, replaced{
+				orig: arg,
+			})
+			cp[i] = &reps[len(reps)-1].null
+		default:
+			cp[i] = arg
+		}
+	}
+	err = rows.Scan(cp...)
+	if err != nil {
+		return
+	}
+
+	for _, rep := range reps {
+		*rep.orig = rep.null.String
+	}
+	return
 }
 
 // Init initializes db connection

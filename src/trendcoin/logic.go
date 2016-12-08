@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/lib/pq"
 	"utils/db"
 	"utils/log"
 )
@@ -17,7 +18,15 @@ var (
 	InvalidSourceError    = errors.New("Invalid source account")
 	IdenticalSidesError   = errors.New("Transaction should not have identical source and destination")
 	CreditNotAllowedError = errors.New("Credit is not allowed for this transaction")
+	IdempotencyCheckError = errors.New("Idempotency check failed")
 )
+
+// here is all possible logical errors, everything else is external(probably db) errors
+var LogicalErrors = []error{
+	AlreadyPerformedError, ZeroAmountError, EmptyReasonError, TwoEmptySidesError,
+	EmptySideError, InvalidSourceError, IdenticalSidesError, CreditNotAllowedError,
+	IdempotencyCheckError,
+}
 
 // performs basic transaction validate
 func (t *Transaction) Validate() error {
@@ -50,12 +59,12 @@ func (t *Transaction) Perform(tx *gorm.DB) error {
 	if t.Source != 0 {
 		source := Account{UserID: t.Source}
 		res := tx.Find(&source)
-		// source account should exist
-		// @CHECK or not? if credit is allowed it may be fine
+		// source account should exist at least if credit isn't allowed
 		if res.RecordNotFound() {
-			return InvalidSourceError
-		}
-		if res.Error != nil {
+			if !t.AllowCredit {
+				return InvalidSourceError
+			}
+		} else if res.Error != nil {
 			return fmt.Errorf("failed to load source account: %v", res.Error)
 		}
 		if !t.AllowCredit && source.Balance < int64(t.Amount) {
@@ -81,6 +90,11 @@ func (t *Transaction) Perform(tx *gorm.DB) error {
 	}
 	err := tx.Save(t).Error
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code.Name() == "unique_violation" {
+				return IdempotencyCheckError
+			}
+		}
 		return fmt.Errorf("failed to save transaction into log: %v", err)
 	}
 

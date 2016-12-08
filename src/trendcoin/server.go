@@ -7,23 +7,31 @@ import (
 	"time"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
+
+const NotifyTopic = "coins.balance_notify"
 
 type TrendcoinServer struct {
 	requestChan chan *TransactionsRequest
 }
+
+var server *TrendcoinServer
 
 type TransactionsRequest struct {
 	Transactions TransactionsSlice
 	AnswerChan   chan *proto.MakeTransactionsReply
 }
 
-func NewTrendcoinServer() *TrendcoinServer {
-	s := &TrendcoinServer{
-		requestChan: make(chan *TransactionsRequest),
+func GetTrendcoinServer() *TrendcoinServer {
+	if server == nil {
+		server = &TrendcoinServer{
+			requestChan: make(chan *TransactionsRequest),
+		}
+		server.subscribe()
+		go server.loop()
 	}
-	go s.loop()
-	return s
+	return server
 }
 
 func (s *TrendcoinServer) Stop() {
@@ -62,7 +70,38 @@ func (s *TrendcoinServer) MakeTransactions(_ context.Context, in *proto.MakeTran
 	req.AnswerChan = make(chan *proto.MakeTransactionsReply)
 	s.requestChan <- req
 	ans := <-req.AnswerChan
+	if ans.Error == "" {
+		go s.balanceNotify(req.Transactions, in.IsAutorefill)
+	}
 	return ans, nil
+}
+
+func (s *TrendcoinServer) balanceNotify(transactions TransactionsSlice, isAutorefill bool) {
+	var users []uint64
+	for _, tx := range transactions {
+		if tx.Source != 0 {
+			users = append(users, tx.Source)
+		}
+		if tx.Destination != 0 {
+			users = append(users, tx.Destination)
+		}
+	}
+	var accounts []Account
+	err := db.New().Where("user_id in (?)", users).Find(&accounts).Error
+	if err != nil {
+		log.Errorf("failed to load users balances: %v", err)
+		return
+	}
+	for _, acc := range accounts {
+		err := nats.StanPublish(NotifyTopic, &proto.BalanceNotify{
+			UserId:     acc.UserID,
+			Balance:    acc.Balance,
+			Autorefill: isAutorefill,
+		})
+		if err != nil {
+			log.Errorf("failed to notify about user balance: %v", err)
+		}
+	}
 }
 
 func (s *TrendcoinServer) loop() {
@@ -82,18 +121,22 @@ func (s *TrendcoinServer) loop() {
 
 func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.TransactionLogRequest) (*proto.TransactionLogReply, error) {
 	var transactions TransactionsSlice
-	scope := db.New().Where("from = ? OR to = ?", in.UserId, in.UserId).Order("id DESC")
+	scope := db.New().Where("source = ? OR destination = ?", in.UserId, in.UserId)
+	if in.Asc {
+		scope = scope.Order("id ASC")
+	} else {
+		scope = scope.Order("id DESC")
+	}
 	if in.Before != 0 {
-		scope = scope.Where("created_at < ?", time.Unix(0, in.Before))
+		scope = scope.Where("created_at < ?", time.Unix(in.Before, 0))
 	}
 	if in.After != 0 {
-		scope = scope.Where("created_at >= ?", time.Unix(0, in.After))
+		scope = scope.Where("created_at >= ?", time.Unix(in.After, 0))
 	}
-	if in.Limit != 0 {
-		scope = scope.Limit(in.Limit)
-	} else {
-		scope = scope.Limit(20)
+	if in.Limit == 0 {
+		in.Limit = 20
 	}
+	scope = scope.Limit(in.Limit + 1)
 	if in.Offset != 0 {
 		scope = scope.Offset(in.Offset)
 	}
@@ -104,7 +147,13 @@ func (s *TrendcoinServer) TransactionLog(_ context.Context, in *proto.Transactio
 			Error: err.Error(),
 		}, nil
 	}
+	hasMore := false
+	if uint64(len(transactions)) > in.Limit {
+		hasMore = true
+		transactions = transactions[:in.Limit]
+	}
 	return &proto.TransactionLogReply{
 		Transactions: transactions.Encode(),
+		HasMore:      hasMore,
 	}, nil
 }

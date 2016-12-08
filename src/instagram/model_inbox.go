@@ -79,7 +79,7 @@ type Thread struct {
 		} `json:"friendship_status"`
 		ProfilePicURL string `json:"profile_pic_url"`
 		FullName      string `json:"full_name"`
-		Pk            int64  `json:"pk"`
+		Pk            uint64 `json:"pk"`
 		IsVerified    bool   `json:"is_verified"`
 		IsPrivate     bool   `json:"is_private"`
 	} `json:"users"`
@@ -143,7 +143,7 @@ type MediaShare struct {
 		IsUnpublished              bool   `json:"is_unpublished"`
 		ProfilePicURL              string `json:"profile_pic_url"`
 		FullName                   string `json:"full_name"`
-		Pk                         int64  `json:"pk"`
+		Pk                         uint64 `json:"pk"`
 		IsPrivate                  bool   `json:"is_private"`
 	} `json:"user"`
 	OrganicTrackingToken         string        `json:"organic_tracking_token"`
@@ -211,9 +211,14 @@ type DirectThreadApproveAllResponse struct {
 }
 
 // SendText is BroadcastText sent to users response
-type SendTextRespone struct {
+type SendTextResponse struct {
 	Message
 	ThreadID string
+}
+
+type BroadcastTextResponse struct {
+	Message
+	Threads []Thread `json:"threads"`
 }
 
 // ThreadItems contains messages from the chat
@@ -221,7 +226,7 @@ type ThreadItems []ThreadItem
 
 // ThreadItem contains one message from the chat
 type ThreadItem struct {
-	UserID        int64       `json:"user_id"`
+	UserID        uint64      `json:"user_id"`
 	Text          string      `json:"text,omitempty"`
 	ItemType      string      `json:"item_type"`
 	Timestamp     int64       `json:"timestamp"`

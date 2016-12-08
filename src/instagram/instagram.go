@@ -1,118 +1,57 @@
 package instagram
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 // Instagram defines client
 type Instagram struct {
-	userName   string
-	password   string
-	token      string
-	isLoggedIn bool
-	uuid       string
-	deviceID   string
-	phoneID    string
-	userNameID int64
-	rankToken  string
-	cookies    []*http.Cookie
+	Username          string
+	password          string
+	LoggedIn          bool
+	UserNameID        uint64
+	RankToken         string
+	CheckpointURL     string
+	Cookies           []*http.Cookie
+	CheckpointCookies []*http.Cookie
+
+	// needed only for auth, but leave it there to make auth more stable
+	UUID     string
+	DeviceID string
+	PhoneID  string
 }
 
 // NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
-		userName:   userName,
+		Username:   userName,
 		password:   password,
-		token:      "",
-		isLoggedIn: false,
-		uuid:       generateUUID(true),
-		phoneID:    generateUUID(true),
-		deviceID:   generateDeviceID(userName),
-		userNameID: 0,
-		rankToken:  "",
-		cookies:    nil,
+		LoggedIn:   false,
+		UUID:       generateUUID(true),
+		PhoneID:    generateUUID(true),
+		DeviceID:   generateDeviceID(userName),
+		UserNameID: 0,
+		RankToken:  "",
+		Cookies:    nil,
 	}
 
 	err := i.Login()
-	if err != nil {
-		return nil, err
-	}
-
-	return i, nil
+	return i, err
 }
 
 // IsLoggedIn returns if last request does not have auth error
 func (ig *Instagram) IsLoggedIn() bool {
-	return ig.isLoggedIn
+	return ig.LoggedIn
 }
 
-// GetUserName (will you guess what?) returns set-up username
-func (ig *Instagram) GetUserName() string {
-	return ig.userName
-}
-
-// Login to Instagram.
-func (ig *Instagram) Login() error {
-
-	fetch := fmt.Sprintf("/si/fetch_headers/?challenge_type=signup&guid=%v", generateUUID(false))
-
-	resp, err := ig.requestMain("GET", fetch, nil, true)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// get csrftoken
-	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
-		}
-	}
-
-	// login
-	login := &Login{
-		DeviceId:          ig.deviceID,
-		PhoneId:           ig.phoneID,
-		Guid:              ig.uuid,
-		UserName:          ig.userName,
-		Password:          ig.password,
-		Csrftoken:         ig.token,
-		LoginAttemptCount: "0",
-	}
-
-	jsonData, err := json.Marshal(login)
-	if err != nil {
-		return err
-	}
-
-	var loginResp LoginResponse
-	cookies, err := ig.loginRequest("POST", "/accounts/login/?", generateSignature(jsonData), &loginResp)
-	if err != nil {
-		return err
-	}
-
-	// get new csrftoken
-	for _, cookie := range cookies {
-		if cookie.Name == "csrftoken" {
-			ig.token = cookie.Value
-		}
-	}
-
-	ig.cookies = cookies
-
-	if loginResp.Status == "fail" {
-		return errors.New(loginResp.Message)
-	}
-
-	ig.userNameID = loginResp.LoggedInUser.Pk
-	ig.rankToken = fmt.Sprintf("%d_%v", ig.userNameID, ig.uuid)
-	ig.isLoggedIn = true
-
-	return nil
+// SetPassword for this instance (use for restored accs)
+func (ig *Instagram) SetPassword(pwd string) {
+	ig.password = pwd
 }
 
 // GetMediaLikers returns likers of given media
@@ -164,7 +103,7 @@ func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 
 	endpoint := fmt.Sprintf(
 		"/users/search/?ig_sig_key_version=%v&is_typeahead=true&query=%v&rank_token=%v",
-		SigKeyVersion, query, ig.rankToken,
+		SigKeyVersion, query, ig.RankToken,
 	)
 
 	var object SearchUsers
@@ -189,7 +128,7 @@ func (ig *Instagram) GetUserTags(userNameID int64) (*UserTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/usertags/%d/feed/?rank_token=%v&ranked_content=false",
-		userNameID, ig.rankToken,
+		userNameID, ig.RankToken,
 	)
 
 	var object UserTags
@@ -203,7 +142,7 @@ func (ig *Instagram) SearchTags(query string) (*SearchTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/tags/search/?is_typeahead=true&q=%v&rank_token=%v",
-		query, ig.rankToken,
+		query, ig.RankToken,
 	)
 
 	var object SearchTags
@@ -217,7 +156,7 @@ func (ig *Instagram) TagFeed(tag, maxID string) (*TagFeed, error) {
 
 	endpoint := fmt.Sprintf(
 		"/feed/tag/%v/?rank_token=%v&ranked_content=false&max_id=%v",
-		tag, ig.rankToken, maxID,
+		tag, ig.RankToken, maxID,
 	)
 
 	var object TagFeed
@@ -277,20 +216,33 @@ func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadRespons
 
 }
 
-// possible direct thread actions
+// possible direct thread actions(there is some more actions actuality)
 const (
 	ActionApprove = "approve"
 	ActionDecline = "decline"
 	ActionBlock   = "block"
+	ActionLeave   = "leave"
 )
 
-// DirectThreadAction allows to accept or decline private thread
+// DirectThreadAction allows to perform described above actions on thread
 func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadActionResponse, error) {
 
 	endpoint := fmt.Sprintf("/direct_v2/threads/%v/%v/", threadID, action)
 
 	var object DirectThreadActionResponse
 	err := ig.request("POST", endpoint, &object)
+
+	return &object, err
+}
+
+func (ig *Instagram) DirectUpdateTitle(threadID, title string) (*Message, error) {
+
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/update_title/", threadID)
+
+	var object Message
+	err := ig.postRequest(endpoint, map[string]string{
+		"title": title,
+	}, &object)
 
 	return &object, err
 }
@@ -307,30 +259,49 @@ func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, 
 }
 
 //BroadcastText sends text to given chat
-func (ig *Instagram) BroadcastText(threadID, message string) (*Message, error) {
+func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, _ error) {
 
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
-	var object Message
+	var object BroadcastTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":       message,
 		"thread_ids": fmt.Sprintf("[%v]", threadID),
 	}, &object)
 
-	return &object, err
+	if err != nil {
+		return "", err
+	}
+
+	if object.Message.Message != "" {
+		return "", errors.New(object.Message.Message)
+	}
+
+	return object.Threads[0].NewestCursor, nil
 }
 
-// SendText sends text to given user
-func (ig *Instagram) SendText(userID int64, message string) (*SendTextRespone, error) {
-
+// SendText sends text to given user(-s)
+func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, err error) {
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
-	var object SendTextRespone
-	err := ig.postRequest(endpoint, map[string]string{
+	strs := make([]string, len(userIDs), len(userIDs))
+	for i, id := range userIDs {
+		strs[i] = strconv.FormatUint(id, 10)
+	}
+
+	var object BroadcastTextResponse
+	err = ig.postRequest(endpoint, map[string]string{
 		"text":            message,
-		"recipient_users": fmt.Sprintf("[[%v]]", userID),
+		"recipient_users": fmt.Sprintf("[[%v]]", strings.Join(strs, ",")),
 	}, &object)
 
-	return &object, err
+	if err != nil {
+		return "", err
+	}
 
+	if len(object.Threads) == 0 {
+		return "", errors.New("no threads info in responce")
+	}
+
+	return object.Threads[0].ThreadID, nil
 }

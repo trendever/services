@@ -9,10 +9,11 @@ import (
 	"github.com/qor/validations"
 	"proto/chat"
 	"strings"
+	"utils/log"
 )
 
 type ChatTemplate struct {
-	ID uint `gorm:"primary_key"`
+	ID uint64 `gorm:"primary_key"`
 
 	// Template fields
 	TemplateName string
@@ -24,24 +25,16 @@ type ChatTemplate struct {
 	Product   Product
 	// When true this template will be used if there is no specific templates
 	IsDefault bool
+	// Specific lead source or 'any'
+	Source string
 
-	Cases []ChatTemplateCase `gorm:"ForeignKey:TemplateID"`
-}
-
-type ChatTemplateCase struct {
-	ID         uint `gorm:"primary_key"`
-	TemplateID uint `gorm:"index"`
-	// lead source with which this template can be used
-	Source                  string
-	ForNewUsers             bool
-	ForSuppliersWithNotices bool
-
-	Messages []ChatTemplateMessage `gorm:"ForeignKey:CaseID"`
+	Messages       []ChatTemplateMessage `gorm:"ForeignKey:TemplateID"`
+	MessagesSorter sorting.SortableCollection
 }
 
 type ChatTemplateMessage struct {
-	ID     uint `gorm:"primary_key"`
-	CaseID uint `gorm:"index"`
+	ID         uint `gorm:"primary_key"`
+	TemplateID uint `gorm:"index"`
 	sorting.Sorting
 	Text string `gorm:"type:text"`
 	Data string `gorm:"type:text"`
@@ -52,8 +45,31 @@ func (t ChatTemplate) Validate(db *gorm.DB) {
 	if t.TemplateName == "" {
 		db.AddError(validations.NewError(t, "TemplateName", "Template name can not be empty"))
 	}
-	if !templateIDRegexp.MatchString(t.Group) {
-		db.AddError(validations.NewError(t, "Group", "Incorrect template group"))
+	log.Debug("validateing %+v...", t)
+
+	var ok bool
+	for _, group := range TemplatesList["chat"] {
+		if t.Group == group {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		db.AddError(validations.NewError(t, "Group", "Unknown template group"))
+	}
+
+	scope := db.New().Model(&ChatTemplate{}).Where(`"group" = ?`, t.Group).Where("id != ?", t.ID)
+	if t.Product.ID != 0 {
+		scope = scope.Where("product_id = ?", t.Product.ID)
+	} else {
+		scope = scope.Where("product_id IS NULL")
+	}
+	var count uint
+	scope.Count(&count)
+	if count > 0 {
+		db.AddError(validations.NewError(
+			t, "ProductID", "Template with this group and prodcut already exists",
+		))
 	}
 
 	if t.IsDefault && t.Product.ID != 0 {
@@ -68,33 +84,8 @@ func (t ChatTemplate) Validate(db *gorm.DB) {
 	}
 }
 
-func (c ChatTemplateCase) Validate(db *gorm.DB) {
-	knownSource := false
-	for _, s := range LeadSources {
-		if s == c.Source {
-			knownSource = true
-			break
-		}
-	}
-	if !knownSource {
-		db.AddError(validations.NewError(c, "Source", "Unknown source"))
-	}
-
-	var tmp ChatTemplateCase
-	ret := db.
-		Where("source = ?", c.Source).
-		Where("for_new_users = ?", c.ForNewUsers).
-		Where("for_suppliers_with_notices = ?", c.ForSuppliersWithNotices).
-		Where("template_id = ?", c.TemplateID).
-		Where("id <> ?", c.ID).
-		First(&tmp)
-	if !ret.RecordNotFound() {
-		db.AddError(validations.NewError(c, "", "Identical cases detected"))
-	}
-}
-
 func (m ChatTemplateMessage) Validate(db *gorm.DB) {
-	if strings.Trim(m.Text, " \t\n") == "" {
+	if strings.Trim(m.Text, " \t\r\n") == "" {
 		db.AddError(validations.NewError(m, "Text", "blank message text"))
 	}
 	_, err := pongo2.FromString(m.Text)
@@ -109,7 +100,7 @@ func (m ChatTemplateMessage) Validate(db *gorm.DB) {
 	if err != nil {
 		db.AddError(validations.NewError(
 			m,
-			"ImageURL",
+			"Data",
 			fmt.Sprintf("failed to compile template: %v", err),
 		))
 	}

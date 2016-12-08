@@ -242,26 +242,33 @@ func GetUserLead(user *User, leadID uint64) (*Lead, error) {
 	return leads[0], nil
 }
 
-// FindActiveLead searches active lead for shop and customer
-// returns nil result for shops with SeparateLeads
-func FindActiveLead(shopID, customerID uint64) (*Lead, error) {
+// FindActiveLead searches active lead for shop and customer,
+// returns nil result for shops with SeparateLeads if productID isn't presented in active leads
+func FindActiveLead(shopID, customerID, productID uint64) (*Lead, error) {
 	lead := &Lead{}
 	scope := db.New().
 		Model(&Lead{}).
 		Preload("Customer").
 		Preload("Shop").
 		Preload("Shop.Supplier").
-		Joins("JOIN products_shops shop ON shop.id = products_leads.shop_id AND NOT shop.separate_leads").
-		Where(
-			"shop.id = ? AND products_leads.customer_id = ? AND products_leads.state IN (?)",
-			shopID,
-			customerID,
-			[]string{
-				core.LeadStatus_EMPTY.String(),
-				core.LeadStatus_NEW.String(),
-				core.LeadStatus_IN_PROGRESS.String(),
-			}).
-		Find(lead)
+		Joins("JOIN products_shops shop ON shop.id = products_leads.shop_id").
+		Where("shop.id = ?", shopID).
+		Where("products_leads.customer_id = ?", customerID).
+		Where("products_leads.state IN (?)", []string{
+			core.LeadStatus_EMPTY.String(),
+			core.LeadStatus_NEW.String(),
+			core.LeadStatus_IN_PROGRESS.String(),
+		}).
+		Where(`
+		NOT shop.separate_leads
+		OR EXISTS (
+			SELECT 1 FROM products_leads_items related
+			JOIN products_product_item item
+			ON item.id = related.product_item_id AND item.deleted_at IS NULL
+			WHERE related.lead_id = products_leads.id
+			AND item.product_id = ?
+		)`, productID).
+		First(lead)
 	if scope.RecordNotFound() {
 		return nil, nil
 	}

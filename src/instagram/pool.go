@@ -73,7 +73,7 @@ func (p *Pool) poolWorker(api *Instagram, stop <-chan bool) {
 			// each api can be used only after timeout is passed
 			p.randomTimeout()
 
-			if !api.isLoggedIn {
+			if !api.LoggedIn {
 				// lower the risks if there are some problems with and account
 				time.Sleep(time.Millisecond * time.Duration(p.settings.ReloginTimeout))
 			}

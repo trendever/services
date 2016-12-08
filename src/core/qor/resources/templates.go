@@ -139,6 +139,11 @@ func initChatTemplateResource(chat *admin.Resource) {
 		Collection: models.TemplatesList["chat"],
 	})
 	chat.Meta(&admin.Meta{
+		Name:       "Source",
+		Type:       "select_one",
+		Collection: append(models.LeadSources, "any"),
+	})
+	chat.Meta(&admin.Meta{
 		Name: "Product",
 		Config: &admin.SelectOneConfig{
 			AllowBlank: true,
@@ -174,43 +179,22 @@ func initChatTemplateResource(chat *admin.Resource) {
 		},
 	})
 
-	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product")
-	chat.SearchAttrs("TemplateName", "Group", "IsDefault", "ProductID")
+	chat.IndexAttrs("TemplateName", "Group", "IsDefault", "Product", "Source")
+	chat.SearchAttrs("TemplateName", "Group", "Product", "Source")
 
 	attrs := []*admin.Section{
 		{
 			Rows: [][]string{
-				{"TemplateName", "Group"},
+				{"TemplateName"},
+				{"Group", "Source"},
 				{"IsDefault", "Product"},
-				{"Cases"},
+				{"Messages"},
 			},
 		},
 	}
 	chat.NewAttrs(attrs)
 	chat.EditAttrs(attrs)
 
-	caseRes := chat.Meta(&admin.Meta{Name: "Cases"}).Resource
-	caseRes.Meta(&admin.Meta{
-		Name:       "Source",
-		Type:       "select_one",
-		Collection: models.LeadSources,
-	})
-	caseRes.Meta(&admin.Meta{
-		Name:      "IfSupplierIsRegistered",
-		FieldName: "ForSuppliersWithNotices",
-	})
-	attrs = []*admin.Section{
-		{
-			Rows: [][]string{
-				{"Source"},
-				{"ForNewUsers", "ForSuppliersWithNotices"},
-				{"Messages"},
-			},
-		},
-	}
-	caseRes.NewAttrs(attrs)
-	caseRes.EditAttrs(attrs)
-
-	msgRes := caseRes.Meta(&admin.Meta{Name: "Messages"}).Resource
+	msgRes := chat.Meta(&admin.Meta{Name: "Messages"}).Resource
 	msgRes.Meta(&admin.Meta{Name: "Text", Type: "text"})
 }

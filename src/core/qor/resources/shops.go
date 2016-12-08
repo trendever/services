@@ -45,6 +45,11 @@ func initShopResource(res *admin.Resource) {
 	})
 
 	res.Meta(&admin.Meta{
+		Name: "WorkingTime",
+		Type: "text",
+	})
+
+	res.Meta(&admin.Meta{
 		Name:      "Name",
 		FieldName: "InstagramUsername",
 	})
@@ -86,10 +91,10 @@ func initShopResource(res *admin.Resource) {
 	})
 
 	res.SearchAttrs(
-		"Supplier.InstagramUsername", "Supplier.Name", "Supplier.InstagramCaption", "Supplier.InstagramFullname", "Supplier.InstagramWebsite",
+		"Supplier.InstagramUsername", "Supplier.Name", "Supplier.InstagramCaption", "Supplier.InstagramFullname", "Supplier.InstagramWebsite", "Location",
 	)
 	res.IndexAttrs(
-		"ID", "InstagramUsername", "Supplier", "SupplierLastLogin", "Tags",
+		"ID", "InstagramUsername", "Supplier", "SupplierLastLogin", "Suspended", "Tags",
 	)
 
 	res.EditAttrs(
@@ -100,8 +105,12 @@ func initShopResource(res *admin.Resource) {
 				{"CreatedAt"},
 				{"Tags"},
 				{"Supplier", "Sellers"},
+				{"Plan", "PlanExpiresAt"},
+				{"AutoRenewal", "Suspended"},
 				{"Caption"},
 				{"Slogan"},
+				{"Location"},
+				{"WorkingTime"},
 				{"ShippingRules"},
 				{"PaymentRules"},
 				{"Cards"},
@@ -121,6 +130,8 @@ func initShopResource(res *admin.Resource) {
 				{"Supplier", "Sellers"},
 				{"Caption"},
 				{"Slogan"},
+				{"Location"},
+				{"WorkingTime"},
 				{"ShippingRules"},
 				{"PaymentRules"},
 				{"Cards"},

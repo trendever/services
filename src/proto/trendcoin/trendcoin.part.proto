@@ -14,6 +14,15 @@ message BalanceReply {
 	string error = 2;
 }
 
+message BalanceNotify {
+	uint64 user_id = 1;
+	int64 balance = 2;
+	// true if notify was caused by autorefill event
+	bool autorefill = 3;
+	// only provided with 'autorefill' = true
+	bool failed = 4;
+}
+
 message TransactionData {
 	uint64 source = 1;
 	// if destination account do not exists, it will be created
@@ -25,10 +34,14 @@ message TransactionData {
 	bool allow_credit = 5;
 	// allows empty "source" or "destination" field
 	bool allow_empty_side = 6;
+	// this key used to guarantee that only a single charge is created,
+	// should be unique or empty, required for nats requests
+	string idempotency_key = 7;
 }
 
 message MakeTransactionsRequest {
 	repeated TransactionData transactions = 1;
+	bool is_autorefill = 2;
 }
 
 message MakeTransactionsReply {
@@ -41,9 +54,12 @@ message TransactionLogRequest {
 	// default limit is 20
 	uint64 limit = 2;
 	uint64 offset = 3;
-	// created_at bounds, unixnano, [after, before)
+	// optional created_at bounds, unixtime, seconds, [after, before)
 	int64 before = 4;
 	int64 after = 5;
+	// transactions are ordered from newest to oldest by default,
+	// if asc is true order will be reversed
+	bool asc = 6;
 }
 
 message Transaction {
@@ -55,4 +71,5 @@ message Transaction {
 message TransactionLogReply {
 	repeated Transaction transactions = 1;
 	string error = 2;
+	bool has_more = 3;
 }

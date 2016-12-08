@@ -75,7 +75,7 @@ func sizedString(sz int) string {
 // Publish subject for pub benchmarks.
 var psub = "a"
 
-func Benchmark_____PubNo_Payload(b *testing.B) {
+func Benchmark_____Pub0b_Payload(b *testing.B) {
 	benchPub(b, psub, "")
 }
 
@@ -88,6 +88,12 @@ func Benchmark_____Pub8b_Payload(b *testing.B) {
 func Benchmark____Pub32b_Payload(b *testing.B) {
 	b.StopTimer()
 	s := sizedString(32)
+	benchPub(b, psub, s)
+}
+
+func Benchmark___Pub128B_Payload(b *testing.B) {
+	b.StopTimer()
+	s := sizedString(128)
 	benchPub(b, psub, s)
 }
 
@@ -138,7 +144,7 @@ func drainConnection(b *testing.B, c net.Conn, ch chan bool, expected int) {
 }
 
 // Benchmark the authorization code path.
-func Benchmark_AuthPubNo_Payload(b *testing.B) {
+func Benchmark_AuthPub0b_Payload(b *testing.B) {
 	b.StopTimer()
 
 	srv, opts := RunServerWithConfig("./configs/authorization.conf")
@@ -336,4 +342,61 @@ func Benchmark__PubEightQueueSub(b *testing.B) {
 	b.StopTimer()
 	c.Close()
 	s.Shutdown()
+}
+
+func routePubSub(b *testing.B, size int) {
+	b.StopTimer()
+
+	s1, o1 := RunServerWithConfig("./configs/srv_a.conf")
+	defer s1.Shutdown()
+	s2, o2 := RunServerWithConfig("./configs/srv_b.conf")
+	defer s2.Shutdown()
+
+	sub := createClientConn(b, o1.Host, o1.Port)
+	doDefaultConnect(b, sub)
+	sendProto(b, sub, "SUB foo 1\r\n")
+	flushConnection(b, sub)
+
+	payload := sizedString(size)
+
+	pub := createClientConn(b, o2.Host, o2.Port)
+	doDefaultConnect(b, pub)
+	bw := bufio.NewWriterSize(pub, defaultSendBufSize)
+
+	ch := make(chan bool)
+	sendOp := []byte(fmt.Sprintf("PUB foo %d\r\n%s\r\n", len(payload), payload))
+	expected := len(fmt.Sprintf("MSG foo 1 %d\r\n%s\r\n", len(payload), payload)) * b.N
+	go drainConnection(b, sub, ch, expected)
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := bw.Write(sendOp)
+		if err != nil {
+			b.Fatalf("Received error on PUB write: %v\n", err)
+		}
+
+	}
+	err := bw.Flush()
+	if err != nil {
+		b.Errorf("Received error on FLUSH write: %v\n", err)
+	}
+
+	// Wait for connection to be drained
+	<-ch
+
+	b.StopTimer()
+	pub.Close()
+	sub.Close()
+}
+
+func Benchmark___RoutedPubSub_0b(b *testing.B) {
+	routePubSub(b, 2)
+}
+
+func Benchmark___RoutedPubSub_1K(b *testing.B) {
+	routePubSub(b, 1024)
+}
+
+func Benchmark_RoutedPubSub_100K(b *testing.B) {
+	routePubSub(b, 100*1024)
 }

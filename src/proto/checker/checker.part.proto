@@ -1,6 +1,8 @@
 service CheckerService {
 	// runs instagram check for users with provided ids
 	rpc Check(CheckRequest) returns (CheckReply) {}
+	// get instagram profile by instagam id or name
+	rpc GetProfile(GetProfileRequest) returns (GetProfileReply) {}
 }
 
 message CheckRequest {
@@ -8,3 +10,20 @@ message CheckRequest {
 }
 
 message CheckReply {}
+
+message GetProfileRequest {
+	uint64 id = 1;
+	string name = 2;
+}
+
+// biography and external_url are provided only for requests by id for now
+message GetProfileReply {
+	uint64 id = 1;
+	string name = 2;
+	string full_name = 3;
+	string biography = 4;
+	string avatar_url = 5;
+	string external_url = 6;
+
+	string error = 15;
+}

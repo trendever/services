@@ -1,7 +1,9 @@
 package views
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"api/api"
@@ -22,16 +24,6 @@ func init() {
 	)
 }
 
-// @IMPORTANT info about sending info (leadID, direction in the methods where it seems to be extra and excess
-// We have to transfer lead ID to make sure only associated user can create payment
-// Malicious request can be sent and the following check will succeed
-// However, payments service must check if reqeusted leadID is equal to the CreateOrder one
-// This scheme help both avoid calling core from payments and guarantee security
-// In other words
-//  api checks if user is customer in lead(LeadID)
-//  payments checks if leadID is connected to pay(payID)
-//  -> user is checked to have access to pay
-
 // CreateOrder for given summ, card number and leadID
 func CreateOrder(c *soso.Context) {
 	if c.Token == nil {
@@ -44,7 +36,7 @@ func CreateOrder(c *soso.Context) {
 	leadID, _ := req["lead_id"].(float64)
 
 	currency, _ := req["currency"].(float64)
-	_, currencyOK := payment.Currency_name[int32(currency)]
+	currencyName, currencyOK := payment.Currency_name[int32(currency)]
 
 	// retrieve card number from payments service
 	shopCardID, _ := req["card"].(float64)
@@ -56,36 +48,77 @@ func CreateOrder(c *soso.Context) {
 	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, fmt.Errorf("Incorrect parameter"))
 		return
 	}
 
-	conversationID, role, err := getConversationID(c.Token.UID, uint64(leadID))
+	leadInfo, err := getLeadInfo(c.Token.UID, uint64(leadID))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
 	}
 
-	direction, err := paymentDirection(role, true)
+	direction, err := paymentDirection(leadInfo.UserRole, true)
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
+	}
+
+	if direction != payment.Direction_CLIENT_RECV && leadInfo.Shop.Suspended {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("shop is suspended"))
+		return
+	}
+
+	data, err := json.Marshal(&payment.UsualData{
+		Direction:      direction,
+		ConversationId: leadInfo.ConversationId,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	request := &payment.CreateOrderRequest{
+		Data: &payment.OrderData{
+			Amount:   uint64(amount),
+			Currency: payment.Currency(currency),
+
+			LeadId:         uint64(leadID),
+			ShopCardNumber: shopCardNumber,
+
+			Gateway:     "payture",
+			ServiceName: "api",
+			ServiceData: string(data),
+		},
+		Info: &payment.UserInfo{
+			UserId: c.Token.UID,
+		},
+	}
+
+	if direction == payment.Direction_CLIENT_PAYS {
+		plan, err := getMonetizationPlan(leadInfo.Shop.PlanId)
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+		if plan.TransactionCommission != 0 && plan.CoinsExchangeRate != 0 {
+			if plan.PrimaryCurrency != currencyName {
+				c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Unexpected currency"))
+			}
+			request.Data.CommissionSource = uint64(leadInfo.Shop.SupplierId)
+			fee := uint64(amount*plan.TransactionCommission*plan.CoinsExchangeRate + 0.5)
+			if fee == 0 {
+				fee = 1
+			}
+			request.Data.CommissionFee = fee
+		}
 	}
 
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	resp, err := paymentServiceClient.CreateOrder(ctx, &payment.CreateOrderRequest{
-		Amount:   uint64(amount),
-		Currency: payment.Currency(currency),
-
-		LeadId:         uint64(leadID),
-		Direction:      direction,
-		UserId:         c.Token.UID,
-		ConversationId: conversationID,
-		ShopCardNumber: shopCardNumber,
-	})
+	resp, err := paymentServiceClient.CreateOrder(ctx, request)
 
 	if err != nil { // RPC errors
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
@@ -94,7 +127,7 @@ func CreateOrder(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
@@ -116,32 +149,45 @@ func CreatePayment(c *soso.Context) {
 	payID, _ := req["id"].(float64)
 	leadID, _ := req["lead_id"].(float64)
 
-	if leadID <= 0 || payID <= 0 {
+	if leadID < 0 || payID <= 0 {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Incorrect parameter"))
 		return
 	}
 
-	_, role, err := getConversationID(c.Token.UID, uint64(leadID))
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
+	if leadID != 0 {
+		_, role, err := getConversationID(c.Token.UID, uint64(leadID))
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
 
-	// must be owner in his chat
-	direction, err := paymentDirection(role, false)
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
+		orderData, paymentData, err := retrieveOrder(uint64(payID))
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+
+		if !canBuy(paymentData.Direction, role) {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("This side of order can not pay it"))
+			return
+		}
+		if orderData.LeadId != uint64(leadID) {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("Parameters mangled"))
+			return
+		}
+
 	}
 
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := paymentServiceClient.BuyOrder(ctx, &payment.BuyOrderRequest{
-		PayId:     uint64(payID),
-		LeadId:    uint64(leadID),
-		Direction: direction,
-		Ip:        c.RemoteIP,
+		PayId: uint64(payID),
+		User: &payment.UserInfo{
+			Ip:     c.RemoteIP,
+			UserId: c.Token.UID,
+			// phone not needed here
+		},
 	})
 
 	if err != nil { // RPC errors
@@ -151,7 +197,7 @@ func CreatePayment(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
@@ -192,14 +238,27 @@ func CancelOrder(c *soso.Context) {
 		return
 	}
 
+	orderData, paymentData, err := retrieveOrder(uint64(payID))
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	if !canCancelPay(paymentData.Direction, direction) {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("No access to cancel this pay"))
+		return
+	}
+	if orderData.LeadId != uint64(leadID) {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("Parameters mangled"))
+		return
+	}
+
 	// now -- create the order
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	resp, err := paymentServiceClient.CancelOrder(ctx, &payment.CancelOrderRequest{
-		PayId:     uint64(payID),
-		LeadId:    uint64(leadID),
-		Direction: direction,
-		UserId:    c.Token.UID,
+		PayId:  uint64(payID),
+		UserId: c.Token.UID,
 	})
 
 	if err != nil { // RPC errors
@@ -209,7 +268,7 @@ func CancelOrder(c *soso.Context) {
 	if resp.Error > 0 { // service errors
 		c.Response.ResponseMap = map[string]interface{}{
 			"ErrorCode":    resp.Error,
-			"ErrorMessage": err,
+			"ErrorMessage": resp.ErrorMessage,
 		}
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.ErrorMessage))
 		return
@@ -221,6 +280,7 @@ func CancelOrder(c *soso.Context) {
 
 }
 
+// get chat ID by leadID
 func getConversationID(userID, leadID uint64) (uint64, core.LeadUserRole, error) {
 
 	info, err := getLeadInfo(userID, leadID)
@@ -246,4 +306,54 @@ func paymentDirection(role core.LeadUserRole, create bool) (payment.Direction, e
 	}
 
 	return payment.Direction(0), errors.New("payments.view: Bad user role in the chat")
+}
+
+func canCancelPay(payDirection, userDirection payment.Direction) bool {
+
+	// allow both sides cancel
+	// we have only 2 direction and this may seem useless; but it is planned to have other people in conversation
+	// so I will disable checks only for new payment sides
+	switch payDirection {
+	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
+		if userDirection == payment.Direction_CLIENT_PAYS || userDirection == payment.Direction_CLIENT_RECV {
+			return true
+		}
+	}
+
+	return false
+}
+
+func canBuy(payDirection payment.Direction, userRole core.LeadUserRole) bool {
+
+	switch userRole {
+	case core.LeadUserRole_CUSTOMER:
+		return payDirection == payment.Direction_CLIENT_PAYS
+	case core.LeadUserRole_SELLER, core.LeadUserRole_SUPER_SELLER, core.LeadUserRole_SUPPLIER:
+		return payDirection == payment.Direction_CLIENT_RECV
+	}
+
+	return false
+}
+
+// get orderData and decode serviceData to our struct
+func retrieveOrder(id uint64) (*payment.OrderData, *payment.UsualData, error) {
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := paymentServiceClient.GetOrder(ctx, &payment.GetOrderRequest{
+		Id: id,
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var decoded payment.UsualData
+	err = json.Unmarshal([]byte(resp.Order.ServiceData), &decoded)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp.Order, &decoded, nil
 }

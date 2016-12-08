@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package server
 
@@ -137,4 +137,89 @@ func TestTlsCipher(t *testing.T) {
 	if !strings.Contains(tlsCipher(0x9999), "Unknown") {
 		t.Fatalf("Expected an unknown cipher.")
 	}
+}
+
+func TestGetConnectURLs(t *testing.T) {
+	opts := DefaultOptions
+	opts.Port = 4222
+
+	var globalIP net.IP
+
+	checkGlobalConnectURLs := func() {
+		s := New(&opts)
+		defer s.Shutdown()
+
+		urls := s.getClientConnectURLs()
+		if len(urls) == 0 {
+			t.Fatalf("Expected to get a list of urls, got none for listen addr: %v", opts.Host)
+		}
+		for _, u := range urls {
+			tcpaddr, err := net.ResolveTCPAddr("tcp", u)
+			if err != nil {
+				t.Fatalf("Error resolving: %v", err)
+			}
+			ip := tcpaddr.IP
+			if !ip.IsGlobalUnicast() {
+				t.Fatalf("IP %v is not global", ip.String())
+			}
+			if ip.IsUnspecified() {
+				t.Fatalf("IP %v is unspecified", ip.String())
+			}
+			addr := strings.TrimSuffix(u, ":4222")
+			if addr == opts.Host {
+				t.Fatalf("Returned url is not right: %v", u)
+			}
+			if globalIP == nil {
+				globalIP = ip
+			}
+		}
+	}
+
+	listenAddrs := []string{"0.0.0.0", "::"}
+	for _, listenAddr := range listenAddrs {
+		opts.Host = listenAddr
+		checkGlobalConnectURLs()
+	}
+
+	checkConnectURLsHasOnlyOne := func() {
+		s := New(&opts)
+		defer s.Shutdown()
+
+		urls := s.getClientConnectURLs()
+		if len(urls) != 1 {
+			t.Fatalf("Expected one URL, got %v", urls)
+		}
+		tcpaddr, err := net.ResolveTCPAddr("tcp", urls[0])
+		if err != nil {
+			t.Fatalf("Error resolving: %v", err)
+		}
+		ip := tcpaddr.IP
+		if ip.String() != opts.Host {
+			t.Fatalf("Expected connect URL to be %v, got %v", opts.Host, ip.String())
+		}
+	}
+
+	singleConnectReturned := []string{"127.0.0.1", "::1"}
+	if globalIP != nil {
+		singleConnectReturned = append(singleConnectReturned, globalIP.String())
+	}
+	for _, listenAddr := range singleConnectReturned {
+		opts.Host = listenAddr
+		checkConnectURLsHasOnlyOne()
+	}
+}
+
+func TestNoDeadlockOnStartFailure(t *testing.T) {
+	opts := DefaultOptions
+	opts.Host = "x.x.x.x" // bad host
+	opts.Port = 4222
+	opts.ClusterHost = "localhost"
+	opts.ClusterPort = 6222
+
+	s := New(&opts)
+	// This should return since it should fail to start a listener
+	// on x.x.x.x:4222
+	s.Start()
+	// We should be able to shutdown
+	s.Shutdown()
 }

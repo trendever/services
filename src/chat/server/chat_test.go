@@ -6,11 +6,11 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/golang/mock/gomock"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"proto/chat"
 	"testing"
 	"time"
+	"utils/db"
 	"utils/test_tools"
 )
 
@@ -74,7 +74,7 @@ func TestJoinChat(t *testing.T) {
 	defer ctrl.Finish()
 
 	chat1 := &models.Conversation{
-		Model: gorm.Model{ID: 1},
+		Model: db.Model{ID: 1},
 		Name:  "Test chat",
 	}
 	member1 := &chat.Member{UserId: 1, Role: chat.MemberRole_CUSTOMER, Name: "Guest"}
@@ -130,10 +130,10 @@ func _TestSendMessage(t *testing.T) {
 	defer ctrl.Finish()
 
 	chat1 := &models.Conversation{
-		Model: gorm.Model{ID: 1},
+		Model: db.Model{ID: 1},
 		Name:  "Test chat",
 	}
-	member1 := &models.Member{Model: gorm.Model{ID: 1}}
+	member1 := &models.Member{Model: db.Model{ID: 1}}
 	ct := time.Now()
 	message1 := &chat.Message{
 		ConversationId: 1,
@@ -152,7 +152,7 @@ func _TestSendMessage(t *testing.T) {
 	repoSuccess.EXPECT().GetByID(gomock.Any()).Return(chat1, nil)
 	repoSuccess.EXPECT().GetMember(chat1, gomock.Any()).Return(member1, nil)
 	repoSuccess.EXPECT().AddMessages(chat1, gomock.Any()).Do(func(c *models.Conversation, m *models.Message) {
-		m.ConversationID = c.ID
+		m.ConversationID = uint(c.ID)
 		m.CreatedAt = ct
 	}).Return(nil)
 
@@ -203,10 +203,10 @@ func TestGetChatHistory(t *testing.T) {
 	defer ctrl.Finish()
 
 	chat1 := &models.Conversation{
-		Model: gorm.Model{ID: 1},
+		Model: db.Model{ID: 1},
 		Name:  "Test chat",
 	}
-	member1 := &models.Member{Model: gorm.Model{ID: 1}}
+	member1 := &models.Member{Model: db.Model{ID: 1}}
 	ct := time.Now()
 	message1 := &chat.Message{
 		ConversationId: 1,
@@ -218,7 +218,7 @@ func TestGetChatHistory(t *testing.T) {
 		{
 			ConversationID: 1,
 			MemberID:       sql.NullInt64{Int64: 1},
-			Model:          gorm.Model{CreatedAt: ct},
+			Model:          db.Model{CreatedAt: ct},
 		},
 	}
 

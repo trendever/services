@@ -8,3 +8,8 @@ db:
   host:     db
   port:     5432
   base:     postgres
+  
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: trendcoin1

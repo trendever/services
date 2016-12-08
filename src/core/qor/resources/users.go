@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"core/api"
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
@@ -11,7 +10,7 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"proto/trendcoin"
-	"utils/rpc"
+	"utils/coins"
 )
 
 func init() {
@@ -51,6 +50,7 @@ func initUserResource(res *admin.Resource) {
 				{"IsAdmin", "IsSeller", "SuperSeller", "IsScout", "Confirmed"},
 				{"Caption"},
 				{"Slogan"},
+				{"Balance"},
 			},
 		},
 		&admin.Section{
@@ -72,7 +72,7 @@ func initUserResource(res *admin.Resource) {
 	res.Scope(&admin.Scope{
 		Name: "Only confirmed users",
 		Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			return db.Where("confirmed = ?", true)
+			return db.Where("confirmed AND phone != '' AND phone IS NOT NULL")
 		},
 	})
 
@@ -170,6 +170,7 @@ func initUserResource(res *admin.Resource) {
 	})
 
 	filters.SetDateFilters(res, "CreatedAt")
+	filters.SetDateFilters(res, "LastLogin")
 
 	type refillArg struct {
 		Amount  uint64
@@ -203,7 +204,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return performTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
+			return err
 		},
 	})
 	type writeOffArg struct {
@@ -240,7 +242,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:         reason,
 				})
 			}
-			return performTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
+			return err
 		},
 	})
 
@@ -285,24 +288,8 @@ func initUserResource(res *admin.Resource) {
 					Reason:      reason,
 				})
 			}
-			return performTransactions(transactions...)
+			_, err := coins.PerformTransactions(transactions...)
+			return err
 		},
 	})
-}
-
-func performTransactions(transactions ...*trendcoin.TransactionData) error {
-	// @TODO add local checks after service tests
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	res, err := api.TrendcoinServiceClient.MakeTransactions(
-		ctx,
-		&trendcoin.MakeTransactionsRequest{Transactions: transactions},
-	)
-	if err != nil {
-		return err
-	}
-	if res.Error != "" {
-		return errors.New(res.Error)
-	}
-	return nil
 }

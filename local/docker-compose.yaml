@@ -82,6 +82,8 @@ services:
     depends_on:
       - db
     command: sh -c './bin/auth migrate && exec ./bin/auth start'
+    ports:
+      - 127.0.0.1:8433:8433
   api:
     image: debian:jessie
     volumes_from:
@@ -105,7 +107,7 @@ services:
       - "127.0.0.1:5432:5432"
 
   elastic:
-    image: elasticsearch:latest
+    image: elasticsearch:2
     volumes:
       - elasticdata:/usr/share/elasticsearch:rw
     ports:
@@ -157,6 +159,17 @@ services:
       - 127.0.0.1:7777:7777
       - 127.0.0.1:7780:7780
 
+  accountstore:
+    image: debian:jessie
+    volumes_from:
+      - data
+    working_dir: /services/
+    depends_on:
+      - db
+    command: sh -c './bin/accountstore migrate && exec ./bin/accountstore start'
+    ports:
+      - 127.0.0.1:5409:5409
+
   mandible:
     image: debmandible
     volumes_from:
@@ -165,12 +178,16 @@ services:
     command: sh -c 'exec ./bin/mandible'
     ports:
       - 127.0.0.1:8089:8089
-
+  
   nats:
-    image: nats
+    image: nats-streaming
+    volumes:
+      - natsdata:/data:rw
+    entrypoint: /nats-streaming-server -st file -dir /data -cid stan -SD
     ports:
       - 127.0.0.1:8222:8222
       - 127.0.0.1:4222:4222
+  
 
   redis:
     image: redis:alpine
@@ -181,3 +198,4 @@ volumes:
   dbdata: {}
   influxdata: {}
   elasticdata: {}
+  natsdata: {}

@@ -13,6 +13,7 @@ service LeadService {
   rpc CallSupplier(CallSupplierRequest) returns (CallSupplierReply){}
   rpc CallCustomer(CallCustomerRequest) returns (CallCustomerReply){}
   rpc GetCancelReasons(GetCancelReasonsRequest) returns (GetCancelReasonsReply) {}
+  rpc GetUserRole(GetUserRoleRequest) returns (GetUserRoleReply) {}
 }
 
 message ReadLeadRequest {
@@ -162,7 +163,7 @@ message GetLeadRequest {
     oneof search_by {
         uint64 id = 2;
         uint64 conversation_id = 3;
-      }
+    }
 }
 
 message GetLeadReply {
@@ -180,4 +181,15 @@ message GetCancelReasonsReply {
     repeated CancelReason reasons = 1;
 }
 
+message GetUserRoleRequest {
+    uint64 user_id = 1;
+    uint64 instagram_user_id = 2;
 
+    uint64 lead_id = 5;
+    uint64 conversation_id = 6;
+}
+
+message GetUserRoleReply {
+    LeadUserRole role = 1;
+    string error = 2;
+}

@@ -39,13 +39,16 @@ var (
 		&models.SMSTemplate{},
 		&models.PushTemplate{},
 		&models.ChatTemplate{},
-		&models.ChatTemplateCase{},
 		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
 		&transition.StateChangeLog{},
 		&models.UsersProducts{},
 		&models.PushToken{},
 		&models.ShopNote{},
+		&models.CoinsOffer{},
+		&models.MonetizationPlan{},
+		&models.AutoAnswer{},
+		&models.AutorefillInfo{},
 	}
 )
 

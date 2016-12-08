@@ -1,7 +1,6 @@
 package main
 
 import (
-	"core/api"
 	"core/conf"
 	"core/models"
 	"core/project"
@@ -162,29 +161,6 @@ func main() {
 			Usage: "Show current config",
 			Action: func(cli *cli.Context) {
 				j, _ := json.MarshalIndent(conf.GetSettings(), "", " ")
-				fmt.Println(string(j))
-			},
-		},
-		{
-			Name:  "bitly",
-			Usage: "Make short url",
-			Action: func(cli *cli.Context) {
-				var url string
-				if len(cli.Args()) != 1 {
-					url = api.GetChatURL(1, "test_token")
-				} else {
-					url = cli.Args()[0]
-				}
-
-				j, _ := json.MarshalIndent(conf.GetSettings().Bitly, "", " ")
-				fmt.Println(string(j))
-				fmt.Println(url)
-				s, err := api.GetShortURL(url)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				j, _ = json.MarshalIndent(s, "", " ")
 				fmt.Println(string(j))
 			},
 		},

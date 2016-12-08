@@ -1,10 +1,10 @@
 package telegram
 
 import (
-	"fmt"
 	"github.com/tucnak/telebot"
 	"telebot/conf"
 	"time"
+	"utils/log"
 )
 
 // Telegram defines telegram sender
@@ -36,10 +36,11 @@ func Init(token string, rooms []conf.Room) (*Telegram, error) {
 }
 
 // Notify sends message to chat named dst
-func (t *Telegram) Notify(dst, msg string) error {
+func (t *Telegram) Notify(dst, msg string) {
 	chat, ok := t.chats[dst]
 	if !ok {
-		return fmt.Errorf("Chat %v not defined in config", dst)
+		log.Errorf("Chat %v not defined in config", dst)
+		return
 	}
 
 	var (
@@ -50,13 +51,15 @@ func (t *Telegram) Notify(dst, msg string) error {
 	for {
 		err = t.bot.SendMessage(chat, msg, nil)
 		if err != nil {
+			log.Errorf("failed to send message to channel '%v': %+v", chat, err)
 			retries--
 			if retries == 0 {
-				return err
+				log.Errorf("to many errors in row, message dropped")
+				return
 			}
 			time.Sleep(time.Second * 300)
 		} else {
-			return nil
+			return
 		}
 	}
 

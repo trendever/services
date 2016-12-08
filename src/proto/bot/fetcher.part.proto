@@ -3,18 +3,36 @@ service FetcherService {
   rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
 
   rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
+
+  // Сreates new direct thread with passed params.
+  // It uses aditional bot user to achieve separate threads with same users, bot should leave thread in a little while
+  rpc CreateThread (CreateThreadRequest) returns (CreateThreadReply) {}
+}
+
+// @TODO MentionedRole should be suhnonized with accountstore roles. any way to get normal imports?..
+enum MentionedRole {
+  User = 0;
+  Savetrend = 1;
+  Wantit = 2;
+}
+
+message RetriveCond {
+  MentionedRole role = 1;
+  repeated string type = 2;
 }
 
 message RetrieveActivitiesRequest {
-  string mention_name = 1;
+  repeated RetriveCond conds = 1;
   int64 after_id = 2;
-  repeated string type = 4;
-  int64 limit = 5;
+  int64 limit = 3;
 }
 
 message SendDirectRequest {
-  string activity_pk = 1;
+  uint64 sender_id = 1;
   string text = 2;
+  // only one of two followed fields need to be setted
+  string thread_id = 3;
+  uint64 reciever_id = 4;
 }
 
 message RetrieveActivitiesReply {
@@ -35,6 +53,7 @@ message Activity {
   string user_name = 6;
   string user_image_url = 7;
   string mentioned_username = 8;
+  MentionedRole metioned_role = 13;
 
   string type = 9;
   string comment = 10;
@@ -42,4 +61,30 @@ message Activity {
   int64 created_at = 11;
 
   string direct_thread_id = 12;
+}
+
+message DirectMessageNotify {
+  string thread_id = 1;
+  string message_id = 2;
+  // instagram id
+  uint64 user_id = 3;
+  string text = 4;
+  // id of possible related post
+  // if it's aviable, it probably mean, that this message was comment to media share
+  string related_media = 5;
+}
+
+message CreateThreadRequest {
+  // inviter instagram id
+  uint64 inviter = 1;
+  // instagram id of other members
+  repeated uint64 participant = 2;
+  string caption = 3;
+  // initial comment message
+  string init_message = 4;
+}
+
+message CreateThreadReply {
+  string error = 1;
+  string thread_id = 2;
 }

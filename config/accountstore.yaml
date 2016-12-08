@@ -1,0 +1,16 @@
+listen: :5409
+debug: true
+instagramDebug: true
+
+db:
+  debug:    true
+  user:     postgres
+  password: 1234
+  host:     db
+  port:     5432
+  base:     postgres
+  
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: accountstore1

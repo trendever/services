@@ -1,18 +1,20 @@
 package models
 
 import (
-	"chat/images"
 	"database/sql"
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
+	"utils/db"
 	"utils/log"
+	"utils/mandible"
 )
 
 //Message is model of message
 type Message struct {
-	gorm.Model
+	db.Model
 	ConversationID uint
+	InstagramID    string
 	MemberID       sql.NullInt64
 	Member         *Member
 	Parts          []*MessagePart
@@ -27,6 +29,27 @@ type MessagePart struct {
 	MessageID uint
 }
 
+var ImageUploader *mandible.Uploader
+
+func InitUploader(mandibleUrl string) {
+	ImageUploader = mandible.New(mandibleUrl, mandible.Thumbnail{
+		Name:   "big",
+		Width:  1080,
+		Height: 1080,
+		Shape:  "thumb",
+	}, mandible.Thumbnail{
+		Name:   "small",
+		Width:  480,
+		Height: 480,
+		Shape:  "thumb",
+	}, mandible.Thumbnail{
+		Name:   "small_crop",
+		Width:  480,
+		Height: 480,
+		Shape:  "square",
+	})
+}
+
 //Encode converts message to protobuf model
 func (m *Message) Encode() *chat.Message {
 
@@ -36,6 +59,7 @@ func (m *Message) Encode() *chat.Message {
 		UserId:         uint64(m.MemberID.Int64),
 		Parts:          m.EncodeParts(),
 		CreatedAt:      m.CreatedAt.Unix(),
+		InstagramId:    m.InstagramID,
 	}
 	if m.Member != nil {
 		message.User = m.Member.Encode()
@@ -59,9 +83,10 @@ func (m *Message) EncodeParts() []*chat.MessagePart {
 //DecodeMessage creates message from protobuf model
 func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
-		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
-		Member:   member,
-		Parts:    DecodeParts(pbMessage.Parts),
+		MemberID:    sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
+		Member:      member,
+		Parts:       DecodeParts(pbMessage.Parts),
+		InstagramID: pbMessage.InstagramId,
 	}
 	return message
 }
@@ -86,7 +111,7 @@ func DecodeParts(parts []*chat.MessagePart) []*MessagePart {
 func (mp *MessagePart) BeforeSave() error {
 	switch mp.MimeType {
 	case "image/base64":
-		img, err := images.UploadBase64(mp.Content)
+		img, err := ImageUploader.DoRequest("base64", mp.Content)
 		if err != nil {
 			log.Error(err)
 			return err

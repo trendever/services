@@ -38,6 +38,18 @@ func RegisterTemplate(domain, name string) error {
 	return nil
 }
 
+var notifyDomains = []string{"email", "sms", "push"}
+
+func RegisterNotifyTemplate(name string) error {
+	for _, domain := range notifyDomains {
+		err := RegisterTemplate(domain, name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // TemplateTypes contains types that correspond to available send actions
 
 // templateIDRegexp is used to match only correct templates: alphanumeric symbols and _
@@ -45,7 +57,7 @@ var templateIDRegexp = regexp.MustCompile("^[[:word:]]+$")
 
 // BaseTemplate model
 type BaseNotifierTemplate struct {
-	gorm.Model
+	ID uint64 `gorm:"primary_key"`
 
 	// Template fields
 	TemplateName string

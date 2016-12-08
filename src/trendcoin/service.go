@@ -11,6 +11,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -21,6 +22,7 @@ var settings struct {
 	RPC       string
 	DB        db.Settings
 	SentryDSN string
+	Nats      nats.Config
 }
 
 func Init() {
@@ -46,7 +48,8 @@ func main() {
 
 			rpc := rpc.Serve(settings.RPC)
 			db.Init(&settings.DB)
-			server := NewTrendcoinServer()
+			nats.Init(&settings.Nats, true)
+			server := GetTrendcoinServer()
 
 			log.Info("Registering server...")
 			trendcoin.RegisterTrendcoinServiceServer(rpc, server)

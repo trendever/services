@@ -39,7 +39,7 @@ type RecentActivityStories struct {
 			Type  string `json:"type"`
 		} `json:"links"`
 		Text         string  `json:"text"`
-		ProfileID    int64   `json:"profile_id"`
+		ProfileID    uint64  `json:"profile_id"`
 		ProfileImage string  `json:"profile_image"`
 		Timestamp    float64 `json:"timestamp"`
 		InlineFollow struct {

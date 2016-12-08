@@ -2,41 +2,41 @@ package views
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
-	"time"
+	"utils/coins"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 
-	"payments/api"
 	"payments/config"
+	"payments/gateway"
 	"payments/models"
-	"payments/payture"
 	"proto/payment"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
+	"proto/trendcoin"
 )
 
+const natsStream = "payments.event"
+
 type paymentServer struct {
-	gateway models.Gateway
-	repo    models.Repo
-	chat    api.ChatNotifier
-	shed    *checkerScheduler
+	gateways map[string]gateway.Gateway
+	repo     models.Repo
+	shed     *checkerScheduler
 }
 
 // Init starts serving
 func Init() {
 
-	api.Init()
+	coins.SetGRPCCli(trendcoin.NewTrendcoinServiceClient(rpc.Connect(config.Get().CoinsServer)))
+	log.Fatal(gateway.LoadAll())
 
 	var repo = &models.RepoImpl{DB: db.New()}
 
 	server := &paymentServer{
-		gateway: payture.GetClient(),
-		repo:    repo,
-		chat:    api.GetChatNotifier(repo),
+		gateways: gateway.Gateways,
+		repo:     repo,
 	}
 
 	server.shed = createScheduler(server)
@@ -57,78 +57,53 @@ func Init() {
 	go server.PeriodicCheck()
 }
 
-func (ps *paymentServer) HandleCallback(c *gin.Context) {
-	orderID := c.Query("orderid")
-	success, _ := strconv.ParseBool(c.Query("success"))
-
-	//find session
-	sess, err := ps.repo.GetSessByUID(orderID)
-	if err != nil {
-		c.Redirect(http.StatusFound, fmt.Sprintf(config.Get().HTTP.Redirect, 0, false))
-		return
+// get gateway by name
+func (ps *paymentServer) gw(name string) (gateway.PaymentGateway, error) {
+	gw, found := ps.gateways[name]
+	if !found {
+		log.Debug("Gateway %v not found, available ones: %v", name, ps.gateways)
+		return nil, fmt.Errorf("Unknown gateway (%v)", name)
 	}
 
-	// we want to redirect client NOW
-	// status will be reported afterwards by chat message
-	go func() {
-		err := ps.CheckStatus(sess)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
+	gwCasted, ok := gw.(gateway.PaymentGateway)
+	if !ok {
+		return nil, fmt.Errorf("This gw is not payment gateway")
+	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.Payment.LeadID, success))
+	return gwCasted, nil
 }
 
-func (ps *paymentServer) HandleNotification(c *gin.Context) {
-
-	orderID := c.PostForm("OrderId")
-	if orderID == "" {
-		log.Debug("Skipping notification event without OrderId")
-		return
+// crd gateway by name
+func (ps *paymentServer) crd(name string) (gateway.CardGateway, error) {
+	gw, found := ps.gateways[name]
+	if !found {
+		log.Debug("Gateway %v not found, available ones: %v", name, ps.gateways)
+		return nil, fmt.Errorf("Unknown gateway (%v)", name)
 	}
 
-	// avoid time attacks
-	go func() {
-
-		log.Debug("Got notification event for order=%v; checking", orderID)
-		defer log.Debug("Finished notification checking for order=%v;", orderID)
-
-		//find session
-		sess, err := ps.repo.GetSessByUID(orderID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		err = ps.CheckStatus(sess)
-		if err != nil {
-			log.Error(err)
-		}
-
-	}()
-}
-
-func (ps *paymentServer) PeriodicCheck() {
-	for {
-		log.Debug("Starting PeriodicCheck")
-		ps.CheckStatuses()
-		log.Debug("Finished PeriodicCheck")
-
-		<-time.After(time.Second * time.Duration(config.Get().PeriodicCheck))
+	gwCasted, ok := gw.(gateway.CardGateway)
+	if !ok {
+		return nil, fmt.Errorf("This gw is not payment gateway")
 	}
+
+	return gwCasted, nil
 }
 
 func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrderRequest) (*payment.CreateOrderReply, error) {
 
+	if req.Data == nil {
+		// wut the fuck
+		return nil, fmt.Errorf("payments: req.data is nil")
+	}
+
 	// Step0: check if Lead already has open order
-	canOpen, err := ps.repo.CanCreateOrder(uint(req.LeadId))
+	canOpen, err := ps.repo.CanCreateOrder(req.Data.LeadId)
 	if err != nil {
 		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	} else if !canOpen {
 		return &payment.CreateOrderReply{
 			Error:        payment.Errors_ANOTHER_OPEN_ORDER,
-			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open order", req.LeadId),
+			ErrorMessage: fmt.Sprintf("Error! LeadId=%v has another open order", req.Data.LeadId),
 		}, nil
 	}
 
@@ -139,18 +114,48 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 	}
 
 	// Step2: Save pay
-	err = ps.repo.CreatePay(pay)
-	if err != nil {
-		return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	if pay.CommissionFee != 0 {
+		err := coins.CheckWriteOff(
+			pay.CommissionSource, pay.CommissionFee, "payment commission", false,
+			func() error {
+				return ps.repo.CreatePay(pay)
+			},
+		)
+		switch err {
+		case nil:
+
+		case coins.CallbackFailed:
+			return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: "failed to save pay"}, nil
+
+		case coins.ServiceError:
+			return &payment.CreateOrderReply{Error: payment.Errors_COINS_DOWN, ErrorMessage: err.Error()}, nil
+
+		case coins.InsufficientFunds:
+			return &payment.CreateOrderReply{Error: payment.Errors_CANT_PAY_FEE, ErrorMessage: "insufficient funds to pay commission fee"}, nil
+
+		case coins.RefundError:
+			return &payment.CreateOrderReply{Error: payment.Errors_REFUND_ERROR, ErrorMessage: "failed to refund commission fee after db error"}, nil
+
+		default:
+			return &payment.CreateOrderReply{Error: payment.Errors_UNKNOWN_ERROR, ErrorMessage: fmt.Sprintf("unexpected error happend on commission write-off: %v", err)}, nil
+		}
+
+	} else { // pay without commission
+		err = ps.repo.CreatePay(pay)
+		if err != nil {
+			return &payment.CreateOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+		}
 	}
 
-	// Step3: Send to chat
-	go func() {
-		err := ps.chat.SendPayment(pay)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
+	err = nats.StanPublish(natsStream, &payment.PaymentNotification{
+		Id:    uint64(pay.ID),
+		Data:  pay.Encode(),
+		Info:  pay.Info(),
+		Event: payment.Event_Created,
+	})
+	if err != nil {
+		return &payment.CreateOrderReply{Error: payment.Errors_NATS_FAILED, ErrorMessage: err.Error()}, nil
+	}
 
 	return &payment.CreateOrderReply{
 		Id: uint64(pay.ID),
@@ -158,35 +163,84 @@ func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrder
 
 }
 
+func (ps *paymentServer) AddCard(_ context.Context, req *payment.AddCardRequest) (*payment.AddCardReply, error) {
+
+	Gateway, err := ps.crd(req.Gateway)
+	if err != nil {
+		return &payment.AddCardReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step1: init TX
+	redirectURL, err := Gateway.Add(req.User)
+	if err != nil {
+		return &payment.AddCardReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step2: redirect client
+	return &payment.AddCardReply{RedirectUrl: redirectURL}, nil
+}
+
+func (ps *paymentServer) GetCards(_ context.Context, req *payment.GetCardsRequest) (*payment.GetCardsReply, error) {
+	Gateway, err := ps.crd(req.Gateway)
+	if err != nil {
+		return &payment.GetCardsReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step1: init TX
+	cards, err := Gateway.GetCards(req.User)
+	if err != nil {
+		return &payment.GetCardsReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step2: redirect client
+	return &payment.GetCardsReply{Cards: cards}, nil
+}
+
+func (ps *paymentServer) DelCard(_ context.Context, req *payment.DelCardRequest) (*payment.DelCardReply, error) {
+	Gateway, err := ps.crd(req.Gateway)
+	if err != nil {
+		return &payment.DelCardReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step1: init TX
+	err = Gateway.DelCard(req.CardId, req.User)
+	if err != nil {
+		return &payment.DelCardReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// Step2: redirect client
+	return &payment.DelCardReply{}, nil
+}
+
 func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderRequest) (*payment.BuyOrderReply, error) {
 
 	// Step0: find pay
-	pay, err := ps.repo.GetPayByID(uint(req.PayId))
+	Payment, err := ps.repo.GetPayByID(req.PayId)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
-	// Step0.5: check if saved pay parameters are equal to supplied
-	if req.LeadId != pay.LeadID || pay.LeadID == 0 || int32(req.Direction) != pay.Direction {
-		return &payment.BuyOrderReply{Error: payment.Errors_INVALID_DATA, ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId)}, nil
-	}
-
 	// Step0.55: cancelled pays shall not proceed
-	if pay.Cancelled {
-		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: fmt.Sprintf("Payment is cancelled, aborting")}, nil
+	if Payment.Cancelled {
+		return &payment.BuyOrderReply{Error: payment.Errors_PAY_CANCELLED, ErrorMessage: "Payment is cancelled, aborting"}, nil
 	}
 
 	// Step0.6: check if TX is already finished
-	finished, err := ps.repo.FinishedSessionsForPayID(pay.ID)
+	finished, err := ps.repo.FinishedSessionsForPayID(Payment.ID)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 	if finished > 0 {
-		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: fmt.Sprintf("payments: This pay is already payed")}, nil
+		return &payment.BuyOrderReply{Error: payment.Errors_ALREADY_PAYED, ErrorMessage: "payments: This pay is already payed"}, nil
+	}
+
+	Gateway, err := ps.gw(Payment.GatewayType)
+	if err != nil {
+		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	// Step1: init TX
-	sess, err := ps.gateway.Buy(pay, req.Ip)
+	sess, err := Gateway.Buy(Payment, req.User, false)
 	if err != nil {
 		return &payment.BuyOrderReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
 	}
@@ -198,45 +252,91 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 	}
 
 	// Step3: redirect client
-	return &payment.BuyOrderReply{RedirectUrl: ps.gateway.Redirect(sess)}, nil
+	return &payment.BuyOrderReply{RedirectUrl: Gateway.Redirect(sess)}, nil
 
+}
+
+func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequest) (*payment.BuyAsyncReply, error) {
+
+	create, err := ps.CreateOrder(ctx, &payment.CreateOrderRequest{
+		Data: req.Data,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if create.Error != payment.Errors_OK {
+		return &payment.BuyAsyncReply{
+			Error:        create.Error,
+			ErrorMessage: create.ErrorMessage,
+		}, nil
+	}
+
+	// Step0: find pay
+	Payment, err := ps.repo.GetPayByID(create.Id)
+	if err != nil {
+		return &payment.BuyAsyncReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	Gateway, err := ps.gw(Payment.GatewayType)
+	if err != nil {
+		return &payment.BuyAsyncReply{Error: payment.Errors_PAY_FAILED, ErrorMessage: err.Error()}, nil
+	}
+
+	// now -- async part
+
+	go func() {
+		// Step1: init TX
+		sess, err := Gateway.Buy(Payment, req.User, true)
+		if err != nil {
+
+			log.Errorf("Warning! Async Buy returnted err: %v", err)
+			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+				Id:    uint64(Payment.ID),
+				Data:  Payment.Encode(),
+				Event: payment.Event_PayFailed,
+				Info:  Payment.Info(),
+			}))
+		}
+
+		// Step2: save session
+		err = ps.repo.CreateSess(sess)
+		if err != nil {
+			log.Errorf("Warning! Save session returnted err, this should not happen: %v", err)
+			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+				Id:    uint64(sess.PaymentID),
+				Data:  Payment.Encode(),
+				Event: payment.Event_PayFailed,
+				Info:  sess.Info(),
+			}))
+
+		}
+
+		log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+			Id:    uint64(sess.PaymentID),
+			Data:  Payment.Encode(),
+			Event: payment.Event_PaySuccess,
+			Info:  sess.Info(),
+		}))
+
+	}()
+
+	return &payment.BuyAsyncReply{}, nil
 }
 
 func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrderRequest) (*payment.CancelOrderReply, error) {
 
 	// Step0: find pay
-	pay, err := ps.repo.GetPayByID(uint(req.PayId))
+	pay, err := ps.repo.GetPayByID(req.PayId)
 	if err != nil {
 		return &payment.CancelOrderReply{Error: payment.Errors_DB_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
-	// Step0.5: check if saved pay parameters are equal to supplied
-
-	// allow both sides cancel
-	// we have only 2 direction and this may seem useless; but it is planned to have other people in conversation
-	// so I will disable checks only for new payment sides
-	switch req.Direction {
-	case payment.Direction_CLIENT_PAYS, payment.Direction_CLIENT_RECV:
-		if pay.Direction != int32(payment.Direction_CLIENT_PAYS) && pay.Direction != int32(payment.Direction_CLIENT_RECV) {
-			return &payment.CancelOrderReply{
-				Error:        payment.Errors_INVALID_DATA,
-				ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId),
-			}, nil
-		}
-	default:
-		if int32(req.Direction) != pay.Direction {
-			return &payment.CancelOrderReply{
-				Error:        payment.Errors_INVALID_DATA,
-				ErrorMessage: fmt.Sprintf("Access denied: you are not the side of payment who can cancel it (%v)", req.LeadId),
-			}, nil
-		}
-	}
-
-	// checks to make sure leadID is not mangled
-	if req.LeadId != pay.LeadID || pay.LeadID == 0 {
+	if pay.Cancelled {
 		return &payment.CancelOrderReply{
-			Error:        payment.Errors_INVALID_DATA,
-			ErrorMessage: fmt.Sprintf("Access denied: supplied incorrect LeadID (%v)", req.LeadId),
+			Error:        payment.Errors_ALREADY_CANCELLED,
+			ErrorMessage: "payments: This pay is already cancelled; why do you want to cancel it again?",
 		}, nil
 	}
 
@@ -248,93 +348,65 @@ func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrder
 	if finished > 0 {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_ALREADY_PAYED,
-			ErrorMessage: fmt.Sprintf("payments: This pay is already payed; why do you want to cancel it?"),
+			ErrorMessage: "payments: This pay is already payed; why do you want to cancel it?",
 		}, nil
 	}
 
-	// Step0.8: notify chat; check before sending to chat to avoid inconsistiency if chat is down
-	err = ps.chat.SendCancelOrder(pay, req.UserId)
-	if err != nil {
-		return &payment.CancelOrderReply{
-			Error:        payment.Errors_CHAT_DOWN,
-			ErrorMessage: fmt.Sprintf("payments: chat service is unreachable"),
-		}, nil
+	// Step0.9: refund commission
+	if pay.CommissionFee != 0 {
+		text := fmt.Sprintf("refund commission of pay %v", pay.ID)
+		err := coins.PostTransactions(&trendcoin.TransactionData{
+			Destination:    pay.CommissionSource,
+			Amount:         pay.CommissionFee,
+			AllowEmptySide: true,
+			Reason:         text,
+			IdempotencyKey: text,
+		})
+		if err != nil {
+			return &payment.CancelOrderReply{Error: payment.Errors_REFUND_ERROR, ErrorMessage: "failed to refund commission fee"}, nil
+		}
 	}
 
-	// Step0.7: do the cancel
+	// Step0.10: do the cancel
 	pay.Cancelled = true
 	err = ps.repo.SavePay(pay)
 	if err != nil {
 		return &payment.CancelOrderReply{
 			Error:        payment.Errors_DB_FAILED,
-			ErrorMessage: fmt.Sprintf("payments: could not save modified pay"),
+			ErrorMessage: "payments: could not save modified pay",
 		}, nil
+	}
+
+	// @TODO: shit; shit; shit. If nat is dead -- the thing will FUCK UP
+	err = nats.StanPublish(natsStream, &payment.PaymentNotification{
+		Id:            uint64(pay.ID),
+		Data:          pay.Encode(),
+		Event:         payment.Event_Cancelled,
+		InvokerUserId: req.UserId,
+		Info:          pay.Info(),
+	})
+	if err != nil {
+		return &payment.CancelOrderReply{Error: payment.Errors_NATS_FAILED, ErrorMessage: err.Error()}, nil
 	}
 
 	return &payment.CancelOrderReply{Cancelled: true}, nil
 }
 
-func (ps *paymentServer) CheckStatusAsync(session *models.Session) {
-	go ps.shed.process(session)
+func (ps *paymentServer) GetOrder(_ context.Context, req *payment.GetOrderRequest) (*payment.GetOrderReply, error) {
+
+	// Step0: find pay
+	pay, err := ps.repo.GetPayByID(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &payment.GetOrderReply{
+		Order: pay.Encode(),
+	}, nil
 }
 
-func (ps *paymentServer) CheckStatus(session *models.Session) error {
+func (ps *paymentServer) UpdateServiceData(_ context.Context, req *payment.UpdateServiceDataRequest) (*payment.UpdateServiceDataReply, error) {
 
-	// Step0: skip already finished sessions
-	if session.Finished && session.ChatNotified {
-		return nil
-	}
-
-	// Step1: check if it's finished
-	finished, err := ps.gateway.CheckStatus(session)
-	if err != nil {
-		return err
-	}
-
-	// Step2: save it -- for status updates
-	err = ps.repo.SaveSess(session)
-	if err != nil {
-		return err
-	}
-
-	// Step3: check if it's finished
-	if !finished {
-		return nil
-	}
-
-	// Step4: notify chat
-	err = ps.chat.SendSession(session)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// Step5: remember about it
-	session.ChatNotified = true
-	err = ps.repo.SaveSess(session)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ps *paymentServer) CheckStatuses() error {
-
-	// Get session with unfinished state
-	toCheck, err := ps.repo.GetUnfinished(ps.gateway.GatewayType())
-	if err != nil {
-		return err
-	}
-
-	// check them
-	for _, sess := range toCheck {
-		err := ps.CheckStatus(&sess)
-		if err != nil {
-			// this errors are not fatal; let's just log them
-			log.Error(err)
-		}
-	}
-
-	return nil
+	err := ps.repo.UpdateServiceData(req.Id, req.NewData)
+	return &payment.UpdateServiceDataReply{}, err
 }

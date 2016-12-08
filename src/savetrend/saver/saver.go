@@ -15,10 +15,13 @@ import (
 	"savetrend/api"
 	"savetrend/conf"
 
+	"accountstore/client"
 	"instagram"
+	"proto/accountstore"
 	"proto/bot"
 	"proto/core"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -35,7 +38,7 @@ var (
 	lastChecked        = int64(0)
 	errorAlreadyAdded  = errors.New("Product already exists")
 	errorShopIsDeleted = errors.New("Shop is deleted; product will not be added")
-	pool               *instagram.Pool
+	pool               *client.AccountsPool
 	settings           = conf.GetSettings()
 )
 
@@ -45,10 +48,26 @@ func (svc *ProjectService) ResetLastChecked() error {
 }
 
 // Run fetching
-func (svc *ProjectService) Run() error {
+func (svc *ProjectService) Run() (err error) {
 
 	rand.Seed(time.Now().Unix())
 	api.Start()
+
+	settings := conf.GetSettings()
+
+	nats.Init(&settings.Nats, true)
+
+	conn := rpc.Connect(settings.Instagram.StoreAddr)
+	cli := accountstore.NewAccountStoreServiceClient(conn)
+	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
+	pool, err = client.InitPoll(
+		accountstore.Role_AuxPrivate, cli,
+		nil, nil,
+		&settings.Instagram.Settings,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init acoounts pool: %v", err)
+	}
 
 	srv := rpc.Serve(settings.Rpc)
 	bot.RegisterSaveTrendServiceServer(srv, NewSaveServer())
@@ -63,15 +82,11 @@ func (svc *ProjectService) Run() error {
 	restoreLastChecked()
 	go registerProducts()
 
-	err := registerApis()
-	if err != nil {
-		return err
-	}
-
 	// wait for terminating
 	<-interrupt
 	saveLastChecked()
 	log.Warn("Cleanup and terminating...")
+	client.StopAll()
 	os.Exit(0)
 
 	return nil
@@ -98,31 +113,8 @@ func saveLastChecked() {
 	ioutil.WriteFile(conf.GetSettings().LastCheckedFile, []byte(strconv.FormatInt(lastChecked, 10)), 0644)
 }
 
-func registerApis() error {
-
-	settings := conf.GetSettings()
-
-	pool = instagram.NewPool(&instagram.PoolSettings{
-		TimeoutMin:     settings.Instagram.TimeoutMin,
-		TimeoutMax:     settings.Instagram.TimeoutMax,
-		ReloginTimeout: settings.Instagram.ReloginTimeout,
-	})
-
-	// open connection and append connections pool
-	for _, user := range conf.GetSettings().Instagram.Users {
-
-		api, err := instagram.NewInstagram(user.Username, user.Password)
-		if err != nil {
-			return err
-		}
-
-		pool.Add(api)
-	}
-
-	return nil
-}
-
 func registerProducts() {
+	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
 
 	for {
 		log.Debug("Checking for new products (last checked at %v)", lastChecked)
@@ -149,8 +141,9 @@ func registerProducts() {
 			// update last checked ID
 			lastChecked = mention.Id
 		}
-
-		time.Sleep(time.Millisecond * time.Duration(settings.Instagram.PollTimeout))
+		if len(res.Result) == 0 {
+			time.Sleep(timeout)
+		}
 	}
 }
 
@@ -158,10 +151,14 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	return api.FetcherClient.RetrieveActivities(ctx, &bot.RetrieveActivitiesRequest{
-		AfterId:     lastChecked,
-		Type:        []string{"mentioned", "direct"},
-		MentionName: conf.GetSettings().Instagram.TrendUser,
-		Limit:       100, //@CHECK this number
+		Conds: []*bot.RetriveCond{
+			{
+				Role: bot.MentionedRole_Savetrend,
+				Type: []string{"mentioned", "direct"},
+			},
+		},
+		AfterId: lastChecked,
+		Limit:   100, //@CHECK this number
 	})
 }
 
@@ -199,7 +196,11 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 	}
 
 	// read media info
-	medias, err := pool.GetFree().GetMedia(mediaID)
+	ig, err := pool.GetFree()
+	if err != nil {
+		return -1, true, err
+	}
+	medias, err := ig.GetMedia(mediaID)
 	if err != nil {
 		if strings.Contains(err.Error(), "Media not found or unavailable") {
 			return -1, false, err
@@ -320,7 +321,11 @@ func userID(instagramID int64, instagramUsername string) (uint64, *core.User, er
 	}
 
 	// secondly, get this user profile
-	userInfo, err := pool.GetFree().GetUserNameInfo(instagramID)
+	ig, err := pool.GetFree()
+	if err != nil {
+		return 0, nil, err
+	}
+	userInfo, err := ig.GetUserNameInfo(instagramID)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -410,13 +415,16 @@ func shopID(supplierID uint64) (uint64, error) {
 
 func notifyChat(mention *bot.Activity) error {
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
+	//ctx, cancel := rpc.DefaultContext()
+	//defer cancel()
+	//
+	//_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
+	//	ActivityPk: mention.Pk,
+	//	Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
+	//})
+	//
+	//return err
 
-	_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-		ActivityPk: mention.Pk,
-		Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
-	})
-
-	return err
+	// @TODO
+	return nil
 }

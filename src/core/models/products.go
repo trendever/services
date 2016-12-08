@@ -235,11 +235,6 @@ func (p ProductItem) TableName() string {
 	return "products_product_item"
 }
 
-// ResourceName returns qor resource name
-func (p ProductItem) ResourceName() string {
-	return "ProductItem"
-}
-
 // Stringify returns human-friendly item id name
 func (p ProductItem) Stringify() string {
 	switch {

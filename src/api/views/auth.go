@@ -36,7 +36,7 @@ func RegisterNewUser(c *soso.Context) {
 	}
 
 	if value, ok := req["instagram_username"].(string); ok {
-		value = strings.Trim(value, " \n\t")
+		value = strings.Trim(value, " \r\n\t")
 		if !nameValidator.MatchString(value) {
 			log.Debug("name '%v' isn't valid", value)
 			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid instagram name"))
@@ -46,7 +46,7 @@ func RegisterNewUser(c *soso.Context) {
 	}
 
 	if value, ok := req["username"].(string); ok {
-		value = strings.Trim(value, " \n\t")
+		value = strings.Trim(value, " \r\n\t")
 		if !nameValidator.MatchString(value) {
 			log.Debug("name '%v' isn't valid", value)
 			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Invalid user name"))

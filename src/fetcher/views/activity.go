@@ -1,19 +1,19 @@
 package views
 
 import (
-	"fetcher/api"
-	"fetcher/models"
-
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
+	"fetcher/models"
 	"proto/bot"
+	"strings"
 	"utils/db"
 	"utils/log"
 )
 
 // Init binds server
-func Init() {
-	bot.RegisterFetcherServiceServer(api.GrpcServer, fetcherServer{})
+func Init(srv *grpc.Server) {
+	bot.RegisterFetcherServiceServer(srv, fetcherServer{})
 }
 
 type fetcherServer struct{}
@@ -27,19 +27,24 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 		Order("updated_at asc").
 		Limit(int(in.Limit))
 
-	var searchActivity = models.Activity{
-		MentionedUsername: in.MentionName,
+	var (
+		expr []string
+		args []interface{}
+	)
+	for _, cond := range in.Conds {
+		expr = append(expr, "(mentioned_role = ? AND type in (?))")
+		args = append(args, cond.Role, cond.Type)
 	}
 
-	if len(in.Type) > 0 {
-		req = req.Where("type in (?)", in.Type)
+	if len(expr) != 0 {
+		req = req.Where(strings.Join(expr, " OR "), args...)
 	}
 
 	if in.AfterId > 0 {
 		req = req.Where("id > ?", in.AfterId)
 	}
 
-	if err := req.Where(&searchActivity).Find(&result).Error; err != nil {
+	if err := req.Find(&result).Error; err != nil {
 		log.Error(err)
 		return nil, err
 	}

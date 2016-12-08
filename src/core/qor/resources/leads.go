@@ -27,6 +27,28 @@ func initLeadResource(res *admin.Resource) {
 		Collection: models.GetLeadStates(),
 	})
 
+	itemRes := res.GetAdmin().NewResource(models.ProductItem{}, &admin.Config{
+		Name: "ProductItem",
+		Menu: []string{},
+	})
+	// we will use custom SearchHandler but panic will be raised without this line(qor bug)...
+	itemRes.SearchAttrs("Name")
+	itemRes.SearchHandler = func(keyword string, context *qor.Context) *gorm.DB {
+		return context.GetDB().Where(`
+		lower(products_product_item.name) LIKE lower(?)
+		OR EXISTS (
+			SELECT 1 FROM products_product product
+			WHERE product.id = products_product_item.product_id AND product.deleted_at IS NULL
+			AND product.code LIKE lower(?)
+		)`, "%"+keyword+"%", keyword+"%")
+	}
+	res.Meta(&admin.Meta{
+		Name: "ProductItems",
+		Config: &admin.SelectManyConfig{
+			RemoteDataResource: itemRes,
+		},
+	})
+
 	res.SearchAttrs(
 		"ID", "Name", "Source", "Customer.Name", "Comment",
 	)

@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 var (
@@ -53,23 +54,31 @@ type Settings struct {
 	AppHost    string
 	SiteURL    string
 	SentryDSN  string
-	NatsURL    string
 	SystemUser string
 
-	RPC struct {
-		Listen         string
-		ListenNotifier string `mapstructure:"listen_notifier"`
-		Mail           string
-		SMS            string
-		Chat           string
-		Auth           string
-		Push           string
-		Telegram       string
-		Checker        string
-		Trendcoin      string
+	Monetization struct {
+		// name of plan that will be assigned to shop after creation. default is 'init'
+		InitialPlanName string
+		// duration multiplier for plans periods
+		PlansBaseDuration     string
+		SubscriptionCheckTick string
 	}
 
-	DB db.Settings
+	RPC struct {
+		Listen    string
+		Mail      string
+		SMS       string
+		Chat      string
+		Auth      string
+		Push      string
+		Telegram  string
+		Checker   string
+		Trendcoin string
+		Payments  string
+	}
+
+	DB   db.Settings
+	Nats nats.Config
 
 	Bitly struct {
 		APIKey      string

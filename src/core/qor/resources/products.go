@@ -20,15 +20,9 @@ func init() {
 }
 
 func initProductResource(res *admin.Resource) {
-	itemRes := res.GetAdmin().AddResource(models.ProductItem{}, &admin.Config{
-		Name:      "ProductItem",
-		Invisible: true,
-	})
-
 	res.Meta(&admin.Meta{
-		Name:     "Items",
-		Type:     "collection_edit",
-		Resource: itemRes,
+		Name: "Items",
+		Type: "collection_edit",
 	})
 
 	res.Meta(&admin.Meta{Name: "Code", Type: "string"})
@@ -123,15 +117,6 @@ func initProductResource(res *admin.Resource) {
 				Where("mentioned_by.is_scout = ?", true)
 		},
 	})
-
-	itemRes.EditAttrs(
-		"Name",
-		"Price", "DiscountPrice",
-		"Tags",
-	)
-	itemRes.NewAttrs(itemRes.EditAttrs())
-
-	itemRes.SearchAttrs("Name", "Tags")
 
 	filters.SetDateFilters(res, "CreatedAt")
 

@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/elastic"
 	"utils/log"
+	"utils/nats"
 )
 
 var settings *Settings
@@ -49,15 +50,20 @@ type Settings struct {
 	ChannelPort string
 
 	SentryDSN string
-	NatsURL   string
+	Nats      nats.Config
 
 	MarketSMS string
 
-	CoreAddr     string
-	AuthAddr     string
-	ChatAddr     string
-	PaymentsAddr string
-	SMSAddr      string
+	API struct {
+		Core         string
+		Auth         string
+		Chat         string
+		Payments     string
+		SMS          string
+		Coins        string
+		Checker      string
+		AccountStore string
+	}
 
 	Elastic elastic.Settings
 

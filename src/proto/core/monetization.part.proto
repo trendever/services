@@ -1,0 +1,85 @@
+service MonetizationService {
+    // get plan by id
+    rpc GetPlan(GetPlanRequest) returns (GetPlanReply) {}
+    // returns list of public plans
+    rpc GetPlansList(GetPlansListRequest) returns (GetPlansListReply) {}
+    rpc GetCoinsOffers(GetCoinsOffersRequest) returns (GetCoinsOffersReply) {}
+    // subscribe shop to plan
+    rpc Subscribe(SubscribeRequest) returns (SubscribeReply) {}
+    // sets autorefill coins offer for user
+    rpc SetAutorefill(SetAutorefillRequest) returns (SetAutorefillReply) {}
+}
+
+message GetPlanRequest{
+    uint64 id = 1;
+}
+
+message MonezationPlan {
+    uint64 id = 1;
+    string name = 2;
+    string about = 3;
+    string primary_currency = 4;
+    uint64 subscription_period = 5;
+    uint64 subscription_price = 6;
+    double transaction_commission = 7;
+    double coins_exchange_rate = 8;
+    bool   public = 9;
+
+    bool directbot_enabled = 10;
+}
+
+message GetPlanReply {
+    MonezationPlan plan = 1;
+    string error = 2;
+}
+
+
+message GetPlansListRequest{
+    string currency = 1;
+    bool with_bot = 2;
+}
+
+message GetPlansListReply {
+    repeated MonezationPlan plans = 1;
+    string error = 2;
+}
+
+message CoinsOffer {
+    uint64 id = 1;
+    uint64 amount = 2;
+    uint64 price = 3;
+    string currency = 4;
+}
+
+message GetCoinsOffersRequest {
+    string currency = 1;
+    // get single offer by id
+    uint64 offer_id = 2;
+}
+
+message GetCoinsOffersReply {
+    repeated CoinsOffer offers = 1;
+    string error = 2;
+}
+
+message SubscribeRequest {
+    uint64 shop_id = 1;
+    // should be supplier of shop
+    uint64 user_id = 2;
+    uint64 plan_id = 3;
+    bool auto_renewal = 4;
+}
+
+message SubscribeReply {
+    bool ok = 1;
+    string error = 2;
+}
+
+message SetAutorefillRequest {
+    uint64 user_id = 1;
+    uint64 offer_id = 2;
+}
+
+message SetAutorefillReply {
+    string error = 1;
+}

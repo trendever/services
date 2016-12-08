@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,8 +13,23 @@ import (
 	"utils/log"
 )
 
-// DoResponeLogging enables full json body output
+// Possible network instagram errors
+var (
+	ErrorCheckpointRequired = errors.New("Checkpoint action needed to proceed")
+)
+
+// DoResponseLogging enables full json body output
 var DoResponseLogging = false
+
+func getToken(cook []*http.Cookie) (string, error) {
+	for _, cookie := range cook {
+		if cookie.Name == "csrftoken" {
+			return cookie.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("Cookie csrftoken not found")
+}
 
 // Request for Login method. Needs to get the authorization cookies.
 func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login bool) (*http.Response, error) {
@@ -36,7 +52,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login 
 
 	// add auth token if needed
 	if !login {
-		for _, cookie := range ig.cookies {
+		for _, cookie := range ig.Cookies {
 			req.AddCookie(cookie)
 		}
 	}
@@ -67,7 +83,13 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 		}
 
 		if DoResponseLogging {
-			log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
+			var buf bytes.Buffer
+			err := json.Indent(&buf, jsonBody, "  ", "  ")
+			if err == nil {
+				log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, buf.String())
+			} else {
+				log.Debug("Instagram response indent failed for endpoint  %v: %v, raw: %v", endpoint, err, string(jsonBody))
+			}
 		}
 
 		var message *Message
@@ -80,8 +102,11 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			if message.Message != "login_required" {
 				return nil, errors.New(message.Message)
 			}
+			if message.Message == "checkpoint_required" {
+				return nil, ErrorCheckpointRequired
+			}
 			// relogin
-			ig.isLoggedIn = false
+			ig.LoggedIn = false
 			err = ig.Login()
 			if err != nil {
 				return nil, err
@@ -134,6 +159,10 @@ func (ig *Instagram) loginRequest(method, endpoint, body string, result interfac
 	jsonBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if DoResponseLogging {
+		log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
 	}
 
 	err = json.Unmarshal(jsonBody, result)

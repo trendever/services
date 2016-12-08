@@ -2,12 +2,12 @@ package models
 
 import (
 	"fmt"
+	"time"
 	"utils/db"
 )
 
 //Migrate runs migrations
 func Migrate() error {
-
 	db.New().Model(&UsersProducts{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
 	db.New().Model(&UsersProducts{}).AddForeignKey("product_id", "products_product(id)", "CASCADE", "RESTRICT")
 
@@ -52,9 +52,6 @@ func Migrate() error {
 
 	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
-	db.New().Model(&ChatTemplateCase{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
-	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("case_id", "chat_template_cases(id)", "CASCADE", "RESTRICT")
-
 	db.New().Model(&PushToken{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
 
 	// i'm somewhat unsure if drop something here is good idea
@@ -74,7 +71,50 @@ func Migrate() error {
 
 	relationsIndices()
 
+	db.New().Model(&ChatTemplateMessage{}).AddForeignKey("template_id", "chat_templates(id)", "CASCADE", "RESTRICT")
+
+	if db.HasColumn(&ChatTemplateMessage{}, "case_id") {
+		db.New().Exec(`
+			UPDATE chat_template_messages msg
+			SET template_id = c.template_id
+			FROM chat_template_cases c WHERE c.id = msg.case_id
+		`)
+		db.New().Model(&ChatTemplateMessage{}).DropColumn("case_id")
+	}
+
+	db.New().Model(&ChatTemplate{}).Where("source IS NULL OR source = ''").UpdateColumn("source", "any")
+
+	err := setInitialPlan()
+	if err != nil {
+		return err
+	}
+
+	if db.HasColumn(&EmailTemplate{}, "deleted_at") {
+		for _, table := range []interface{}{&PushTemplate{}, &SMSTemplate{}, &EmailTemplate{}} {
+			db.New().Delete(table, "deleted_at IS NOT NULL")
+			db.New().Model(table).DropColumn("deleted_at").DropColumn("created_at").DropColumn("updated_at")
+		}
+	}
+
 	return nil
+}
+
+func setInitialPlan() error {
+	err := InitializeMonetization()
+	if err != nil {
+		return fmt.Errorf("failed to init monetization: %v", err)
+	}
+	updateMap := map[string]interface{}{
+		"plan_id":          InitialPlan.ID,
+		"suspended":        false,
+		"auto_renewal":     false,
+		"last_plan_update": time.Now(),
+		"plan_expires_at":  time.Time{},
+	}
+	if InitialPlan.SubscriptionPeriod != 0 {
+		updateMap["plan_expires_at"] = time.Now().Add(PlansBaseDuration * time.Duration(InitialPlan.SubscriptionPeriod))
+	}
+	return db.New().Model(&Shop{}).Where("plan_id IS NULL OR plan_id = 0").UpdateColumns(updateMap).Error
 }
 
 func relationsIndices() {
@@ -83,7 +123,6 @@ func relationsIndices() {
 	// already exist with another name
 	//db.New().Model(&ProductItem{}).AddIndex("products_index", "product_id")
 	db.New().Model(&ImageCandidate{}).AddIndex("products_index", "product_id")
-
 }
 
 func migrateTagrel() {

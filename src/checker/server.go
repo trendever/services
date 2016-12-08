@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 	"instagram"
 	"io/ioutil"
@@ -16,6 +17,8 @@ import (
 type CheckerServer struct {
 	queryChan chan uint64
 }
+
+var nameValidator = regexp.MustCompile("^(\\w|\\.)*$")
 
 func NewCheckerServer() *CheckerServer {
 	c := &CheckerServer{
@@ -33,8 +36,71 @@ func (c *CheckerServer) Check(ctx context.Context, in *checker.CheckRequest) (*c
 	}(in.Ids)
 	return &checker.CheckReply{}, nil
 }
+
 func (c *CheckerServer) Stop() {
 	close(c.queryChan)
+}
+
+func (c *CheckerServer) GetProfile(_ context.Context, in *checker.GetProfileRequest) (ret *checker.GetProfileReply, _ error) {
+	ret = &checker.GetProfileReply{}
+
+	switch {
+	case in.Id != 0:
+		profile, err := Instagram.GetFree().GetUserNameInfo(int64(in.Id))
+		if err != nil {
+			ret.Error = fmt.Sprintf("failed to search user in instagram: %v", err)
+			return
+		}
+		user := &profile.User
+		if user.Pk == 0 {
+			ret.Error = "user not found"
+			return
+		}
+		ret.Id = uint64(user.Pk)
+		ret.Name = user.Username
+		ret.FullName = user.FullName
+		ret.Biography = user.Biography
+		ret.AvatarUrl = user.ProfilePicURL
+		ret.ExternalUrl = user.ExternalURL
+		return
+
+	case in.Name != "":
+		if !nameValidator.MatchString(in.Name) {
+			ret.Error = "unvalid instagram name"
+			return
+		}
+		candidates, err := Instagram.GetFree().SearchUsers(in.Name)
+		if err != nil {
+			ret.Error = fmt.Sprintf("failed to search user in instagram: %v", err)
+			return
+		}
+
+		var user *instagram.SearchUserInfo
+		for i := range candidates.Users {
+			if candidates.Users[i].Username == in.Name {
+				user = &candidates.Users[i]
+				break
+			}
+		}
+		if user == nil {
+			ret.Error = "user not found"
+			return
+		}
+
+		ret.Id = uint64(user.Pk)
+		ret.Name = user.Username
+		ret.FullName = user.FullName
+		ret.AvatarUrl = user.ProfilePicURL
+		// @CHECK no Biography and ExternalURL field in this response?
+		return
+
+	default:
+		ret.Error = "empty conditions"
+		return
+	}
+
+	ret.Error = "unrechable piont is reached"
+	return
 }
 
 // we don't need to load full user model, here is restricted version
@@ -98,15 +164,13 @@ func (s *CheckerServer) loop() {
 	}
 }
 
-var nameValidator = regexp.MustCompile("^(\\w|\\.)*$")
-
 func checkUser(user *User) {
 	if user.ID == 0 {
 		return
 	}
 	var instagramInfo *instagram.SearchUserInfo
 	updateMap := map[string]interface{}{}
-	trimmed := strings.Trim(user.InstagramUsername, " \n\t")
+	trimmed := strings.Trim(user.InstagramUsername, " \r\n\t")
 	if trimmed != user.InstagramUsername {
 		user.InstagramUsername = trimmed
 		updateMap["instagram_username"] = trimmed

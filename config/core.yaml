@@ -1,7 +1,11 @@
 debug: true
 appHost: :3004
 siteURL: http://localhost
-natsURL: nats://nats:4222
+
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: core1
 
 rpc:
   listen: :3005
@@ -13,6 +17,7 @@ rpc:
   checker: checker:2013
   telegram: telegram:4040
   trendcoin: trendcoin:2014
+  payments: payments:7777
 
 db:
   debug:    true
@@ -21,6 +26,11 @@ db:
   host:     db
   port:     5432
   base:     postgres
+
+monetization:
+  initialPlanName: init
+  plansBaseDuration: 1m
+  subscriptionCheckTick: 5m
 
 bitly:
   login: o_v1v8rptir

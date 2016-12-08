@@ -33,6 +33,17 @@ message Shop {
 
   // unix time, seconds
   uint64 created_at = 17;
+
+  // true if shop has no active monetization plan
+  bool suspended = 18;
+  uint64 plan_id = 19;
+  // may be zero for plans without expiration
+  // DO NOT use this field to determinate whether shop has active plan, check "suspended" field instead
+  int64 plan_expires_at = 20;
+  bool auto_renewal = 21;
+
+  string location = 22;
+  string working_time = 23;
 }
 
 
@@ -45,6 +56,7 @@ message ShopProfileRequest {
 
 message ShopProfileReply {
   Shop shop = 1;
+  uint64 products_count = 2;
 }
 
 message FindOrCreateShopForSupplierRequest {

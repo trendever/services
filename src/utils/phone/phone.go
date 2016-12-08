@@ -1,10 +1,9 @@
 package phone
 
 import (
-	"github.com/ttacon/libphonenumber"
 	"errors"
+	"github.com/ttacon/libphonenumber"
 )
-
 
 func CheckNumber(phoneNumber, country string) (string, error) {
 	if country == "" {

@@ -11,6 +11,7 @@ import (
 	"proto/chat"
 	"proto/checker"
 	"proto/mail"
+	"proto/payment"
 	"proto/push"
 	"proto/sms"
 	"proto/trendcoin"
@@ -35,6 +36,7 @@ var (
 	TelegramServiceClient  bot.TelegramServiceClient
 	CheckerServiceClient   checker.CheckerServiceClient
 	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
+	PaymentsServiceClient  payment.PaymentServiceClient
 )
 
 // Telegram channel destanations
@@ -88,6 +90,9 @@ func startClients() {
 
 	trendcoinConn := rpc.Connect(config.RPC.Trendcoin)
 	TrendcoinServiceClient = trendcoin.NewTrendcoinServiceClient(trendcoinConn)
+
+	paymentsConn := rpc.Connect(config.RPC.Payments)
+	PaymentsServiceClient = payment.NewPaymentServiceClient(paymentsConn)
 }
 
 // GetBitly returns Bitly client

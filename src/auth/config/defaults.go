@@ -7,6 +7,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 const (
@@ -23,7 +24,7 @@ type Config struct {
 	Key         string
 	Debug       bool
 	DB          db.Settings
-	NatsURL     string
+	Nats        nats.Config
 	SiteUrl     string `mapstructure:"site_url"`
 	SmsTemplate string `mapstructure:"sms_template"`
 	SentryDSN   string

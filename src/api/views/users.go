@@ -115,7 +115,7 @@ func SetEmail(c *soso.Context) {
 		return
 	}
 	if res.Error != "" {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(res.Error))
 		return
 	}
 	c.SuccessResponse(map[string]interface{}{

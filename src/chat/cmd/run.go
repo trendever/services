@@ -24,14 +24,15 @@ var cmdRun = &cobra.Command{
 		config.Init()
 		conf := config.Get()
 
+		models.InitUploader(conf.UploadService)
+
+		db.Init(&conf.DB)
+
+		repository := models.NewConversationRepository(db.New())
+		nats.Init(&conf.Nats, true)
+
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)
 		s := rpc.Serve(conf.Host + ":" + conf.Port)
-		db.Init(&conf.DB)
-		db := db.New()
-
-		repository := models.NewConversationRepository(db)
-		nats.Init(conf.NatsURL)
-
 		chat.RegisterChatServiceServer(s, server.NewChatServer(
 			repository,
 			queue.NewWaiter(time.Minute*5),
@@ -42,13 +43,9 @@ var cmdRun = &cobra.Command{
 		signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 		// wait for terminating
-		for {
-			select {
-			case <-interrupt:
-				log.Info("Service stopped")
-				os.Exit(0)
-			}
-		}
+		<-interrupt
+		log.Info("Service stopped")
+		os.Exit(0)
 	},
 }
 

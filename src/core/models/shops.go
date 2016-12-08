@@ -3,13 +3,14 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"proto/core"
 	"strings"
 	"time"
 	"utils/db"
 	"utils/nats"
+
+	"github.com/jinzhu/gorm"
 )
 
 // Shop model defines virtual "Shop"
@@ -24,6 +25,9 @@ type Shop struct {
 	SupplierLastLogin time.Time
 	oldSupplier       uint
 
+	// @TODO separate data somehow, there is no need to carry it all the time
+	Location         string `gorm:"type:text"`
+	WorkingTime      string `gorm:"type:text"`
 	ShippingRules    string `gorm:"type:text"`
 	PaymentRules     string `gorm:"type:text"`
 	InstagramWebsite string `gorm:"type:text"`
@@ -40,10 +44,25 @@ type Shop struct {
 	// if true new leads will not be joined with existing one
 	SeparateLeads bool
 
+	// monetization related stuff
+	PlanID uint64
+	Plan   MonetizationPlan
+	// used to prevent repetitive actions
+	LastPlanUpdate time.Time
+	// zero time for plans without expiration
+	PlanExpiresAt time.Time
+	// if true subscription will be renewed automatically after expiration
+	AutoRenewal bool
+	// there may be some time between subscription expiration and autorenewal,
+	// so  any logic should use field below instead of compare expiration time with current one.
+	// true if shop was no active monetization plan
+	Suspended bool
+
 	// it's better to keep them outside main struct to avoid load surplus data
 	Notes []ShopNote `gorm:"ForeignKey:ShopID"`
 }
 
+// ShopNote model for keeping notes about shops in qor
 type ShopNote struct {
 	ID     uint64 `gorm:"primary_key"`
 	ShopID uint64
@@ -62,12 +81,17 @@ func (s Shop) ResourceName() string {
 
 // Stringify returns human-friendly name
 func (s Shop) Stringify() string {
+
+	if strings.HasSuffix(strings.ToLower(s.InstagramUsername), "shop") {
+		return s.InstagramUsername
+	}
+
 	return fmt.Sprintf("%s shop", s.InstagramUsername)
 }
 
 //Encode converts Shop to core.Shop
 func (s Shop) Encode() *core.Shop {
-	return &core.Shop{
+	ret := &core.Shop{
 		Id:                 int64(s.ID),
 		InstagramId:        s.Supplier.InstagramID,
 		InstagramUsername:  s.Supplier.InstagramUsername,
@@ -75,6 +99,8 @@ func (s Shop) Encode() *core.Shop {
 		InstagramAvatarUrl: s.Supplier.InstagramAvatarURL,
 		InstagramCaption:   s.Supplier.InstagramCaption,
 		InstagramWebsite:   s.InstagramWebsite,
+		Location:           s.Location,
+		WorkingTime:        s.WorkingTime,
 		ShippingRules:      s.ShippingRules,
 		PaymentRules:       s.PaymentRules,
 		Caption:            s.Supplier.Caption,
@@ -87,7 +113,15 @@ func (s Shop) Encode() *core.Shop {
 		Available:  s.NotifySupplier,
 
 		CreatedAt: uint64(s.CreatedAt.Unix()),
+
+		PlanId:      s.PlanID,
+		Suspended:   s.Suspended,
+		AutoRenewal: s.AutoRenewal,
 	}
+	if !s.PlanExpiresAt.IsZero() {
+		ret.PlanExpiresAt = s.PlanExpiresAt.Unix()
+	}
+	return ret
 }
 
 //Decode converts core.Shop to Shop
@@ -108,11 +142,20 @@ func (s Shop) Decode(cs *core.Shop) Shop {
 	}
 }
 
-//gorm callbacks
+// BeforeSave gorm callbacks
+func (s *Shop) BeforeCreate(db *gorm.DB) {
+	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
+	s.PlanID = InitialPlan.ID
+	if InitialPlan.SubscriptionPeriod != 0 {
+		s.PlanExpiresAt = time.Now().Add(PlansBaseDuration * time.Duration(InitialPlan.SubscriptionPeriod))
+	}
+}
+
 func (s *Shop) BeforeSave(db *gorm.DB) {
 	s.InstagramUsername = strings.ToLower(s.InstagramUsername)
 }
 
+// BeforeUpdate hook
 func (s *Shop) BeforeUpdate() error {
 	err := db.New().Model(&s).Select("supplier_id").Where("id = ?", s.ID).Row().Scan(&s.oldSupplier)
 	if err != nil && err != sql.ErrNoRows {
@@ -121,6 +164,7 @@ func (s *Shop) BeforeUpdate() error {
 	return nil
 }
 
+// AfterUpdate hook
 func (s *Shop) AfterUpdate() error {
 	if s.oldSupplier != 0 && s.oldSupplier != s.SupplierID {
 		err := s.onSupplierChanged()
@@ -132,6 +176,7 @@ func (s *Shop) AfterUpdate() error {
 	return nil
 }
 
+// AfterDelete hook
 func (s *Shop) AfterDelete() {
 	go nats.Publish("core.shop.flush", s.ID)
 }
@@ -159,6 +204,16 @@ func (s *Shop) onSupplierChanged() error {
 		}
 	}
 	return nil
+}
+
+// sellers should be preloaded
+func (s *Shop) HasSeller(userID uint) bool {
+	for _, seller := range s.Sellers {
+		if seller.ID == userID {
+			return true
+		}
+	}
+	return false
 }
 
 //GetShopByID returns Shop by ID
@@ -200,6 +255,12 @@ func GetShopsIDWhereUserIsSupplier(userID uint) (out []uint64, err error) {
 	return
 }
 
+func GetShopProductsCount(shopID uint64) (count uint64, err error) {
+	err = db.New().Model(Product{}).Where("shop_id = ?", shopID).Count(&count).Error
+	return
+}
+
+// FindOrCreateShopForSupplier func
 func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID uint64, deleted bool, err error) {
 	scope := db.New().Where("supplier_id = ?", supplier.ID)
 	if !recreateDeleted {

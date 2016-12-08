@@ -57,6 +57,15 @@ type User struct {
 	// may be loaded with call LoadExternals method
 	// Assigned to qor db has callbacks to do it
 	Balance int64 `sql:"-"`
+
+	Autorefill AutorefillInfo `gorm:"ForeignKey:UserID"`
+}
+
+type AutorefillInfo struct {
+	UserID     uint64 `gorm:"primary_key"`
+	CoinsOffer uint64
+	// true if autorefill is in progress(payment was created)
+	InProgress bool
 }
 
 // SystemUser is used if we need to send a message from system

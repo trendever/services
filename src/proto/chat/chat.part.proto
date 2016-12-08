@@ -74,6 +74,7 @@ message Chat {
     string name = 3;
     uint64 unread_count = 4;
     Message recent_message = 5;
+    string direct_thread = 6;
 }
 
 message Member {
@@ -83,6 +84,8 @@ message Member {
     //display name for the member
     string name = 4;
     uint64 last_message_id = 5;
+
+    uint64 instagram_id = 6;
 }
 
 enum MemberRole {
@@ -112,6 +115,8 @@ message Message {
     int64 created_at = 4;
     uint64 id = 5;
     Member user = 6;
+
+    string instagram_id = 7;
 }
 
 message MessagePart {

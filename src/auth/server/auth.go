@@ -84,7 +84,6 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 			Name:              request.Username,
 		},
 	}
-
 	resp, err := s.core.FindOrCreateUser(rpcContext, newUser)
 
 	if err != nil {

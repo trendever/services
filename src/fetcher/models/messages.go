@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"utils/db"
 )
 
@@ -13,23 +14,15 @@ type ThreadInfo struct {
 
 // LaterThan tells if info.LastCheckedID mark is placed later than otherID (so, info.LastCheckedID should have ID that is less than otherID)
 func (info *ThreadInfo) LaterThan(otherID string) bool {
-
-	// info		other		result
-	// ""			"5"			false
-	// "100"  "0"			true
-	// "150"	"100"		true
-
-	diff := len(info.LastCheckedID) - len(otherID)
-
-	switch {
-	case diff < 0: // len(thisID) is less
-		return false
-	case diff > 0: // len(otherID) is less
-		return true
-	default: // lens are equal; compare byte-by-byte
-		return info.LastCheckedID >= otherID
+	// info  other result
+	// ""    "5"   false
+	// "100" "0"   true
+	// "150" "100" true
+	lenDiff := len(info.LastCheckedID) - len(otherID)
+	if lenDiff != 0 {
+		return lenDiff < 0
 	}
-
+	return info.LastCheckedID < otherID
 }
 
 // TableName defines table name
@@ -50,11 +43,15 @@ func GetThreadInfo(threadID string) (ThreadInfo, error) {
 
 // SaveLastCheckedID updates threadInfo with lastCheckedID=messageID
 func SaveLastCheckedID(threadID, messageID string) error {
-	return db.New().
+	err := db.New().
 		Model(&ThreadInfo{}).
 		Where("thread_id = ?", threadID).
 		Update("last_checked_id", messageID).
 		Error
+	if err != nil {
+		return fmt.Errorf("failed to save last checked id for thread %v: %v", threadID, err)
+	}
+	return nil
 }
 
 // Save just saves it in usual way

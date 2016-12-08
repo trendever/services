@@ -7,7 +7,9 @@ import (
 	"utils/db"
 	"utils/log"
 
+	"accountstore/client"
 	"github.com/spf13/viper"
+	"utils/nats"
 )
 
 var (
@@ -47,15 +49,12 @@ type Settings struct {
 	DB        db.Settings
 	Instagram Instagram
 	SentryDSN string
+	Nats      nats.Config
 }
 
 // Instagram config part
 type Instagram struct {
-	TimeoutMin      string
-	TimeoutMax      string
+	client.Settings `mapstructure:",squash"`
+	StoreAddr       string
 	ResponseLogging bool
-	Users           []struct {
-		Username string
-		Password string
-	}
 }

@@ -11,14 +11,14 @@ import (
 const (
 	// time to wait processing if it's 2 requests to process at the same time
 	recheckDelay = time.Second * 30
-	workerNum    = 32
+	workerNum    = 4
 )
 
 // Async checker:
 // guarranty that only one pay with given id is checked at this time
 
 type checkerScheduler struct {
-	processingNow  map[uint]bool
+	processingNow  map[uint64]bool
 	processingLock sync.RWMutex
 	workerChain    chan *models.Session
 	workers        uint
@@ -30,7 +30,7 @@ type checkerScheduler struct {
 func createScheduler(server *paymentServer) *checkerScheduler {
 
 	shed := &checkerScheduler{
-		processingNow: make(map[uint]bool),
+		processingNow: make(map[uint64]bool),
 		workerChain:   make(chan *models.Session, 64),
 		done:          make(chan bool), // no buffer there so stop() waits until workers are stopped
 		server:        server,
@@ -44,7 +44,7 @@ func createScheduler(server *paymentServer) *checkerScheduler {
 // process session; run this in a separate routine
 func (c *checkerScheduler) process(sess *models.Session) {
 
-	var retries = 5
+	var retries = 2
 
 	for retries > 0 {
 		c.processingLock.RLock()
@@ -98,7 +98,7 @@ func (c *checkerScheduler) work(sess *models.Session) {
 	c.processingLock.Unlock()
 
 	// do stuff
-	err := c.server.CheckStatus(sess)
+	err := c.server.checkStatus(sess)
 	if err != nil {
 		log.Warn("Error: %v", err)
 	}

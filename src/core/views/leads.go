@@ -10,7 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"proto/chat"
 	"proto/core"
 	"utils/db"
 	"utils/log"
@@ -42,8 +41,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(err)
 		return nil, err
 	}
-	prod := product
-	existsLead, err := models.FindActiveLead(uint64(prod.ShopID), uint64(protoLead.CustomerId))
+	existsLead, err := models.FindActiveLead(uint64(product.ShopID), uint64(protoLead.CustomerId), uint64(protoLead.ProductId))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -51,7 +49,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 	//Create new lead if lead not exists, or use exists
 	if existsLead == nil {
-		lead, err = models.CreateLead(protoLead, prod.ShopID)
+		lead, err = models.CreateLead(protoLead, product.ShopID)
 		if err != nil {
 			log.Error(err)
 			return nil, err
@@ -75,7 +73,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	}
 
 	if protoLead.Action == core.LeadAction_BUY {
-		if count, err := models.AppendLeadItems(lead, prod.Items); err != nil {
+		if count, err := models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)
 			return nil, err
 		} else if count == 0 {
@@ -99,7 +97,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// So, everything is partly fine now
 	if lead.ConversationID != 0 {
 		go func() {
-			if err := models.SendProductToChat(lead, prod, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
+			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
 				log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
 			}
 		}()
@@ -107,7 +105,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(errors.New("lead.ConversationID == 0"))
 	}
 
-	go telegram.NotifyLeadCreated(lead, prod, protoLead.InstagramLink, protoLead.Action)
+	go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 	// @CHECK may be it's wrong place to do it
 	if existsLead != nil {
 		// send this message only on new lead
@@ -236,16 +234,11 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 				reason.ID, err,
 			)
 		}
-		if chatMsg != "" {
+		if chatMsg != nil {
 			go func() {
 				log.Error(models.SendChatMessages(
 					lead.ConversationID,
-					&chat.Message{
-						UserId: uint64(models.SystemUser.ID),
-						Parts: []*chat.MessagePart{
-							{Content: string(chatMsg), MimeType: "text/plain"},
-						},
-					},
+					chatMsg,
 				))
 			}()
 		}
@@ -355,4 +348,57 @@ func (s leadServer) GetCancelReasons(_ context.Context, in *core.GetCancelReason
 		})
 	}
 	return ret, nil
+}
+
+func (s leadServer) GetUserRole(_ context.Context, in *core.GetUserRoleRequest) (ret *core.GetUserRoleReply, _ error) {
+	ret = &core.GetUserRoleReply{}
+
+	if (in.LeadId == 0 && in.ConversationId == 0) || (in.UserId == 0 && in.InstagramUserId == 0) {
+		ret.Error = "empty conditions"
+		return
+	}
+
+	user, found, err := models.FindUserMatchAny(in.UserId, in.InstagramUserId, "", "", "", "")
+	if err != nil {
+		ret.Error = fmt.Sprintf("failed to load user: %v", err)
+		return
+	}
+	if !found {
+		ret.Error = "user not found"
+		return
+	}
+
+	lead := models.Lead{
+		Model: gorm.Model{
+			ID: uint(in.LeadId),
+		},
+		ConversationID: in.ConversationId,
+	}
+
+	res := db.New().Preload("Shop").Preload("Shop.Sellers").Where(&lead).First(&lead)
+	if res.RecordNotFound() {
+		ret.Error = "lead not found"
+		return
+	}
+	if res.Error != nil {
+		ret.Error = fmt.Sprintf("failed to load lead: %v", res.Error)
+		return
+	}
+	switch {
+	case lead.CustomerID == user.ID:
+		ret.Role = core.LeadUserRole_CUSTOMER
+
+	case lead.Shop.SupplierID == user.ID:
+		ret.Role = core.LeadUserRole_SUPPLIER
+
+	case lead.Shop.HasSeller(user.ID):
+		ret.Role = core.LeadUserRole_SELLER
+
+	case user.SuperSeller:
+		ret.Role = core.LeadUserRole_SUPER_SELLER
+
+	default:
+		ret.Role = core.LeadUserRole_UNKNOWN
+	}
+	return
 }

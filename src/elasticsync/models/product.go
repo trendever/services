@@ -6,7 +6,7 @@ import "time"
 // it will be included as creation date in index settings
 // index will be recreated if old data is lower than this
 // unix time, ms
-const IndexUpdatedAt = 1475677155 * 1000
+const IndexUpdatedAt = 1475677400 * 1000
 const ProductIndex = `{
 "settings": {
 	"number_of_shards": 1,
@@ -83,6 +83,9 @@ const ProductIndex = `{
 						"index": "not_analyzed"
 					},
 					"full_name": {
+						"type": "string"
+					},
+					"location": {
 						"type": "string"
 					}
 				}
@@ -181,6 +184,7 @@ type ElasticProductData struct {
 		Supplier uint64 `json:"supplier"`
 		Name     string `json:"name,omitempty"`
 		FullName string `json:"full_name,omitempty"`
+		Location string `json:"location,omitempty"`
 	} `json:"shop,omitempty"`
 	Mentioner struct {
 		ID       uint64 `json:"id"`

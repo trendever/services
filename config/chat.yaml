@@ -1,5 +1,11 @@
 port: 2010
 host: 0.0.0.0
+debug: true
+rpc:
+    core: core:3005
+    checker: checker:2013
+upload_service: http://mandible:8089
+
 db:
     debug:    true
     user:     postgres
@@ -8,6 +14,7 @@ db:
     port:     5432
     base:     postgres
 
-upload_service: http://mandible:8089
-natsURL: "nats://nats:4222"
-debug: true
+nats:
+    url: nats://nats:4222
+    stanCluster: stan
+    stanID: chat1

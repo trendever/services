@@ -48,9 +48,9 @@ type CardRepositoryImpl struct {
 }
 
 var (
-	errHasNoPerm   = errors.New("Has no permissions to get this shop cards")
-	errWrongUser   = errors.New("Has no permissions to modify other user cards")
-	errInvalidCard = errors.New("Invalid card CRC: Luhn failed")
+	ErrHasNoPerm   = errors.New("Has no permissions to get this shop cards")
+	ErrWrongUser   = errors.New("Has no permissions to modify other user cards")
+	ErrInvalidCard = errors.New("Invalid card CRC: Luhn failed")
 )
 
 // =*=
@@ -191,7 +191,7 @@ func HasShopPermission(r CardRepository, userID, shopID uint) error {
 		}
 	}
 
-	return errHasNoPerm
+	return ErrHasNoPerm
 }
 
 // CreateCard creates a card for the shop
@@ -204,7 +204,7 @@ func CreateCard(r CardRepository, card ShopCard) (*ShopCard, error) {
 
 	cc := creditcard.Card{Number: card.Number}
 	if !cc.ValidateNumber() {
-		return nil, errInvalidCard
+		return nil, ErrInvalidCard
 	}
 
 	// fill name if it's empty
@@ -242,7 +242,7 @@ func GetCardByID(r CardRepository, userID, cardID uint) (*ShopCard, error) {
 	}
 
 	if card.ShopID == 0 && card.UserID != userID {
-		return nil, errWrongUser
+		return nil, ErrWrongUser
 	}
 
 	return card, nil

@@ -216,6 +216,27 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/gogo/protobuf/gogoproto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/gogoproto"
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/proto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/proto"
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "91cc2497504ffbaba9656e7d988ccfe41c54f6a9",
+			"branch": "master",
+			"path": "/protoc-gen-gogo/descriptor"
+		},
+		{
 			"importpath": "github.com/golang/glog",
 			"repository": "https://github.com/golang/glog",
 			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
@@ -345,6 +366,12 @@
 			"path": "/cli"
 		},
 		{
+			"importpath": "github.com/kljensen/snowball",
+			"repository": "https://github.com/kljensen/snowball",
+			"revision": "eccb3014a653352f4f9969f416b9b3cc3605a6ef",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/kr/pretty",
 			"repository": "https://github.com/kr/pretty",
 			"revision": "737b74a46c4bf788349f72cb256fed10aea4d0ac",
@@ -431,7 +458,7 @@
 		{
 			"importpath": "github.com/mitchellh/mapstructure",
 			"repository": "https://github.com/mitchellh/mapstructure",
-			"revision": "21a35fb16463dfb7c8eee579c65d995d95e64d1e",
+			"revision": "f3009df150dadf309fdee4a54ed65c124afad715",
 			"branch": "master"
 		},
 		{
@@ -443,41 +470,47 @@
 		{
 			"importpath": "github.com/nats-io/gnatsd/auth",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/auth"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/conf",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/conf"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/server",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/server"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/test",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "b14d3b9405d23b90c48c7a89781de2bf79488fff",
+			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
 			"branch": "master",
 			"path": "/test"
 		},
 		{
+			"importpath": "github.com/nats-io/go-nats-streaming",
+			"repository": "https://github.com/nats-io/go-nats-streaming",
+			"revision": "f0b13ceaf55c6d86604169520dfd8ee3c03e9524",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/nats-io/nats",
 			"repository": "https://github.com/nats-io/nats",
-			"revision": "bdc4f3232bda0d36829b72d1cecede976bbe54a5",
+			"revision": "aab6caaf3a868d3f1a8cd87b7c34b364306df278",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/nats-io/nuid",
 			"repository": "https://github.com/nats-io/nuid",
-			"revision": "a5152d67cf63cbfb5d992a395458722a45194715",
+			"revision": "289cccf02c178dc782430d534e3c1f5b72af807f",
 			"branch": "master"
 		},
 		{
@@ -1001,7 +1034,7 @@
 		{
 			"importpath": "google.golang.org/grpc",
 			"repository": "https://github.com/grpc/grpc-go",
-			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
+			"revision": "eca2ad68af4d7bf894ada6bd263133f069a441d5",
 			"branch": "master"
 		},
 		{
