@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"accountstore/client"
-	"errors"
 	"fetcher/conf"
 	"fmt"
 	"proto/accountstore"
@@ -10,19 +9,6 @@ import (
 	"utils/log"
 	"utils/rpc"
 )
-
-type sendReply struct {
-	msgID    string
-	threadID string
-	error    error
-}
-
-type sendRequest struct {
-	receiverID uint64
-	threadID   string
-	text       string
-	reply      chan sendReply
-}
 
 var global = struct {
 	sync.RWMutex
@@ -96,24 +82,9 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 		select {
 		case <-stopChan:
 			return
-		case req := <-msgChan:
-			ig, err := meta.Delayed()
-			if err != nil {
-				req.reply <- sendReply{error: err}
-				continue
-			}
-			if req.threadID != "" {
-				msgID, err := ig.BroadcastText(req.threadID, req.text)
-				req.reply <- sendReply{msgID: msgID, threadID: req.threadID, error: err}
-				continue
-			}
-			if req.receiverID != 0 {
-				tid, err := ig.SendText(req.text, req.receiverID)
-				req.reply <- sendReply{threadID: tid, error: err}
-				continue
-			}
-			req.reply <- sendReply{error: errors.New("destination is unspecified")}
-		default:
+		case req := <-msgChan: // handle send direct message requests
+			req.handle(meta)
+		default: // nothing interesting; let's check feeds
 			err := getActivity(meta)
 			if err != nil {
 				log.Errorf("failed to check instagram feed for user %v: %v", meta.Get().Username, err)
@@ -124,24 +95,6 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 			}
 		}
 	}
-}
-
-func SendDirect(senderID, receiverID uint64, threadID, text string) (msgID string, err error) {
-	global.RLock()
-	ch, ok := global.msgChans[senderID]
-	global.RUnlock()
-	if !ok {
-		return "", errors.New("sender not found")
-	}
-	replyChan := make(chan sendReply)
-	ch <- sendRequest{
-		threadID:   threadID,
-		receiverID: receiverID,
-		text:       text,
-		reply:      replyChan,
-	}
-	reply := <-replyChan
-	return reply.msgID, reply.error
 }
 
 func pubWorker(meta *client.AccountMeta, stopChan chan struct{}) {
