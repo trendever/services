@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"proto/accountstore"
 	"utils/db"
 	"utils/log"
@@ -13,6 +15,7 @@ const notifyTopic = "accountstore.notify"
 type Account struct {
 	InstagramUsername string `gorm:"primary_key"`
 	InstagramID       uint64 `gorm:"index"`
+	CreatedAt         time.Time
 	Role              accountstore.Role
 	Cookie            string `gorm:"text"`
 	Valid             bool   `sql:"default:false"`
@@ -89,6 +92,8 @@ func (acc *Account) Encode() *accountstore.Account {
 		Cookie:            acc.Cookie,
 		Valid:             acc.Valid,
 		Role:              acc.Role,
+		CreatedAt:         acc.CreatedAt.Unix(),
+		CreatedAtAgo:      uint64(time.Since(acc.CreatedAt).Seconds()),
 	}
 }
 
@@ -99,5 +104,7 @@ func (acc *Account) EncodePrivate() *accountstore.Account {
 		InstagramId:       acc.InstagramID,
 		Valid:             acc.Valid,
 		Role:              acc.Role,
+		CreatedAt:         acc.CreatedAt.Unix(),
+		CreatedAtAgo:      uint64(time.Since(acc.CreatedAt).Seconds()),
 	}
 }
