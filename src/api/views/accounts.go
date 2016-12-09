@@ -81,10 +81,12 @@ func ListAccounts(c *soso.Context) {
 
 	withInvalids, _ := c.RequestMap["with_invalids"].(bool)
 	withNonOwned, _ := c.RequestMap["with_non_owned"].(bool)
+	showPrivate, _ := c.RequestMap["show_private"].(bool)
 
 	req := accountstore.SearchRequest{
 		IncludeInvalids: withInvalids,
 		OwnerId:         c.Token.UID,
+		HidePrivate:     !user.IsAdmin || !showPrivate,
 	}
 
 	roleName, ok := c.RequestMap["role"].(string)
