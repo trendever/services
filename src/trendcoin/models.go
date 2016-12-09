@@ -36,7 +36,7 @@ type Transaction struct {
 func (t Transaction) Encode() *proto.Transaction {
 	return &proto.Transaction{
 		Id:        t.ID,
-		CreatedAt: t.CreatedAt.UnixNano(),
+		CreatedAt: t.CreatedAt.Unix(),
 		Data: &proto.TransactionData{
 			Source:         t.Source,
 			Destination:    t.Destination,
