@@ -137,3 +137,12 @@ type MediaLikers struct {
 	} `json:"users"`
 	Message string `json:"message"` // from Error
 }
+
+type UserFeed struct {
+	Message
+	NumResults          int         `json:"num_results"`
+	AutoLoadMoreEnabled bool        `json:"auto_load_more_enabled"`
+	Items               []MediaInfo `json:"items"`
+	MoreAvailable       bool        `json:"more_available"`
+	CommentLikesEnabled bool        `json:"comment_likes_enabled"`
+}

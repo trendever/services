@@ -68,13 +68,13 @@ func Start() error {
 func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 	msgChan := make(chan sendRequest)
 	global.Lock()
-	global.msgChans[meta.Get().UserNameID] = msgChan
+	global.msgChans[meta.Get().UserID] = msgChan
 	global.Unlock()
 	defer func() {
 		global.Lock()
-		ch := global.msgChans[meta.Get().UserNameID]
+		ch := global.msgChans[meta.Get().UserID]
 		if ch == msgChan {
-			delete(global.msgChans, meta.Get().UserNameID)
+			delete(global.msgChans, meta.Get().UserID)
 		}
 		global.Unlock()
 	}()
@@ -93,6 +93,10 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 			if err != nil {
 				log.Errorf("failed to check instagram direct for user %v: %v", meta.Get().Username, err)
 			}
+			//err := parseOwnPosts(meta)
+			//if err != nil {
+			//	log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
+			//}
 		}
 	}
 }

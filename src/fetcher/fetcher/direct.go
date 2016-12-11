@@ -212,7 +212,7 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		return nil
 	}
 
-	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserNameID {
+	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserID {
 		// ignore media with someone else's posts for shops
 		log.Debug("ignoring medaishare %v with foreign post", item.ItemID)
 		return nil
@@ -240,7 +240,7 @@ func CreateThread(inviter uint64, participants []uint64, caption, initMsg string
 	// @TODO timeouts?..
 	ig, found := global.usersPool.Get(inviter)
 	bot, err := global.pubPool.GetRandom()
-	participants = append(participants, bot.UserNameID)
+	participants = append(participants, bot.UserID)
 	if err != nil {
 		return
 	}

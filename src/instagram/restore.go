@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"encoding/json"
+	"utils/log"
 )
 
 // Save encodes connection to saveable string
@@ -25,6 +26,10 @@ func Restore(cookieJar, password string) (*Instagram, error) {
 	err := json.Unmarshal([]byte(cookieJar), &res)
 	if err != nil {
 		return nil, err
+	}
+
+	if res.UserID <= 0 {
+		log.Warn("Bad cookie: zero instagram ID (%v)", res.Username)
 	}
 
 	res.password = password

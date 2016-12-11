@@ -65,7 +65,7 @@ func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
 		if ig.LoggedIn {
 			return ig, nil
 		}
-		meta.pool.Invalidate(ig.UserNameID)
+		meta.pool.Invalidate(ig.UserID)
 		return nil, errors.New("account is logged off")
 	case <-meta.stopper.Chan():
 		return nil, errors.New("account is stopped")
@@ -177,7 +177,7 @@ func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
 			if ig.LoggedIn {
 				return ig, nil
 			}
-			pool.Invalidate(ig.UserNameID)
+			pool.Invalidate(ig.UserID)
 		case <-pool.stopper.Chan():
 			return nil, errors.New("pool is stopped")
 		}
@@ -215,7 +215,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	defer pool.Unlock()
 
 	if !acc.Valid {
-		meta, ok := pool.idMap[ig.UserNameID]
+		meta, ok := pool.idMap[ig.UserID]
 		if !ok {
 			return
 		}
@@ -223,7 +223,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 		return
 	}
 
-	meta, ok := pool.idMap[ig.UserNameID]
+	meta, ok := pool.idMap[ig.UserID]
 	// we have this account already
 	if ok {
 		// part of account data changed probably, easiest way to update it in worker is simple restart
@@ -244,8 +244,8 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 		ready:   make(chan *instagram.Instagram),
 		stopper: stopper.NewStopper(),
 	}
-	pool.idMap[ig.UserNameID] = meta
-	pool.idSlice = append(pool.idSlice, ig.UserNameID)
+	pool.idMap[ig.UserID] = meta
+	pool.idSlice = append(pool.idSlice, ig.UserID)
 
 	meta.wait.Add(1)
 	go func() {
@@ -275,9 +275,9 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 // pool should be already locked on higher level
 func (pool *AccountsPool) delAcc(acc *AccountMeta, sync bool) {
 	acc.stopper.Stop()
-	delete(pool.idMap, acc.ig.UserNameID)
+	delete(pool.idMap, acc.ig.UserID)
 	for it, id := range pool.idSlice {
-		if id == acc.ig.UserNameID {
+		if id == acc.ig.UserID {
 			pool.idSlice = append(pool.idSlice[:it], pool.idSlice[it+1:]...)
 		}
 	}

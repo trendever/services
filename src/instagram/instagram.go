@@ -14,7 +14,7 @@ type Instagram struct {
 	Username          string
 	password          string
 	LoggedIn          bool
-	UserNameID        uint64
+	UserID            uint64 `json:"UserNameID"`
 	RankToken         string
 	CheckpointURL     string
 	Cookies           []*http.Cookie
@@ -29,15 +29,15 @@ type Instagram struct {
 // NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
-		Username:   userName,
-		password:   password,
-		LoggedIn:   false,
-		UUID:       generateUUID(true),
-		PhoneID:    generateUUID(true),
-		DeviceID:   generateDeviceID(userName),
-		UserNameID: 0,
-		RankToken:  "",
-		Cookies:    nil,
+		Username:  userName,
+		password:  password,
+		LoggedIn:  false,
+		UUID:      generateUUID(true),
+		PhoneID:   generateUUID(true),
+		DeviceID:  generateDeviceID(userName),
+		UserID:    0,
+		RankToken: "",
+		Cookies:   nil,
 	}
 
 	err := i.Login()
@@ -93,6 +93,18 @@ func (ig *Instagram) GetRecentActivity() (*RecentActivity, error) {
 	endpoint := "/news/inbox/?"
 
 	var object RecentActivity
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+}
+
+// GetUserFeed
+func (ig *Instagram) GetUserFeed(userID uint64) (*UserFeed, error) {
+
+	endpoint := fmt.Sprintf("/feed/user/%v/", userID)
+	// @TODO: use max_id parameter
+
+	var object UserFeed
 	err := ig.request("GET", endpoint, &object)
 
 	return &object, err
@@ -201,7 +213,7 @@ func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 
 }
 
-// DirectThread @TODO wtf returns
+// DirectThread
 func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadResponse, error) {
 
 	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
@@ -213,7 +225,6 @@ func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadRespons
 	err := ig.request("GET", endpoint, &object)
 
 	return &object, err
-
 }
 
 // possible direct thread actions(there is some more actions actuality)
