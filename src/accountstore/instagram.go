@@ -41,7 +41,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 	)
 
 	if account.Cookie > "" {
-		api, err = instagram.Restore(account.Cookie, password)
+		api, err = instagram.Restore(account.Cookie, password, true)
 	} else {
 		api, err = instagram.NewInstagram(login, password)
 	}
@@ -63,7 +63,6 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 	}
 
 	account.Cookie = cookieJar
-	account.InstagramID = api.UserID
 
 	return account, nil
 }
@@ -82,19 +81,31 @@ func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account, p
 // SendCode sends instagram checkpoint code
 func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmail bool) error {
 
-	api, err := instagram.Restore(acc.Cookie, "")
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	if err != nil {
 		return err
 	}
 
 	api.SetPassword(password)
-	return r.sendCode(api, acc, preferEmail)
+	err = r.sendCode(api, acc, preferEmail)
+	if err != nil {
+		return err
+	}
+
+	cookieJar, err := api.Save()
+	if err != nil {
+		return err
+	}
+
+	acc.Cookie = cookieJar
+
+	return Save(acc)
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
 func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, "")
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	if err != nil {
 		return err
 	}
@@ -103,5 +114,20 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 		return fmt.Errorf("Timeout error")
 	}
 
-	return api.CheckCode(code)
+	err = api.CheckCode(code)
+	if err != nil {
+		return err
+	}
+
+	cookieJar, err := api.Save()
+	if err != nil {
+		return err
+	}
+
+	api.CheckpointURL = ""
+	acc.Cookie = cookieJar
+	api.CheckpointCookies = nil
+	acc.Valid = true
+
+	return Save(acc)
 }

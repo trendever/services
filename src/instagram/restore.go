@@ -20,7 +20,7 @@ func (ig *Instagram) Save() (string, error) {
 }
 
 // Restore previously saved
-func Restore(cookieJar, password string) (*Instagram, error) {
+func Restore(cookieJar, password string, tryPing bool) (*Instagram, error) {
 
 	var res Instagram
 	err := json.Unmarshal([]byte(cookieJar), &res)
@@ -35,13 +35,12 @@ func Restore(cookieJar, password string) (*Instagram, error) {
 	res.password = password
 
 	// test request
-	_, err = res.GetRecentActivity()
-	if err != nil {
-		return &res, err
+	if tryPing {
+		_, err = res.GetRecentActivity()
+		if err != nil {
+			return &res, err // we still need to give-away instagram
+		}
 	}
 
-	// clear checkpoint stuff
-	res.CheckpointURL = ""
-	res.CheckpointCookies = nil
 	return &res, nil
 }
