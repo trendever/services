@@ -112,8 +112,15 @@ func saveLastChecked() {
 
 func registerOrders() {
 	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
+	loopStarted := time.Now()
 
 	for {
+		// make some delays in case loops runs too fast
+		// startup delay is OK
+		if time.Since(loopStarted) < time.Second {
+			time.Sleep(timeout)
+		}
+		loopStarted = time.Now()
 		log.Debug("Checking for new mention orders (last processed at %v)...", lastChecked)
 
 		// Step #1: get new entries from fetcher
@@ -145,9 +152,6 @@ func registerOrders() {
 				break
 			}
 
-		}
-		if len(res.Result) == 0 {
-			time.Sleep(timeout)
 		}
 	}
 }

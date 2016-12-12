@@ -115,8 +115,16 @@ func saveLastChecked() {
 
 func registerProducts() {
 	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
+	loopStarted := time.Now()
 
 	for {
+		// make some delays in case loops runs too fast
+		// startup delay is OK
+		if time.Since(loopStarted) < time.Second {
+			time.Sleep(timeout)
+		}
+		loopStarted = time.Now()
+
 		log.Debug("Checking for new products (last checked at %v)", lastChecked)
 
 		// Step #1: get new entries from fetcher
@@ -141,9 +149,6 @@ func registerProducts() {
 			// update last checked ID
 			lastChecked = mention.Id
 		}
-		if len(res.Result) == 0 {
-			time.Sleep(timeout)
-		}
 	}
 }
 
@@ -155,6 +160,10 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 			{
 				Role: bot.MentionedRole_Savetrend,
 				Type: []string{"mentioned", "direct"},
+			},
+			{
+				Role: bot.MentionedRole_User,
+				Type: []string{"ownfeed"},
 			},
 		},
 		AfterId: lastChecked,
