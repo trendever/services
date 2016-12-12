@@ -93,10 +93,10 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 			if err != nil {
 				log.Errorf("failed to check instagram direct for user %v: %v", meta.Get().Username, err)
 			}
-			//err := parseOwnPosts(meta)
-			//if err != nil {
-			//	log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
-			//}
+			err = parseOwnPosts(meta)
+			if err != nil {
+				log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
+			}
 		}
 	}
 }

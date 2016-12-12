@@ -363,7 +363,7 @@ func isLeadRegistered(commentPk string) (bool, error) {
 	return res.Id > 0, nil
 }
 
-func coreUser(instagramID int64, instagramUsername string) (*core.User, error) {
+func coreUser(instagramID uint64, instagramUsername string) (*core.User, error) {
 
 	if instagramID == 0 || instagramUsername == "" {
 		return nil, fmt.Errorf("zero instagram{ID/Name}in userId()")

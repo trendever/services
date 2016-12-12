@@ -125,7 +125,7 @@ func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 }
 
 // GetUserNameInfo for userNameID
-func (ig *Instagram) GetUserNameInfo(userNameID int64) (*UserNameInfo, error) {
+func (ig *Instagram) GetUserNameInfo(userNameID uint64) (*UserNameInfo, error) {
 
 	endpoint := fmt.Sprintf("/users/%d/info/?", userNameID)
 
@@ -136,7 +136,7 @@ func (ig *Instagram) GetUserNameInfo(userNameID int64) (*UserNameInfo, error) {
 }
 
 // GetUserTags for given userID
-func (ig *Instagram) GetUserTags(userNameID int64) (*UserTags, error) {
+func (ig *Instagram) GetUserTags(userNameID uint64) (*UserTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/usertags/%d/feed/?rank_token=%v&ranked_content=false",

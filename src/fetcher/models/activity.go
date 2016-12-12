@@ -70,7 +70,7 @@ func (act *Activity) Encode() *bot.Activity {
 		Pk:                act.Pk,
 		MediaId:           act.MediaID,
 		MediaUrl:          act.MediaURL,
-		UserId:            int64(act.UserID),
+		UserId:            act.UserID,
 		UserImageUrl:      act.UserImageURL,
 		UserName:          act.UserName,
 		MentionedUsername: act.MentionedUsername,

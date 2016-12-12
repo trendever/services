@@ -46,7 +46,7 @@ func (c *CheckerServer) GetProfile(_ context.Context, in *checker.GetProfileRequ
 
 	switch {
 	case in.Id != 0:
-		profile, err := Instagram.GetFree().GetUserNameInfo(int64(in.Id))
+		profile, err := Instagram.GetFree().GetUserNameInfo(in.Id)
 		if err != nil {
 			ret.Error = fmt.Sprintf("failed to search user in instagram: %v", err)
 			return

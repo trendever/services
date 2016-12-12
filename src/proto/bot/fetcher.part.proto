@@ -49,7 +49,7 @@ message Activity {
   string media_id = 3;
   string media_url = 4;
 
-  int64 user_id = 5;
+  uint64 user_id = 5;
   string user_name = 6;
   string user_image_url = 7;
   string mentioned_username = 8;

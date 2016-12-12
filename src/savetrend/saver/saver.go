@@ -215,7 +215,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 
 	var (
 		productMedia        = medias.Items[0]
-		supplierInstagramID int64
+		supplierInstagramID uint64
 		supplierUsername    string
 	)
 
@@ -306,7 +306,7 @@ func productExists(mediaID string) (id int64, deleted bool, err error) {
 }
 
 // find core user with given instagramID; if not exists -- create one
-func userID(instagramID int64, instagramUsername string) (uint64, *core.User, error) {
+func userID(instagramID uint64, instagramUsername string) (uint64, *core.User, error) {
 
 	if instagramID == 0 {
 		return 0, nil, errors.New("zero instagramId in userId()")
