@@ -37,7 +37,7 @@ func Restore(cookieJar, password string) (*Instagram, error) {
 	// test request
 	_, err = res.GetRecentActivity()
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	// clear checkpoint stuff
