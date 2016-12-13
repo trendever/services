@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"errors"
 	"fetcher/conf"
 	"fmt"
 	"proto/accountstore"
@@ -9,6 +10,8 @@ import (
 	"utils/log"
 	"utils/rpc"
 )
+
+var AccountUnavailable = errors.New("account unaviable")
 
 var global = struct {
 	sync.RWMutex
@@ -88,14 +91,17 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 			err := getActivity(meta)
 			if err != nil {
 				log.Errorf("failed to check instagram feed for user %v: %v", meta.Get().Username, err)
+				continue
 			}
 			err = checkDirect(meta)
 			if err != nil {
 				log.Errorf("failed to check instagram direct for user %v: %v", meta.Get().Username, err)
+				continue
 			}
 			err = parseOwnPosts(meta)
 			if err != nil {
 				log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
+				continue
 			}
 		}
 	}

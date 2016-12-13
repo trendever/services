@@ -292,7 +292,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 }
 
 // SendText sends text to given user(-s)
-func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, err error) {
+func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, messageID string, err error) {
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
 	strs := make([]string, len(userIDs), len(userIDs))
@@ -307,12 +307,12 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 	}, &object)
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(object.Threads) == 0 {
-		return "", errors.New("no threads info in responce")
+		return "", "", errors.New("no threads info in responce")
 	}
 
-	return object.Threads[0].ThreadID, nil
+	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
 }

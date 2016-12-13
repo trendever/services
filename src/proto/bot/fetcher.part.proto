@@ -3,13 +3,9 @@ service FetcherService {
   rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
 
   rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
-
-  // Сreates new direct thread with passed params.
-  // It uses aditional bot user to achieve separate threads with same users, bot should leave thread in a little while
-  rpc CreateThread (CreateThreadRequest) returns (CreateThreadReply) {}
 }
 
-// @TODO MentionedRole should be suhnonized with accountstore roles. any way to get normal imports?..
+// @TODO MentionedRole should be syhnonized with accountstore roles. any way to get normal imports?..
 enum MentionedRole {
   User = 0;
   Savetrend = 1;
@@ -27,16 +23,19 @@ message RetrieveActivitiesRequest {
   int64 limit = 3;
 }
 
+
+message RetrieveActivitiesReply {
+  repeated Activity result = 1;
+}
+
 message SendDirectRequest {
   uint64 sender_id = 1;
   string text = 2;
   // only one of two followed fields need to be setted
   string thread_id = 3;
   uint64 reciever_id = 4;
-}
 
-message RetrieveActivitiesReply {
-  repeated Activity result = 1;
+  string reply_key = 5;
 }
 
 message SendDirectReply {
@@ -63,17 +62,25 @@ message Activity {
   string direct_thread_id = 12;
 }
 
+// to avoid races this message used in feed notifications AND replies on SendDirect
 message DirectMessageNotify {
   string thread_id = 1;
   string message_id = 2;
+
+  // fields of new message notifies
   // instagram id
   uint64 user_id = 3;
   string text = 4;
   // id of possible related post
   // if it's aviable, it probably mean, that this message was comment to media share
   string related_media = 5;
+
+  // for SendDirect replies
+  string reply_key = 6;
+  string error = 7;
 }
 
+// stan direct.create_thread
 message CreateThreadRequest {
   // inviter instagram id
   uint64 inviter = 1;
@@ -82,9 +89,14 @@ message CreateThreadRequest {
   string caption = 3;
   // initial comment message
   string init_message = 4;
+  // will be send back in CreateThreadReply
+  string reply_key = 5;
 }
 
+// stan direct.create_thread_reply
 message CreateThreadReply {
   string error = 1;
   string thread_id = 2;
+  // from CreateThreadRequest
+  string reply_key = 3;
 }

@@ -12,6 +12,8 @@ import (
 	"utils/nats"
 )
 
+const DirectMessageSubject = "direct.new_message"
+
 // direct activity: accept PM invites; read && parse them
 func checkDirect(meta *client.AccountMeta) error {
 	// get non-pending shiet
@@ -162,7 +164,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 				relatedMedia = nil
 			}
 
-			err := nats.StanPublish("direct.new_message", &notify)
+			err := nats.StanPublish(DirectMessageSubject, &notify)
 			if err != nil {
 				return fmt.Errorf("failed to send message notification via stan: %v", err)
 			}
@@ -237,7 +239,6 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 }
 
 func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID string, err error) {
-	// @TODO timeouts?..
 	ig, found := global.usersPool.Get(inviter)
 	bot, err := global.pubPool.GetRandom()
 	participants = append(participants, bot.UserID)
@@ -245,9 +246,9 @@ func CreateThread(inviter uint64, participants []uint64, caption, initMsg string
 		return
 	}
 	if !found {
-		return "", fmt.Errorf("inviter account %v unaviable", inviter)
+		return "", AccountUnavailable
 	}
-	tid, err := ig.SendText(initMsg, participants...)
+	tid, _, err := ig.SendText(initMsg, participants...)
 	if err != nil {
 		return "", err
 	}

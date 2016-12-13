@@ -31,8 +31,8 @@ func (req *sendRequest) handle(meta *client.AccountMeta) {
 		return
 	}
 	if req.receiverID != 0 {
-		tid, err := ig.SendText(req.text, req.receiverID)
-		req.reply <- sendReply{threadID: tid, error: err}
+		tid, mid, err := ig.SendText(req.text, req.receiverID)
+		req.reply <- sendReply{threadID: tid, msgID: mid, error: err}
 		return
 	}
 	req.reply <- sendReply{error: errors.New("destination is unspecified")}
@@ -43,7 +43,7 @@ func SendDirect(senderID, receiverID uint64, threadID, text string) (msgID strin
 	ch, ok := global.msgChans[senderID]
 	global.RUnlock()
 	if !ok {
-		return "", errors.New("sender not found")
+		return "", AccountUnavailable
 	}
 	replyChan := make(chan sendReply)
 	ch <- sendRequest{
