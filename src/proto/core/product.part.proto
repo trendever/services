@@ -18,6 +18,9 @@ service ProductService {
   rpc GetLikedBy(GetLikedByRequest) returns (GetLikedByReply) {}
   // Method returns list of product with non-default chat templates
   rpc GetSpecialProducts(GetSpecialProductsRequest) returns (GetSpecialProductsReply) {}
+
+  // get last product ID
+  rpc GetLastProductID(GetLastProductIDRequest) returns (GetLastProductIDReply) {}
 }
 
 message GetProductRequest {
@@ -144,4 +147,10 @@ message SpecialProductInfo {
 message GetSpecialProductsReply {
     repeated SpecialProductInfo list = 1;
     string err = 2;
+}
+
+message GetLastProductIDRequest {}
+
+message GetLastProductIDReply {
+    uint64 id = 1;
 }

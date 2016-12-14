@@ -26,6 +26,7 @@ func init() {
 		soso.Route{"get_specials", "product", GetSpecialProducts},
 		soso.Route{"elastic_search", "product", ElasticSearch},
 		soso.Route{"get_liked_by", "product", GetLikedBy},
+		soso.Route{"lastid", "product", GetLastProductID},
 	)
 }
 
@@ -349,5 +350,18 @@ func GetLikedBy(c *soso.Context) {
 	}
 	c.SuccessResponse(map[string]interface{}{
 		"products": ids,
+	})
+}
+
+func GetLastProductID(c *soso.Context) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	res, err := productServiceClient.GetLastProductID(ctx, &core.GetLastProductIDRequest{})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"id": res.Id,
 	})
 }

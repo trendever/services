@@ -5,6 +5,7 @@ import (
 	"core/models"
 	"core/telegram"
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -236,4 +237,28 @@ func (s productServer) GetLikedBy(ctx context.Context, in *core.GetLikedByReques
 		return nil, errors.New("db error")
 	}
 	return &core.GetLikedByReply{ProductIds: ids}, nil
+}
+
+func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastProductIDRequest) (*core.GetLastProductIDReply, error) {
+
+	var out []uint64
+
+	err := db.New().
+		Select("id").
+		Table("products_product").
+		Order("id desc").
+		Limit(1).
+		Pluck("id", out).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out) != 1 {
+		return nil, fmt.Errorf("No products in database")
+	}
+
+	return &core.GetLastProductIDReply{
+		Id: out[0],
+	}, nil
 }
