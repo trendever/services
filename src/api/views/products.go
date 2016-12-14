@@ -354,9 +354,17 @@ func GetLikedBy(c *soso.Context) {
 }
 
 func GetLastProductID(c *soso.Context) {
+	shopID, ok := c.RequestMap["shop_id"].(float64)
+	if !ok || shopID <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("shop_id is null"))
+		return
+	}
+
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	res, err := productServiceClient.GetLastProductID(ctx, &core.GetLastProductIDRequest{})
+	res, err := productServiceClient.GetLastProductID(ctx, &core.GetLastProductIDRequest{
+		ShopId: uint64(shopID),
+	})
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return

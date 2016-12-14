@@ -5,7 +5,6 @@ import (
 	"core/models"
 	"core/telegram"
 	"errors"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -246,6 +245,7 @@ func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastPro
 	err := db.New().
 		Select("id").
 		Table("products_product").
+		Where("shop_id = ?", in.ShopId).
 		Order("id desc").
 		Limit(1).
 		Pluck("id", &out).
@@ -255,7 +255,7 @@ func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastPro
 	}
 
 	if len(out) != 1 {
-		return nil, fmt.Errorf("No products in database")
+		return &core.GetLastProductIDReply{}, nil
 	}
 
 	return &core.GetLastProductIDReply{

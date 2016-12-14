@@ -149,7 +149,9 @@ message GetSpecialProductsReply {
     string err = 2;
 }
 
-message GetLastProductIDRequest {}
+message GetLastProductIDRequest {
+    uint64 shop_id = 1;
+}
 
 message GetLastProductIDReply {
     uint64 id = 1;
