@@ -248,7 +248,7 @@ func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastPro
 		Table("products_product").
 		Order("id desc").
 		Limit(1).
-		Pluck("id", out).
+		Pluck("id", &out).
 		Error
 	if err != nil {
 		return nil, err
