@@ -8,6 +8,7 @@ import (
 // ThreadInfo tells that this thread was processed
 type ThreadInfo struct {
 	ThreadID      string `gorm:"primary_key"`
+	SourceID      uint64 `gorm:"primary_key"`
 	LastCheckedID string
 	Notified      bool
 }
@@ -31,21 +32,22 @@ func (info *ThreadInfo) TableName() string {
 }
 
 // GetThreadInfo gives us thread info for this threadID
-func GetThreadInfo(threadID string) (ThreadInfo, error) {
+func GetThreadInfo(threadID string, sourceID uint64) (ThreadInfo, error) {
 
 	var res ThreadInfo
 	err := db.New().
-		FirstOrCreate(&res, ThreadInfo{ThreadID: threadID}).
+		FirstOrCreate(&res, ThreadInfo{ThreadID: threadID, SourceID: sourceID}).
 		Error
 
 	return res, err
 }
 
 // SaveLastCheckedID updates threadInfo with lastCheckedID=messageID
-func SaveLastCheckedID(threadID, messageID string) error {
+func SaveLastCheckedID(sourceID uint64, threadID, messageID string) error {
 	err := db.New().
 		Model(&ThreadInfo{}).
 		Where("thread_id = ?", threadID).
+		Where("source_id = ?", sourceID).
 		Update("last_checked_id", messageID).
 		Error
 	if err != nil {

@@ -62,20 +62,22 @@ message Activity {
   string direct_thread_id = 12;
 }
 
-// to avoid races this message used in feed notifications AND replies on SendDirect
-message DirectMessageNotify {
+// to avoid races this message used in feed notifications AND replies on SendDirect|CreateThread
+message DirectNotify {
   string thread_id = 1;
   string message_id = 2;
 
-  // fields of new message notifies
+  // fields for new message notifies
   // instagram id
   uint64 user_id = 3;
+  // instagram id of account which provided notification
+  uint64 source_id = 8;
   string text = 4;
   // id of possible related post
   // if it's aviable, it probably mean, that this message was comment to media share
   string related_media = 5;
 
-  // for SendDirect replies
+  // for replies
   string reply_key = 6;
   string error = 7;
 }
@@ -91,12 +93,4 @@ message CreateThreadRequest {
   string init_message = 4;
   // will be send back in CreateThreadReply
   string reply_key = 5;
-}
-
-// stan direct.create_thread_reply
-message CreateThreadReply {
-  string error = 1;
-  string thread_id = 2;
-  // from CreateThreadRequest
-  string reply_key = 3;
 }

@@ -11,10 +11,8 @@ import (
 )
 
 const (
-	SendDirectSubject = "direct.send"
-
-	CreateThreadSubject      = "direct.create_thread"
-	CreateThreadReplySubject = "direct.create_thread.reply"
+	SendDirectSubject   = "direct.send"
+	CreateThreadSubject = "direct.create_thread"
 )
 
 var once sync.Once
@@ -52,19 +50,19 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 
 func sendDirectNats(in *bot.SendDirectRequest) bool {
 	mid, err := fetcher.SendDirect(in.SenderId, in.RecieverId, in.ThreadId, in.Text)
-	reply := bot.DirectMessageNotify{ThreadId: in.ThreadId, ReplyKey: in.ReplyKey}
+	reply := bot.DirectNotify{ThreadId: in.ThreadId, ReplyKey: in.ReplyKey}
 	switch err {
 	case nil:
 		reply.MessageId = mid
-	case fetcher.AccountUnavailable:
+	case fetcher.AccountUnavailable, fetcher.BadDestinationError:
 		reply.Error = err.Error()
 	default:
 		log.Errorf("failed to send message from %v: %v", in.SenderId, err)
 		// external trouble, try again later
 		return false
 	}
-	// @TODO send it inside worker
-	err = nats.StanPublish(fetcher.DirectMessageSubject, &reply)
+	// @TODO send it inside worker? timeouts will save us from races probably but it isn't right way
+	err = nats.StanPublish(fetcher.DirectNotifySubject, &reply)
 	if err != nil {
 		log.Errorf("failed to send reply via stan: %v", err)
 		return false
@@ -73,11 +71,10 @@ func sendDirectNats(in *bot.SendDirectRequest) bool {
 }
 
 func createThread(in *bot.CreateThreadRequest) bool {
-	tid, err := fetcher.CreateThread(in.Inviter, in.Participant, in.Caption, in.InitMessage)
-	reply := bot.CreateThreadReply{ReplyKey: in.ReplyKey}
+	tid, mid, err := fetcher.CreateThread(in.Inviter, in.Participant, in.Caption, in.InitMessage)
+	reply := bot.DirectNotify{ReplyKey: in.ReplyKey, ThreadId: tid, MessageId: mid}
 	switch err {
 	case nil:
-		reply.ThreadId = tid
 	case fetcher.AccountUnavailable:
 		reply.Error = err.Error()
 	default:
@@ -85,7 +82,7 @@ func createThread(in *bot.CreateThreadRequest) bool {
 		// external trouble, try again later
 		return false
 	}
-	err = nats.StanPublish(CreateThreadReplySubject, &reply)
+	err = nats.StanPublish(fetcher.DirectNotifySubject, &reply)
 	if err != nil {
 		log.Errorf("failed to send reply via stan: %v", err)
 		return false

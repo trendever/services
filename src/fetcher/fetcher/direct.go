@@ -12,7 +12,7 @@ import (
 	"utils/nats"
 )
 
-const DirectMessageSubject = "direct.new_message"
+const DirectNotifySubject = "direct.notify"
 
 // direct activity: accept PM invites; read && parse them
 func checkDirect(meta *client.AccountMeta) error {
@@ -46,7 +46,7 @@ collectLoop:
 		}
 
 		for _, thread := range resp.Inbox.Threads {
-			info, err := models.GetThreadInfo(thread.ThreadID)
+			info, err := models.GetThreadInfo(thread.ThreadID, ig.UserID)
 			if err != nil {
 				return err
 			}
@@ -124,6 +124,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	log.Debug("Thread is from %v; got %v new messages there", resp.Thread.Inviter.Username, len(msgs))
 
 	var relatedMedia *instagram.ThreadItem
+	sourceID := meta.Get().UserID
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
@@ -145,10 +146,11 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 			}
 
 		case "text":
-			notify := bot.DirectMessageNotify{
+			notify := bot.DirectNotify{
 				ThreadId:  threadID,
 				MessageId: message.ItemID,
 				UserId:    message.UserID,
+				SourceId:  sourceID,
 				Text:      message.Text,
 			}
 
@@ -164,14 +166,14 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 				relatedMedia = nil
 			}
 
-			err := nats.StanPublish(DirectMessageSubject, &notify)
+			err := nats.StanPublish(DirectNotifySubject, &notify)
 			if err != nil {
 				return fmt.Errorf("failed to send message notification via stan: %v", err)
 			}
 		}
 		// only if we have no media in progress
 		if relatedMedia == nil {
-			err := models.SaveLastCheckedID(threadID, message.ItemID)
+			err := models.SaveLastCheckedID(sourceID, threadID, message.ItemID)
 			if err != nil {
 				return err
 			}
@@ -183,7 +185,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		if err := fillDirect(relatedMedia, &resp.Thread, meta, ""); err != nil {
 			return err
 		}
-		err := models.SaveLastCheckedID(threadID, msgs[0].ItemID)
+		err := models.SaveLastCheckedID(sourceID, threadID, msgs[0].ItemID)
 		if err != nil {
 			return err
 		}
@@ -238,25 +240,27 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 	return act.Create()
 }
 
-func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID string, err error) {
+func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID, messageID string, err error) {
 	ig, found := global.usersPool.Get(inviter)
 	bot, err := global.pubPool.GetRandom()
-	participants = append(participants, bot.UserID)
 	if err != nil {
 		return
 	}
+	participants = append(participants, bot.UserID)
 	if !found {
-		return "", AccountUnavailable
+		return "", "", AccountUnavailable
 	}
-	tid, _, err := ig.SendText(initMsg, participants...)
+	tid, mid, err := ig.SendText(initMsg, participants...)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	_, err = ig.DirectUpdateTitle(tid, caption)
-	if err != nil {
-		log.Errorf("set title for thread %v failed:", tid, err)
+	if caption != "" {
+		_, err = ig.DirectUpdateTitle(tid, caption)
+		if err != nil {
+			log.Errorf("set title for thread %v failed:", tid, err)
+		}
 	}
-	return tid, nil
+	return tid, mid, nil
 }
 
 func leaveAllThreads(meta *client.AccountMeta) error {

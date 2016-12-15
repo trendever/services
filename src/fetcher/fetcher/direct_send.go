@@ -3,7 +3,10 @@ package fetcher
 import (
 	"accountstore/client"
 	"errors"
+	"utils/log"
 )
+
+var BadDestinationError = errors.New("destination is unspecified")
 
 type sendReply struct {
 	msgID    string
@@ -20,6 +23,7 @@ type sendRequest struct {
 
 // async send message request handler; reply via provided chan
 func (req *sendRequest) handle(meta *client.AccountMeta) {
+	log.Debug("req: %+v", req)
 	ig, err := meta.Delayed()
 	if err != nil {
 		req.reply <- sendReply{error: err}
@@ -35,7 +39,7 @@ func (req *sendRequest) handle(meta *client.AccountMeta) {
 		req.reply <- sendReply{threadID: tid, msgID: mid, error: err}
 		return
 	}
-	req.reply <- sendReply{error: errors.New("destination is unspecified")}
+	req.reply <- sendReply{error: BadDestinationError}
 }
 
 func SendDirect(senderID, receiverID uint64, threadID, text string) (msgID string, err error) {

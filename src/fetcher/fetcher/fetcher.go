@@ -81,6 +81,7 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 		}
 		global.Unlock()
 	}()
+	var step = 0
 	for {
 		select {
 		case <-stopChan:
@@ -88,21 +89,24 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 		case req := <-msgChan: // handle send direct message requests
 			req.handle(meta)
 		default: // nothing interesting; let's check feeds
-			err := getActivity(meta)
-			if err != nil {
-				log.Errorf("failed to check instagram feed for user %v: %v", meta.Get().Username, err)
-				continue
+			switch step {
+			case 0:
+				err := getActivity(meta)
+				if err != nil {
+					log.Errorf("failed to check instagram feed for user %v: %v", meta.Get().Username, err)
+				}
+			case 1:
+				err := checkDirect(meta)
+				if err != nil {
+					log.Errorf("failed to check instagram direct for user %v: %v", meta.Get().Username, err)
+				}
+			case 2:
+				err := parseOwnPosts(meta)
+				if err != nil {
+					log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
+				}
 			}
-			err = checkDirect(meta)
-			if err != nil {
-				log.Errorf("failed to check instagram direct for user %v: %v", meta.Get().Username, err)
-				continue
-			}
-			err = parseOwnPosts(meta)
-			if err != nil {
-				log.Errorf("failed to check instagram own posts %v: %v", meta.Get().Username, err)
-				continue
-			}
+			step = (step + 1) % 3
 		}
 	}
 }

@@ -29,7 +29,6 @@ func AutoMigrate(drop bool) error {
 	if err != nil {
 		return err
 	}
-
 	log.Info("Migration: success.")
 
 	return nil
