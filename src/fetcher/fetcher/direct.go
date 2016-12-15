@@ -241,15 +241,15 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 }
 
 func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID, messageID string, err error) {
-	ig, found := global.usersPool.Get(inviter)
+	ig := global.usersPool.Get(inviter)
+	if ig == nil {
+		return "", "", AccountUnavailable
+	}
 	bot, err := global.pubPool.GetRandom()
 	if err != nil {
 		return
 	}
 	participants = append(participants, bot.UserID)
-	if !found {
-		return "", "", AccountUnavailable
-	}
 	tid, mid, err := ig.SendText(initMsg, participants...)
 	if err != nil {
 		return "", "", err

@@ -152,11 +152,15 @@ func (pool *AccountsPool) randomTimeout() {
 	time.Sleep(time.Duration(rndTimeout))
 }
 
-func (pool *AccountsPool) Get(id uint64) (acc *instagram.Instagram, found bool) {
+func (pool *AccountsPool) Get(id uint64) *instagram.Instagram {
 	pool.RLock()
 	info, found := pool.idMap[id]
 	pool.RUnlock()
-	return info.ig, found
+	if found {
+		return info.ig
+	} else {
+		return nil
+	}
 }
 
 func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
