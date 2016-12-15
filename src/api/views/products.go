@@ -403,11 +403,15 @@ func DelProduct(c *soso.Context) {
 			return
 		}
 
-		for _, pr := range res.Result {
-			if pr.Supplier.SupplierId <= 0 || uint64(pr.Supplier.SupplierId) != c.Token.UID {
-				c.ErrorResponse(403, soso.LevelError, errors.New("Only shop supplier allowed to do that"))
-				return
-			}
+		if len(res.Result) != 1 {
+			c.ErrorResponse(404, soso.LevelError, errors.New("Product not found"))
+			return
+
+		}
+
+		if res.Result[0].Supplier.SupplierId <= 0 || uint64(res.Result[0].Supplier.SupplierId) != c.Token.UID {
+			c.ErrorResponse(403, soso.LevelError, errors.New("Only shop supplier allowed to do that"))
+			return
 		}
 	}
 
