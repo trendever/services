@@ -273,6 +273,8 @@ func (s productServer) DelProduct(ctx context.Context, in *core.DelProductReques
 		return nil, err
 	}
 
+	go nats.Publish("core.product.flush", in.ProductId)
+
 	return &core.DelProductReply{
 		Success: true,
 	}, nil
