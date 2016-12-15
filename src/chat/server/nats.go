@@ -9,13 +9,27 @@ import (
 	"proto/bot"
 	"proto/checker"
 	"proto/core"
+	"strconv"
+	"strings"
 	"utils/log"
 	"utils/mandible"
 	"utils/rpc"
 )
 
-func (cs *chatServer) handleDirectMessage(notify *bot.DirectMessageNotify) (acknowledged bool) {
-	log.Debug("new direct message: %+v", notify)
+func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged bool) {
+	log.Debug("new direct notify: %+v", notify)
+
+	if notify.ReplyKey != "" {
+		switch {
+		case strings.HasPrefix(notify.ReplyKey, models.MessageReplyPrefix):
+			return cs.handleMessageReply(notify)
+		case strings.HasPrefix(notify.ReplyKey, models.ThreadReplyPrefix):
+			return cs.handleThreadReply(notify)
+		default:
+			// do not care about foreign replies
+			return true
+		}
+	}
 
 	exists, err := cs.chats.CheckMessageExists(notify.MessageId)
 	if err != nil {
@@ -33,10 +47,14 @@ func (cs *chatServer) handleDirectMessage(notify *bot.DirectMessageNotify) (ackn
 		return false
 	}
 
-	// unknown/new conversation
+	// unknown/new conversation. ignore it, we should get crate thread reply before any interesting messages
 	if chat == nil {
-		// @TODO should we wait until lead will be created?
 		log.Debug("unknown thread %v", notify.ThreadId)
+		return true
+	}
+
+	// listen to primary source only
+	if notify.SourceId != chat.PrimaryInstagram {
 		return true
 	}
 
@@ -52,10 +70,11 @@ func (cs *chatServer) handleDirectMessage(notify *bot.DirectMessageNotify) (ackn
 		return false
 	}
 
-	err = cs.chats.AddMessages(chat, &models.Message{
+	_, err = cs.sendMessage(chat, &models.Message{
 		MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
 		Member:      author,
 		InstagramID: notify.MessageId,
+		SyncStatus:  models.SyncStatus_Synced,
 		Parts: []*models.MessagePart{
 			{
 				Content:  notify.Text,
@@ -69,6 +88,43 @@ func (cs *chatServer) handleDirectMessage(notify *bot.DirectMessageNotify) (ackn
 	} else {
 		return true
 	}
+}
+
+func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged bool) {
+	msgID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.MessageReplyPrefix), 10, 64)
+	if err != nil {
+		log.Errorf("bad format of send direct reply key '%v'", notify.ReplyKey)
+		return true
+	}
+	log.Debug("got message send reply for chat %v", msgID)
+	if notify.Error != "" {
+		log.Errorf("error in send direct reply: %v", notify.Error)
+	}
+	err = cs.chats.UpdateSyncStatus(msgID, notify.MessageId)
+	if err != nil {
+		log.Errorf("UpdateSyncStatus failed: %v", err)
+		return false
+	}
+	return true
+}
+
+func (cs *chatServer) handleThreadReply(notify *bot.DirectNotify) (acknowledged bool) {
+	chatID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.ThreadReplyPrefix), 10, 64)
+	if err != nil {
+		log.Errorf("bad format of create thread reply key '%v'", notify.ReplyKey)
+		return true
+	}
+	log.Debug("got thread create reply for chat %v", chatID)
+	if notify.Error != "" {
+		log.Errorf("error in create thread reply for chat %v: %v", chatID, notify.Error)
+		// @TODO anything else?
+		return true
+	}
+	retry, err := cs.chats.SetRelatedThread(chatID, notify.ThreadId)
+	if err != nil {
+		log.Errorf("failed to set related direct thread: %v", err)
+	}
+	return !retry
 }
 
 func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (author *models.Member, err error) {
@@ -191,4 +247,12 @@ func (cs *chatServer) createUser(instagramID uint64) (*core.User, error) {
 	}
 
 	return userReply.User, nil
+}
+
+func (cs *chatServer) enableSync(chatID uint64) bool {
+	retry, err := cs.chats.EnableSync(chatID)
+	if err != nil {
+		log.Errorf("failed to enable sync: %v", err)
+	}
+	return retry
 }

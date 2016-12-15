@@ -10,6 +10,15 @@ import (
 	"utils/mandible"
 )
 
+type SyncStatus uint64
+
+const (
+	SyncStatus_None SyncStatus = iota
+	SyncStatus_Progress
+	SyncStatus_Error
+	SyncStatus_Synced
+)
+
 //Message is model of message
 type Message struct {
 	db.Model
@@ -17,6 +26,7 @@ type Message struct {
 	InstagramID    string
 	MemberID       sql.NullInt64
 	Member         *Member
+	SyncStatus     SyncStatus
 	Parts          []*MessagePart
 }
 

@@ -9,9 +9,9 @@ import (
 //Member is representation of conversation member
 type Member struct {
 	db.Model
-	UserID         uint64 `gorm:"index; unique_index:once_per_conv"`
+	UserID         uint64 `gorm:"index"`
 	Role           string
-	ConversationID uint64 `grom:"index; unique_index:once_per_conv"`
+	ConversationID uint64 `grom:"index"`
 	Messages       []Message
 	Name           string
 	LastMessageID  uint64

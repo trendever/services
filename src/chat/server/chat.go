@@ -10,6 +10,7 @@ import (
 	"proto/checker"
 	"proto/core"
 	"time"
+	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 )
@@ -53,23 +54,26 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		checkerCli: checker.NewCheckerServiceClient(rpc.Connect(conf.RPC.Checker)),
 	}
 	nats.StanSubscribe(&nats.StanSubscription{
-		Subject:        "direct.new_message",
+		Subject:        "direct.notify",
 		Group:          "chat",
 		DurableName:    "chat",
 		AckTimeout:     time.Second * 30,
-		DecodedHandler: srv.handleDirectMessage,
+		DecodedHandler: srv.handleDirectNotify,
 	})
 	return srv
 }
 
 //CreateChat creates new chat
 func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatRequest) (*proto_chat.ChatReply, error) {
+	log.Debug("create chat request: %+v", req)
 	if req.Chat == nil {
 		return nil, errors.New("Chat is required")
 	}
 	chat := &models.Conversation{
-		Name:         req.Chat.Name,
-		DirectThread: req.Chat.DirectThread,
+		Name:             req.Chat.Name,
+		DirectThread:     req.Chat.DirectThread,
+		PrimaryInstagram: req.PrimaryInstagram,
+		Caption:          req.Chat.Caption,
 	}
 	if err := cs.chats.Create(chat); err != nil {
 		return nil, err
@@ -80,6 +84,9 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 			return nil, err
 		}
 
+	}
+	if req.Chat.DirectSync {
+		go cs.enableSync(chat.ID)
 	}
 	return &proto_chat.ChatReply{
 		Chat: chat.Encode(),
@@ -149,11 +156,27 @@ func (cs *chatServer) SendNewMessage(ctx context.Context, req *proto_chat.SendMe
 	if reply.Error != nil || err != nil {
 		return
 	}
-	reply.Error, reply.Messages, err = cs.sendMessage(chat, req.Messages...)
-	reply.Chat = chat.Encode()
-	if err == nil && reply.Error == nil {
-		go cs.notifyChatAboutNewMessage(reply.Chat, reply.Messages)
+	msgs := make([]*models.Message, len(req.Messages))
+	for i, enc := range req.Messages {
+		var member *models.Member
+		found := false
+		for _, member = range chat.Members {
+			if member.UserID == enc.UserId {
+				found = true
+				break
+			}
+		}
+		if !found {
+			reply.Error = &proto_chat.Error{
+				Code:    proto_chat.ErrorCode_FORBIDDEN,
+				Message: "User isn't a member",
+			}
+		}
+		msgs[i] = models.DecodeMessage(enc, member)
 	}
+
+	reply.Messages, err = cs.sendMessage(chat, msgs...)
+	reply.Chat = chat.Encode()
 	return reply, err
 }
 
@@ -172,30 +195,16 @@ func (cs *chatServer) getChat(id uint64) (*models.Conversation, *proto_chat.Erro
 	return chat, chatErr, nil
 }
 
-func (cs *chatServer) sendMessage(chat *models.Conversation, newMessages ...*proto_chat.Message) (chatErr *proto_chat.Error, messages []*proto_chat.Message, err error) {
-	messages = []*proto_chat.Message{}
-	for _, message := range newMessages {
-
-		var member *models.Member
-		member, err = cs.chats.GetMember(chat, message.UserId)
-		if err != nil {
-			return
-		}
-		if member == nil {
-			chatErr = &proto_chat.Error{
-				Code:    proto_chat.ErrorCode_FORBIDDEN,
-				Message: "User isn't a member",
-			}
-			return
-		}
-		msg := models.DecodeMessage(message, member)
-		err = cs.chats.AddMessages(chat, msg)
-		if err != nil {
-			return
-		}
-		cs.queue.Push(msg)
-		messages = append(messages, msg.Encode())
+func (cs *chatServer) sendMessage(chat *models.Conversation, messages ...*models.Message) (encoded []*proto_chat.Message, err error) {
+	err = cs.chats.AddMessages(chat, messages...)
+	if err != nil {
+		return
 	}
+	for _, message := range messages {
+		cs.queue.Push(message)
+		encoded = append(encoded, message.Encode())
+	}
+	go cs.notifyChatAboutNewMessage(chat.Encode(), encoded)
 	return
 }
 

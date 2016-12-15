@@ -199,9 +199,10 @@ func init() {
 
 		if customer, err := GetUserByID(lead.CustomerID); err == nil {
 			members = append(members, &chat.Member{
-				UserId: uint64(customer.ID),
-				Role:   chat.MemberRole_CUSTOMER,
-				Name:   customer.GetName(),
+				UserId:      uint64(customer.ID),
+				Role:        chat.MemberRole_CUSTOMER,
+				Name:        customer.GetName(),
+				InstagramId: customer.InstagramID,
 			})
 		}
 
@@ -214,11 +215,15 @@ func init() {
 				})
 			}
 		}
-
 		resp, err := api.ChatServiceClient.CreateChat(context, &chat.NewChatRequest{
 			Chat: &chat.Chat{
 				Members: members,
+				// @TODO template from config?
+				//Caption: "",
+				// @TODO check if user has active directbot here
+				DirectSync: true,
 			},
+			PrimaryInstagram: lead.Shop.Supplier.InstagramID,
 		})
 		if err != nil {
 			return err
