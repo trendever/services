@@ -491,7 +491,6 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 		log.Errorf("failed to load recent messages: %v", err)
 		return
 	}
-	log.Debug("messages for sync: ")
 	c.syncMessages(chat, messages...)
 }
 
