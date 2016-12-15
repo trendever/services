@@ -198,7 +198,7 @@ func mapToText(chat *Conversation, message *Message) (ret string) {
 		}
 	}
 	ret = strings.Trim(ret, " \t\r\n")
-	if ret != "" && message.Member.InstagramID != chat.PrimaryInstagram {
+	if ret != "" && (message.Member.Role == "CUSTOMER" || message.Member.Role == "UNKNOWN") {
 		ret = message.Member.Name + "@trend: " + ret
 	}
 	return
@@ -447,17 +447,17 @@ func (c *conversationRepositoryImpl) EnableSync(chatID uint64) (retry bool, err 
 		}
 		return false, nil
 	}
-	// @TODO send recent messages if thread already exists
 	err = c.db.Model(&chat).UpdateColumn("direct_sync", true).Error
 	if err != nil {
 		return true, fmt.Errorf("failed to update chat info: %v", err)
 	}
+	c.syncRecent(&chat)
 	return false, nil
 }
 
 func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThread string) (retry bool, err error) {
 	var chat Conversation
-	scope := c.db.First(&chat, chatID)
+	scope := c.db.Preload("Members").First(&chat, chatID)
 	if scope.RecordNotFound() {
 		return false, fmt.Errorf("unknown chat '%v'", chatID)
 	}
@@ -473,8 +473,26 @@ func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThrea
 	if err != nil {
 		return true, fmt.Errorf("failed to load chat: %v", err)
 	}
-	// @TODO send recent messages
+	c.syncRecent(&chat)
 	return false, nil
+}
+
+func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
+	var messages []*Message
+	// @TODO any limits?
+	err := c.db.
+		Where("conversation_id = ?", chat.ID).
+		Where("sync_status IN (?)", []SyncStatus{SyncStatus_None, SyncStatus_Error}).
+		Order("id").
+		Preload("Parts").Preload("Member").
+		Find(&messages).Error
+	if err != nil {
+		//@TODO what should we do?
+		log.Errorf("failed to load recent messages: %v", err)
+		return
+	}
+	log.Debug("messages for sync: ")
+	c.syncMessages(chat, messages...)
 }
 
 func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string) error {
