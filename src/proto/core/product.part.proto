@@ -21,6 +21,9 @@ service ProductService {
 
   // get last product ID
   rpc GetLastProductID(GetLastProductIDRequest) returns (GetLastProductIDReply) {}
+
+  // Del product
+  rpc DelProduct(DelProductRequest) returns (DelProductReply) {}
 }
 
 message GetProductRequest {
@@ -155,4 +158,12 @@ message GetLastProductIDRequest {
 
 message GetLastProductIDReply {
     uint64 id = 1;
+}
+
+message DelProductRequest {
+    uint64 product_id = 1;
+}
+
+message DelProductReply {
+    bool success = 1;
 }

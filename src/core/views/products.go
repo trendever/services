@@ -262,3 +262,18 @@ func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastPro
 		Id: out[0],
 	}, nil
 }
+
+func (s productServer) DelProduct(ctx context.Context, in *core.DelProductRequest) (*core.DelProductReply, error) {
+
+	err := db.New().
+		Where("id = ?", in.ProductId).
+		Delete(&models.Product{}).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.DelProductReply{
+		Success: true,
+	}, nil
+}
