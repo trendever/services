@@ -27,6 +27,7 @@ func init() {
 		soso.Route{"elastic_search", "product", ElasticSearch},
 		soso.Route{"get_liked_by", "product", GetLikedBy},
 		soso.Route{"lastid", "product", GetLastProductID},
+		soso.Route{"delete", "product", DelProduct},
 	)
 }
 
