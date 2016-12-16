@@ -236,10 +236,24 @@ func init() {
 		}
 		// send products that have been added before chat creation
 		products, err := GetLeadProducts(lead)
-		init := true
-		for _, product := range products {
-			log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
-			init = false
+		if len(products) != 0 {
+			init := true
+			for _, product := range products {
+				log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
+				init = false
+			}
+			// we have only fits comment. some data may be lost...
+			if lead.Comment != "" {
+				err := SendChatMessages(lead.ConversationID, &chat.Message{
+					UserId: uint64(lead.CustomerID),
+					Parts: []*chat.MessagePart{
+						{Content: lead.Comment, MimeType: "text/plain"},
+					},
+				})
+				if err != nil {
+					log.Errorf("failed to send user comment to chat: %v", err)
+				}
+			}
 		}
 		return nil
 	})
