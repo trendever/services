@@ -7,6 +7,7 @@ import (
 	"github.com/qor/transition"
 	"proto/chat"
 	"proto/core"
+	"reflect"
 	"utils/db"
 	"utils/log"
 	"utils/rpc"
@@ -175,6 +176,8 @@ type LeadEvent struct {
 }
 
 func init() {
+	RegisterTemplate("other", "chat_caption")
+
 	LeadState.Initial(leadStateEmpty)
 
 	// init state machine
@@ -215,11 +218,11 @@ func init() {
 				})
 			}
 		}
+
 		resp, err := api.ChatServiceClient.CreateChat(context, &chat.NewChatRequest{
 			Chat: &chat.Chat{
 				Members: members,
-				// @TODO template from config?
-				//Caption: "",
+				Caption: genChatCaption(lead),
 				// @TODO check if user has active directbot here
 				DirectSync: true,
 			},
@@ -287,6 +290,31 @@ func init() {
 	for _, event := range leadEvents {
 		LeadState.Event(event.Name).To(event.To).From(event.From...)
 	}
+}
+
+func genChatCaption(lead *Lead) string {
+	template := &OtherTemplate{}
+	ret := db.New().Find(template, "template_id = ?", "chat_caption")
+	if ret.RecordNotFound() {
+		return ""
+	}
+	if ret.Error != nil {
+		log.Errorf("failed to load template: %v", ret.Error)
+		return ""
+	}
+	result, err := template.Execute(map[string]interface{}{
+		"lead": lead,
+	})
+	if err != nil {
+		log.Errorf("failed to execute template: %v", err)
+		return ""
+	}
+	text, ok := result.(string)
+	if !ok {
+		log.Errorf("expected string, but got " + reflect.TypeOf(text).Name())
+		return ""
+	}
+	return text
 }
 
 // LeadEventPossible returns true if triggering event eventName from specified state is possible

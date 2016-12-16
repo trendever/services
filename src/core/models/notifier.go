@@ -114,12 +114,13 @@ func (n *Notifier) NotifyBySms(phone, about string, model interface{}) error {
 	if !ok {
 		return errors.New("expected string, but got " + reflect.TypeOf(msg).Name())
 	}
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
 
 	if msg == "" {
 		return errors.New("empty message")
 	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
 
 	res, err := api.SmsServiceClient.SendSMS(ctx, &sms.SendSMSRequest{
 		Phone: phone,
