@@ -3,7 +3,6 @@ package fetcher
 import (
 	"accountstore/client"
 	"errors"
-	"utils/log"
 )
 
 var BadDestinationError = errors.New("destination is unspecified")
