@@ -23,7 +23,6 @@ type sendRequest struct {
 
 // async send message request handler; reply via provided chan
 func (req *sendRequest) handle(meta *client.AccountMeta) {
-	log.Debug("req: %+v", req)
 	ig, err := meta.Delayed()
 	if err != nil {
 		req.reply <- sendReply{error: err}

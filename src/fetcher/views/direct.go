@@ -51,6 +51,7 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 func sendDirectNats(in *bot.SendDirectRequest) bool {
 	mid, err := fetcher.SendDirect(in.SenderId, in.RecieverId, in.ThreadId, in.Text)
 	reply := bot.DirectNotify{ThreadId: in.ThreadId, ReplyKey: in.ReplyKey}
+	log.Debug("send rirect request: %+v", in)
 	switch err {
 	case nil:
 		reply.MessageId = mid

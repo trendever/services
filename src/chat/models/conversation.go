@@ -7,6 +7,7 @@ import (
 	pb_chat "proto/chat"
 	"strconv"
 	"strings"
+	"sync"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -16,6 +17,10 @@ const (
 	MessageReplyPrefix = "sync_msg."
 	ThreadReplyPrefix  = "sync_thread."
 )
+
+var global struct {
+	syncLock sync.Mutex
+}
 
 //Conversation is representation of conversation model
 type Conversation struct {
@@ -154,17 +159,23 @@ func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs .
 }
 
 func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ...*Message) error {
+	global.syncLock.Lock()
 	err := c.db.Model(chat).Association("Messages").Append(messages).Error
-	if err == nil && chat.DirectSync {
-		go c.syncMessages(chat, messages...)
-	}
+	go func() {
+		if err == nil && chat.DirectSync {
+			c.syncMessages(chat, messages...)
+		}
+		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
+		global.syncLock.Unlock()
+	}()
 	return err
 }
 
 func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages ...*Message) {
 	var ids []uint64
 	if chat.DirectThread == "" {
-		panic("ffs, where the hell is direct thread?")
+		log.Errorf("syncMessages caaled for chat without related direct thread")
+		return
 	}
 	for _, msg := range messages {
 		if msg.InstagramID != "" {
@@ -192,15 +203,23 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 }
 
 func mapToText(chat *Conversation, message *Message) (ret string) {
+	citation := false
+	if message.Member.Role == "CUSTOMER" || message.Member.Role == "UNKNOWN" {
+		citation = true
+	}
 	for _, part := range message.Parts {
 		if part.MimeType == "text/plain" {
+			trimmed := strings.Trim(part.Content, " \t\r\n")
+			if trimmed == "" {
+				continue
+			}
+			if citation {
+				ret += ">"
+			}
 			ret += part.Content + "\n"
 		}
 	}
 	ret = strings.Trim(ret, " \t\r\n")
-	if ret != "" && (message.Member.Role == "CUSTOMER" || message.Member.Role == "UNKNOWN") {
-		ret = message.Member.Name + "@trend: " + ret
-	}
 	return
 }
 
@@ -478,6 +497,8 @@ func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThrea
 }
 
 func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
+	global.syncLock.Lock()
+
 	var messages []*Message
 	// @TODO any limits?
 	err := c.db.
@@ -489,9 +510,11 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 	if err != nil {
 		//@TODO what should we do?
 		log.Errorf("failed to load recent messages: %v", err)
-		return
+	} else {
+		c.syncMessages(chat, messages...)
 	}
-	c.syncMessages(chat, messages...)
+
+	global.syncLock.Unlock()
 }
 
 func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string) error {
