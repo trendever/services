@@ -24,14 +24,14 @@ func subscribe() {
 				Subject:        SendDirectSubject,
 				Group:          "fetcher",
 				DurableName:    "fetcher",
-				AckTimeout:     time.Second * 20,
+				AckTimeout:     time.Second * 10,
 				DecodedHandler: sendDirectNats,
 			},
 			&nats.StanSubscription{
 				Subject:        CreateThreadSubject,
 				Group:          "fetcher",
 				DurableName:    "fetcher",
-				AckTimeout:     time.Second * 20,
+				AckTimeout:     time.Second * 10,
 				DecodedHandler: createThread,
 			},
 		)

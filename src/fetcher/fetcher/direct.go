@@ -22,6 +22,8 @@ func checkDirect(meta *client.AccountMeta) error {
 
 	var threads []models.ThreadInfo
 
+	log.Debug("Checking direct for %v", meta.Get().Username)
+
 	cursor := ""
 
 collectLoop:
@@ -55,7 +57,6 @@ collectLoop:
 				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
 			}
 			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
-				log.Debug("Unchanged thread is reached")
 				break collectLoop
 			}
 			threads = append(threads, info)
@@ -83,8 +84,6 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		resp     *instagram.DirectThreadResponse
 		msgs     []instagram.ThreadItem
 	)
-	log.Debug("Processing thread %v, last checked was %v", threadID, info.LastCheckedID)
-	defer log.Debug("Processing thread %v end", threadID)
 
 	// populate new messages
 	cursor := ""
@@ -121,14 +120,13 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		break
 	}
 
-	log.Debug("Thread is from %v; got %v new messages there", resp.Thread.Inviter.Username, len(msgs))
+	log.Debug("Got %v new messages for %v from thread %v", len(msgs), meta.Get().Username, threadID)
 
 	var relatedMedia *instagram.ThreadItem
 	sourceID := meta.Get().UserID
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
-		log.Debug("Checking message with id=%v", message.ItemID)
 
 		switch message.ItemType {
 		case "media_share":

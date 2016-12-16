@@ -44,7 +44,6 @@ func (act *Activity) Create() error {
 
 	if count > 0 {
 		// skipping dupe
-		log.Debug("Skipping dupe (got %v times)", count)
 		return nil
 	}
 

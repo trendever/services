@@ -9,7 +9,7 @@ import (
 )
 
 func parseOwnPosts(meta *client.AccountMeta) error {
-
+	log.Debug("Parsing own posts for %v", meta.Get().Username)
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
@@ -19,9 +19,7 @@ func parseOwnPosts(meta *client.AccountMeta) error {
 	if err != nil {
 		return err
 	}
-
 	for _, story := range feed.Items {
-		log.Debug("Parsing own post")
 
 		act := &models.Activity{
 			Pk:       fmt.Sprintf("%v", story.Pk), // instagram's post primary key from json
