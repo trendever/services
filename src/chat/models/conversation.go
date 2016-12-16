@@ -16,6 +16,8 @@ import (
 const (
 	MessageReplyPrefix = "sync_msg."
 	ThreadReplyPrefix  = "sync_thread."
+
+	DefaultSyncInitMessage = "direct sync enabled"
 )
 
 var global struct {
@@ -445,11 +447,13 @@ func (c *conversationRepositoryImpl) EnableSync(chatID uint64) (retry bool, err 
 			return false, fmt.Errorf("chat %v has primary instagram", chat.ID)
 		}
 		request := bot.CreateThreadRequest{
-			Inviter: chat.PrimaryInstagram,
-			Caption: chat.Caption,
-			// @TODO template from config?
-			InitMessage: "direct sync enabled",
+			Inviter:     chat.PrimaryInstagram,
+			InitMessage: DefaultSyncInitMessage,
 			ReplyKey:    ThreadReplyPrefix + strconv.FormatUint(chatID, 10),
+		}
+		if chat.Caption != "" {
+			request.Caption = chat.Caption
+			request.InitMessage = chat.Caption
 		}
 		for _, mmb := range chat.Members {
 			if mmb.InstagramID != 0 && mmb.InstagramID != chat.PrimaryInstagram {

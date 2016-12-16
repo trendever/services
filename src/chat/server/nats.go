@@ -58,6 +58,12 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 		return true
 	}
 
+	// ignore init message
+	// @TODO may be there is better way to do it
+	if notify.UserId == chat.PrimaryInstagram && (notify.Text == chat.Caption || notify.Text == models.DefaultSyncInitMessage) {
+		return true
+	}
+
 	author, err := cs.getAuthor(chat, notify.UserId)
 	if err != nil {
 		log.Errorf("failed to get message author: %v", err)
