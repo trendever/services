@@ -17,7 +17,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"add", "account", AddBot},
 		soso.Route{"list", "account", ListAccounts},
-		soso.Route{"account", "confirm", Confirm},
+		soso.Route{"confirm", "account", Confirm},
 		//		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
