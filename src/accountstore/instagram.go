@@ -9,7 +9,7 @@ import (
 
 // InstagramAccess is mockable instagram adapter
 type InstagramAccess interface {
-	Login(login, password string, preferEmail bool) (*Account, error)
+	Login(login, password string, preferEmail bool, owner uint64) (*Account, error)
 	SendCode(*Account, string, bool) error
 	VerifyCode(*Account, string) error
 }
@@ -19,7 +19,7 @@ type InstagramAccessImpl struct {
 }
 
 // Login with given login:pass, return an Account (probably invalid -- confirmation needed)
-func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*Account, error) {
+func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, owner uint64) (*Account, error) {
 
 	var account *Account
 
@@ -40,7 +40,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 		err error
 	)
 
-	if account.Cookie > "" {
+	if account.Cookie > "" && owner == account.OwnerID {
 		api, err = instagram.Restore(account.Cookie, password, true)
 	} else {
 		api, err = instagram.NewInstagram(login, password)
@@ -110,24 +110,30 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 		return err
 	}
 
-	if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
-		return fmt.Errorf("Timeout error")
+	// check if already confirmed
+	_, err = api.GetRecentActivity()
+	if err != nil {
+		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
+			return fmt.Errorf("Timeout error")
+		}
+
+		err = api.CheckCode(code)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	err = api.CheckCode(code)
-	if err != nil {
-		return err
-	}
+	api.CheckpointURL = ""
+	api.CheckpointCookies = nil
 
 	cookieJar, err := api.Save()
 	if err != nil {
 		return err
 	}
 
-	api.CheckpointURL = ""
-	acc.Cookie = cookieJar
-	api.CheckpointCookies = nil
 	acc.Valid = true
+	acc.Cookie = cookieJar
 
 	return Save(acc)
 }
