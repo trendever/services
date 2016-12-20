@@ -33,6 +33,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 		return nil, err
 	} else {
 		account = found
+		account.Valid = true
 	}
 
 	var (
