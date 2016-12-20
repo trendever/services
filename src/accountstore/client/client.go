@@ -49,6 +49,7 @@ type AccountMeta struct {
 	// stopper for individual workers
 	stopper *stopper.Stopper
 	wait    sync.WaitGroup
+	AddedAt int64
 }
 
 func (meta *AccountMeta) Get() *instagram.Instagram {
@@ -127,7 +128,7 @@ func InitPoll(
 			log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
 			continue
 		}
-		pool.addAcc(ig)
+		pool.addAcc(ig, acc.CreatedAt)
 	}
 
 	if len(pool.idMap) == 0 {
@@ -236,18 +237,19 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	}
 
 	if acc.Role == pool.role {
-		pool.addAcc(ig)
+		pool.addAcc(ig, acc.CreatedAt)
 	}
 }
 
 // adds account to pool and starts individualWorker(if any),
 // pool should be already locked on higher level
-func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
+func (pool *AccountsPool) addAcc(ig *instagram.Instagram, addedAt int64) {
 	meta := &AccountMeta{
 		ig:      ig,
 		pool:    pool,
 		ready:   make(chan *instagram.Instagram),
 		stopper: stopper.NewStopper(),
+		AddedAt: addedAt,
 	}
 	pool.idMap[ig.UserID] = meta
 	pool.idSlice = append(pool.idSlice, ig.UserID)
