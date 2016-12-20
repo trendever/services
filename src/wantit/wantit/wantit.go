@@ -226,7 +226,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		var retry bool
 		productID, retry, err = saveProduct(mention)
 		if retry {
-			return true, errors.New("Temporarily unable to save product")
+			return true, fmt.Errorf("Temporarily unable to save product (%v)", err)
 		}
 		if err != nil {
 			return true, err
