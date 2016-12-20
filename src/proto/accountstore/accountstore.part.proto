@@ -52,6 +52,7 @@ message ConfirmReply {
 message MarkInvalidRequest {
   string instagram_username = 1;
   uint64 instagram_id = 2;
+  string reason = 3;
 }
 
 message MarkInvalidReply {

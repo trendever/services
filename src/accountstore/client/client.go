@@ -66,7 +66,7 @@ func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
 		if ig.LoggedIn {
 			return ig, nil
 		}
-		meta.pool.Invalidate(ig.UserID)
+		meta.pool.Invalidate(ig.UserID, "account no longer logged in")
 		return nil, errors.New("account is logged off")
 	case <-meta.stopper.Chan():
 		return nil, errors.New("account is stopped")
@@ -182,17 +182,20 @@ func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
 			if ig.LoggedIn {
 				return ig, nil
 			}
-			pool.Invalidate(ig.UserID)
+			pool.Invalidate(ig.UserID, "Account is no longer logged in")
 		case <-pool.stopper.Chan():
 			return nil, errors.New("pool is stopped")
 		}
 	}
 }
 
-func (pool *AccountsPool) Invalidate(id uint64) {
+func (pool *AccountsPool) Invalidate(id uint64, reason string) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	_, err := pool.storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{InstagramId: id})
+	_, err := pool.storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{
+		InstagramId: id,
+		Reason:      reason,
+	})
 	if err != nil {
 		log.Errorf("failed to invalidate account %v: %v", id, err)
 		return
@@ -213,7 +216,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	ig, err := instagram.Restore(acc.Cookie, "", true)
 	if err != nil {
 		log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
-		pool.Invalidate(acc.InstagramId)
+		pool.Invalidate(acc.InstagramId, "account can not be restored")
 		return
 	}
 

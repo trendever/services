@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 	"proto/accountstore"
 	"proto/core"
+	"utils/log"
 	"utils/rpc"
 )
 
@@ -85,6 +86,8 @@ func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debug("Invalidating account %v; reason: %v", account.InstagramUsername, in.Reason)
 
 	account.Valid = false
 
