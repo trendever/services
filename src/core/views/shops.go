@@ -75,7 +75,9 @@ func (s shopServer) FindOrCreateAttachedShop(_ context.Context, in *core.FindOrC
 
 	ret := &core.FindOrCreateAttachedShopReply{
 		ShopId: shopID,
-		Error:  err.Error(),
+	}
+	if err != nil {
+		ret.Error = err.Error()
 	}
 	return ret, nil
 }
