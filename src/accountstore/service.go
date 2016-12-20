@@ -2,6 +2,7 @@ package main
 
 import (
 	"instagram"
+	"proto/core"
 	"utils/cli"
 	"utils/config"
 	"utils/db"
@@ -12,7 +13,8 @@ import (
 var service *svc
 
 type svc struct {
-	ig InstagramAccess
+	ig         InstagramAccess
+	shopClient core.ShopServiceClient
 }
 
 func main() {

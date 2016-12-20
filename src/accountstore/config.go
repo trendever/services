@@ -15,4 +15,5 @@ type Settings struct {
 	Listen         string
 	InstagramDebug bool
 	Nats           nats.Config
+	Core           string
 }

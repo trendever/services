@@ -112,7 +112,7 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
 	// check if already confirmed
 	_, err = api.GetRecentActivity()
-	if err != nil {
+	if err == instagram.ErrorCheckpointRequired {
 		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
 			return fmt.Errorf("Timeout error")
 		}
@@ -121,7 +121,8 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 		if err != nil {
 			return err
 		}
-
+	} else if err != nil {
+		return err
 	}
 
 	api.CheckpointURL = ""

@@ -3,6 +3,8 @@ service ShopService {
   rpc GetShopProfile (ShopProfileRequest) returns (ShopProfileReply) {}
 
   rpc FindOrCreateShopForSupplier(FindOrCreateShopForSupplierRequest) returns (FindOrCreateShopForSupplierReply) {}
+
+  rpc FindOrCreateAttachedShop(FindOrCreateAttachedShopRequest) returns (FindOrCreateAttachedShopReply) {}
 }
 
 // representation of shop model
@@ -68,5 +70,15 @@ message FindOrCreateShopForSupplierRequest {
 message FindOrCreateShopForSupplierReply {
   uint64 shop_id = 1;
   bool deleted = 2;
+  string error = 3;
+}
+
+message FindOrCreateAttachedShopRequest {
+  uint64 supplier_id = 1;
+  string instagram_username = 2;
+}
+
+message FindOrCreateAttachedShopReply {
+  uint64 shop_id = 1;
   string error = 3;
 }
