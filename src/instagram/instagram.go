@@ -322,7 +322,7 @@ func (ig *Instagram) SendMedia(threadID, mediaID uint64) (messageID string, _ er
 
 	var object BroadcastTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
-		"media_id":   mediaID,
+		"media_id":   fmt.Sprintf("%v", mediaID),
 		"thread_ids": fmt.Sprintf("[%v]", threadID),
 	}, &object)
 
