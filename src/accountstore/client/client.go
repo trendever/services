@@ -169,7 +169,7 @@ func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
 	defer pool.RUnlock()
 	count := len(pool.idMap)
 	if count == 0 {
-		return nil, errors.New("no account aviable")
+		return nil, errors.New("no accounts aviable")
 	}
 	meta := pool.idMap[pool.idSlice[rand.Intn(count)]]
 	return meta.ig, nil

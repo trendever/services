@@ -2,25 +2,17 @@ package fetcher
 
 import (
 	"accountstore/client"
-	"errors"
 	"fetcher/conf"
 	"fmt"
 	"proto/accountstore"
-	"sync"
 	"utils/log"
 	"utils/rpc"
 )
 
-var AccountUnavailable = errors.New("account unaviable")
-
 var global = struct {
-	sync.RWMutex
 	pubPool   *client.AccountsPool
 	usersPool *client.AccountsPool
-	msgChans  map[uint64]chan sendRequest
-}{
-	msgChans: map[uint64]chan sendRequest{},
-}
+}{}
 
 // Start starts main fetching duty
 func Start() error {
@@ -69,26 +61,17 @@ func Start() error {
 }
 
 func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
-	msgChan := make(chan sendRequest)
-	global.Lock()
-	global.msgChans[meta.Get().UserID] = msgChan
-	global.Unlock()
-	defer func() {
-		global.Lock()
-		ch := global.msgChans[meta.Get().UserID]
-		if ch == msgChan {
-			delete(global.msgChans, meta.Get().UserID)
-		}
-		global.Unlock()
-	}()
 	var step = 0
 	for {
 		select {
 		case <-stopChan:
 			return
-		case req := <-msgChan: // handle send direct message requests
-			req.handle(meta)
-		default: // nothing interesting; let's check feeds
+		default:
+			err := processRequests(meta)
+			if err != nil {
+				log.Debug("failed to process pending requests form user %v: %v", meta.Get().Username, err)
+				continue
+			}
 			switch step {
 			case 0:
 				err := getActivity(meta)

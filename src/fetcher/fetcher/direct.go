@@ -238,29 +238,6 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 	return act.Create()
 }
 
-func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID, messageID string, err error) {
-	ig := global.usersPool.Get(inviter)
-	if ig == nil {
-		return "", "", AccountUnavailable
-	}
-	bot, err := global.pubPool.GetRandom()
-	if err != nil {
-		return
-	}
-	participants = append(participants, bot.UserID)
-	tid, mid, err := ig.SendText(initMsg, participants...)
-	if err != nil {
-		return "", "", err
-	}
-	if caption != "" {
-		_, err = ig.DirectUpdateTitle(tid, caption)
-		if err != nil {
-			log.Errorf("set title for thread %v failed:", tid, err)
-		}
-	}
-	return tid, mid, nil
-}
-
 func leaveAllThreads(meta *client.AccountMeta) error {
 	ig, err := meta.Delayed()
 	if err != nil {

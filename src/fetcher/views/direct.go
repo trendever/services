@@ -1,11 +1,12 @@
 package views
 
 import (
-	"fetcher/fetcher"
+	"fetcher/models"
 	"golang.org/x/net/context"
 	"proto/bot"
 	"sync"
 	"time"
+	"utils/db"
 	"utils/log"
 	"utils/nats"
 )
@@ -25,7 +26,7 @@ func subscribe() {
 				Group:          "fetcher",
 				DurableName:    "fetcher",
 				AckTimeout:     time.Second * 10,
-				DecodedHandler: sendDirectNats,
+				DecodedHandler: addDirectRequest,
 			},
 			&nats.StanSubscription{
 				Subject:        CreateThreadSubject,
@@ -39,53 +40,37 @@ func subscribe() {
 }
 
 func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest) (*bot.SendDirectReply, error) {
-	go func() {
-		_, err := fetcher.SendDirect(in.SenderId, in.RecieverId, in.ThreadId, in.Text)
-		if err != nil {
-			log.Errorf("failed to send message from %v: %v", in.SenderId, err)
-		}
-	}()
+	addDirectRequest(in)
 	return &bot.SendDirectReply{}, nil
 }
 
-func sendDirectNats(in *bot.SendDirectRequest) bool {
-	mid, err := fetcher.SendDirect(in.SenderId, in.RecieverId, in.ThreadId, in.Text)
-	reply := bot.DirectNotify{ThreadId: in.ThreadId, ReplyKey: in.ReplyKey}
-	log.Debug("send rirect request: %+v", in)
-	switch err {
-	case nil:
-		reply.MessageId = mid
-	case fetcher.AccountUnavailable, fetcher.BadDestinationError:
-		reply.Error = err.Error()
-	default:
-		log.Errorf("failed to send message from %v: %v", in.SenderId, err)
-		// external trouble, try again later
-		return false
-	}
-	// @TODO send it inside worker? timeouts will save us from races probably but it isn't right way
-	err = nats.StanPublish(fetcher.DirectNotifySubject, &reply)
+func addDirectRequest(in *bot.SendDirectRequest) bool {
+	err := db.New().Save(&models.DirectRequest{
+		Type:         models.SendMessageRequest,
+		UserID:       in.SenderId,
+		ReplyKey:     in.ReplyKey,
+		ThreadID:     in.ThreadId,
+		Participants: []uint64{in.RecieverId},
+		Text:         in.Text,
+	}).Error
 	if err != nil {
-		log.Errorf("failed to send reply via stan: %v", err)
+		log.Errorf("failed to add direct request: %v", err)
 		return false
 	}
 	return true
 }
 
 func createThread(in *bot.CreateThreadRequest) bool {
-	tid, mid, err := fetcher.CreateThread(in.Inviter, in.Participant, in.Caption, in.InitMessage)
-	reply := bot.DirectNotify{ReplyKey: in.ReplyKey, ThreadId: tid, MessageId: mid}
-	switch err {
-	case nil:
-	case fetcher.AccountUnavailable:
-		reply.Error = err.Error()
-	default:
-		log.Errorf("failed to create thread from %v: %v", in.Inviter, err)
-		// external trouble, try again later
-		return false
-	}
-	err = nats.StanPublish(fetcher.DirectNotifySubject, &reply)
+	err := db.New().Save(&models.DirectRequest{
+		Type:         models.CreateThreadRequest,
+		UserID:       in.Inviter,
+		ReplyKey:     in.ReplyKey,
+		Participants: in.Participant,
+		Caption:      in.Caption,
+		Text:         in.InitMessage,
+	}).Error
 	if err != nil {
-		log.Errorf("failed to send reply via stan: %v", err)
+		log.Errorf("failed to add direct request: %v", err)
 		return false
 	}
 	return true

@@ -2,58 +2,87 @@ package fetcher
 
 import (
 	"accountstore/client"
-	"errors"
+	"fetcher/models"
+	"fmt"
+	"proto/bot"
+	"utils/db"
+	"utils/log"
+	"utils/nats"
 )
 
-var BadDestinationError = errors.New("destination is unspecified")
+// @TODO delete expired requests and send errors notify with them
 
-type sendReply struct {
-	msgID    string
-	threadID string
-	error    error
+func processRequests(meta *client.AccountMeta) error {
+	var requests []models.DirectRequest
+	err := db.New().Where("user_id = ?", meta.Get().UserID).Order("id").Limit(100).Find(&requests).Error
+	if err != nil {
+		return fmt.Errorf("failed to load requests: %v", err)
+	}
+
+	for _, req := range requests {
+		switch req.Type {
+		case models.SendMessageRequest:
+			err = sendMessage(meta, &req)
+		case models.CreateThreadRequest:
+			err = createThread(meta, &req)
+		default:
+			log.Errorf("unknown request type %v", req.Type)
+			continue
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-type sendRequest struct {
-	receiverID uint64
-	threadID   string
-	text       string
-	reply      chan sendReply
-}
-
-// async send message request handler; reply via provided chan
-func (req *sendRequest) handle(meta *client.AccountMeta) {
+func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 	ig, err := meta.Delayed()
 	if err != nil {
-		req.reply <- sendReply{error: err}
-		return
+		return err
 	}
-	if req.threadID != "" {
-		msgID, err := ig.BroadcastText(req.threadID, req.text)
-		req.reply <- sendReply{msgID: msgID, threadID: req.threadID, error: err}
-		return
+	reply := bot.DirectNotify{ReplyKey: req.ReplyKey}
+	switch {
+	case req.ThreadID != "":
+		reply.ThreadId = req.ThreadID
+		reply.MessageId, err = ig.BroadcastText(req.ThreadID, req.Text)
+	case len(req.Participants) != 0:
+		reply.ThreadId, reply.MessageId, err = ig.SendText(req.Text, req.Participants...)
+	default:
+		reply.Error = "destination is unspecified"
 	}
-	if req.receiverID != 0 {
-		tid, mid, err := ig.SendText(req.text, req.receiverID)
-		req.reply <- sendReply{threadID: tid, msgID: mid, error: err}
-		return
+	if err != nil {
+		return err
 	}
-	req.reply <- sendReply{error: BadDestinationError}
+
+	if req.Caption != "" {
+		_, err = ig.DirectUpdateTitle(reply.ThreadId, req.Caption)
+		if err != nil {
+			log.Errorf("set title for thread %v failed:", reply.ThreadId, err)
+		}
+	}
+
+	err = nats.StanPublish(DirectNotifySubject, &reply)
+	if err != nil {
+		return fmt.Errorf("failed to send reply via stan: %v", err)
+	}
+	if req.ID == 0 {
+		log.Warn("zero id in DirectRequest")
+		return nil
+	}
+	// @CHECK i can not see any real reason to save request logs. am i wrong?
+	err = db.New().Delete(req).Error
+	if err != nil {
+		return fmt.Errorf("failed to remove handled request from pending table: %v", err)
+	}
+	return nil
 }
 
-func SendDirect(senderID, receiverID uint64, threadID, text string) (msgID string, err error) {
-	global.RLock()
-	ch, ok := global.msgChans[senderID]
-	global.RUnlock()
-	if !ok {
-		return "", AccountUnavailable
+func createThread(meta *client.AccountMeta, req *models.DirectRequest) error {
+	bot, err := global.pubPool.GetRandom()
+	if err != nil {
+		return err
 	}
-	replyChan := make(chan sendReply)
-	ch <- sendRequest{
-		threadID:   threadID,
-		receiverID: receiverID,
-		text:       text,
-		reply:      replyChan,
-	}
-	reply := <-replyChan
-	return reply.msgID, reply.error
+	req.Participants = append(req.Participants, bot.UserID)
+	return sendMessage(meta, req)
 }

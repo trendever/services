@@ -9,6 +9,7 @@ import (
 var modelsList = []interface{}{
 	&Activity{},
 	&ThreadInfo{},
+	&DirectRequest{},
 }
 
 // AutoMigrate used models
