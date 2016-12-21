@@ -15,6 +15,7 @@ import (
 var LeadSources = []string{
 	"website",
 	"wantit",
+	"comment",
 }
 
 // Lead model
