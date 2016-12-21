@@ -110,6 +110,7 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 				return nil, errors.New(message.Message)
 			}
 			if message.Message == "checkpoint_required" {
+				ig.LoggedIn = false
 				return nil, ErrorCheckpointRequired
 			}
 			// relogin
