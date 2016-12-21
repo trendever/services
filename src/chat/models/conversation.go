@@ -141,7 +141,7 @@ func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*
 }
 
 func (c *conversationRepositoryImpl) UpdateMember(member *Member) error {
-	return c.db.Update(member).Error
+	return c.db.Save(member).Error
 }
 
 func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs ...uint64) error {
