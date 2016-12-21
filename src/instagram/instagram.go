@@ -318,7 +318,7 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 }
 
 func (ig *Instagram) SendMedia(threadID, mediaID uint64) (messageID string, _ error) {
-	endpoint := "/direct_v2/threads/broadcast/text/"
+	endpoint := "/direct_v2/threads/broadcast/media_share/?media_type=photo"
 
 	var object BroadcastTextResponse
 	err := ig.postRequest(endpoint, map[string]string{
