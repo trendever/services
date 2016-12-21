@@ -316,3 +316,23 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 
 	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
 }
+
+func (ig *Instagram) SendMedia(threadID, mediaID uint64) (messageID string, _ error) {
+	endpoint := "/direct_v2/threads/broadcast/text/"
+
+	var object BroadcastTextResponse
+	err := ig.postRequest(endpoint, map[string]string{
+		"media_id":   mediaID,
+		"thread_ids": fmt.Sprintf("[%v]", threadID),
+	}, &object)
+
+	if err != nil {
+		return "", err
+	}
+
+	if object.Message.Message != "" {
+		return "", errors.New(object.Message.Message)
+	}
+
+	return object.Threads[0].NewestCursor, nil
+}
