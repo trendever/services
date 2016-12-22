@@ -3,7 +3,7 @@ debug: true
 rpc: 0.0.0.0:3006
 
 db:
-  debug:    true
+  debug:    false
   user:     postgres
   password: 1234
   host:     db
@@ -19,4 +19,4 @@ instagram:
   storeAddr: accountstore:5409
   timeoutMin: 10s
   timeoutMax: 15s
-  responseLogging: true
+  responseLogging: false

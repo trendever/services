@@ -21,7 +21,17 @@ func Start() error {
 	conn := rpc.Connect(settings.Instagram.StoreAddr)
 	cli := accountstore.NewAccountStoreServiceClient(conn)
 
-	_, err := client.InitPoll(
+	var err error
+	global.pubPool, err = client.InitPoll(
+		accountstore.Role_AuxPublic, cli,
+		nil, pubWorker,
+		&settings.Instagram.Settings,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init acoounts pool: %v", err)
+	}
+
+	_, err = client.InitPoll(
 		accountstore.Role_Wantit, cli,
 		nil, primaryWorker,
 		&settings.Instagram.Settings,
@@ -42,15 +52,6 @@ func Start() error {
 	global.usersPool, err = client.InitPoll(
 		accountstore.Role_User, cli,
 		nil, primaryWorker,
-		&settings.Instagram.Settings,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to init acoounts pool: %v", err)
-	}
-
-	global.pubPool, err = client.InitPoll(
-		accountstore.Role_AuxPublic, cli,
-		nil, pubWorker,
 		&settings.Instagram.Settings,
 	)
 	if err != nil {

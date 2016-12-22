@@ -19,9 +19,10 @@ type DirectRequest struct {
 	ID        uint64 `gorm:"primary_key"`
 	CreatedAt time.Time
 
-	Type     RequestType
-	UserID   uint64
-	ReplyKey string // `gorm:"unique" sql:"default:NULL"` @TODO
+	Type   RequestType
+	UserID uint64
+	//@CHECK i'm somewhat unsure whether ReplyKey should be unique
+	ReplyKey string // `gorm:"unique" sql:"default:NULL"`
 
 	ThreadID           string
 	Participants       []uint64 `gorm:"-"`
