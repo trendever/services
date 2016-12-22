@@ -30,6 +30,7 @@ func (s *svc) Load() {
 	db.Init(settings.DB)
 	instagram.DoResponseLogging = settings.InstagramDebug
 	nats.Init(&settings.Nats, true)
+	go notifier()
 }
 
 func (s *svc) Start() {

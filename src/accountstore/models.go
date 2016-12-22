@@ -4,12 +4,18 @@ import (
 	"time"
 
 	"proto/accountstore"
+	"sync"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
 )
 
 const notifyTopic = "accountstore.notify"
+
+var global struct {
+	once       sync.Once
+	notifyChan chan *Account
+}
 
 // Account contains instagram account cookie
 type Account struct {
@@ -26,12 +32,30 @@ type Account struct {
 
 // Save it
 func Save(acc *Account) error {
-	err := nats.StanPublish(notifyTopic, acc)
+	err := db.New().Save(acc).Error
 	if err != nil {
-		log.Errorf("failed to notify about account: %v", err)
-		// @TODO inconsistent state... what now?
+		return err
 	}
-	return db.New().Save(acc).Error
+	global.notifyChan <- acc
+	return nil
+}
+
+func notifier() {
+	global.once.Do(func() {
+		global.notifyChan = make(chan *Account, 20)
+		// @TODO notify about service (re-)start? resend all accounts or just tell clients to reload all them
+		for acc := range global.notifyChan {
+			for {
+				err := nats.StanPublish(notifyTopic, acc)
+				if err != nil {
+					log.Errorf("failed to notify about account: %v", err)
+					time.Sleep(time.Second * 5)
+				} else {
+					break
+				}
+			}
+		}
+	})
 }
 
 // Find returns valid only

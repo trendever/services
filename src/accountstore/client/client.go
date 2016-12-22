@@ -122,6 +122,9 @@ func InitPoll(
 		}
 	}
 
+	pool.Lock()
+	defer pool.Unlock()
+
 	for _, acc := range res.Accounts {
 		ig, err := instagram.Restore(acc.Cookie, "", true)
 		if err != nil {
