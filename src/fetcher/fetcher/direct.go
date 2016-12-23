@@ -194,6 +194,10 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 
 // fill database model by direct message
 func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
+	// ignore items that have been added before the account was added
+	if item.Timestamp < meta.AddedAt {
+		return nil
+	}
 
 	share := item.MediaShare
 	ig := meta.Get()
