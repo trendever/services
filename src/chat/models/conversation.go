@@ -184,7 +184,7 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 			continue
 		}
 		kind, data := mapToInstagram(chat, msg)
-		if kind != bot.MessageType_None {
+		if kind != bot.MessageType_None && data != "" {
 			var req = bot.SendDirectRequest{
 				SenderId: chat.PrimaryInstagram,
 				ThreadId: chat.DirectThread,

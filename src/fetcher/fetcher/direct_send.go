@@ -39,6 +39,16 @@ func processRequests(meta *client.AccountMeta) error {
 }
 
 func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
+	if req.Data == "" {
+		// @TODO send something with nats?
+		log.Warn("skipping empty message")
+		err := db.New().Delete(req).Error
+		if err != nil {
+			return fmt.Errorf("failed to remove handled request from pending table: %v", err)
+		}
+		return nil
+	}
+
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
