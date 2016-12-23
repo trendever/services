@@ -237,3 +237,45 @@ func (s productServer) GetLikedBy(ctx context.Context, in *core.GetLikedByReques
 	}
 	return &core.GetLikedByReply{ProductIds: ids}, nil
 }
+
+func (s productServer) GetLastProductID(ctx context.Context, in *core.GetLastProductIDRequest) (*core.GetLastProductIDReply, error) {
+
+	var out []uint64
+
+	err := db.New().
+		Select("id").
+		Table("products_product").
+		Where("shop_id = ?", in.ShopId).
+		Order("id desc").
+		Limit(1).
+		Pluck("id", &out).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out) != 1 {
+		return &core.GetLastProductIDReply{}, nil
+	}
+
+	return &core.GetLastProductIDReply{
+		Id: out[0],
+	}, nil
+}
+
+func (s productServer) DelProduct(ctx context.Context, in *core.DelProductRequest) (*core.DelProductReply, error) {
+
+	err := db.New().
+		Where("id = ?", in.ProductId).
+		Delete(&models.Product{}).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	go nats.Publish("core.product.flush", in.ProductId)
+
+	return &core.DelProductReply{
+		Success: true,
+	}, nil
+}

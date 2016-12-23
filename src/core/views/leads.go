@@ -10,6 +10,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"proto/chat"
 	"proto/core"
 	"utils/db"
 	"utils/log"
@@ -99,6 +100,17 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		go func() {
 			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
 				log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
+			}
+			if protoLead.Comment != "" {
+				err := models.SendChatMessages(lead.ConversationID, &chat.Message{
+					UserId: uint64(lead.CustomerID),
+					Parts: []*chat.MessagePart{
+						{Content: protoLead.Comment, MimeType: "text/plain"},
+					},
+				})
+				if err != nil {
+					log.Errorf("failed to send user comment to chat: %v", err)
+				}
 			}
 		}()
 	} else {

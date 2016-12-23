@@ -1,8 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"golang.org/x/net/context"
 	"proto/accountstore"
+	"proto/core"
+	"utils/log"
 	"utils/rpc"
 )
 
@@ -10,17 +14,42 @@ import (
 func (s *svc) StartServer() {
 	server := rpc.Serve(settings.Listen)
 	accountstore.RegisterAccountStoreServiceServer(server, s)
+
+	// connect to RPCs
+	coreConn := rpc.Connect(settings.Core)
+	s.shopClient = core.NewShopServiceClient(coreConn)
 }
 
 func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore.AddReply, error) {
 
-	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.PreferEmail)
+	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.PreferEmail, in.OwnerId)
 	if err != nil {
 		return nil, err
 	}
 
 	account.Role = in.Role
 	account.OwnerID = in.OwnerId
+
+	// attach shop if needed
+	if in.Role == accountstore.Role_User {
+
+		ctx, cancel := rpc.DefaultContext()
+		defer cancel()
+
+		res, err := s.shopClient.FindOrCreateAttachedShop(
+			ctx, &core.FindOrCreateAttachedShopRequest{
+				SupplierId:        in.OwnerId,
+				InstagramUsername: in.InstagramUsername,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("RPC error: %v", err)
+		}
+		if res.Error != "" {
+			return nil, errors.New(res.Error)
+		}
+
+	}
 
 	// save Creates if not exists
 	err = Save(account)
@@ -57,6 +86,8 @@ func (s *svc) MarkInvalid(_ context.Context, in *accountstore.MarkInvalidRequest
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debug("Invalidating account %v; reason: %v", account.InstagramUsername, in.Reason)
 
 	account.Valid = false
 

@@ -7,6 +7,7 @@ import (
 	"github.com/qor/transition"
 	"proto/chat"
 	"proto/core"
+	"reflect"
 	"utils/db"
 	"utils/log"
 	"utils/rpc"
@@ -175,6 +176,8 @@ type LeadEvent struct {
 }
 
 func init() {
+	RegisterTemplate("other", "chat_caption")
+
 	LeadState.Initial(leadStateEmpty)
 
 	// init state machine
@@ -199,9 +202,10 @@ func init() {
 
 		if customer, err := GetUserByID(lead.CustomerID); err == nil {
 			members = append(members, &chat.Member{
-				UserId: uint64(customer.ID),
-				Role:   chat.MemberRole_CUSTOMER,
-				Name:   customer.GetName(),
+				UserId:      uint64(customer.ID),
+				Role:        chat.MemberRole_CUSTOMER,
+				Name:        customer.GetName(),
+				InstagramId: customer.InstagramID,
 			})
 		}
 
@@ -218,7 +222,11 @@ func init() {
 		resp, err := api.ChatServiceClient.CreateChat(context, &chat.NewChatRequest{
 			Chat: &chat.Chat{
 				Members: members,
+				Caption: genChatCaption(lead),
+				// @TODO check if user has active directbot here
+				DirectSync: true,
 			},
+			PrimaryInstagram: lead.Shop.Supplier.InstagramID,
 		})
 		if err != nil {
 			return err
@@ -231,10 +239,24 @@ func init() {
 		}
 		// send products that have been added before chat creation
 		products, err := GetLeadProducts(lead)
-		init := true
-		for _, product := range products {
-			log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
-			init = false
+		if len(products) != 0 {
+			init := true
+			for _, product := range products {
+				log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
+				init = false
+			}
+			// we have only fits comment. some data may be lost...
+			if lead.Comment != "" {
+				err := SendChatMessages(lead.ConversationID, &chat.Message{
+					UserId: uint64(lead.CustomerID),
+					Parts: []*chat.MessagePart{
+						{Content: lead.Comment, MimeType: "text/plain"},
+					},
+				})
+				if err != nil {
+					log.Errorf("failed to send user comment to chat: %v", err)
+				}
+			}
 		}
 		return nil
 	})
@@ -268,6 +290,31 @@ func init() {
 	for _, event := range leadEvents {
 		LeadState.Event(event.Name).To(event.To).From(event.From...)
 	}
+}
+
+func genChatCaption(lead *Lead) string {
+	template := &OtherTemplate{}
+	ret := db.New().Find(template, "template_id = ?", "chat_caption")
+	if ret.RecordNotFound() {
+		return ""
+	}
+	if ret.Error != nil {
+		log.Errorf("failed to load template: %v", ret.Error)
+		return ""
+	}
+	result, err := template.Execute(map[string]interface{}{
+		"lead": lead,
+	})
+	if err != nil {
+		log.Errorf("failed to execute template: %v", err)
+		return ""
+	}
+	text, ok := result.(string)
+	if !ok {
+		log.Errorf("expected string, but got " + reflect.TypeOf(text).Name())
+		return ""
+	}
+	return text
 }
 
 // LeadEventPossible returns true if triggering event eventName from specified state is possible

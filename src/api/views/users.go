@@ -47,6 +47,11 @@ func GetUserProfile(c *soso.Context) {
 		valid = true
 	}
 
+	if request.Id == 0 && c.Token != nil {
+		request.Id = c.Token.UID
+		valid = true
+	}
+
 	if !valid {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("instagram_name or user_id are required"))
 		return

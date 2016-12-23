@@ -44,7 +44,6 @@ func (act *Activity) Create() error {
 
 	if count > 0 {
 		// skipping dupe
-		log.Debug("Skipping dupe (got %v times)", count)
 		return nil
 	}
 
@@ -70,7 +69,7 @@ func (act *Activity) Encode() *bot.Activity {
 		Pk:                act.Pk,
 		MediaId:           act.MediaID,
 		MediaUrl:          act.MediaURL,
-		UserId:            int64(act.UserID),
+		UserId:            act.UserID,
 		UserImageUrl:      act.UserImageURL,
 		UserName:          act.UserName,
 		MentionedUsername: act.MentionedUsername,

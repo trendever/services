@@ -24,6 +24,8 @@ message Account {
   bool valid = 4;
   Role role = 5;
   uint64 owner_id = 6;
+  int64 created_at = 7;
+  uint64 created_at_ago = 8;
 }
 
 message AddRequest {
@@ -50,6 +52,7 @@ message ConfirmReply {
 message MarkInvalidRequest {
   string instagram_username = 1;
   uint64 instagram_id = 2;
+  string reason = 3;
 }
 
 message MarkInvalidReply {

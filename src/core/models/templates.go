@@ -58,8 +58,7 @@ var templateIDRegexp = regexp.MustCompile("^[[:word:]]+$")
 // BaseTemplate model
 type BaseNotifierTemplate struct {
 	ID uint64 `gorm:"primary_key"`
-
-	// Template fields
+	// @CHECK for what do we need name if TemplateID is unique?
 	TemplateName string
 	TemplateID   string `gorm:"unique_index"`
 }
@@ -95,6 +94,12 @@ type PushTemplate struct {
 	PushMessage
 }
 
+// generic templates
+type OtherTemplate struct {
+	BaseNotifierTemplate
+	Text string `gorm:"type:text"`
+}
+
 // TableName for gorm
 func (t EmailTemplate) TableName() string {
 	return "settings_templates_email"
@@ -107,6 +112,10 @@ func (t SMSTemplate) TableName() string {
 
 func (t PushTemplate) TableName() string {
 	return "settings_templates_push"
+}
+
+func (t OtherTemplate) TableName() string {
+	return "settings_templates_other"
 }
 
 // Validate fields
@@ -148,6 +157,18 @@ func (t SMSTemplate) Validate(db *gorm.DB) {
 		db.AddError(validations.NewError(
 			t,
 			"Message",
+			fmt.Sprintf("Failed to compile template: %v", err),
+		))
+	}
+}
+
+func (t OtherTemplate) Validate(db *gorm.DB) {
+	t.BaseNotifierTemplate.Validate(db)
+	_, err := pongo2.FromString(t.Text)
+	if err != nil {
+		db.AddError(validations.NewError(
+			t,
+			"Text",
 			fmt.Sprintf("Failed to compile template: %v", err),
 		))
 	}
@@ -200,6 +221,10 @@ func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 // Execute returns ready-to-use message text
 func (t *SMSTemplate) Execute(ctx interface{}) (interface{}, error) {
 	return applyTemplate(t.Message, ctx, false)
+}
+
+func (t *OtherTemplate) Execute(ctx interface{}) (interface{}, error) {
+	return applyTemplate(t.Text, ctx, false)
 }
 
 // setting data to string from ctx["URL"] is hardcoded, you need this field in context or data will be empty

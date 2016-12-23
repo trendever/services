@@ -41,6 +41,7 @@ var (
 		&models.ChatTemplate{},
 		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
+		&models.OtherTemplate{},
 		&transition.StateChangeLog{},
 		&models.UsersProducts{},
 		&models.PushToken{},

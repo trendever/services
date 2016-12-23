@@ -17,7 +17,7 @@ func init() {
 		SocketRoutes,
 		soso.Route{"add", "account", AddBot},
 		soso.Route{"list", "account", ListAccounts},
-		soso.Route{"account", "confirm", Confirm},
+		soso.Route{"confirm", "account", Confirm},
 		//		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
@@ -29,14 +29,7 @@ func Confirm(c *soso.Context) {
 		return
 	}
 
-	// get current user instagram ID
-	user, err := GetUser(c.Token.UID, false)
-	if err != nil {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
-		return
-	}
-
-	instagramUsername := user.InstagramUsername
+	instagramUsername, _ := c.RequestMap["instagram_username"].(string)
 
 	if instagramUsername == "" {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram username"))
@@ -51,7 +44,7 @@ func Confirm(c *soso.Context) {
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	_, err = accountStoreServiceClient.Confirm(ctx, &accountstore.ConfirmRequest{
+	_, err := accountStoreServiceClient.Confirm(ctx, &accountstore.ConfirmRequest{
 		InstagramUsername: instagramUsername,
 		Code:              code,
 	})
@@ -81,10 +74,12 @@ func ListAccounts(c *soso.Context) {
 
 	withInvalids, _ := c.RequestMap["with_invalids"].(bool)
 	withNonOwned, _ := c.RequestMap["with_non_owned"].(bool)
+	showPrivate, _ := c.RequestMap["show_private"].(bool)
 
 	req := accountstore.SearchRequest{
 		IncludeInvalids: withInvalids,
 		OwnerId:         c.Token.UID,
+		HidePrivate:     !user.IsAdmin || !showPrivate,
 	}
 
 	roleName, ok := c.RequestMap["role"].(string)

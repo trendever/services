@@ -21,6 +21,9 @@ var (
 // DoResponseLogging enables full json body output
 var DoResponseLogging = false
 
+// DisableJSONIndent disables indenting json in logs
+var DisableJSONIndent = true
+
 func getToken(cook []*http.Cookie) (string, error) {
 	for _, cookie := range cook {
 		if cookie.Name == "csrftoken" {
@@ -86,7 +89,11 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			var buf bytes.Buffer
 			err := json.Indent(&buf, jsonBody, "  ", "  ")
 			if err == nil {
-				log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, buf.String())
+				if DisableJSONIndent {
+					log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
+				} else {
+					log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, buf.String())
+				}
 			} else {
 				log.Debug("Instagram response indent failed for endpoint  %v: %v, raw: %v", endpoint, err, string(jsonBody))
 			}
@@ -103,6 +110,7 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 				return nil, errors.New(message.Message)
 			}
 			if message.Message == "checkpoint_required" {
+				ig.LoggedIn = false
 				return nil, ErrorCheckpointRequired
 			}
 			// relogin

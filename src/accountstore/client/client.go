@@ -49,6 +49,7 @@ type AccountMeta struct {
 	// stopper for individual workers
 	stopper *stopper.Stopper
 	wait    sync.WaitGroup
+	AddedAt int64
 }
 
 func (meta *AccountMeta) Get() *instagram.Instagram {
@@ -65,7 +66,7 @@ func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
 		if ig.LoggedIn {
 			return ig, nil
 		}
-		meta.pool.Invalidate(ig.UserNameID)
+		meta.pool.Invalidate(ig.UserID, "account no longer logged in")
 		return nil, errors.New("account is logged off")
 	case <-meta.stopper.Chan():
 		return nil, errors.New("account is stopped")
@@ -121,13 +122,16 @@ func InitPoll(
 		}
 	}
 
+	pool.Lock()
+	defer pool.Unlock()
+
 	for _, acc := range res.Accounts {
-		ig, err := instagram.Restore(acc.Cookie, "")
+		ig, err := instagram.Restore(acc.Cookie, "", true)
 		if err != nil {
 			log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
 			continue
 		}
-		pool.addAcc(ig)
+		pool.addAcc(ig, acc.CreatedAt)
 	}
 
 	if len(pool.idMap) == 0 {
@@ -152,11 +156,15 @@ func (pool *AccountsPool) randomTimeout() {
 	time.Sleep(time.Duration(rndTimeout))
 }
 
-func (pool *AccountsPool) Get(id uint64) (acc *instagram.Instagram, found bool) {
+func (pool *AccountsPool) Get(id uint64) *instagram.Instagram {
 	pool.RLock()
 	info, found := pool.idMap[id]
 	pool.RUnlock()
-	return info.ig, found
+	if found {
+		return info.ig
+	} else {
+		return nil
+	}
 }
 
 func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
@@ -164,7 +172,7 @@ func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
 	defer pool.RUnlock()
 	count := len(pool.idMap)
 	if count == 0 {
-		return nil, errors.New("no account aviable")
+		return nil, errors.New("no accounts aviable")
 	}
 	meta := pool.idMap[pool.idSlice[rand.Intn(count)]]
 	return meta.ig, nil
@@ -177,17 +185,20 @@ func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
 			if ig.LoggedIn {
 				return ig, nil
 			}
-			pool.Invalidate(ig.UserNameID)
+			pool.Invalidate(ig.UserID, "Account is no longer logged in")
 		case <-pool.stopper.Chan():
 			return nil, errors.New("pool is stopped")
 		}
 	}
 }
 
-func (pool *AccountsPool) Invalidate(id uint64) {
+func (pool *AccountsPool) Invalidate(id uint64, reason string) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	_, err := pool.storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{InstagramId: id})
+	_, err := pool.storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{
+		InstagramId: id,
+		Reason:      reason,
+	})
 	if err != nil {
 		log.Errorf("failed to invalidate account %v: %v", id, err)
 		return
@@ -205,9 +216,10 @@ func (pool *AccountsPool) Invalidate(id uint64) {
 }
 
 func (pool *AccountsPool) update(acc *accountstore.Account) {
-	ig, err := instagram.Restore(acc.Cookie, "")
+	ig, err := instagram.Restore(acc.Cookie, "", true)
 	if err != nil {
 		log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
+		pool.Invalidate(acc.InstagramId, "account can not be restored")
 		return
 	}
 
@@ -215,7 +227,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	defer pool.Unlock()
 
 	if !acc.Valid {
-		meta, ok := pool.idMap[ig.UserNameID]
+		meta, ok := pool.idMap[ig.UserID]
 		if !ok {
 			return
 		}
@@ -223,7 +235,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 		return
 	}
 
-	meta, ok := pool.idMap[ig.UserNameID]
+	meta, ok := pool.idMap[ig.UserID]
 	// we have this account already
 	if ok {
 		// part of account data changed probably, easiest way to update it in worker is simple restart
@@ -231,21 +243,22 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 	}
 
 	if acc.Role == pool.role {
-		pool.addAcc(ig)
+		pool.addAcc(ig, acc.CreatedAt)
 	}
 }
 
 // adds account to pool and starts individualWorker(if any),
 // pool should be already locked on higher level
-func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
+func (pool *AccountsPool) addAcc(ig *instagram.Instagram, addedAt int64) {
 	meta := &AccountMeta{
 		ig:      ig,
 		pool:    pool,
 		ready:   make(chan *instagram.Instagram),
 		stopper: stopper.NewStopper(),
+		AddedAt: addedAt,
 	}
-	pool.idMap[ig.UserNameID] = meta
-	pool.idSlice = append(pool.idSlice, ig.UserNameID)
+	pool.idMap[ig.UserID] = meta
+	pool.idSlice = append(pool.idSlice, ig.UserID)
 
 	meta.wait.Add(1)
 	go func() {
@@ -275,9 +288,9 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram) {
 // pool should be already locked on higher level
 func (pool *AccountsPool) delAcc(acc *AccountMeta, sync bool) {
 	acc.stopper.Stop()
-	delete(pool.idMap, acc.ig.UserNameID)
+	delete(pool.idMap, acc.ig.UserID)
 	for it, id := range pool.idSlice {
-		if id == acc.ig.UserNameID {
+		if id == acc.ig.UserID {
 			pool.idSlice = append(pool.idSlice[:it], pool.idSlice[it+1:]...)
 		}
 	}

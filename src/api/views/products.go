@@ -26,6 +26,8 @@ func init() {
 		soso.Route{"get_specials", "product", GetSpecialProducts},
 		soso.Route{"elastic_search", "product", ElasticSearch},
 		soso.Route{"get_liked_by", "product", GetLikedBy},
+		soso.Route{"lastid", "product", GetLastProductID},
+		soso.Route{"delete", "product", DelProduct},
 	)
 }
 
@@ -350,4 +352,83 @@ func GetLikedBy(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"products": ids,
 	})
+}
+
+func GetLastProductID(c *soso.Context) {
+	shopID, ok := c.RequestMap["shop_id"].(float64)
+	if !ok || shopID <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("shop_id is null"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	res, err := productServiceClient.GetLastProductID(ctx, &core.GetLastProductIDRequest{
+		ShopId: uint64(shopID),
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"id": res.Id,
+	})
+}
+
+func DelProduct(c *soso.Context) {
+
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	req := c.RequestMap
+
+	productID, _ := req["product_id"].(float64)
+	if productID <= 0 {
+		c.ErrorResponse(403, soso.LevelError, errors.New("Incorrect product ID"))
+		return
+	}
+
+	{
+		// get related product
+		ctx, cancel := rpc.DefaultContext()
+		defer cancel()
+
+		res, err := productServiceClient.GetProduct(ctx, &core.GetProductRequest{
+			SearchBy: &core.GetProductRequest_Id{int64(productID)},
+		})
+
+		if err != nil {
+			c.ErrorResponse(404, soso.LevelError, err)
+			return
+		}
+
+		if len(res.Result) != 1 {
+			c.ErrorResponse(404, soso.LevelError, errors.New("Product not found"))
+			return
+
+		}
+
+		if res.Result[0].Supplier.SupplierId <= 0 || uint64(res.Result[0].Supplier.SupplierId) != c.Token.UID {
+			c.ErrorResponse(403, soso.LevelError, errors.New("Only shop supplier allowed to do that"))
+			return
+		}
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	response, err := productServiceClient.DelProduct(ctx, &core.DelProductRequest{
+		ProductId: uint64(productID),
+	})
+
+	if err != nil {
+		c.ErrorResponse(503, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"success": response.Success,
+	})
+
 }

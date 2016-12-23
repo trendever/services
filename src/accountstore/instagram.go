@@ -9,7 +9,7 @@ import (
 
 // InstagramAccess is mockable instagram adapter
 type InstagramAccess interface {
-	Login(login, password string, preferEmail bool) (*Account, error)
+	Login(login, password string, preferEmail bool, owner uint64) (*Account, error)
 	SendCode(*Account, string, bool) error
 	VerifyCode(*Account, string) error
 }
@@ -19,7 +19,7 @@ type InstagramAccessImpl struct {
 }
 
 // Login with given login:pass, return an Account (probably invalid -- confirmation needed)
-func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*Account, error) {
+func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, owner uint64) (*Account, error) {
 
 	var account *Account
 
@@ -33,6 +33,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 		return nil, err
 	} else {
 		account = found
+		account.Valid = true
 	}
 
 	var (
@@ -40,8 +41,8 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 		err error
 	)
 
-	if account.Cookie > "" {
-		api, err = instagram.Restore(account.Cookie, password)
+	if account.Cookie > "" && owner == account.OwnerID {
+		api, err = instagram.Restore(account.Cookie, password, true)
 	} else {
 		api, err = instagram.NewInstagram(login, password)
 	}
@@ -63,8 +64,6 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool) (*
 	}
 
 	account.Cookie = cookieJar
-	account.InstagramID = api.UserNameID
-	account.Valid = true
 
 	return account, nil
 }
@@ -83,26 +82,60 @@ func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account, p
 // SendCode sends instagram checkpoint code
 func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmail bool) error {
 
-	api, err := instagram.Restore(acc.Cookie, "")
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	if err != nil {
 		return err
 	}
 
 	api.SetPassword(password)
-	return r.sendCode(api, acc, preferEmail)
+	err = r.sendCode(api, acc, preferEmail)
+	if err != nil {
+		return err
+	}
+
+	cookieJar, err := api.Save()
+	if err != nil {
+		return err
+	}
+
+	acc.Cookie = cookieJar
+
+	return Save(acc)
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
 func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, "")
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	if err != nil {
 		return err
 	}
 
-	if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
-		return fmt.Errorf("Timeout error")
+	// check if already confirmed
+	_, err = api.GetRecentActivity()
+	if err == instagram.ErrorCheckpointRequired {
+		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
+			return fmt.Errorf("Timeout error")
+		}
+
+		err = api.CheckCode(code)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
 	}
 
-	return api.CheckCode(code)
+	api.CheckpointURL = ""
+	api.CheckpointCookies = nil
+
+	cookieJar, err := api.Save()
+	if err != nil {
+		return err
+	}
+
+	acc.Valid = true
+	acc.Cookie = cookieJar
+
+	return Save(acc)
 }

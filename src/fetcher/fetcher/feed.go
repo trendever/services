@@ -17,6 +17,7 @@ type textField struct {
 
 // get activity: fetch and parse instagram feed
 func getActivity(meta *client.AccountMeta) error {
+	log.Debug("Checking feed for %v", meta.Get().Username)
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
@@ -39,11 +40,12 @@ func getActivity(meta *client.AccountMeta) error {
 
 // fill database model
 func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta) error {
-
-	log.Debug("Fetching new story")
-
 	// parse text field
 	txt := parseText(stories.Args.Text)
+	// ignore the comments that have been added before the account was added
+	if txt.textType == "commented" && int64(stories.Args.Timestamp) < meta.AddedAt {
+		return nil
+	}
 
 	act := &models.Activity{
 		Pk:           stories.Pk, // instagram's post primary key from json

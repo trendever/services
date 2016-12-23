@@ -158,6 +158,7 @@ func newMessage(req *chat.NewMessageRequest) {
 		return
 	}
 	newLead := lead.IsNew()
+	advance := false
 
 	users := map[*models.User]bool{}
 	for _, msg := range req.Messages {
@@ -168,6 +169,9 @@ func newMessage(req *chat.NewMessageRequest) {
 		}
 
 		if newLead {
+			if msg.User.Role == chat.MemberRole_CUSTOMER {
+				advance = true
+			}
 			continue
 		}
 
@@ -179,6 +183,9 @@ func newMessage(req *chat.NewMessageRequest) {
 				users[seller] = true
 			}
 		}
+	}
+	if advance {
+		log.Error(lead.TriggerEvent("PROGRESS"))
 	}
 	n := models.GetNotifier()
 	for user := range users {

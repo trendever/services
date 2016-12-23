@@ -118,7 +118,7 @@ type MediaInfo struct {
 		HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
 		IsPrivate                  bool   `json:"is_private"`
 		IsUnpublished              bool   `json:"is_unpublished"`
-		Pk                         int64  `json:"pk"`
+		Pk                         uint64 `json:"pk"`
 		ProfilePicURL              string `json:"profile_pic_url"`
 		Username                   string `json:"username"`
 	} `json:"user"`
@@ -130,10 +130,19 @@ type MediaLikers struct {
 	UserCount int    `json:"user_count"`
 	Users     []struct {
 		Username      string `json:"username"`
-		Pk            int64  `json:"pk"`
+		Pk            uint64 `json:"pk"`
 		ProfilePicURL string `json:"profile_pic_url"`
 		IsPrivate     bool   `json:"is_private"`
 		FullName      string `json:"full_name"`
 	} `json:"users"`
 	Message string `json:"message"` // from Error
+}
+
+type UserFeed struct {
+	Message
+	NumResults          int         `json:"num_results"`
+	AutoLoadMoreEnabled bool        `json:"auto_load_more_enabled"`
+	Items               []MediaInfo `json:"items"`
+	MoreAvailable       bool        `json:"more_available"`
+	CommentLikesEnabled bool        `json:"comment_likes_enabled"`
 }

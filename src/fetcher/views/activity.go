@@ -14,6 +14,7 @@ import (
 // Init binds server
 func Init(srv *grpc.Server) {
 	bot.RegisterFetcherServiceServer(srv, fetcherServer{})
+	subscribe()
 }
 
 type fetcherServer struct{}

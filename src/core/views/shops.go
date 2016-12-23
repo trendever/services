@@ -47,10 +47,7 @@ func (s shopServer) GetShopProfile(_ context.Context, req *core.ShopProfileReque
 	return
 }
 
-func (s shopServer) FindOrCreateShopForSupplier(
-	_ context.Context, in *core.FindOrCreateShopForSupplierRequest,
-) (reply *core.FindOrCreateShopForSupplierReply, _ error) {
-	reply = &core.FindOrCreateShopForSupplierReply{}
+func (s shopServer) FindOrCreateShopForSupplier(_ context.Context, in *core.FindOrCreateShopForSupplierRequest) (*core.FindOrCreateShopForSupplierReply, error) {
 
 	supplier := models.User{Model: gorm.Model{ID: uint(in.SupplierId)}}
 	err := db.New().First(&supplier).Error
@@ -65,6 +62,19 @@ func (s shopServer) FindOrCreateShopForSupplier(
 	ret := &core.FindOrCreateShopForSupplierReply{
 		ShopId:  shopID,
 		Deleted: deleted,
+	}
+	if err != nil {
+		ret.Error = err.Error()
+	}
+	return ret, nil
+}
+
+func (s shopServer) FindOrCreateAttachedShop(_ context.Context, in *core.FindOrCreateAttachedShopRequest) (*core.FindOrCreateAttachedShopReply, error) {
+
+	shopID, err := models.FindOrCreateAttachedShop(in.SupplierId, in.InstagramUsername)
+
+	ret := &core.FindOrCreateAttachedShopReply{
+		ShopId: shopID,
 	}
 	if err != nil {
 		ret.Error = err.Error()

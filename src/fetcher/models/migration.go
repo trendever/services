@@ -9,6 +9,7 @@ import (
 var modelsList = []interface{}{
 	&Activity{},
 	&ThreadInfo{},
+	&DirectRequest{},
 }
 
 // AutoMigrate used models
@@ -29,7 +30,9 @@ func AutoMigrate(drop bool) error {
 	if err != nil {
 		return err
 	}
-
+	if db.HasColumn(&DirectRequest{}, "text") {
+		db.New().Model(&DirectRequest{}).DropColumn("text")
+	}
 	log.Info("Migration: success.")
 
 	return nil

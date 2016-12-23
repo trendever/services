@@ -25,6 +25,38 @@ func init() {
 		Name: "Chat templates",
 		Menu: []string{"Settings"},
 	}, initChatTemplateResource)
+	addResource(&models.OtherTemplate{}, &admin.Config{
+		Name: "Other templates",
+		Menu: []string{"Settings"},
+	}, initOtherTemplateResource)
+}
+
+func initOtherTemplateResource(res *admin.Resource) {
+	res.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["other"],
+	})
+	res.Meta(&admin.Meta{
+		Name: "Text",
+		Type: "text",
+	})
+	attrs := []*admin.Section{
+		{
+			Title: "Template settings",
+			Rows: [][]string{
+				{"TemplateID", "TemplateName"},
+			},
+		},
+		{
+			Title: "Text",
+			Rows: [][]string{
+				{"Text"},
+			},
+		},
+	}
+	res.NewAttrs(attrs)
+	res.EditAttrs(attrs)
 }
 
 func initSMSTemplateResource(sms *admin.Resource) {

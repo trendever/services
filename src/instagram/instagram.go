@@ -14,7 +14,7 @@ type Instagram struct {
 	Username          string
 	password          string
 	LoggedIn          bool
-	UserNameID        uint64
+	UserID            uint64 `json:"UserNameID"`
 	RankToken         string
 	CheckpointURL     string
 	Cookies           []*http.Cookie
@@ -29,15 +29,15 @@ type Instagram struct {
 // NewInstagram initializes client for futher use
 func NewInstagram(userName, password string) (*Instagram, error) {
 	i := &Instagram{
-		Username:   userName,
-		password:   password,
-		LoggedIn:   false,
-		UUID:       generateUUID(true),
-		PhoneID:    generateUUID(true),
-		DeviceID:   generateDeviceID(userName),
-		UserNameID: 0,
-		RankToken:  "",
-		Cookies:    nil,
+		Username:  userName,
+		password:  password,
+		LoggedIn:  false,
+		UUID:      generateUUID(true),
+		PhoneID:   generateUUID(true),
+		DeviceID:  generateDeviceID(userName),
+		UserID:    0,
+		RankToken: "",
+		Cookies:   nil,
 	}
 
 	err := i.Login()
@@ -98,6 +98,18 @@ func (ig *Instagram) GetRecentActivity() (*RecentActivity, error) {
 	return &object, err
 }
 
+// GetUserFeed
+func (ig *Instagram) GetUserFeed(userID uint64) (*UserFeed, error) {
+
+	endpoint := fmt.Sprintf("/feed/user/%v/", userID)
+	// @TODO: use max_id parameter
+
+	var object UserFeed
+	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+}
+
 // SearchUsers find user by query
 func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 
@@ -113,7 +125,7 @@ func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 }
 
 // GetUserNameInfo for userNameID
-func (ig *Instagram) GetUserNameInfo(userNameID int64) (*UserNameInfo, error) {
+func (ig *Instagram) GetUserNameInfo(userNameID uint64) (*UserNameInfo, error) {
 
 	endpoint := fmt.Sprintf("/users/%d/info/?", userNameID)
 
@@ -124,7 +136,7 @@ func (ig *Instagram) GetUserNameInfo(userNameID int64) (*UserNameInfo, error) {
 }
 
 // GetUserTags for given userID
-func (ig *Instagram) GetUserTags(userNameID int64) (*UserTags, error) {
+func (ig *Instagram) GetUserTags(userNameID uint64) (*UserTags, error) {
 
 	endpoint := fmt.Sprintf(
 		"/usertags/%d/feed/?rank_token=%v&ranked_content=false",
@@ -201,7 +213,7 @@ func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 
 }
 
-// DirectThread @TODO wtf returns
+// DirectThread
 func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadResponse, error) {
 
 	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
@@ -213,7 +225,6 @@ func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadRespons
 	err := ig.request("GET", endpoint, &object)
 
 	return &object, err
-
 }
 
 // possible direct thread actions(there is some more actions actuality)
@@ -281,7 +292,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 }
 
 // SendText sends text to given user(-s)
-func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, err error) {
+func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID string, messageID string, err error) {
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
 	strs := make([]string, len(userIDs), len(userIDs))
@@ -296,12 +307,32 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 	}, &object)
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(object.Threads) == 0 {
-		return "", errors.New("no threads info in responce")
+		return "", "", errors.New("no threads info in responce")
 	}
 
-	return object.Threads[0].ThreadID, nil
+	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
+}
+
+func (ig *Instagram) SendMedia(threadID, mediaID string) (messageID string, _ error) {
+	endpoint := "/direct_v2/threads/broadcast/media_share/?media_type=photo"
+
+	var object BroadcastTextResponse
+	err := ig.postRequest(endpoint, map[string]string{
+		"media_id":   fmt.Sprintf("%v", mediaID),
+		"thread_ids": fmt.Sprintf("[%v]", threadID),
+	}, &object)
+
+	if err != nil {
+		return "", err
+	}
+
+	if object.Message.Message != "" {
+		return "", errors.New(object.Message.Message)
+	}
+
+	return object.Threads[0].NewestCursor, nil
 }

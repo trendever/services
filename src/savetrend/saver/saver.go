@@ -115,8 +115,16 @@ func saveLastChecked() {
 
 func registerProducts() {
 	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
+	loopStarted := time.Now()
 
 	for {
+		// make some delays in case loops runs too fast
+		// startup delay is OK
+		if time.Since(loopStarted) < time.Second {
+			time.Sleep(timeout)
+		}
+		loopStarted = time.Now()
+
 		log.Debug("Checking for new products (last checked at %v)", lastChecked)
 
 		// Step #1: get new entries from fetcher
@@ -141,9 +149,6 @@ func registerProducts() {
 			// update last checked ID
 			lastChecked = mention.Id
 		}
-		if len(res.Result) == 0 {
-			time.Sleep(timeout)
-		}
 	}
 }
 
@@ -155,6 +160,10 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 			{
 				Role: bot.MentionedRole_Savetrend,
 				Type: []string{"mentioned", "direct"},
+			},
+			{
+				Role: bot.MentionedRole_User,
+				Type: []string{"ownfeed"},
 			},
 		},
 		AfterId: lastChecked,
@@ -215,7 +224,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 
 	var (
 		productMedia        = medias.Items[0]
-		supplierInstagramID int64
+		supplierInstagramID uint64
 		supplierUsername    string
 	)
 
@@ -306,7 +315,7 @@ func productExists(mediaID string) (id int64, deleted bool, err error) {
 }
 
 // find core user with given instagramID; if not exists -- create one
-func userID(instagramID int64, instagramUsername string) (uint64, *core.User, error) {
+func userID(instagramID uint64, instagramUsername string) (uint64, *core.User, error) {
 
 	if instagramID == 0 {
 		return 0, nil, errors.New("zero instagramId in userId()")

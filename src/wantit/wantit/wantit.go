@@ -112,8 +112,15 @@ func saveLastChecked() {
 
 func registerOrders() {
 	timeout, _ := time.ParseDuration(settings.Instagram.TimeoutMin)
+	loopStarted := time.Now()
 
 	for {
+		// make some delays in case loops runs too fast
+		// startup delay is OK
+		if time.Since(loopStarted) < time.Second {
+			time.Sleep(timeout)
+		}
+		loopStarted = time.Now()
 		log.Debug("Checking for new mention orders (last processed at %v)...", lastChecked)
 
 		// Step #1: get new entries from fetcher
@@ -145,9 +152,6 @@ func registerOrders() {
 				break
 			}
 
-		}
-		if len(res.Result) == 0 {
-			time.Sleep(timeout)
 		}
 	}
 }
@@ -222,7 +226,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		var retry bool
 		productID, retry, err = saveProduct(mention)
 		if retry {
-			return true, errors.New("Temporarily unable to save product")
+			return true, fmt.Errorf("Temporarily unable to save product (%v)", err)
 		}
 		if err != nil {
 			return true, err
@@ -363,7 +367,7 @@ func isLeadRegistered(commentPk string) (bool, error) {
 	return res.Id > 0, nil
 }
 
-func coreUser(instagramID int64, instagramUsername string) (*core.User, error) {
+func coreUser(instagramID uint64, instagramUsername string) (*core.User, error) {
 
 	if instagramID == 0 || instagramUsername == "" {
 		return nil, fmt.Errorf("zero instagram{ID/Name}in userId()")

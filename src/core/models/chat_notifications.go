@@ -123,6 +123,9 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			log.Errorf("template message %v returned unexpected type", msg.ID)
 			continue
 		}
+		if len(parts) == 0 {
+			continue
+		}
 		messages = append(messages, &chat.Message{
 			UserId: uint64(SystemUser.ID),
 			Parts:  parts,

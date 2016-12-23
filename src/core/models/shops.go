@@ -262,15 +262,18 @@ func GetShopProductsCount(shopID uint64) (count uint64, err error) {
 
 // FindOrCreateShopForSupplier func
 func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID uint64, deleted bool, err error) {
+
 	scope := db.New().Where("supplier_id = ?", supplier.ID)
 	if !recreateDeleted {
 		scope = scope.Unscoped().Order("deleted_at IS NOT NULL")
 	}
+
 	var shop Shop
 	res := scope.First(&shop)
 	if res.Error != nil && !res.RecordNotFound() {
 		return 0, false, fmt.Errorf("failed to check fot existing shop: %v", res.Error)
 	}
+
 	if shop.ID != 0 {
 		if shop.DeletedAt == nil {
 			return uint64(shop.ID), false, nil
@@ -279,13 +282,44 @@ func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID u
 			return uint64(shop.ID), true, nil
 		}
 	}
+
 	new := Shop{
 		InstagramUsername: supplier.GetName(),
 		SupplierID:        supplier.ID,
 	}
+
 	err = db.New().Save(&new).Error
 	if err != nil {
 		return 0, false, fmt.Errorf("failed to save created shop: %v", err)
 	}
+
 	return uint64(new.ID), false, nil
+}
+
+// FindOrCreateAttachedShop func
+func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (shopID uint64, err error) {
+
+	scope := db.New().Where("instagram_username = ?", shopInstagramUsername)
+
+	var shop Shop
+	res := scope.First(&shop)
+	if res.Error != nil && !res.RecordNotFound() {
+		return 0, fmt.Errorf("failed to check fot existing shop: %v", res.Error)
+	}
+
+	if shop.ID == 0 {
+		shop = Shop{
+			InstagramUsername: shopInstagramUsername,
+			SupplierID:        uint(supplierID),
+		}
+
+		return uint64(shop.ID), nil
+	}
+
+	err = db.New().Save(&shop).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to save shop: %v", err)
+	}
+
+	return uint64(shop.ID), nil
 }

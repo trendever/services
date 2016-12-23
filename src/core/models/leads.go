@@ -2,17 +2,20 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"github.com/qor/validations"
 	"proto/core"
 	"time"
+	"utils/db"
 )
 
 // Possible lead sources
 var LeadSources = []string{
 	"website",
 	"wantit",
+	"comment",
 }
 
 // Lead model
@@ -146,4 +149,16 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 		Comment:       lead.Comment,
 	}
 
+}
+
+func (lead *Lead) TriggerEvent(event string) error {
+	err := LeadState.Trigger(event, lead, db.New())
+	if err != nil {
+		return fmt.Errorf("failed to trigger event: %v", err)
+	}
+	err = db.New().Model(&lead).UpdateColumn("state", lead.State).Error
+	if err != nil {
+		return fmt.Errorf("failed to update lead state: %v", err)
+	}
+	return nil
 }

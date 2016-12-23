@@ -12,6 +12,8 @@ import (
 	"utils/nats"
 )
 
+const DirectNotifySubject = "direct.notify"
+
 // direct activity: accept PM invites; read && parse them
 func checkDirect(meta *client.AccountMeta) error {
 	// get non-pending shiet
@@ -19,6 +21,8 @@ func checkDirect(meta *client.AccountMeta) error {
 	// get them
 
 	var threads []models.ThreadInfo
+
+	log.Debug("Checking direct for %v", meta.Get().Username)
 
 	cursor := ""
 
@@ -44,7 +48,7 @@ collectLoop:
 		}
 
 		for _, thread := range resp.Inbox.Threads {
-			info, err := models.GetThreadInfo(thread.ThreadID)
+			info, err := models.GetThreadInfo(thread.ThreadID, ig.UserID)
 			if err != nil {
 				return err
 			}
@@ -53,7 +57,6 @@ collectLoop:
 				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
 			}
 			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
-				log.Debug("Unchanged thread is reached")
 				break collectLoop
 			}
 			threads = append(threads, info)
@@ -81,8 +84,6 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		resp     *instagram.DirectThreadResponse
 		msgs     []instagram.ThreadItem
 	)
-	log.Debug("Processing thread %v, last checked was %v", threadID, info.LastCheckedID)
-	defer log.Debug("Processing thread %v end", threadID)
 
 	// populate new messages
 	cursor := ""
@@ -119,13 +120,13 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		break
 	}
 
-	log.Debug("Thread is from %v; got %v new messages there", resp.Thread.Inviter.Username, len(msgs))
+	log.Debug("Got %v new messages for %v from thread %v", len(msgs), meta.Get().Username, threadID)
 
 	var relatedMedia *instagram.ThreadItem
+	sourceID := meta.Get().UserID
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
-		log.Debug("Checking message with id=%v", message.ItemID)
 
 		switch message.ItemType {
 		case "media_share":
@@ -143,10 +144,11 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 			}
 
 		case "text":
-			notify := bot.DirectMessageNotify{
+			notify := bot.DirectNotify{
 				ThreadId:  threadID,
 				MessageId: message.ItemID,
 				UserId:    message.UserID,
+				SourceId:  sourceID,
 				Text:      message.Text,
 			}
 
@@ -162,14 +164,14 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 				relatedMedia = nil
 			}
 
-			err := nats.StanPublish("direct.new_message", &notify)
+			err := nats.StanPublish(DirectNotifySubject, &notify)
 			if err != nil {
 				return fmt.Errorf("failed to send message notification via stan: %v", err)
 			}
 		}
 		// only if we have no media in progress
 		if relatedMedia == nil {
-			err := models.SaveLastCheckedID(threadID, message.ItemID)
+			err := models.SaveLastCheckedID(sourceID, threadID, message.ItemID)
 			if err != nil {
 				return err
 			}
@@ -181,7 +183,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		if err := fillDirect(relatedMedia, &resp.Thread, meta, ""); err != nil {
 			return err
 		}
-		err := models.SaveLastCheckedID(threadID, msgs[0].ItemID)
+		err := models.SaveLastCheckedID(sourceID, threadID, msgs[0].ItemID)
 		if err != nil {
 			return err
 		}
@@ -192,6 +194,10 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 
 // fill database model by direct message
 func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
+	// ignore items that have been added before the account was added
+	if item.Timestamp < meta.AddedAt {
+		return nil
+	}
 
 	share := item.MediaShare
 	ig := meta.Get()
@@ -212,7 +218,7 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		return nil
 	}
 
-	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserNameID {
+	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserID {
 		// ignore media with someone else's posts for shops
 		log.Debug("ignoring medaishare %v with foreign post", item.ItemID)
 		return nil
@@ -234,28 +240,6 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		ThreadID:          thread.ThreadID,
 	}
 	return act.Create()
-}
-
-func CreateThread(inviter uint64, participants []uint64, caption, initMsg string) (threadID string, err error) {
-	// @TODO timeouts?..
-	ig, found := global.usersPool.Get(inviter)
-	bot, err := global.pubPool.GetRandom()
-	participants = append(participants, bot.UserNameID)
-	if err != nil {
-		return
-	}
-	if !found {
-		return "", fmt.Errorf("inviter account %v unaviable", inviter)
-	}
-	tid, err := ig.SendText(initMsg, participants...)
-	if err != nil {
-		return "", err
-	}
-	_, err = ig.DirectUpdateTitle(tid, caption)
-	if err != nil {
-		log.Errorf("set title for thread %v failed:", tid, err)
-	}
-	return tid, nil
 }
 
 func leaveAllThreads(meta *client.AccountMeta) error {

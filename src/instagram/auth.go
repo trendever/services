@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -55,16 +57,38 @@ func (ig *Instagram) Login() error {
 	if loginResp.Status == "fail" {
 		if loginResp.Message.Message == "checkpoint_required" {
 			ig.CheckpointURL = loginResp.CheckpointURL
+			uid, err := ig.getUidByCheckpointLink()
+			if err != nil {
+				return err
+			}
+			ig.UserID = uid
+			ig.updateRankToken()
 			return ErrorCheckpointRequired
 		}
 		return errors.New(loginResp.Message.Message)
 	}
 
-	ig.UserNameID = loginResp.LoggedInUser.Pk
-	ig.RankToken = fmt.Sprintf("%d_%v", ig.UserNameID, ig.UUID)
+	ig.UserID = loginResp.LoggedInUser.Pk
+	ig.updateRankToken()
 	ig.LoggedIn = true
 
 	return nil
+}
+
+var uidRegexp = regexp.MustCompile(`https://i.instagram.com/integrity/checkpoint/checkpoint_logged_out_main/([0-9]+)/`)
+
+func (ig *Instagram) getUidByCheckpointLink() (uint64, error) {
+
+	res := uidRegexp.FindStringSubmatch(ig.CheckpointURL)
+	if len(res) != 2 {
+		return 0, fmt.Errorf("Could not find UID for user %v in checkpoint URL (%v), format changed?: %v", ig.Username, ig.CheckpointURL, res)
+	}
+
+	return strconv.ParseUint(res[1], 10, 64)
+}
+
+func (ig *Instagram) updateRankToken() {
+	ig.RankToken = fmt.Sprintf("%d_%v", ig.UserID, ig.UUID)
 }
 
 // SendCode sends checkpoint code
