@@ -183,13 +183,14 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 		if msg.InstagramID != "" {
 			continue
 		}
-		text := mapToText(chat, msg)
-		if text != "" {
+		kind, data := mapToInstagram(chat, msg)
+		if kind != bot.MessageType_None {
 			var req = bot.SendDirectRequest{
 				SenderId: chat.PrimaryInstagram,
 				ThreadId: chat.DirectThread,
 				ReplyKey: MessageReplyPrefix + strconv.FormatUint(msg.ID, 10),
-				Text:     text,
+				Type:     kind,
+				Data:     data,
 			}
 			log.Debug("send direct request: %+v", req)
 			err := nats.StanPublish("direct.send", &req)
@@ -204,24 +205,35 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 	c.db.Model(&Message{}).Where("id IN (?)", ids).UpdateColumn("sync_status", SyncStatus_Progress)
 }
 
-func mapToText(chat *Conversation, message *Message) (ret string) {
+func mapToInstagram(chat *Conversation, message *Message) (kind bot.MessageType, data string) {
 	citation := false
 	if message.Member.Role == "CUSTOMER" || message.Member.Role == "UNKNOWN" {
 		citation = true
 	}
+
+	kind = bot.MessageType_Text
 	for _, part := range message.Parts {
-		if part.MimeType == "text/plain" {
+		switch part.MimeType {
+		case "text/plain":
 			trimmed := strings.Trim(part.Content, " \t\r\n")
 			if trimmed == "" {
 				continue
 			}
 			if citation {
-				ret += ">"
+				data += ">"
 			}
-			ret += part.Content + "\n"
+			data += part.Content + "\n"
+		// @TODO @REFACTOR that is definitely ugly method to add media share data
+		case "text/data":
+			slice := strings.Split(part.Content, "~")
+			if len(slice) >= 3 {
+				kind = bot.MessageType_MediaShare
+				data = slice[2]
+				break
+			}
 		}
 	}
-	ret = strings.Trim(ret, " \t\r\n")
+	data = strings.Trim(data, " \t\r\n")
 	return
 }
 
