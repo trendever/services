@@ -11,7 +11,7 @@ type RequestType uint64
 
 const (
 	SendMessageRequest RequestType = iota
-	SendMediaRequest
+	ShareMediaRequest
 	CreateThreadRequest
 )
 
@@ -28,7 +28,7 @@ type DirectRequest struct {
 	Participants       []uint64 `gorm:"-"`
 	ParticipantsPacked string
 
-	Text    string `gorm:"text"`
+	Data    string `gorm:"text"`
 	Caption string `gorm:"text"`
 }
 

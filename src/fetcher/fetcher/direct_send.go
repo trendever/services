@@ -2,8 +2,10 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"errors"
 	"fetcher/models"
 	"fmt"
+	"instagram"
 	"proto/bot"
 	"utils/db"
 	"utils/log"
@@ -21,7 +23,7 @@ func processRequests(meta *client.AccountMeta) error {
 
 	for _, req := range requests {
 		switch req.Type {
-		case models.SendMessageRequest:
+		case models.SendMessageRequest, models.ShareMediaRequest:
 			err = sendMessage(meta, &req)
 		case models.CreateThreadRequest:
 			err = createThread(meta, &req)
@@ -42,15 +44,8 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 		return err
 	}
 	reply := bot.DirectNotify{ReplyKey: req.ReplyKey}
-	switch {
-	case req.ThreadID != "":
-		reply.ThreadId = req.ThreadID
-		reply.MessageId, err = ig.BroadcastText(req.ThreadID, req.Text)
-	case len(req.Participants) != 0:
-		reply.ThreadId, reply.MessageId, err = ig.SendText(req.Text, req.Participants...)
-	default:
-		reply.Error = "destination is unspecified"
-	}
+
+	reply.ThreadId, reply.MessageId, err = performSend(ig, req)
 	if err != nil {
 		return err
 	}
@@ -76,6 +71,40 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 		return fmt.Errorf("failed to remove handled request from pending table: %v", err)
 	}
 	return nil
+}
+
+func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, messageID string, err error) {
+	switch req.Type {
+	case models.SendMessageRequest, models.CreateThreadRequest:
+		switch {
+		case req.ThreadID != "":
+			threadID = req.ThreadID
+			messageID, err = ig.BroadcastText(req.ThreadID, req.Data)
+		case len(req.Participants) != 0:
+			threadID, messageID, err = ig.SendText(req.Data, req.Participants...)
+		default:
+			err = errors.New("destination is unspecified")
+		}
+		if err != nil {
+			return
+		}
+		if req.Caption != "" {
+			_, err = ig.DirectUpdateTitle(threadID, req.Caption)
+			if err != nil {
+				log.Errorf("set title for thread %v failed:", threadID, err)
+			}
+		}
+
+	case models.ShareMediaRequest:
+		if req.ThreadID == "" {
+			err = errors.New("bad destination")
+			return
+		}
+		threadID = req.ThreadID
+		messageID, err = ig.SendMedia(threadID, req.Data)
+	}
+
+	return
 }
 
 func createThread(meta *client.AccountMeta, req *models.DirectRequest) error {

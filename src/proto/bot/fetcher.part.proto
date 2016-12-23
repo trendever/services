@@ -28,9 +28,16 @@ message RetrieveActivitiesReply {
   repeated Activity result = 1;
 }
 
+enum MessageType {
+  None = 0;
+  Text = 1;
+  MediaShare = 2;
+}
+
 message SendDirectRequest {
   uint64 sender_id = 1;
-  string text = 2;
+  string data = 2;
+  MessageType type = 6;
   // only one of two followed fields need to be setted
   string thread_id = 3;
   uint64 reciever_id = 4;

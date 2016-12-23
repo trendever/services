@@ -18,6 +18,11 @@ const (
 
 var once sync.Once
 
+var typeMap = map[bot.MessageType]models.RequestType{
+	bot.MessageType_Text:       models.SendMessageRequest,
+	bot.MessageType_MediaShare: models.ShareMediaRequest,
+}
+
 func subscribe() {
 	once.Do(func() {
 		nats.StanSubscribe(
@@ -45,14 +50,15 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 }
 
 func addDirectRequest(in *bot.SendDirectRequest) bool {
-	err := db.New().Save(&models.DirectRequest{
-		Type:         models.SendMessageRequest,
+	var req = models.DirectRequest{
+		Type:         typeMap[in.Type],
 		UserID:       in.SenderId,
 		ReplyKey:     in.ReplyKey,
 		ThreadID:     in.ThreadId,
 		Participants: []uint64{in.RecieverId},
-		Text:         in.Text,
-	}).Error
+		Data:         in.Data,
+	}
+	err := db.New().Save(&req).Error
 	if err != nil {
 		log.Errorf("failed to add direct request: %v", err)
 		return false
@@ -67,7 +73,7 @@ func createThread(in *bot.CreateThreadRequest) bool {
 		ReplyKey:     in.ReplyKey,
 		Participants: in.Participant,
 		Caption:      in.Caption,
-		Text:         in.InitMessage,
+		Data:         in.InitMessage,
 	}).Error
 	if err != nil {
 		log.Errorf("failed to add direct request: %v", err)
