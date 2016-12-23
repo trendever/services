@@ -60,13 +60,6 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 		return err
 	}
 
-	if req.Caption != "" {
-		_, err = ig.DirectUpdateTitle(reply.ThreadId, req.Caption)
-		if err != nil {
-			log.Errorf("set title for thread %v failed:", reply.ThreadId, err)
-		}
-	}
-
 	err = nats.StanPublish(DirectNotifySubject, &reply)
 	if err != nil {
 		return fmt.Errorf("failed to send reply via stan: %v", err)
