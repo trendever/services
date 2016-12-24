@@ -59,7 +59,7 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string, a
 			"%v %v %v by %v from %v, comment: '%v'\n"+ // [client] [action] [product_code] in [shop] from [wantit or website] comment: '[comment]'
 				"%v\n"+ // [website_link]
 				"%v\n"+ // [instgram_repost_link]
-				"%v"+ // [qor_link]
+				"%v\n"+ // [qor_link]
 				"#%v", // [tag for search]
 			// first line
 			l.Customer.Stringify(),
