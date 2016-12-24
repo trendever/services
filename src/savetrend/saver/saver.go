@@ -180,7 +180,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 
 	mentionerID, mentioner, err := userID(mention.UserId, mention.UserName)
 	if err != nil {
-		return -1, true, err
+		return -1, err != instagram.ErrorPageNotFound, err
 	}
 
 	productID, deleted, err := productExists(mediaID) //@TODO: batch check for existence

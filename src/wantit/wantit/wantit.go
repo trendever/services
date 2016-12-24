@@ -245,7 +245,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	// get customer core id
 	customer, err := coreUser(mention.UserId, mention.UserName)
 	if err != nil {
-		return true, err
+		return err != instagram.ErrorPageNotFound, err
 	}
 
 	if customer == nil {

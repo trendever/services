@@ -16,6 +16,7 @@ import (
 // Possible network instagram errors
 var (
 	ErrorCheckpointRequired = errors.New("Checkpoint action needed to proceed")
+	ErrorPageNotFound       = errors.New("Page not found")
 )
 
 // DoResponseLogging enables full json body output
@@ -83,6 +84,10 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 		jsonBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
+		}
+
+		if resp.StatusCode == 404 {
+			return nil, ErrorPageNotFound
 		}
 
 		if DoResponseLogging {
