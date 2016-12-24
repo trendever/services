@@ -86,6 +86,9 @@ func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
 			return nil, err
 		}
 
+		if resp.StatusCode != 200 {
+			log.Debug("got non-200 status code %v for endpoint %v", resp.StatusCode, endpoint)
+		}
 		if resp.StatusCode == 404 {
 			return nil, ErrorPageNotFound
 		}
