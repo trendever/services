@@ -43,6 +43,7 @@ func NotifyProductCreated(p *models.Product) {
 var actionText = map[core.LeadAction]string{
 	core.LeadAction_BUY:  "ordered",
 	core.LeadAction_INFO: "requested info about",
+	core.LeadAction_SKIP: "skiped product",
 }
 
 // NotifyLeadCreated notifies about lead creation
@@ -58,7 +59,8 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string, a
 			"%v %v %v by %v from %v, comment: '%v'\n"+ // [client] [action] [product_code] in [shop] from [wantit or website] comment: '[comment]'
 				"%v\n"+ // [website_link]
 				"%v\n"+ // [instgram_repost_link]
-				"%v", // [qor_link]
+				"%v"+ // [qor_link]
+				"#%v", // [tag for search]
 			// first line
 			l.Customer.Stringify(),
 			actionText[action],
@@ -70,6 +72,7 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string, a
 			fmt.Sprintf("%v/chat/%v", conf.GetSettings().SiteURL, l.ID),
 			realInstLink,
 			fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
+			actionText[action],
 		),
 	)
 }

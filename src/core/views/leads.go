@@ -2,6 +2,7 @@ package views
 
 import (
 	"core/api"
+	"core/conf"
 	"core/models"
 	"core/telegram"
 	"database/sql"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"proto/chat"
 	"proto/core"
+	"strings"
 	"utils/db"
 	"utils/log"
 )
@@ -42,6 +44,31 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(err)
 		return nil, err
 	}
+
+	//Skipping leads with comments that not match cfg
+	if protoLead.Source == "comment" {
+		skipped_lead := models.Lead{}.Decode(protoLead)
+		prepared_comment := strings.ToLower(protoLead.Comment)
+		is_comment_matched := false
+
+		vocabulary := conf.GetSettings().Comments.Allowed
+
+		//TODO: make with stemmer like in models/autoanswers
+		for _, phrase := range strings.Split(vocabulary, ",") {
+			if strings.Contains(prepared_comment, phrase) {
+				is_comment_matched = true
+				break
+			}
+		}
+
+		if !is_comment_matched {
+			//notify about skiped lead
+			go telegram.NotifyLeadCreated(skipped_lead, product, protoLead.InstagramLink, core.LeadAction_SKIP)
+			//prevent next steps
+			return &core.CreateLeadResult{}, nil
+		}
+	}
+
 	existsLead, err := models.FindActiveLead(uint64(product.ShopID), uint64(protoLead.CustomerId), uint64(protoLead.ProductId))
 	if err != nil {
 		log.Error(err)

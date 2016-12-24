@@ -33,6 +33,7 @@ enum LeadAction {
     // we don't want add item to lead for now
     // just send info to conversation instead
     INFO = 1;
+    SKIP = 2;
 }
 
 // representation of lead model

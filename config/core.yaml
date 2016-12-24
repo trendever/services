@@ -32,6 +32,9 @@ monetization:
   plansBaseDuration: 1m
   subscriptionCheckTick: 5m
 
+comments:
+  allowed: "цена,цены,цену,стоимость"
+
 bitly:
   login: o_v1v8rptir
   apiKey: R_05e4113d379c43d695030ba8fbac6edf
