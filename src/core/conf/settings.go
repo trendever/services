@@ -64,6 +64,10 @@ type Settings struct {
 		SubscriptionCheckTick string
 	}
 
+	Comments struct {
+		Allowed string
+	}
+
 	RPC struct {
 		Listen    string
 		Mail      string
