@@ -33,7 +33,7 @@ monetization:
   subscriptionCheckTick: 5m
 
 comments:
-  allowed: "цена,цены,цену,стоимость"
+  allowed: "цена,цвет,размер,стоимость"
 
 bitly:
   login: o_v1v8rptir

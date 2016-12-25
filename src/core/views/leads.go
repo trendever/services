@@ -47,15 +47,15 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 	//Skipping leads with comments that not match cfg
 	if protoLead.Source == "comment" {
-		skipped_lead := models.Lead{}.Decode(protoLead)
-		prepared_comment := strings.ToLower(protoLead.Comment)
+		lead_skipped := models.Lead{}.Decode(protoLead)
+		comment_prepared := strings.ToLower(protoLead.Comment)
 		is_comment_matched := false
 
 		vocabulary := conf.GetSettings().Comments.Allowed
 
-		//TODO: make with stemmer like in models/autoanswers
 		for _, phrase := range strings.Split(vocabulary, ",") {
-			if strings.Contains(prepared_comment, phrase) {
+			phrase_stemmed, _ := models.PrepareText(phrase, "russian")
+			if strings.Contains(comment_prepared, phrase_stemmed) {
 				is_comment_matched = true
 				break
 			}
@@ -63,7 +63,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 		if !is_comment_matched {
 			//notify about skiped lead
-			go telegram.NotifyLeadCreated(skipped_lead, product, protoLead.InstagramLink, core.LeadAction_SKIP)
+			go telegram.NotifyLeadCreated(lead_skipped, product, protoLead.InstagramLink, core.LeadAction_SKIP)
 			//prevent next steps
 			return &core.CreateLeadResult{}, nil
 		}
