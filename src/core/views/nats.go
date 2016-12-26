@@ -3,6 +3,7 @@ package views
 import (
 	"core/api"
 	"core/models"
+	"encoding/json"
 	"fmt"
 	"proto/chat"
 	"proto/core"
@@ -170,8 +171,24 @@ func newMessage(req *chat.NewMessageRequest) {
 
 		if newLead {
 			if msg.User.Role == chat.MemberRole_CUSTOMER {
-				advance = true
+				// advance lead status if we have real message from customer(not forwarded comment or something like that)
+				advance = advance || func() bool {
+					for _, part := range msg.Parts {
+						if part.MimeType != "text/x-attrs" {
+							continue
+						}
+						var attrs map[string]interface{}
+						json.Unmarshal([]byte(part.Content), &attrs)
+						if val, ok := attrs["isAutoMessage"]; ok {
+							if b, _ := val.(bool); b {
+								return false
+							}
+						}
+					}
+					return true
+				}()
 			}
+
 			continue
 		}
 

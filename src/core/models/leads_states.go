@@ -250,7 +250,14 @@ func init() {
 				err := SendChatMessages(lead.ConversationID, &chat.Message{
 					UserId: uint64(lead.CustomerID),
 					Parts: []*chat.MessagePart{
-						{Content: lead.Comment, MimeType: "text/plain"},
+						{
+							MimeType: "text/plain",
+							Content:  lead.Comment,
+						},
+						{
+							MimeType: "text/x-attrs",
+							Content:  `{"isAutoMessage": true}`,
+						},
 					},
 				})
 				if err != nil {

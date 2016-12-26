@@ -132,7 +132,14 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 				err := models.SendChatMessages(lead.ConversationID, &chat.Message{
 					UserId: uint64(lead.CustomerID),
 					Parts: []*chat.MessagePart{
-						{Content: protoLead.Comment, MimeType: "text/plain"},
+						{
+							MimeType: "text/plain",
+							Content:  protoLead.Comment,
+						},
+						{
+							MimeType: "text/x-attrs",
+							Content:  `{"isAutoMessage": true}`,
+						},
 					},
 				})
 				if err != nil {
