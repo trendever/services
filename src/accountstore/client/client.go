@@ -216,7 +216,7 @@ func (pool *AccountsPool) Invalidate(id uint64, reason string) {
 }
 
 func (pool *AccountsPool) update(acc *accountstore.Account) {
-	ig, err := instagram.Restore(acc.Cookie, "", true)
+	ig, err := instagram.Restore(acc.Cookie, "", acc.Valid)
 	if err != nil {
 		log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
 		pool.Invalidate(acc.InstagramId, "account can not be restored")
