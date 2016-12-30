@@ -37,8 +37,8 @@ func GetUserProfile(c *soso.Context) {
 	}
 	valid := false
 
-	if value, ok := req["instagram_name"].(string); ok {
-		request.InstagramUsername = value
+	if instaname, ok := req["instagram_name"].(string); ok {
+		request.InstagramUsername = instaname
 		valid = true
 	}
 
@@ -47,7 +47,7 @@ func GetUserProfile(c *soso.Context) {
 		valid = true
 	}
 
-	if request.Id == 0 && c.Token != nil {
+	if request.Id == 0 && c.Token != nil && req["instagram_name"].(string) == "" {
 		request.Id = c.Token.UID
 		valid = true
 	}
