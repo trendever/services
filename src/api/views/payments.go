@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"api/api"
+	"api/conf"
 	"api/soso"
 	"proto/core"
 	"proto/payment"
@@ -32,6 +33,13 @@ func CreateOrder(c *soso.Context) {
 	}
 	req := c.RequestMap
 
+	redirectKey, _ := req["redirect"].(string)
+	redirect, ok := conf.GetSettings().PaymentsRedirects[redirectKey]
+	if !ok {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown redirect key"))
+		return
+	}
+
 	amount, _ := req["amount"].(float64)
 	leadID, _ := req["lead_id"].(float64)
 
@@ -48,7 +56,7 @@ func CreateOrder(c *soso.Context) {
 	}
 
 	if amount <= 0 || leadID <= 0 || !currencyOK || shopCardNumber == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, fmt.Errorf("Incorrect parameter"))
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Incorrect parameter"))
 		return
 	}
 
@@ -89,6 +97,7 @@ func CreateOrder(c *soso.Context) {
 			Gateway:     "payture",
 			ServiceName: "api",
 			ServiceData: string(data),
+			Redirect:    redirect,
 		},
 		Info: &payment.UserInfo{
 			UserId: c.Token.UID,

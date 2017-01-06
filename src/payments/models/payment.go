@@ -34,6 +34,9 @@ type Payment struct {
 	CommissionFee uint64
 	// user id, usually supplier
 	CommissionSource uint64
+
+	// redirect URL template. Format string: 1st %v -- success bool; 2nd -- lead id (may be zero)
+	Redirect string `gorm:"text"`
 }
 
 // GetPayByID returns payment by ID
@@ -156,6 +159,7 @@ func DecodePayment(pay *payment.OrderData) *Payment {
 		ServiceData:    pay.ServiceData,
 		Comment:        pay.Comment,
 		CardID:         pay.CardId,
+		Redirect:       pay.Redirect,
 
 		// Money
 		Amount:   pay.Amount,

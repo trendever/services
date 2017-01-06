@@ -21,10 +21,13 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 	orderID := c.Query("orderid")
 	success, _ := strconv.ParseBool(c.Query("success"))
 
+	// further redirect template
+	tmpl := config.Get().HTTP.Redirect
+
 	//find session
 	sess, err := ps.repo.GetSessByUID(orderID)
 	if err != nil {
-		c.Redirect(http.StatusFound, fmt.Sprintf(config.Get().HTTP.Redirect, 0, false))
+		c.Redirect(http.StatusFound, fmt.Sprintf(tmpl, 0, false))
 		return
 	}
 
@@ -32,7 +35,10 @@ func (ps *paymentServer) HandleCallback(c *gin.Context) {
 	// status will be reported afterwards by chat message
 	ps.CheckStatusAsync(sess)
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf(config.Get().HTTP.Redirect, sess.Payment.LeadID, success))
+	if sess.Payment.Redirect != "" {
+		tmpl = sess.Payment.Redirect
+	}
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf(tmpl, sess.Payment.LeadID, success))
 }
 
 func (ps *paymentServer) HandleNotification(c *gin.Context) {
