@@ -44,6 +44,7 @@ message ConfirmRequest {
   string instagram_username = 1;
   uint64 instagram_id = 2;
   string code = 3;
+  string password = 4;
 }
 
 message ConfirmReply {

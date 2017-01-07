@@ -43,9 +43,16 @@ func Confirm(c *soso.Context) {
 		return
 	}
 
+	password, ok := c.RequestMap["password"].(string)
+	if !ok || code == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No password supplied"))
+		return
+	}
+
 	_, err := accountStoreServiceClient.Confirm(context.Background(), &accountstore.ConfirmRequest{
 		InstagramUsername: instagramUsername,
 		Code:              code,
+		Password:          password,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
