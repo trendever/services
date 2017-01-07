@@ -4,6 +4,7 @@ import (
 	"api/api"
 	"api/soso"
 	"errors"
+	"golang.org/x/net/context"
 	"net/http"
 	"proto/accountstore"
 	"utils/log"
@@ -42,9 +43,7 @@ func Confirm(c *soso.Context) {
 		return
 	}
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	_, err := accountStoreServiceClient.Confirm(ctx, &accountstore.ConfirmRequest{
+	_, err := accountStoreServiceClient.Confirm(context.Background(), &accountstore.ConfirmRequest{
 		InstagramUsername: instagramUsername,
 		Code:              code,
 	})
@@ -139,9 +138,7 @@ func AddBot(c *soso.Context) {
 
 	preferEmail, _ := c.RequestMap["prefer_email"].(bool)
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	resp, err := accountStoreServiceClient.Add(ctx, &accountstore.AddRequest{
+	resp, err := accountStoreServiceClient.Add(context.Background(), &accountstore.AddRequest{
 		InstagramUsername: username,
 		Password:          password,
 		Role:              accountstore.Role(role),
