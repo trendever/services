@@ -36,10 +36,13 @@ func GetUserProfile(c *soso.Context) {
 		GetShops: true,
 	}
 	valid := false
+	name_blank := false
 
 	if instaname, ok := req["instagram_name"].(string); ok {
 		request.InstagramUsername = instaname
 		valid = true
+	} else {
+		name_blank = true
 	}
 
 	if value, ok := req["user_id"].(float64); ok {
@@ -47,7 +50,7 @@ func GetUserProfile(c *soso.Context) {
 		valid = true
 	}
 
-	if request.Id == 0 && c.Token != nil && req["instagram_name"].(string) == "" {
+	if request.Id == 0 && c.Token != nil && name_blank {
 		request.Id = c.Token.UID
 		valid = true
 	}
