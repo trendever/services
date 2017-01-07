@@ -129,6 +129,11 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 	api.CheckpointURL = ""
 	api.CheckpointCookies = nil
 
+	_, err = api.GetRecentActivity()
+	if err != nil {
+		return err
+	}
+
 	cookieJar, err := api.Save()
 	if err != nil {
 		return err

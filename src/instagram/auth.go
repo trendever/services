@@ -207,7 +207,6 @@ func (ig *Instagram) CheckCode(code string) error {
 		return fmt.Errorf("Bad code")
 	}
 
-	ig.LoggedIn = true
 	ig.CheckpointCookies = nil
 	return nil
 }
