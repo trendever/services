@@ -21,6 +21,7 @@ import (
 	"proto/bot"
 	"proto/core"
 	"utils/log"
+	"utils/mandible"
 	"utils/nats"
 	"utils/rpc"
 )
@@ -177,10 +178,9 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 //  * retry bool
 //  * err error
 func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, error) {
-
 	mentionerID, mentioner, err := userID(mention.UserId, mention.UserName)
 	if err != nil {
-		return -1, err != instagram.ErrorPageNotFound, err
+		return -1, err != instagram.ErrorPageNotFound, fmt.Errorf("unable to get metioner id: %v", err)
 	}
 
 	productID, deleted, err := productExists(mediaID) //@TODO: batch check for existence
@@ -233,7 +233,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 
 	supplierID, _, err := userID(supplierInstagramID, supplierUsername)
 	if err != nil {
-		return -1, true, err
+		return -1, true, fmt.Errorf("unable to get supplier id: %v", err)
 	}
 	shopID, err := shopID(uint64(supplierID))
 	if err == errorShopIsDeleted {
@@ -271,7 +271,15 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 	img := media.ImageVersions2.Candidates[0]
 
 	candidates, err := generateThumbnails(img.URL)
-	if err != nil {
+	switch resp := err.(type) {
+	case nil:
+
+	case *mandible.ImageResp:
+		if resp.Status < 400 || resp.Status >= 500 {
+			return -1, err
+		}
+
+	default:
 		return -1, err
 	}
 
