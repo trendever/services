@@ -176,7 +176,7 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages ...*Message) {
 	var ids []uint64
 	if chat.DirectThread == "" {
-		log.Errorf("syncMessages caaled for chat without related direct thread")
+		log.Errorf("syncMessages called for chat without related direct thread")
 		return
 	}
 	for _, msg := range messages {
