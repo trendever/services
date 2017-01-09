@@ -18,11 +18,18 @@ type Thumbnail struct {
 	Shape  string `json:"shape"`
 }
 
-type imageResp struct {
-	Data    *Image `json:"data"`
-	Status  int    `json:"status"`
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
+type ImageResp struct {
+	Data     *Image `json:"data"`
+	Status   int    `json:"status"`
+	Success  bool   `json:"success"`
+	ErrorStr string `json:"error"`
+}
+
+func (resp *ImageResp) Error() string {
+	if resp.Success {
+		return "success"
+	}
+	return fmt.Sprintf("image upload error %v: %v", resp.Status, resp.ErrorStr)
 }
 
 type imageReq struct {
@@ -71,7 +78,7 @@ func (u *Uploader) DoRequest(dest, image string) (*Image, error) {
 		return nil, err
 	}
 
-	result := imageResp{}
+	result := ImageResp{}
 	data, err := query.Values(&imageReq{
 		Image:  image,
 		Thumbs: string(thumbsJSON),
@@ -90,7 +97,7 @@ func (u *Uploader) DoRequest(dest, image string) (*Image, error) {
 
 	// check result
 	if !result.Success {
-		return nil, fmt.Errorf("Unsuccessfull upload: server returned status %v; error: %v", result.Status, result.Error)
+		return nil, &result
 	}
 
 	return result.Data, nil
