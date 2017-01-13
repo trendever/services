@@ -14,9 +14,9 @@ import (
 // Global constants
 const (
 	URL           = "https://i.instagram.com/api/v1"
-	Version       = "9.3.0"
+	Version       = "10.3.2"
 	UserAgent     = "Instagram " + Version + " Android (23/6.0.1; 515dpi; 1440x2416; huawei/google; Nexus 6P; angler; angler; en_US)"
-	SigKey        = "26e29e57f4ea61a0ebb4ee0ec483e5efe7ca39093adcfa3689dadbfba139546b"
+	SigKey        = "5ad7d6f013666cc93c88fc8af940348bd067b68f0dce3c85122a923f4f74b251"
 	SigKeyVersion = "4"
 )
 
