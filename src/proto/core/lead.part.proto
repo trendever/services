@@ -41,6 +41,8 @@ message Lead {
     int64 id = 1;
 
     string source  = 2;
+    // source thread(if any)
+    string direct_thread = 9;
     string comment = 3;
 
     int64 customer_id = 4;

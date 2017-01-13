@@ -261,13 +261,6 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		return true, err
 	}
 
-	if !customer.Confirmed {
-		err = notifyChat(mention)
-		if err != nil {
-			log.Errorf("Failed no reply in direct chat: %v", err)
-		}
-	}
-
 	return false, nil
 }
 
@@ -301,6 +294,7 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
 		Source:        source,
+		DirectThread:  mention.DirectThreadId,
 		CustomerId:    customerID,
 		ProductId:     int64(productID),
 		Comment:       mention.Comment,
@@ -309,21 +303,6 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	})
 
 	return err
-}
-
-func notifyChat(mention *bot.Activity) error {
-	//ctx, cancel := rpc.DefaultContext()
-	//defer cancel()
-	//
-	//_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-	//	ActivityPk: mention.Pk,
-	//	Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
-	//})
-	//
-	//return err
-
-	// @TODO
-	return nil
 }
 
 func findProductCode(comment string) (code string, found bool) {
