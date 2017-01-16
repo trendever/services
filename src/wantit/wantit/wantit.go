@@ -220,6 +220,9 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		if deleted {
 			return false, errors.New("product was deleted")
 		}
+		// this product belongs to someone else probably, so we will not have access to this thread
+		// @TODO @CHECK may someone use codes to create multiple posts with same own product?
+		mention.DirectThreadId = ""
 	}
 	// there is no code at all or it's unregistred
 	if !found || productID <= 0 {
