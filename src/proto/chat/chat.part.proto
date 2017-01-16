@@ -33,6 +33,7 @@ message NewChatRequest {
     Chat chat = 1;
     // instagram id of supplier
     uint64 primary_instagram = 2;
+    bool enable_sync = 3;
 }
 
 message ChatReply {
@@ -70,6 +71,19 @@ message SendMessageReply {
     repeated Message messages = 3;
 }
 
+enum SyncStatus {
+    // sync disabled
+    NONE = 0;
+    // request was sended, but there is no responce yet
+    PENDING = 1;
+    SYNCED = 2;
+    // sync was disabled after error
+    ERROR = 3;
+    // old direct thread is attached to another chat now
+    // new thread will be created after next message will be send hire
+    DETACHED = 4;
+}
+
 message Chat {
     uint64 id = 1;
     repeated Member members = 2;
@@ -77,8 +91,8 @@ message Chat {
     uint64 unread_count = 4;
     Message recent_message = 5;
     string direct_thread = 6;
-    bool direct_sync = 7;
     string caption = 8;
+    SyncStatus sync_status = 9;
 }
 
 message Member {
@@ -119,8 +133,7 @@ message Message {
     int64 created_at = 4;
     uint64 id = 5;
     Member user = 6;
-
-    string instagram_id = 7;
+    SyncStatus sync_status = 8;
 }
 
 message MessagePart {

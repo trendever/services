@@ -85,7 +85,7 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 		}
 
 	}
-	if req.Chat.DirectSync {
+	if req.EnableSync {
 		go cs.enableSync(chat.ID)
 	}
 	return &proto_chat.ChatReply{

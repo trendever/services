@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"proto/bot"
+	proto "proto/chat"
 	"proto/checker"
 	"proto/core"
 	"strconv"
@@ -80,7 +81,7 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 		MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
 		Member:      author,
 		InstagramID: notify.MessageId,
-		SyncStatus:  models.SyncStatus_Synced,
+		SyncStatus:  proto.SyncStatus_SYNCED,
 		Parts: []*models.MessagePart{
 			{
 				Content:  notify.Text,
