@@ -409,5 +409,9 @@ func EnableChatSync(c *soso.Context) {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("rpc error: %v", err))
 	case resp.Error != "":
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+	default:
+		c.SuccessResponse(map[string]interface{}{
+			"status": "ok",
+		})
 	}
 }
