@@ -478,7 +478,7 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 		return false, fmt.Errorf("chat %v has no primary instagram", chat.ID)
 	}
 
-	if threadID != "" {
+	if threadID != "" && threadID != chat.DirectThread {
 		return c.SetRelatedThread(chatID, threadID)
 	}
 
