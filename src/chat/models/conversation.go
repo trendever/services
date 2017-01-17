@@ -22,7 +22,8 @@ const (
 )
 
 var global struct {
-	syncLock sync.Mutex
+	syncLock    sync.Mutex
+	threadsLock sync.Mutex
 }
 
 //Conversation is representation of conversation model
@@ -164,9 +165,13 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 	global.syncLock.Lock()
 	err := c.db.Model(chat).Association("Messages").Append(messages).Error
 	go func() {
-		// @TODO handle detached sync status
-		if err == nil && chat.SyncStatus == pb_chat.SyncStatus_SYNCED {
-			c.syncMessages(chat, messages...)
+		if err == nil {
+			switch chat.SyncStatus {
+			case pb_chat.SyncStatus_SYNCED:
+				c.syncMessages(chat, messages...)
+			case pb_chat.SyncStatus_DETACHED:
+				c.EnableSync(chat.ID, 0, "", true)
+			}
 		}
 		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
 		global.syncLock.Unlock()
@@ -545,6 +550,9 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 }
 
 func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThread string) (retry bool, err error) {
+	global.threadsLock.Lock()
+	defer global.threadsLock.Unlock()
+
 	var chat Conversation
 	scope := c.db.Preload("Members").First(&chat, chatID)
 	if scope.RecordNotFound() {
@@ -552,6 +560,16 @@ func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThrea
 	}
 	if scope.Error != nil {
 		return true, fmt.Errorf("failed to load chat: %v", err)
+	}
+	err = c.db.Model(&Conversation{}).
+		Where("direct_thread = ?", directThread).
+		Where("id != ?", chatID).
+		UpdateColumns(map[string]interface{}{
+			"direct_thread": "",
+			"sync_status":   pb_chat.SyncStatus_DETACHED,
+		}).Error
+	if err != nil {
+		return true, fmt.Errorf("failed to detach other chats: %v", err)
 	}
 	if chat.DirectThread != "" {
 		log.Warn("chat %v already had related instagram thread '%v', replacing", chatID, chat.DirectThread)
