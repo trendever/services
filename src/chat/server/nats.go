@@ -104,10 +104,13 @@ func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged
 		return true
 	}
 	log.Debug("got message send reply for chat %v", msgID)
+	// @TODO check what kind of error we have. May be we should handle deleted threads in special way for example
+	status := proto.SyncStatus_SYNCED
 	if notify.Error != "" {
 		log.Errorf("error in send direct reply: %v", notify.Error)
+		status = proto.SyncStatus_ERROR
 	}
-	err = cs.chats.UpdateSyncStatus(msgID, notify.MessageId)
+	err = cs.chats.UpdateSyncStatus(msgID, notify.MessageId, status)
 	if err != nil {
 		log.Errorf("UpdateSyncStatus failed: %v", err)
 		return false
@@ -257,7 +260,7 @@ func (cs *chatServer) createUser(instagramID uint64) (*core.User, error) {
 }
 
 func (cs *chatServer) enableSync(chatID uint64) bool {
-	retry, err := cs.chats.EnableSync(chatID)
+	retry, err := cs.chats.EnableSync(chatID, 0, "", false)
 	if err != nil {
 		log.Errorf("failed to enable sync: %v", err)
 	}

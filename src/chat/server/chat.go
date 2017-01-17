@@ -331,3 +331,12 @@ func (cs *chatServer) GetTotalCountUnread(_ context.Context, req *proto_chat.Tot
 	reply.Count, err = cs.chats.GetTotalUnread(req.UserId)
 	return
 }
+
+func (cs *chatServer) EnableSync(_ context.Context, req *proto_chat.EnableSyncRequest) (*proto_chat.EnableSyncReply, error) {
+	var reply proto_chat.EnableSyncReply
+	_, err := cs.chats.EnableSync(req.ChatId, req.PrimaryInstagram, req.ThreadId, req.ForceNewThread)
+	if err != nil {
+		reply.Error = err.Error()
+	}
+	return &reply, err
+}

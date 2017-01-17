@@ -18,6 +18,7 @@ service ChatService {
     rpc GetTotalCountUnread(TotalCountUnreadRequest) returns (TotalCountUnreadReply){}
     //append message part
     rpc AppendMessage(AppendMessageRequest) returns (AppendMessageReply){}
+    rpc EnableSync(EnableSyncRequest) returns (EnableSyncReply) {}
 }
 
 service Notifier {
@@ -225,4 +226,18 @@ message TotalCountUnreadReply {
 message SetStatusMessage {
     uint64 conversation_id = 1;
     string status = 2;
+}
+
+message EnableSyncRequest {
+    uint64 chat_id = 1;
+    // if not zero changes primary instagram
+    uint64 primary_instagram = 2;
+    // if not empty change current related thread
+    string thread_id = 3;
+    // create new thread even if chat already has one
+    bool force_new_thread = 4;
+}
+
+message EnableSyncReply {
+    string error = 1;
 }
