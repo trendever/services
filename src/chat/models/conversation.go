@@ -170,7 +170,16 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 			case pb_chat.SyncStatus_SYNCED:
 				c.syncMessages(chat, messages...)
 			case pb_chat.SyncStatus_DETACHED:
-				c.EnableSync(chat.ID, 0, "", true)
+				for _, msg := range messages {
+					if msg.InstagramID != "" {
+						continue
+					}
+					kind, data := mapToInstagram(chat, msg)
+					if kind != bot.MessageType_None && data != "" {
+						c.EnableSync(chat.ID, 0, "", true)
+						break
+					}
+				}
 			}
 		}
 		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
