@@ -587,6 +587,7 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 }
 
 func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error {
+	// @TODO what if related thread will be changed after sending sync request? we can get error status on valid thread rarely
 	if status == pb_chat.SyncStatus_ERROR {
 		// disable synchronization
 		err := c.db.Model(&Conversation{}).
