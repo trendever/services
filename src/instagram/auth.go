@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+// Possible auth instagram errors
+var (
+	ErrorEmptyPassword = errors.New("Login or password is empty")
+)
+
 // Login to Instagram.
 func (ig *Instagram) Login() error {
 
@@ -27,7 +32,7 @@ func (ig *Instagram) Login() error {
 	}
 
 	if ig.Username == "" || ig.password == "" {
-		return fmt.Errorf("Empty username or password")
+		return ErrorEmptyPassword
 	}
 
 	// login
@@ -207,7 +212,26 @@ func (ig *Instagram) CheckCode(code string) error {
 		return fmt.Errorf("Bad code")
 	}
 
+	return ig.checkpointStep4()
+}
+
+func (ig *Instagram) checkpointStep4() error {
+
+	token, err := getToken(ig.CheckpointCookies)
+	if err != nil {
+		return err
+	}
+
+	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
+	params := fmt.Sprintf("csrfmiddlewaretoken=%v&OK=OK", token)
+
+	_, _, err = browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
+	if err != nil {
+		return err
+	}
+
 	ig.CheckpointCookies = nil
+	ig.LoggedIn = true
 	return nil
 }
 

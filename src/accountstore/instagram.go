@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"instagram"
 	"time"
+	"utils/log"
 )
 
 // InstagramAccess is mockable instagram adapter
@@ -106,14 +107,9 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
 func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, password, false)
-	if err != nil {
-		return err
-	}
-
-	// check if already confirmed
-	_, err = api.GetRecentActivity()
-	if err == instagram.ErrorCheckpointRequired {
+	api, err := instagram.Restore(acc.Cookie, password, true)
+	log.Debug("Restored")
+	if err == instagram.ErrorCheckpointRequired && api != nil { // actual code checking
 		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
 			return fmt.Errorf("Timeout error")
 		}
@@ -122,12 +118,16 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 		if err != nil {
 			return err
 		}
-	} else if err != nil {
+
+	} else if err != nil { // terminate on any other error
 		return err
 	}
 
+	// delogin
 	api.CheckpointURL = ""
 	api.CheckpointCookies = nil
+	api.Cookies = nil
+	api.LoggedIn = false
 
 	_, err = api.GetRecentActivity()
 	if err != nil {
