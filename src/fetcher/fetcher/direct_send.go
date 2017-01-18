@@ -56,7 +56,13 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 	reply := bot.DirectNotify{ReplyKey: req.ReplyKey}
 
 	reply.ThreadId, reply.MessageId, err = performSend(ig, req)
-	if err != nil {
+	switch {
+	case err == nil:
+
+	case err.Error() == "Thread does not exist":
+		reply.Error = err.Error()
+
+	default:
 		return err
 	}
 
