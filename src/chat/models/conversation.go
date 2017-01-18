@@ -647,7 +647,7 @@ func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramI
 			return fmt.Errorf("failed to load chat: %v", scope.Error)
 		}
 
-		err := c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
+		err := c.updateSyncStatus(&chat, pb_chat.SyncStatus_ERROR)
 		if err != nil {
 			return fmt.Errorf("failed to save chat info: %v", err)
 		}
