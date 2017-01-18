@@ -18,6 +18,8 @@ redis:
 
 nats:
   url: nats://nats:4222
+  stanCluster: stan
+  stanID: api1
 
 mail:
   username: 'testo'
