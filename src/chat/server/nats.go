@@ -4,6 +4,7 @@ import (
 	"chat/config"
 	"chat/models"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"proto/bot"
@@ -20,16 +21,19 @@ import (
 func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged bool) {
 	log.Debug("new direct notify: %+v", notify)
 
-	if notify.ReplyKey != "" {
-		switch {
-		case strings.HasPrefix(notify.ReplyKey, models.MessageReplyPrefix):
-			return cs.handleMessageReply(notify)
-		case strings.HasPrefix(notify.ReplyKey, models.ThreadReplyPrefix):
-			return cs.handleThreadReply(notify)
-		default:
-			// do not care about foreign replies
-			return true
-		}
+	switch {
+	// normal notify, not a reply for something
+	case notify.ReplyKey == "":
+
+	case strings.HasPrefix(notify.ReplyKey, models.MessageReplyPrefix):
+		return cs.handleMessageReply(notify)
+
+	case strings.HasPrefix(notify.ReplyKey, models.ThreadReplyPrefix):
+		return cs.handleThreadReply(notify)
+
+	default:
+		// do not care about foreign replies
+		return true
 	}
 
 	exists, err := cs.chats.CheckMessageExists(notify.MessageId)
@@ -61,7 +65,8 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 
 	// ignore init message
 	// @TODO may be there is better way to do it
-	if notify.UserId == chat.PrimaryInstagram && (notify.Text == chat.Caption || notify.Text == models.DefaultSyncInitMessage) {
+	if notify.UserId == chat.PrimaryInstagram && notify.Type == bot.MessageType_Text &&
+		(notify.Data == chat.Caption || notify.Data == models.DefaultSyncInitMessage) {
 		return true
 	}
 
@@ -77,17 +82,46 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 		return false
 	}
 
+	var parts = make([]*models.MessagePart, 0, 8)
+	switch notify.Type {
+	case bot.MessageType_Text:
+		parts = append(parts, &models.MessagePart{
+			Content:  notify.Data,
+			MimeType: "text/plain",
+		})
+	case bot.MessageType_Image:
+		img, err := models.ImageUploader.DoRequest("url", notify.Data)
+		switch resp := err.(type) {
+		case nil:
+
+		case *mandible.ImageResp:
+			if resp.Status < 400 || resp.Status >= 500 {
+				return false
+			}
+			log.Warn("direct notify for message %v contains invalid image", notify.MessageId, notify.Type)
+			return true
+
+		default:
+			return false
+		}
+		j, _ := json.Marshal(img)
+		parts = append(parts, &models.MessagePart{
+			MimeType:  "image/json",
+			ContentID: img.Hash,
+			Content:   string(j),
+		})
+
+	default:
+		log.Warn("direct notify for message %v with unsupported content type %v was skipped", notify.MessageId, notify.Type)
+		return true
+	}
+
 	_, err = cs.sendMessage(chat, &models.Message{
 		MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
 		Member:      author,
 		InstagramID: notify.MessageId,
 		SyncStatus:  proto.SyncStatus_SYNCED,
-		Parts: []*models.MessagePart{
-			{
-				Content:  notify.Text,
-				MimeType: "text/plain",
-			},
-		},
+		Parts:       parts,
 	})
 	if err != nil {
 		log.Errorf("failed to add message: %v", err)

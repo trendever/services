@@ -32,6 +32,7 @@ enum MessageType {
   None = 0;
   Text = 1;
   MediaShare = 2;
+  Image = 3;
 }
 
 message SendDirectRequest {
@@ -79,10 +80,8 @@ message DirectNotify {
   uint64 user_id = 3;
   // instagram id of account which provided notification
   uint64 source_id = 8;
-  string text = 4;
-  // id of possible related post
-  // if it's aviable, it probably mean, that this message was comment to media share
-  string related_media = 5;
+  MessageType type = 9;
+  string data = 4;
 
   // for replies
   string reply_key = 6;
