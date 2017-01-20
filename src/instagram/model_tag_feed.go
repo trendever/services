@@ -10,72 +10,64 @@ type TagFeed struct {
 				User     TagFeedUser2 `json:"user"`
 			} `json:"in"`
 		} `json:"usertags,omitempty"`
-		MaxNumVisiblePreviewComments int                   `json:"max_num_visible_preview_comments"`
-		LikeCount                    int                   `json:"like_count"`
-		ImageVersions2               TagFeedImageVersions2 `json:"image_versions2"`
-		ID                           string                `json:"id"`
-		ClientCacheKey               string                `json:"client_cache_key"`
-		Comments                     []TagFeedComments     `json:"comments"`
-		DeviceTimestamp              float64               `json:"device_timestamp"`
-		CommentCount                 int                   `json:"comment_count"`
-		MediaType                    int                   `json:"media_type"`
-		OrganicTrackingToken         string                `json:"organic_tracking_token"`
-		CaptionIsEdited              bool                  `json:"caption_is_edited"`
-		OriginalHeight               int                   `json:"original_height"`
-		FilterType                   int                   `json:"filter_type"`
-		User                         TagFeedUser           `json:"user"`
-		Pk                           int64                 `json:"pk"`
-		HasLiked                     bool                  `json:"has_liked"`
-		HasMoreComments              bool                  `json:"has_more_comments"`
-		PhotoOfYou                   bool                  `json:"photo_of_you"`
-		Caption                      TagFeedCaption        `json:"caption"`
-		TakenAt                      float64               `json:"taken_at"`
-		OriginalWidth                int                   `json:"original_width"`
-		Lng                          float64               `json:"lng,omitempty"`
-		Location                     TagFeedLocation       `json:"location,omitempty"`
-		Lat                          float64               `json:"lat,omitempty"`
+		MaxNumVisiblePreviewComments int               `json:"max_num_visible_preview_comments"`
+		LikeCount                    int               `json:"like_count"`
+		ImageVersions2               ImageVersions2    `json:"image_versions2"`
+		ID                           string            `json:"id"`
+		ClientCacheKey               string            `json:"client_cache_key"`
+		Comments                     []TagFeedComments `json:"comments"`
+		DeviceTimestamp              float64           `json:"device_timestamp"`
+		CommentCount                 int               `json:"comment_count"`
+		MediaType                    int               `json:"media_type"`
+		OrganicTrackingToken         string            `json:"organic_tracking_token"`
+		CaptionIsEdited              bool              `json:"caption_is_edited"`
+		OriginalHeight               int               `json:"original_height"`
+		FilterType                   int               `json:"filter_type"`
+		User                         TagFeedUser       `json:"user"`
+		Pk                           int64             `json:"pk"`
+		HasLiked                     bool              `json:"has_liked"`
+		HasMoreComments              bool              `json:"has_more_comments"`
+		PhotoOfYou                   bool              `json:"photo_of_you"`
+		Caption                      TagFeedCaption    `json:"caption"`
+		TakenAt                      float64           `json:"taken_at"`
+		OriginalWidth                int               `json:"original_width"`
+		Lng                          float64           `json:"lng,omitempty"`
+		Location                     TagFeedLocation   `json:"location,omitempty"`
+		Lat                          float64           `json:"lat,omitempty"`
 	} `json:"ranked_items"`
 	Status              string `json:"status"`
 	NumResults          int    `json:"num_results"`
 	AutoLoadMoreEnabled bool   `json:"auto_load_more_enabled"`
 	Items               []struct {
-		Code                         string                `json:"code"`
-		MaxNumVisiblePreviewComments int                   `json:"max_num_visible_preview_comments"`
-		LikeCount                    int                   `json:"like_count"`
-		ImageVersions2               TagFeedImageVersions2 `json:"image_versions2"`
-		Lng                          float64               `json:"lng,omitempty"`
-		ID                           string                `json:"id"`
-		ClientCacheKey               string                `json:"client_cache_key"`
-		Comments                     []TagFeedComments     `json:"comments"`
-		DeviceTimestamp              float64               `json:"device_timestamp"`
-		CommentCount                 int                   `json:"comment_count"`
-		Location                     TagFeedLocation       `json:"location,omitempty"`
-		MediaType                    int                   `json:"media_type"`
-		OrganicTrackingToken         string                `json:"organic_tracking_token"`
-		CaptionIsEdited              bool                  `json:"caption_is_edited"`
-		OriginalHeight               int                   `json:"original_height"`
-		FilterType                   int                   `json:"filter_type"`
-		User                         TagFeedUser           `json:"user"`
-		Pk                           int64                 `json:"pk"`
-		Lat                          float64               `json:"lat,omitempty"`
-		HasLiked                     bool                  `json:"has_liked"`
-		HasMoreComments              bool                  `json:"has_more_comments"`
-		PhotoOfYou                   bool                  `json:"photo_of_you"`
-		Caption                      TagFeedCaption        `json:"caption"`
-		TakenAt                      float64               `json:"taken_at"`
-		OriginalWidth                int                   `json:"original_width"`
+		Code                         string            `json:"code"`
+		MaxNumVisiblePreviewComments int               `json:"max_num_visible_preview_comments"`
+		LikeCount                    int               `json:"like_count"`
+		ImageVersions2               ImageVersions2    `json:"image_versions2"`
+		Lng                          float64           `json:"lng,omitempty"`
+		ID                           string            `json:"id"`
+		ClientCacheKey               string            `json:"client_cache_key"`
+		Comments                     []TagFeedComments `json:"comments"`
+		DeviceTimestamp              float64           `json:"device_timestamp"`
+		CommentCount                 int               `json:"comment_count"`
+		Location                     TagFeedLocation   `json:"location,omitempty"`
+		MediaType                    int               `json:"media_type"`
+		OrganicTrackingToken         string            `json:"organic_tracking_token"`
+		CaptionIsEdited              bool              `json:"caption_is_edited"`
+		OriginalHeight               int               `json:"original_height"`
+		FilterType                   int               `json:"filter_type"`
+		User                         TagFeedUser       `json:"user"`
+		Pk                           int64             `json:"pk"`
+		Lat                          float64           `json:"lat,omitempty"`
+		HasLiked                     bool              `json:"has_liked"`
+		HasMoreComments              bool              `json:"has_more_comments"`
+		PhotoOfYou                   bool              `json:"photo_of_you"`
+		Caption                      TagFeedCaption    `json:"caption"`
+		TakenAt                      float64           `json:"taken_at"`
+		OriginalWidth                int               `json:"original_width"`
 	} `json:"items"`
 	MoreAvailable bool   `json:"more_available"`
 	NextMaxID     string `json:"next_max_id"`
 	Message       string `json:"message"` // from Error
-}
-
-type TagFeedImageVersions2 struct {
-	Candidates []struct {
-		URL    string `json:"url"`
-		Width  int    `json:"width"`
-		Height int    `json:"height"`
-	} `json:"candidates"`
 }
 
 type TagFeedLocation struct {
