@@ -31,7 +31,7 @@ type ThumbFile struct {
 	CropHeight    int
 	CropRatio     string
 	Quality       int
-	Format        string
+	Format        thumbType.ThumbType
 	StoreURI      string
 	DesiredFormat string
 	NoStore       bool
@@ -56,7 +56,7 @@ func NewThumbFile(width, maxWidth, height, maxHeight int, name, shape, path, cro
 		CropHeight:    cropHeight,
 		CropRatio:     cropRatio,
 		Quality:       quality,
-		Format:        "",
+		Format:        thumbType.JPG,
 		StoreURI:      "",
 		DesiredFormat: desiredFormat,
 		NoStore:       noStore,
@@ -176,7 +176,7 @@ func (this *ThumbFile) processSquare(original *UploadedFile) error {
 		return errors.New("Width too large")
 	}
 
-	filename, err := processorcommand.SquareThumb(original.GetPath(), this.Name, this.Width, this.Quality, this.GetOutputFormat(original))
+	filename, err := processorcommand.SquareThumb(original.GetPath(), this.Name, this.Width, this.Quality, this.Format)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (this *ThumbFile) processThumb(original *UploadedFile) error {
 		return errors.New("Height too large")
 	}
 
-	filename, err := processorcommand.Thumb(original.GetPath(), this.Name, this.Width, this.Height, this.Quality, this.GetOutputFormat(original))
+	filename, err := processorcommand.Thumb(original.GetPath(), this.Name, this.Width, this.Height, this.Quality, this.Format)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (this *ThumbFile) processCustom(original *UploadedFile) error {
 		return errors.New("Invalid height")
 	}
 
-	filename, err := processorcommand.CustomThumb(original.GetPath(), this.Name, width, height, this.CropGravity, cropWidth, cropHeight, this.Quality, this.GetOutputFormat(original))
+	filename, err := processorcommand.CustomThumb(original.GetPath(), this.Name, width, height, this.CropGravity, cropWidth, cropHeight, this.Quality, this.Format)
 	if err != nil {
 		return err
 	}
