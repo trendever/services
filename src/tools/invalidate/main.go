@@ -61,6 +61,7 @@ func main() {
 
 	instagram.DoResponseLogging = true
 
+INV:
 	for _, conf := range proxies {
 		dialer, _ := proxy.SOCKS5("tcp", conf.Addr, &proxy.Auth{
 			User:     conf.User,
@@ -83,5 +84,5 @@ func main() {
 		}
 		log.Info("proxy %v passed", conf.Addr)
 	}
-	log.Info("no more proxies, account is still valid")
+	goto INV
 }
