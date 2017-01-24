@@ -1,12 +1,17 @@
 package instagram
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Instagram defines client
@@ -274,7 +279,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 
 	endpoint := "/direct_v2/threads/broadcast/text/"
 
-	var object BroadcastTextResponse
+	var object BroadcastResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"text":       message,
 		"thread_ids": fmt.Sprintf("[%v]", threadID),
@@ -286,6 +291,10 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 
 	if object.Message.Message != "" {
 		return "", errors.New(object.Message.Message)
+	}
+
+	if len(object.Threads) == 0 {
+		return "", errors.New("no threads info in responce")
 	}
 
 	return object.Threads[0].NewestCursor, nil
@@ -300,7 +309,7 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 		strs[i] = strconv.FormatUint(id, 10)
 	}
 
-	var object BroadcastTextResponse
+	var object BroadcastResponse
 	err = ig.postRequest(endpoint, map[string]string{
 		"text":            message,
 		"recipient_users": fmt.Sprintf("[[%v]]", strings.Join(strs, ",")),
@@ -310,6 +319,10 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 		return "", "", err
 	}
 
+	if object.Message.Message != "" {
+		return "", "", errors.New(object.Message.Message)
+	}
+
 	if len(object.Threads) == 0 {
 		return "", "", errors.New("no threads info in responce")
 	}
@@ -317,10 +330,10 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
 }
 
-func (ig *Instagram) SendMedia(threadID, mediaID string) (messageID string, _ error) {
+func (ig *Instagram) ShareMedia(threadID, mediaID string) (messageID string, _ error) {
 	endpoint := "/direct_v2/threads/broadcast/media_share/?media_type=photo"
 
-	var object BroadcastTextResponse
+	var object BroadcastResponse
 	err := ig.postRequest(endpoint, map[string]string{
 		"media_id":   fmt.Sprintf("%v", mediaID),
 		"thread_ids": fmt.Sprintf("[%v]", threadID),
@@ -334,5 +347,54 @@ func (ig *Instagram) SendMedia(threadID, mediaID string) (messageID string, _ er
 		return "", errors.New(object.Message.Message)
 	}
 
+	if len(object.Threads) == 0 {
+		return "", errors.New("no threads info in responce")
+	}
+
 	return object.Threads[0].NewestCursor, nil
+}
+
+// source should contain jpeg with aspect ration inside range 1.91:1 - 4:5, width limit is 1080px
+func (ig *Instagram) SendPhoto(threadID string, source io.Reader) (messageID string, _ error) {
+	endpoint := "/direct_v2/threads/broadcast/upload_photo/"
+
+	params := map[string]string{
+		// Format of response is different if this field is present. It is much shorter and probably falser.
+		// @TODO test speed and update other methods
+		"action":         "send_item",
+		"thread_ids":     fmt.Sprintf("[%v]", threadID),
+		"client_context": "42",
+	}
+
+	var buf bytes.Buffer
+	multi := multipart.NewWriter(&buf)
+	for name, value := range params {
+		multi.WriteField(name, value)
+	}
+	header := make(textproto.MIMEHeader)
+	header.Set(
+		"Content-Disposition",
+		fmt.Sprintf(`form-data; name="photo"; filename="direct_temp_photo_%v.jpeg"`, time.Now().UnixNano()/1000),
+	)
+	header.Set("Content-Type", "application/octet-stream")
+	header.Set("Content-Transfer-Encoding", "binary")
+	writer, err := multi.CreatePart(header)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(writer, source)
+	if err != nil {
+		return "", err
+	}
+	multi.Close()
+
+	var object DirectPhotoResponse
+	err = ig.postContentRequest(endpoint, &PostContent{
+		Type: multi.FormDataContentType(), Reader: &buf,
+	}, &object)
+	if err != nil {
+		return "", err
+	}
+
+	return object.Payload.ItemID, nil
 }

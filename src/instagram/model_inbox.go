@@ -198,15 +198,21 @@ type DirectThreadApproveAllResponse struct {
 	Message
 }
 
-// SendText is BroadcastText sent to users response
-type SendTextResponse struct {
-	Message
-	ThreadID string
-}
-
-type BroadcastTextResponse struct {
+type BroadcastResponse struct {
 	Message
 	Threads []Thread `json:"threads"`
+}
+
+type DirectPhotoResponse struct {
+	Message
+	Action  string `json:"action"`
+	Payload struct {
+		Timestamp     string `json:"timestamp"`
+		ThreadID      string `json:"thread_id"`
+		ItemID        string `json:"item_id"`
+		ClientContext string `json:"client_context"`
+		Message       string `json:"message"`
+	} `json:"payload"`
 }
 
 type MediaType int

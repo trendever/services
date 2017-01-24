@@ -25,6 +25,11 @@ var DoResponseLogging = false
 // DisableJSONIndent disables indenting json in logs
 var DisableJSONIndent = true
 
+type PostContent struct {
+	Type   string
+	Reader io.Reader
+}
+
 func getToken(cook []*http.Cookie) (string, error) {
 	for _, cookie := range cook {
 		if cookie.Name == "csrftoken" {
@@ -36,23 +41,39 @@ func getToken(cook []*http.Cookie) (string, error) {
 }
 
 // Request for Login method. Needs to get the authorization cookies.
-func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login bool) (*http.Response, error) {
+func (ig *Instagram) requestMain(method, endpoint string, body interface{}, login bool) (*http.Response, error) {
 
 	// create request
 	client := &http.Client{}
-	req, err := http.NewRequest(method, URL+endpoint, body)
+
+	// fill-in headers
+	header := make(http.Header)
+	header.Add("User-Agent", UserAgent)
+	header.Add("Accept", "*/*")
+	header.Add("X-IG-Capabilities", "3QI=")
+	header.Add("X-IG-Connection-Type", "WIFI")
+	header.Add("Accept-Language", "en-US")
+	header.Add("Cookie2", "$Version=1")
+
+	var bodyReader io.Reader
+	switch body := body.(type) {
+	case nil:
+		bodyReader = nil
+	case *PostContent:
+		bodyReader = body.Reader
+		header.Add("Content-type", body.Type)
+	case string:
+		bodyReader = bytes.NewReader([]byte(body))
+		header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+	default:
+		return nil, errors.New("unsupported body type")
+	}
+
+	req, err := http.NewRequest(method, URL+endpoint, bodyReader)
 	if err != nil {
 		return nil, err
 	}
-
-	// fill-in headers
-	req.Header.Add("User-Agent", UserAgent)
-	req.Header.Add("Accept", "*/*")
-	req.Header.Add("X-IG-Capabilities", "3Q4=")
-	req.Header.Add("X-IG-Connection-Type", "WIFI")
-	req.Header.Add("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-	req.Header.Add("Accept-Language", "en-US")
-	req.Header.Add("Cookie2", "$Version=1")
+	req.Header = header
 
 	// add auth token if needed
 	if !login {
@@ -71,11 +92,11 @@ func (ig *Instagram) requestMain(method, endpoint string, body io.Reader, login 
 }
 
 // Request with five attempts re-login. Re-login if getting error 'login_required'.
-func (ig *Instagram) tryRequest(method, endpoint, body string) ([]byte, error) {
+func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]byte, error) {
 
 	for attempt := 0; attempt < 5; attempt++ {
 
-		resp, err := ig.requestMain(method, endpoint, bytes.NewReader([]byte(body)), false)
+		resp, err := ig.requestMain(method, endpoint, body, false)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +169,6 @@ func (ig *Instagram) request(method, endpoint string, result interface{}) error 
 }
 
 func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
-
 	vals := url.Values{}
 	for k, v := range params {
 		vals.Add(k, v)
@@ -163,9 +183,19 @@ func (ig *Instagram) postRequest(endpoint string, params map[string]string, resu
 	return err
 }
 
-func (ig *Instagram) loginRequest(method, endpoint, body string, result interface{}) ([]*http.Cookie, error) {
+func (ig *Instagram) postContentRequest(endpoint string, content *PostContent, result interface{}) error {
+	body, err := ig.tryRequest("POST", endpoint, content)
+	if err != nil {
+		return err
+	}
 
-	resp, err := ig.requestMain(method, endpoint, bytes.NewReader([]byte(body)), true)
+	err = json.Unmarshal(body, result)
+	return err
+}
+
+func (ig *Instagram) loginRequest(method, endpoint string, body, result interface{}) ([]*http.Cookie, error) {
+
+	resp, err := ig.requestMain(method, endpoint, body, true)
 	if err != nil {
 		return nil, err
 	}

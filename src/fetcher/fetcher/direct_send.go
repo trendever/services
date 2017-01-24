@@ -110,7 +110,7 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 			return
 		}
 		threadID = req.ThreadID
-		messageID, err = ig.SendMedia(threadID, req.Data)
+		messageID, err = ig.ShareMedia(threadID, req.Data)
 	}
 
 	return
