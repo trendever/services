@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/textproto"
 	"net/url"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"time"
 )
+
+type DialFunc func(network, addr string) (net.Conn, error)
 
 // Instagram defines client
 type Instagram struct {
@@ -24,6 +27,7 @@ type Instagram struct {
 	CheckpointURL     string
 	Cookies           []*http.Cookie
 	CheckpointCookies []*http.Cookie
+	Dial              DialFunc `json:"-"`
 
 	// needed only for auth, but leave it there to make auth more stable
 	UUID     string
@@ -32,7 +36,7 @@ type Instagram struct {
 }
 
 // NewInstagram initializes client for futher use
-func NewInstagram(userName, password string) (*Instagram, error) {
+func NewInstagram(userName, password string, dial DialFunc) (*Instagram, error) {
 	i := &Instagram{
 		Username:  userName,
 		password:  password,
@@ -43,6 +47,7 @@ func NewInstagram(userName, password string) (*Instagram, error) {
 		UserID:    0,
 		RankToken: "",
 		Cookies:   nil,
+		Dial:      dial,
 	}
 
 	err := i.Login()

@@ -44,7 +44,12 @@ func getToken(cook []*http.Cookie) (string, error) {
 func (ig *Instagram) requestMain(method, endpoint string, body interface{}, login bool) (*http.Response, error) {
 
 	// create request
-	client := &http.Client{}
+	client := &http.Client{
+		Transport: &http.Transport{
+			Dial: ig.Dial,
+		},
+		Timeout: 5 * time.Second,
+	}
 
 	// fill-in headers
 	header := make(http.Header)

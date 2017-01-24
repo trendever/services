@@ -45,7 +45,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 	if account.Cookie > "" && owner == account.OwnerID {
 		api, err = instagram.Restore(account.Cookie, password, true)
 	} else {
-		api, err = instagram.NewInstagram(login, password)
+		api, err = instagram.NewInstagram(login, password, nil)
 	}
 
 	if err == instagram.ErrorCheckpointRequired {
