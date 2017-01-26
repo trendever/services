@@ -188,12 +188,13 @@ func (ig *Instagram) checkpointStep2(method string) error {
 	}
 
 	ig.CheckpointCookies = cookies
+	ig.Save()
 
 	return nil
 }
 
-// CheckCode tries to submit instagram checkpont code
-func (ig *Instagram) CheckCode(code string) error {
+// CheckCodeF tries to submit instagram checkpont code
+func (ig *Instagram) CheckpointStep3(code string) error {
 
 	token, err := getToken(ig.CheckpointCookies)
 	if err != nil {
@@ -203,7 +204,7 @@ func (ig *Instagram) CheckCode(code string) error {
 	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
 	params := fmt.Sprintf("response_code=%v&csrfmiddlewaretoken=%v", code, token)
 
-	body, _, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
+	body, cookies, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
 	if err != nil {
 		return err
 	}
@@ -212,6 +213,7 @@ func (ig *Instagram) CheckCode(code string) error {
 		return fmt.Errorf("Bad code")
 	}
 
+	ig.CheckpointCookies = cookies
 	return ig.checkpointStep4()
 }
 
@@ -225,13 +227,12 @@ func (ig *Instagram) checkpointStep4() error {
 	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
 	params := fmt.Sprintf("csrfmiddlewaretoken=%v&OK=OK", token)
 
-	_, cookies, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
+	_, _, err = ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
 	if err != nil {
 		return err
 	}
 
 	ig.CheckpointCookies = nil
-	ig.Cookies = cookies
 	ig.LoggedIn = true
 	return nil
 }

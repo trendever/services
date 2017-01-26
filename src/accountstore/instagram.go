@@ -48,6 +48,8 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 		api, err = instagram.NewInstagram(login, password, nil)
 	}
 
+	log.Debug("Instagram api at login: %v", api)
+
 	if err == instagram.ErrorCheckpointRequired {
 		account.Valid = false
 
@@ -114,7 +116,7 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 			return fmt.Errorf("Timeout error")
 		}
 
-		err = api.CheckCode(code)
+		err = api.CheckpointStep3(code)
 		if err != nil {
 			return err
 		}
@@ -126,8 +128,6 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 	// delogin
 	api.CheckpointURL = ""
 	api.CheckpointCookies = nil
-	api.Cookies = nil
-	api.LoggedIn = false
 
 	_, err = api.GetRecentActivity()
 	if err != nil {
