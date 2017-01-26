@@ -48,8 +48,6 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 		api, err = instagram.NewInstagram(login, password, nil)
 	}
 
-	log.Debug("Instagram api at login: %v", api)
-
 	if err == instagram.ErrorCheckpointRequired {
 		account.Valid = false
 
