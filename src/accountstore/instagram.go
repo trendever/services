@@ -12,7 +12,7 @@ import (
 type InstagramAccess interface {
 	Login(login, password string, preferEmail bool, owner uint64) (*Account, error)
 	SendCode(*Account, string, bool) error
-	VerifyCode(acc *Account, password, code string) error
+	VerifyCode(acc *Account, code string) error
 }
 
 // InstagramAccessImpl is real instagram connector
@@ -105,9 +105,9 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
-func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) error {
+func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, password, true)
+	api, err := instagram.Restore(acc.Cookie, "", true)
 	log.Debug("Restored")
 	if err == instagram.ErrorCheckpointRequired && api != nil { // actual code checking
 		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {

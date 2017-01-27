@@ -72,7 +72,7 @@ func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*acco
 		return nil, err
 	}
 
-	err = s.ig.VerifyCode(account, in.Password, in.Code)
+	err = s.ig.VerifyCode(account, in.Code)
 
 	return &accountstore.ConfirmReply{}, err
 }
