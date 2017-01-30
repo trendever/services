@@ -127,8 +127,11 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
+		log.Debug("current message: %v", log.IndentEncode(message))
 
 		switch message.ItemType {
+		// such a special case for shares feels somewhat inconsistent
+		// we can use notifications in wantit probably...
 		case "media_share":
 			// there was older media without comment
 			if relatedMedia != nil {
@@ -143,20 +146,34 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 				relatedMedia = nil
 			}
 
+		case "media":
+			notify := bot.DirectNotify{
+				ThreadId:  threadID,
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				SourceId:  sourceID,
+				Type:      bot.MessageType_Image,
+				Data:      message.Media.ImageVersions2.Largest(),
+			}
+			err := nats.StanPublish(DirectNotifySubject, &notify)
+			if err != nil {
+				return fmt.Errorf("failed to send message notification via stan: %v", err)
+			}
+
 		case "text":
 			notify := bot.DirectNotify{
 				ThreadId:  threadID,
 				MessageId: message.ItemID,
 				UserId:    message.UserID,
 				SourceId:  sourceID,
-				Text:      message.Text,
+				Type:      bot.MessageType_Text,
+				Data:      message.Text,
 			}
 
 			if relatedMedia != nil {
 				comment := ""
 				if relatedMedia.UserID == message.UserID {
 					comment = message.Text
-					notify.RelatedMedia = relatedMedia.MediaShare.ID
 				}
 				if err := fillDirect(relatedMedia, &resp.Thread, meta, comment); err != nil {
 					return err

@@ -53,6 +53,7 @@ func init() {
 	}
 }
 
+// @TODO use accountstore client
 func main() {
 	var cmd = cobra.Command{
 		Use:   "service",
@@ -107,7 +108,7 @@ func initInstagramPool() {
 	for {
 		activeCount := 0
 		for _, user := range settings.Users {
-			item, err := instagram.NewInstagram(user.Name, user.Pass)
+			item, err := instagram.NewInstagram(user.Name, user.Pass, nil)
 			if err != nil {
 				log.Errorf("failed to add instagram user %v: %v", user.Name, err)
 				continue

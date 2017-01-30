@@ -8,10 +8,7 @@ import (
 // Save encodes connection to saveable string
 func (ig *Instagram) Save() (string, error) {
 
-	var copy = *ig
-	copy.password = ""
-
-	bytes, err := json.Marshal(&copy)
+	bytes, err := json.Marshal(&ig)
 	if err != nil {
 		return "", err
 	}

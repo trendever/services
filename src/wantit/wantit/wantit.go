@@ -220,6 +220,9 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		if deleted {
 			return false, errors.New("product was deleted")
 		}
+		// this product belongs to someone else probably, so we will not have access to this thread
+		// @TODO @CHECK may someone use codes to create multiple posts with same own product?
+		mention.DirectThreadId = ""
 	}
 	// there is no code at all or it's unregistred
 	if !found || productID <= 0 {
@@ -261,13 +264,6 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 		return true, err
 	}
 
-	if !customer.Confirmed {
-		err = notifyChat(mention)
-		if err != nil {
-			log.Errorf("Failed no reply in direct chat: %v", err)
-		}
-	}
-
 	return false, nil
 }
 
@@ -301,6 +297,7 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
 		Source:        source,
+		DirectThread:  mention.DirectThreadId,
 		CustomerId:    customerID,
 		ProductId:     int64(productID),
 		Comment:       mention.Comment,
@@ -309,21 +306,6 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	})
 
 	return err
-}
-
-func notifyChat(mention *bot.Activity) error {
-	//ctx, cancel := rpc.DefaultContext()
-	//defer cancel()
-	//
-	//_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-	//	ActivityPk: mention.Pk,
-	//	Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
-	//})
-	//
-	//return err
-
-	// @TODO
-	return nil
 }
 
 func findProductCode(comment string) (code string, found bool) {

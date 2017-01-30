@@ -100,4 +100,6 @@ type Settings struct {
 		Password string
 		DB       int
 	}
+
+	PaymentsRedirects map[string]string
 }

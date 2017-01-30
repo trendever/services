@@ -19,18 +19,12 @@ type UserTags struct {
 				} `json:"user"`
 			} `json:"in"`
 		} `json:"usertags"`
-		MaxNumVisiblePreviewComments int `json:"max_num_visible_preview_comments"`
-		LikeCount                    int `json:"like_count"`
-		ImageVersions2               struct {
-			Candidates []struct {
-				URL    string `json:"url"`
-				Width  int    `json:"width"`
-				Height int    `json:"height"`
-			} `json:"candidates"`
-		} `json:"image_versions2"`
-		ID             string `json:"id"`
-		ClientCacheKey string `json:"client_cache_key"`
-		Comments       []struct {
+		MaxNumVisiblePreviewComments int            `json:"max_num_visible_preview_comments"`
+		LikeCount                    int            `json:"like_count"`
+		ImageVersions2               ImageVersions2 `json:"image_versions2"`
+		ID                           string         `json:"id"`
+		ClientCacheKey               string         `json:"client_cache_key"`
+		Comments                     []struct {
 			Status       string `json:"status"`
 			UserID       int    `json:"user_id"`
 			CreatedAtUtc int    `json:"created_at_utc"`

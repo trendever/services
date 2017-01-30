@@ -85,7 +85,7 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 		}
 
 	}
-	if req.Chat.DirectSync {
+	if req.EnableSync {
 		go cs.enableSync(chat.ID)
 	}
 	return &proto_chat.ChatReply{
@@ -330,4 +330,13 @@ func (cs *chatServer) GetTotalCountUnread(_ context.Context, req *proto_chat.Tot
 	reply = new(proto_chat.TotalCountUnreadReply)
 	reply.Count, err = cs.chats.GetTotalUnread(req.UserId)
 	return
+}
+
+func (cs *chatServer) EnableSync(_ context.Context, req *proto_chat.EnableSyncRequest) (*proto_chat.EnableSyncReply, error) {
+	var reply proto_chat.EnableSyncReply
+	_, err := cs.chats.EnableSync(req.ChatId, req.PrimaryInstagram, req.ThreadId, req.ForceNewThread)
+	if err != nil {
+		reply.Error = err.Error()
+	}
+	return &reply, err
 }

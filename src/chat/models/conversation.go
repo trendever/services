@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/bot"
@@ -18,23 +19,25 @@ const (
 	ThreadReplyPrefix  = "sync_thread."
 
 	DefaultSyncInitMessage = "direct sync enabled"
+
+	SyncEventTopic = "chat.sync_event"
 )
 
 var global struct {
-	syncLock sync.Mutex
+	syncLock    sync.Mutex
+	threadsLock sync.Mutex
 }
 
 //Conversation is representation of conversation model
 type Conversation struct {
 	db.Model
-	Name        string
-	Members     []*Member
-	Messages    []*Message
-	Caption     string `gorm:"text"`
-	Status      string `gorm:"index;default:'new'"`
-	UnreadCount uint64 `sql:"-"`
-	// if true chat will be synchronized with direct
-	DirectSync   bool
+	Name         string
+	Members      []*Member
+	Messages     []*Message
+	Caption      string `gorm:"text"`
+	Status       string `gorm:"index;default:'new'"`
+	UnreadCount  uint64 `sql:"-"`
+	SyncStatus   pb_chat.SyncStatus
 	DirectThread string `gorm:"index"`
 	// instagram id of supplier
 	PrimaryInstagram uint64
@@ -74,9 +77,9 @@ type ConversationRepository interface {
 	DeleteConversation(id uint64) error
 	SetConversationStatus(req *pb_chat.SetStatusMessage) error
 	CheckMessageExists(instagramID string) (bool, error)
-	EnableSync(chatID uint64) (retry bool, err error)
+	EnableSync(chatID, primaryInstagram uint64, threadID string, forceNowThread bool) (retry bool, err error)
 	SetRelatedThread(chatID uint64, directThread string) (retry bool, err error)
-	UpdateSyncStatus(localID uint64, instagramID string) error
+	UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error
 }
 
 //Encode converts to protobuf model
@@ -86,7 +89,7 @@ func (c *Conversation) Encode() *pb_chat.Chat {
 	chat.Name = c.Name
 	chat.UnreadCount = c.UnreadCount
 	chat.DirectThread = c.DirectThread
-	chat.DirectSync = c.DirectSync
+	chat.SyncStatus = c.SyncStatus
 	chat.Caption = c.Caption
 	if c.Members != nil {
 		chat.Members = []*pb_chat.Member{}
@@ -164,8 +167,22 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 	global.syncLock.Lock()
 	err := c.db.Model(chat).Association("Messages").Append(messages).Error
 	go func() {
-		if err == nil && chat.DirectSync {
-			c.syncMessages(chat, messages...)
+		if err == nil {
+			switch chat.SyncStatus {
+			case pb_chat.SyncStatus_SYNCED:
+				c.syncMessages(chat, messages...)
+			case pb_chat.SyncStatus_DETACHED:
+				for _, msg := range messages {
+					if msg.InstagramID != "" {
+						continue
+					}
+					kind, data := mapToInstagram(chat, msg)
+					if kind != bot.MessageType_None && data != "" {
+						c.EnableSync(chat.ID, 0, "", true)
+						break
+					}
+				}
+			}
 		}
 		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
 		global.syncLock.Unlock()
@@ -176,9 +193,10 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages ...*Message) {
 	var ids []uint64
 	if chat.DirectThread == "" {
-		log.Errorf("syncMessages caaled for chat without related direct thread")
+		log.Errorf("syncMessages called for chat without related direct thread")
 		return
 	}
+	var err error
 	for _, msg := range messages {
 		if msg.InstagramID != "" {
 			continue
@@ -193,16 +211,35 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 				Data:     data,
 			}
 			log.Debug("send direct request: %+v", req)
-			err := nats.StanPublish("direct.send", &req)
+			err = nats.StanPublish("direct.send", &req)
 			if err != nil {
-				log.Errorf("failed to send messages to instagram via nats: %v", err)
-				// @TODO resend them later?.. disable sync?..
+				log.Errorf("failed to send send direct request via nats: %v", err)
 				break
 			}
 		}
 		ids = append(ids, msg.ID)
 	}
-	c.db.Model(&Message{}).Where("id IN (?)", ids).UpdateColumn("sync_status", SyncStatus_Progress)
+	// @TODO db errors should be rare but state may become inconsistent... not to much can be done quick btw
+	if err != nil {
+		err := c.updateSyncStatus(chat, pb_chat.SyncStatus_ERROR)
+		if err != nil {
+			log.Errorf("failed to update sync status of chat: %v", err)
+		}
+	}
+	err = c.db.Model(&Message{}).Where("id IN (?)", ids).UpdateColumn("sync_status", pb_chat.SyncStatus_PENDING).Error
+	if err != nil {
+		log.Errorf("failed to update chat info: %v", err)
+	}
+}
+
+// set passed status, save chat and send notification via stan
+func (c *conversationRepositoryImpl) updateSyncStatus(chat *Conversation, status pb_chat.SyncStatus) error {
+	chat.SyncStatus = status
+	err := c.db.Save(chat).Error
+	if err != nil {
+		return err
+	}
+	return nats.StanPublish(SyncEventTopic, chat.Encode())
 }
 
 func mapToInstagram(chat *Conversation, message *Message) (kind bot.MessageType, data string) {
@@ -444,20 +481,46 @@ func (c *conversationRepositoryImpl) CheckMessageExists(instagramID string) (boo
 	return count != 0, err
 }
 
-func (c *conversationRepositoryImpl) EnableSync(chatID uint64) (retry bool, err error) {
+func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64, threadID string, forceNowThread bool) (retry bool, err error) {
 	log.Debug("enabling sync for chat %v...", chatID)
+
 	var chat Conversation
 	err = c.db.Preload("Members").First(&chat, "id = ?", chatID).Error
 	if err != nil {
 		return true, fmt.Errorf("failed to load chat: %v", err)
 	}
-	if chat.DirectSync {
-		return false, nil
-	}
-	if chat.DirectThread == "" {
-		if chat.PrimaryInstagram == 0 {
-			return false, fmt.Errorf("chat %v has primary instagram", chat.ID)
+
+	if primaryInstagram != 0 && primaryInstagram != chat.PrimaryInstagram {
+		chat.PrimaryInstagram = primaryInstagram
+		chat.DirectThread = ""
+		err := c.updateSyncStatus(&chat, pb_chat.SyncStatus_NONE)
+		if err != nil {
+			return true, fmt.Errorf("failed to update chat info: %v", err)
 		}
+	}
+
+	if chat.PrimaryInstagram == 0 {
+		return false, fmt.Errorf("chat %v has no primary instagram", chat.ID)
+	}
+
+	if threadID != "" && threadID != chat.DirectThread {
+		return c.SetRelatedThread(chatID, threadID)
+	}
+
+	if forceNowThread {
+		chat.DirectThread = ""
+		err := c.updateSyncStatus(&chat, pb_chat.SyncStatus_DETACHED)
+		if err != nil {
+			return true, fmt.Errorf("failed to update chat info: %v", err)
+		}
+	}
+
+	switch chat.SyncStatus {
+	case pb_chat.SyncStatus_SYNCED, pb_chat.SyncStatus_PENDING:
+		// nothing to do yet
+		return false, nil
+
+	case pb_chat.SyncStatus_NONE, pb_chat.SyncStatus_DETACHED:
 		request := bot.CreateThreadRequest{
 			Inviter:     chat.PrimaryInstagram,
 			InitMessage: DefaultSyncInitMessage,
@@ -467,6 +530,7 @@ func (c *conversationRepositoryImpl) EnableSync(chatID uint64) (retry bool, err 
 			request.Caption = chat.Caption
 			request.InitMessage = chat.Caption
 		}
+
 		for _, mmb := range chat.Members {
 			if mmb.InstagramID != 0 && mmb.InstagramID != chat.PrimaryInstagram {
 				request.Participant = append(request.Participant, mmb.InstagramID)
@@ -475,22 +539,38 @@ func (c *conversationRepositoryImpl) EnableSync(chatID uint64) (retry bool, err 
 		if len(request.Participant) == 0 {
 			return false, fmt.Errorf("chat %v has no participants with known instagram id", chatID)
 		}
+
 		log.Debug("create_thread request: %+v", request)
+
 		err = nats.StanPublish("direct.create_thread", &request)
 		if err != nil {
 			return true, fmt.Errorf("failed to send create_thread request: %v", err)
 		}
+
+		err = c.updateSyncStatus(&chat, pb_chat.SyncStatus_PENDING)
+		if err != nil {
+			return true, fmt.Errorf("failed to update chat info: %v", err)
+		}
+
+		return false, nil
+
+	case pb_chat.SyncStatus_ERROR:
+		err = c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
+		if err != nil {
+			return true, fmt.Errorf("failed to update chat info: %v", err)
+		}
+		c.syncRecent(&chat)
 		return false, nil
 	}
-	err = c.db.Model(&chat).UpdateColumn("direct_sync", true).Error
-	if err != nil {
-		return true, fmt.Errorf("failed to update chat info: %v", err)
-	}
-	c.syncRecent(&chat)
-	return false, nil
+	err = errors.New("unreachable point is reached in EnableSync()")
+	log.Error(err)
+	return false, err
 }
 
 func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThread string) (retry bool, err error) {
+	global.threadsLock.Lock()
+	defer global.threadsLock.Unlock()
+
 	var chat Conversation
 	scope := c.db.Preload("Members").First(&chat, chatID)
 	if scope.RecordNotFound() {
@@ -499,16 +579,36 @@ func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThrea
 	if scope.Error != nil {
 		return true, fmt.Errorf("failed to load chat: %v", err)
 	}
+
+	var old Conversation
+	scope = c.db.
+		Where("direct_thread = ?", directThread).
+		Where("id != ?", chatID).
+		Preload("Members").
+		First(&old)
+	switch {
+	case scope.RecordNotFound():
+
+	case scope.Error != nil:
+		return true, fmt.Errorf("failed to detach other chats: %v", err)
+
+	default:
+		old.DirectThread = ""
+		err := c.updateSyncStatus(&old, pb_chat.SyncStatus_DETACHED)
+		if err != nil {
+			return true, fmt.Errorf("failed to detach other chats: %v", err)
+		}
+	}
+
 	if chat.DirectThread != "" {
 		log.Warn("chat %v already had related instagram thread '%v', replacing", chatID, chat.DirectThread)
 	}
 	chat.DirectThread = directThread
-	chat.DirectSync = true
-	err = c.db.Save(&chat).Error
+	err = c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
 	if err != nil {
-		return true, fmt.Errorf("failed to load chat: %v", err)
+		return true, fmt.Errorf("failed to save chat info: %v", err)
 	}
-	c.syncRecent(&chat)
+	go c.syncRecent(&chat)
 	return false, nil
 }
 
@@ -519,12 +619,11 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 	// @TODO any limits?
 	err := c.db.
 		Where("conversation_id = ?", chat.ID).
-		Where("sync_status IN (?)", []SyncStatus{SyncStatus_None, SyncStatus_Error}).
+		Where("sync_status IN (?)", []pb_chat.SyncStatus{pb_chat.SyncStatus_NONE, pb_chat.SyncStatus_ERROR}).
 		Order("id").
 		Preload("Parts").Preload("Member").
 		Find(&messages).Error
 	if err != nil {
-		//@TODO what should we do?
 		log.Errorf("failed to load recent messages: %v", err)
 	} else {
 		c.syncMessages(chat, messages...)
@@ -533,16 +632,25 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 	global.syncLock.Unlock()
 }
 
-func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string) error {
-	status := SyncStatus_Synced
-	if instagramID == "" {
+func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error {
+	// @TODO what if related thread will be changed after sending sync request? we can get error status on valid thread rarely
+	if status == pb_chat.SyncStatus_ERROR {
 		// disable synchronization
-		// @TODO reenable it somehow
-		err := c.db.Model(&Conversation{}).Where("id IN (SELECT conversation_id FROM messages WHERE id = ?)", localID).UpdateColumn("direct_sync", false).Error
-		if err != nil {
-			return err
+		var chat Conversation
+		scope := c.db.Preload("Members").
+			Where("id IN (SELECT conversation_id FROM messages WHERE id = ?)", localID).
+			First(&chat)
+		if scope.RecordNotFound() {
+			return fmt.Errorf("chat with message %v not found", localID)
 		}
-		status = SyncStatus_Error
+		if scope.Error != nil {
+			return fmt.Errorf("failed to load chat: %v", scope.Error)
+		}
+
+		err := c.updateSyncStatus(&chat, pb_chat.SyncStatus_ERROR)
+		if err != nil {
+			return fmt.Errorf("failed to save chat info: %v", err)
+		}
 	}
 	return c.db.Model(&Message{}).Where("id = ?", localID).UpdateColumns(Message{InstagramID: instagramID, SyncStatus: status}).Error
 }

@@ -164,6 +164,10 @@ func Fatal(err error) {
 	os.Exit(1)
 }
 
+func Fatalf(format string, values ...interface{}) {
+	Fatal(fmt.Errorf(format, values...))
+}
+
 func filenameWithLineNum() string {
 	var total = 10
 	var results []string

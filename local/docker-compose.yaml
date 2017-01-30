@@ -182,7 +182,7 @@ services:
   nats:
     image: nats-streaming
     volumes:
-      - natsdata:/data:rw
+      - natsdata2:/data:rw
     entrypoint: /nats-streaming-server -st file -dir /data -cid stan -SD
     ports:
       - 127.0.0.1:8222:8222
@@ -198,4 +198,4 @@ volumes:
   dbdata: {}
   influxdata: {}
   elasticdata: {}
-  natsdata: {}
+  natsdata2: {}

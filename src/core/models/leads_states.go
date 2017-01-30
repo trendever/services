@@ -223,8 +223,6 @@ func init() {
 			Chat: &chat.Chat{
 				Members: members,
 				Caption: genChatCaption(lead),
-				// @TODO check if user has active directbot here
-				DirectSync: true,
 			},
 			PrimaryInstagram: lead.Shop.Supplier.InstagramID,
 		})

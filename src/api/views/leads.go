@@ -367,3 +367,22 @@ func getLeadInfo(userID, leadID uint64) (*core.LeadInfo, error) {
 	return resp.Lead, nil
 
 }
+
+func getUserRole(userID, leadID, chatID uint64) (core.LeadUserRole, error) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := leadServiceClient.GetUserRole(ctx, &core.GetUserRoleRequest{
+		UserId:         userID,
+		LeadId:         leadID,
+		ConversationId: chatID,
+	})
+	switch {
+	case err != nil:
+		return core.LeadUserRole_UNKNOWN, err
+	case resp.Error != "":
+		return core.LeadUserRole_UNKNOWN, errors.New(resp.Error)
+	default:
+		return resp.Role, nil
+	}
+}

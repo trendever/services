@@ -5,13 +5,14 @@ import (
 	"github.com/jinzhu/gorm"
 	"instagram"
 	"time"
+	"utils/log"
 )
 
 // InstagramAccess is mockable instagram adapter
 type InstagramAccess interface {
 	Login(login, password string, preferEmail bool, owner uint64) (*Account, error)
 	SendCode(*Account, string, bool) error
-	VerifyCode(acc *Account, password, code string) error
+	VerifyCode(acc *Account, code string) error
 }
 
 // InstagramAccessImpl is real instagram connector
@@ -44,7 +45,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 	if account.Cookie > "" && owner == account.OwnerID {
 		api, err = instagram.Restore(account.Cookie, password, true)
 	} else {
-		api, err = instagram.NewInstagram(login, password)
+		api, err = instagram.NewInstagram(login, password, nil)
 	}
 
 	if err == instagram.ErrorCheckpointRequired {
@@ -104,28 +105,25 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 }
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
-func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) error {
+func (r *InstagramAccessImpl) VerifyCode(acc *Account, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, password, false)
-	if err != nil {
-		return err
-	}
-
-	// check if already confirmed
-	_, err = api.GetRecentActivity()
-	if err == instagram.ErrorCheckpointRequired {
+	api, err := instagram.Restore(acc.Cookie, "", true)
+	log.Debug("Restored")
+	if err == instagram.ErrorCheckpointRequired && api != nil { // actual code checking
 		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
 			return fmt.Errorf("Timeout error")
 		}
 
-		err = api.CheckCode(code)
+		err = api.CheckpointStep3(code)
 		if err != nil {
 			return err
 		}
-	} else if err != nil {
+
+	} else if err != nil { // terminate on any other error
 		return err
 	}
 
+	// delogin
 	api.CheckpointURL = ""
 	api.CheckpointCookies = nil
 

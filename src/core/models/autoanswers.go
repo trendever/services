@@ -82,7 +82,7 @@ func PrepareText(text, language string) (string, error) {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	})
 	for i := range words {
-		words[i] = stemmer(strings.ToLower(words[i]), true)
+		words[i] = stemmer(strings.ToLower(words[i]), false)
 	}
 	return strings.Join(words, " "), nil
 }

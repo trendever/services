@@ -10,15 +10,6 @@ import (
 	"utils/mandible"
 )
 
-type SyncStatus uint64
-
-const (
-	SyncStatus_None SyncStatus = iota
-	SyncStatus_Progress
-	SyncStatus_Error
-	SyncStatus_Synced
-)
-
 //Message is model of message
 type Message struct {
 	db.Model
@@ -26,8 +17,9 @@ type Message struct {
 	InstagramID    string
 	MemberID       sql.NullInt64
 	Member         *Member
-	SyncStatus     SyncStatus
+	SyncStatus     chat.SyncStatus
 	Parts          []*MessagePart
+	// @TODO add flag that forbids sync for this message?
 }
 
 //MessagePart is model of part of message
@@ -69,7 +61,7 @@ func (m *Message) Encode() *chat.Message {
 		UserId:         uint64(m.MemberID.Int64),
 		Parts:          m.EncodeParts(),
 		CreatedAt:      m.CreatedAt.Unix(),
-		InstagramId:    m.InstagramID,
+		SyncStatus:     m.SyncStatus,
 	}
 	if m.Member != nil {
 		message.User = m.Member.Encode()
@@ -93,10 +85,9 @@ func (m *Message) EncodeParts() []*chat.MessagePart {
 //DecodeMessage creates message from protobuf model
 func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
-		MemberID:    sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
-		Member:      member,
-		Parts:       DecodeParts(pbMessage.Parts),
-		InstagramID: pbMessage.InstagramId,
+		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
+		Member:   member,
+		Parts:    DecodeParts(pbMessage.Parts),
 	}
 	return message
 }

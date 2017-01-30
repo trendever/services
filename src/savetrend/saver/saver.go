@@ -278,6 +278,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 		if resp.Status < 400 || resp.Status >= 500 {
 			return -1, err
 		}
+		log.Warn("medai %v have invalid image", mediaID)
 
 	default:
 		return -1, err

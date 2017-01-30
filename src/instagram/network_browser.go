@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/url"
+	"time"
 	"utils/log"
 
 	// use custom-patched http pkg to allow using backslashes in cookies
@@ -31,9 +32,14 @@ func encode(params map[string]string) string {
 	return vals.Encode()
 }
 
-func browserRequest(method, addr, referer string, cookies []*http.Cookie, body string) (string, []*http.Cookie, error) {
+func (ig *Instagram) browserRequest(method, addr, referer string, cookies []*http.Cookie, body string) (string, []*http.Cookie, error) {
 
-	client := &fixedhttp.Client{}
+	client := &fixedhttp.Client{
+		Transport: &fixedhttp.Transport{
+			Dial: ig.Dial,
+		},
+		Timeout: 5 * time.Second,
+	}
 	req, err := fixedhttp.NewRequest(method, addr, bytes.NewReader([]byte(body)))
 	if err != nil {
 		return "", nil, err

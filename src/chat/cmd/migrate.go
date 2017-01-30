@@ -32,7 +32,7 @@ var migrateCmd = &cobra.Command{
 		if err := db.AutoMigrate(dbModels...).Error; err != nil {
 			log.Fatalf("Error during migration: %v", err)
 		}
-		if err := models.Migrate(db); err != nil {
+		if err := models.Migrate(); err != nil {
 			log.Fatalf("Error during migration: %v", err)
 		}
 		log.Println("Migration done")

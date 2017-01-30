@@ -51,6 +51,18 @@ func init() {
 			Handler: onLeadEvent,
 		},
 	)
+	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "chat.sync_event",
+		DecodedHandler: syncEvent,
+	})
+}
+
+func syncEvent(chat *chat.Chat) bool {
+	remoteCtx := soso.NewRemoteContext("chat", "sync_event", map[string]interface{}{
+		"chat": chat,
+	})
+	schat.BroadcastMessage(chat.Members, nil, remoteCtx)
+	return true
 }
 
 func newMessage(req *chat.NewMessageRequest) {

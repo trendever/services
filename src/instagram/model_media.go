@@ -48,6 +48,29 @@ type Medias struct {
 	Message         string      `json:"message"` // from Error
 }
 
+type ImageVersions2 struct {
+	Candidates []struct {
+		URL    string `json:"url"`
+		Width  uint   `json:"width"`
+		Height uint   `json:"height"`
+	} `json:"candidates"`
+}
+
+// returns URL to largest available image
+func (img ImageVersions2) Largest() string {
+	if len(img.Candidates) == 0 {
+		return ""
+	}
+	largest := &img.Candidates[0]
+	for i := 1; i < len(img.Candidates); i++ {
+		cur := &img.Candidates[i]
+		if cur.Height > largest.Height || cur.Width > largest.Width {
+			largest = cur
+		}
+	}
+	return largest.URL
+}
+
 type MediaInfo struct {
 	Caption struct {
 		BitFlags     int    `json:"bit_flags"`
@@ -91,28 +114,22 @@ type MediaInfo struct {
 		} `json:"user"`
 		UserID int `json:"user_id"`
 	} `json:"comments"`
-	FilterType      int    `json:"filter_type"`
-	HasLiked        bool   `json:"has_liked"`
-	HasMoreComments bool   `json:"has_more_comments"`
-	ID              string `json:"id"`
-	ImageVersions2  struct {
-		Candidates []struct {
-			Height int    `json:"height"`
-			URL    string `json:"url"`
-			Width  int    `json:"width"`
-		} `json:"candidates"`
-	} `json:"image_versions2"`
-	LikeCount                    int           `json:"like_count"`
-	Likers                       []interface{} `json:"likers"`
-	MaxNumVisiblePreviewComments int           `json:"max_num_visible_preview_comments"`
-	MediaType                    int           `json:"media_type"`
-	NextMaxID                    int           `json:"next_max_id"`
-	OrganicTrackingToken         string        `json:"organic_tracking_token"`
-	OriginalHeight               int           `json:"original_height"`
-	OriginalWidth                int           `json:"original_width"`
-	PhotoOfYou                   bool          `json:"photo_of_you"`
-	Pk                           int64         `json:"pk"`
-	TakenAt                      int64         `json:"taken_at"`
+	FilterType                   int            `json:"filter_type"`
+	HasLiked                     bool           `json:"has_liked"`
+	HasMoreComments              bool           `json:"has_more_comments"`
+	ID                           string         `json:"id"`
+	ImageVersions2               ImageVersions2 `json:"image_versions2"`
+	LikeCount                    int            `json:"like_count"`
+	Likers                       []interface{}  `json:"likers"`
+	MaxNumVisiblePreviewComments int            `json:"max_num_visible_preview_comments"`
+	MediaType                    int            `json:"media_type"`
+	NextMaxID                    int            `json:"next_max_id"`
+	OrganicTrackingToken         string         `json:"organic_tracking_token"`
+	OriginalHeight               int            `json:"original_height"`
+	OriginalWidth                int            `json:"original_width"`
+	PhotoOfYou                   bool           `json:"photo_of_you"`
+	Pk                           int64          `json:"pk"`
+	TakenAt                      int64          `json:"taken_at"`
 	User                         struct {
 		FullName                   string `json:"full_name"`
 		HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`

@@ -18,6 +18,8 @@ redis:
 
 nats:
   url: nats://nats:4222
+  stanCluster: stan
+  stanID: api1
 
 mail:
   username: 'testo'
@@ -30,3 +32,6 @@ elastic:
   debug: true
   trace: true
   addr: http://elastic:9200
+
+paymentsRedirects:
+  trendever: http://localhost:3002/chat/%v/payed/%v

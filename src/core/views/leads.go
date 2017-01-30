@@ -30,6 +30,7 @@ type leadServer struct {
 	notifier *models.Notifier
 }
 
+// @REFACTOR split/simplify this func somehow?
 func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core.CreateLeadResult, error) {
 
 	var err error
@@ -53,12 +54,18 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 		vocabulary := conf.GetSettings().Comments.Allowed
 
+		//Match comment if it contains key phrases
 		for _, phrase := range strings.Split(vocabulary, ",") {
 			phrase_stemmed, _ := models.PrepareText(phrase, "russian")
 			if strings.Contains(comment_prepared, phrase_stemmed) {
 				is_comment_matched = true
 				break
 			}
+		}
+
+		//Also match if shop name supplied in comment
+		if strings.Contains(comment_prepared, fmt.Sprintf("%s", product.Shop.Supplier.InstagramUsername)) {
+			is_comment_matched = true
 		}
 
 		if !is_comment_matched {
@@ -123,6 +130,10 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// If chat is down, conversation is not created (yet)
 	// Later CREATE lead event (see below) can be triggered to fix it
 	// So, everything is partly fine now
+	//
+	// @TODO Nobody will trigger events if user don't use our website.
+	// Moreover i'm insure if leads in NEW status are even accessible for clients from there now...
+	// May be should create leads via stan?
 	if lead.ConversationID != 0 {
 		go func() {
 			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
@@ -138,6 +149,10 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 				if err != nil {
 					log.Errorf("failed to send user comment to chat: %v", err)
 				}
+			}
+			if protoLead.Source != "website" {
+				// @TODO check whether shop have active directbot
+				models.SetChatSync(lead.ConversationID, protoLead.DirectThread)
 			}
 		}()
 	} else {

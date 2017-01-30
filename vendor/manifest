@@ -888,6 +888,13 @@
 			"path": "/lex/httplex"
 		},
 		{
+			"importpath": "golang.org/x/net/proxy",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "f2499483f923065a842d38eb4c7f1927e6fc6e6d",
+			"branch": "master",
+			"path": "/proxy"
+		},
+		{
 			"importpath": "golang.org/x/net/trace",
 			"repository": "https://go.googlesource.com/net",
 			"revision": "3797cd8864994d713d909eda5e61ede8683fdc12",

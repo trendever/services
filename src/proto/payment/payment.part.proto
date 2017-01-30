@@ -43,6 +43,7 @@ message OrderData {
   bool cancelled = 13;
 
   string comment = 14;
+  string redirect = 16;
 }
 
 message UserInfo {

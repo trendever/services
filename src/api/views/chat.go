@@ -4,6 +4,7 @@ import (
 	"api/chat"
 	"api/soso"
 	"errors"
+	"fmt"
 	"golang.org/x/net/context"
 	"net/http"
 	proto_chat "proto/chat"
@@ -25,6 +26,7 @@ func init() {
 		soso.Route{"search", "message", ChatHistory},
 		soso.Route{"call_supplier", "chat", CallSupplierToChat},
 		soso.Route{"call_customer", "chat", CallCustomerToChat},
+		soso.Route{"enable_sync", "chat", EnableChatSync},
 	)
 }
 
@@ -374,4 +376,42 @@ func ChatTotalCountUnread(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"count": resp.Count,
 	})
+}
+
+func EnableChatSync(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	chatID, _ := c.RequestMap["conversation_id"].(float64)
+	req := proto_chat.EnableSyncRequest{ChatId: uint64(chatID)}
+	if req.ChatId == 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("conversation_id is required"))
+		return
+	}
+
+	role, err := getUserRole(c.Token.UID, 0, req.ChatId)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("rpc error: %v", err))
+		return
+	}
+	if role == core.LeadUserRole_UNKNOWN {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("permission denied"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := chatClient.EnableSync(ctx, &req)
+	switch {
+	case err != nil:
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, fmt.Errorf("rpc error: %v", err))
+	case resp.Error != "":
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+	default:
+		c.SuccessResponse(map[string]interface{}{
+			"status": "ok",
+		})
+	}
 }

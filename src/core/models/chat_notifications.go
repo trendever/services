@@ -152,6 +152,23 @@ func SendChatMessages(conversationID uint64, messages ...*chat.Message) error {
 	return err
 }
 
+func SetChatSync(conversationID uint64, threadID string) error {
+	context, cancel := rpc.DefaultContext()
+	defer cancel()
+	reply, err := api.ChatServiceClient.EnableSync(context, &chat.EnableSyncRequest{
+		ChatId:   conversationID,
+		ThreadId: threadID,
+	})
+	switch {
+	case err != nil:
+		return err
+	case reply.Error != "":
+		return errors.New(reply.Error)
+	default:
+		return nil
+	}
+}
+
 //SendStatusMessage sends status message
 func SendStatusMessage(conversationID uint64, statusType, value string) {
 	err := joinChat(conversationID, chat.MemberRole_SYSTEM, &SystemUser)
