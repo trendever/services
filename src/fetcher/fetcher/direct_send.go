@@ -98,9 +98,9 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 			return
 		}
 		if req.Caption != "" {
-			_, err = ig.DirectUpdateTitle(threadID, req.Caption)
+			_, err := ig.DirectUpdateTitle(threadID, req.Caption)
 			if err != nil {
-				log.Errorf("set title for thread %v failed:", threadID, err)
+				log.Errorf("set title for thread %v failed: %v", threadID, err)
 			}
 		}
 
