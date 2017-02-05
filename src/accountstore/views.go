@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"proto/accountstore"
 	"proto/core"
 	"utils/log"
 	"utils/rpc"
+
+	"golang.org/x/net/context"
 )
 
 // StartServer inits grpc server
@@ -72,7 +73,7 @@ func (s *svc) Confirm(_ context.Context, in *accountstore.ConfirmRequest) (*acco
 		return nil, err
 	}
 
-	err = s.ig.VerifyCode(account, in.Code)
+	err = s.ig.VerifyCode(account, in.Password, in.Code)
 
 	return &accountstore.ConfirmReply{}, err
 }
