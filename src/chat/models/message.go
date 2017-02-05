@@ -49,6 +49,9 @@ func InitUploader(mandibleUrl string) {
 		Width:  480,
 		Height: 480,
 		Shape:  "square",
+	}, mandible.Thumbnail{
+		Name:  "instagram",
+		Shape: "instagram",
 	})
 }
 
