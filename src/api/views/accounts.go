@@ -4,11 +4,12 @@ import (
 	"api/api"
 	"api/soso"
 	"errors"
-	"golang.org/x/net/context"
 	"net/http"
 	"proto/accountstore"
 	"utils/log"
 	"utils/rpc"
+
+	"golang.org/x/net/context"
 )
 
 var accountStoreServiceClient = accountstore.NewAccountStoreServiceClient(api.AccountStoreConn)
@@ -43,9 +44,16 @@ func Confirm(c *soso.Context) {
 		return
 	}
 
+	password, ok := c.RequestMap["password"].(string)
+	if !ok || code == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No password supplied"))
+		return
+	}
+
 	_, err := accountStoreServiceClient.Confirm(context.Background(), &accountstore.ConfirmRequest{
 		InstagramUsername: instagramUsername,
 		Code:              code,
+		Password:          password,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
