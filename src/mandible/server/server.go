@@ -443,7 +443,7 @@ func (s *Server) buildThumbResponse(upload *uploadedfile.UploadedFile) (map[stri
 
 	for _, t := range upload.GetThumbs() {
 		thumbName := fmt.Sprintf("%s/%s", upload.GetHash(), t.Name)
-		tObj := factory.NewStoreObject(thumbName, upload.GetMime(), "thumbnail")
+		tObj := factory.NewStoreObject(thumbName, "application/octet-stream", "thumbnail")
 		err := tObj.Store(t, s.ImageStore)
 		if err != nil {
 			return nil, err
