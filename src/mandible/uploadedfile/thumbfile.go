@@ -198,6 +198,7 @@ func (this *ThumbFile) processInstagram(original *UploadedFile) error {
 	case ratio >= 0.8 && ratio <= 1.91:
 		this.Width = 1080
 		this.Height = 1350
+		this.DesiredFormat = "jpg"
 		return this.processSquare(original)
 	case ratio < 0.8:
 		if height > 1350 {
