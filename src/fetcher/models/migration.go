@@ -40,6 +40,11 @@ func AutoMigrate(drop bool) error {
 		log.Warn("Drop Tables: success.")
 	}
 
+	err := db.New().AutoMigrate(modelsList...).Error
+	if err != nil {
+		return err
+	}
+
 	if db.HasColumn(&DirectRequest{}, "text") {
 		db.New().Model(&DirectRequest{}).DropColumn("text")
 	}
@@ -52,11 +57,6 @@ func AutoMigrate(drop bool) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	err := db.New().AutoMigrate(modelsList...).Error
-	if err != nil {
-		return err
 	}
 
 	log.Info("Migration: success.")
