@@ -33,6 +33,9 @@ enum MessageType {
   Text = 1;
   MediaShare = 2;
   Image = 3;
+
+  // for internal usage inside fether only
+  CreateThread = 127;
 }
 
 message SendDirectRequest {

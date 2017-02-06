@@ -662,7 +662,7 @@ type EnableSyncRequest struct {
 	PrimaryInstagram uint64 `protobuf:"varint,2,opt,name=primary_instagram,json=primaryInstagram,proto3" json:"primary_instagram,omitempty"`
 	// if not empty change current related thread
 	ThreadId string `protobuf:"bytes,3,opt,name=thread_id,json=threadId,proto3" json:"thread_id,omitempty"`
-	// creater new thread even if chat already have one
+	// create new thread even if chat already has one
 	ForceNewThread bool `protobuf:"varint,4,opt,name=force_new_thread,json=forceNewThread,proto3" json:"force_new_thread,omitempty"`
 }
 

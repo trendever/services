@@ -6,6 +6,7 @@ import (
 	"fetcher/models"
 	"fmt"
 	"instagram"
+	"net/http"
 	"proto/bot"
 	"utils/db"
 	"utils/log"
@@ -22,15 +23,7 @@ func processRequests(meta *client.AccountMeta) error {
 	}
 
 	for _, req := range requests {
-		switch req.Type {
-		case models.SendMessageRequest, models.ShareMediaRequest:
-			err = sendMessage(meta, &req)
-		case models.CreateThreadRequest:
-			err = createThread(meta, &req)
-		default:
-			log.Errorf("unknown request type %v", req.Type)
-			continue
-		}
+		err = sendMessage(meta, &req)
 		if err != nil {
 			return err
 		}
@@ -41,7 +34,7 @@ func processRequests(meta *client.AccountMeta) error {
 func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 	if req.Data == "" {
 		// @TODO send something with nats?
-		log.Warn("skipping empty message")
+		log.Warn("skipping empty message %v", req)
 		err := db.New().Delete(req).Error
 		if err != nil {
 			return fmt.Errorf("failed to remove handled request from pending table: %v", err)
@@ -59,7 +52,7 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 	switch {
 	case err == nil:
 
-	case err.Error() == "Thread does not exist":
+	case err.Error() == "Thread does not exist" || err.Error() == "bad destination":
 		reply.Error = err.Error()
 
 	default:
@@ -83,8 +76,17 @@ func sendMessage(meta *client.AccountMeta, req *models.DirectRequest) error {
 }
 
 func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, messageID string, err error) {
-	switch req.Type {
-	case models.SendMessageRequest, models.CreateThreadRequest:
+	switch req.Kind {
+	case bot.MessageType_CreateThread:
+		var bot *instagram.Instagram
+		bot, err = global.pubPool.GetRandom()
+		if err != nil {
+			return
+		}
+		req.Participants = append(req.Participants, bot.UserID)
+		fallthrough
+
+	case bot.MessageType_Text:
 		switch {
 		case req.ThreadID != "":
 			threadID = req.ThreadID
@@ -92,7 +94,7 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 		case len(req.Participants) != 0:
 			threadID, messageID, err = ig.SendText(req.Data, req.Participants...)
 		default:
-			err = errors.New("destination is unspecified")
+			err = errors.New("bad destination")
 		}
 		if err != nil {
 			return
@@ -104,23 +106,42 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 			}
 		}
 
-	case models.ShareMediaRequest:
+	case bot.MessageType_MediaShare:
 		if req.ThreadID == "" {
 			err = errors.New("bad destination")
 			return
 		}
 		threadID = req.ThreadID
 		messageID, err = ig.ShareMedia(threadID, req.Data)
+
+	case bot.MessageType_Image:
+		if req.ThreadID == "" {
+			err = errors.New("bad destination")
+			return
+		}
+		threadID = req.ThreadID
+		var resp *http.Response
+		resp, err = http.Get(req.Data)
+		if err != nil {
+			return
+		}
+		if resp.StatusCode != 200 {
+			err = fmt.Errorf("failed to load image for request %v: bad status '%v(%v)'", req, resp.Status, resp.StatusCode)
+			return
+		}
+		contextType := resp.Header.Get("Content-Type")
+		switch contextType {
+		case "":
+		case "application/octet-stream":
+		case "image/jpeg":
+		case "image/pjpeg":
+		default:
+			err = fmt.Errorf("unexpected content type '%v' for request %v", contextType, req)
+			return
+		}
+		messageID, err = ig.SendPhoto(threadID, resp.Body)
+		resp.Body.Close()
 	}
 
 	return
-}
-
-func createThread(meta *client.AccountMeta, req *models.DirectRequest) error {
-	bot, err := global.pubPool.GetRandom()
-	if err != nil {
-		return err
-	}
-	req.Participants = append(req.Participants, bot.UserID)
-	return sendMessage(meta, req)
 }

@@ -18,11 +18,6 @@ const (
 
 var once sync.Once
 
-var typeMap = map[bot.MessageType]models.RequestType{
-	bot.MessageType_Text:       models.SendMessageRequest,
-	bot.MessageType_MediaShare: models.ShareMediaRequest,
-}
-
 func subscribe() {
 	once.Do(func() {
 		nats.StanSubscribe(
@@ -51,7 +46,7 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 
 func addDirectRequest(in *bot.SendDirectRequest) bool {
 	var req = models.DirectRequest{
-		Type:         typeMap[in.Type],
+		Kind:         in.Type,
 		UserID:       in.SenderId,
 		ReplyKey:     in.ReplyKey,
 		ThreadID:     in.ThreadId,
@@ -68,7 +63,7 @@ func addDirectRequest(in *bot.SendDirectRequest) bool {
 
 func createThread(in *bot.CreateThreadRequest) bool {
 	err := db.New().Save(&models.DirectRequest{
-		Type:         models.CreateThreadRequest,
+		Kind:         bot.MessageType_CreateThread,
 		UserID:       in.Inviter,
 		ReplyKey:     in.ReplyKey,
 		Participants: in.Participant,
