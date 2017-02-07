@@ -198,6 +198,8 @@ func (this *ThumbFile) processInstagram(original *UploadedFile) error {
 	case ratio >= 0.8 && ratio <= 1.91:
 		this.Width = 1080
 		this.Height = 1350
+		this.DesiredFormat = "jpg"
+		return this.processSquare(original)
 	case ratio < 0.8:
 		if height > 1350 {
 			this.Height = 1350
@@ -213,8 +215,17 @@ func (this *ThumbFile) processInstagram(original *UploadedFile) error {
 		}
 		this.Height = int(float32(this.Width)/1.91) + 1
 	}
-	this.DesiredFormat = "jpg"
-	return this.processSquare(original)
+
+	filename, err := processorcommand.ExtentThumb(original.GetPath(), this.Name, this.Width, this.Height, "white", this.Quality, thumbType.JPG)
+	if err != nil {
+		return err
+	}
+
+	if err := this.SetPath(filename); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (this *ThumbFile) processCircle(original *UploadedFile) error {
