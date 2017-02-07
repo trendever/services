@@ -2,15 +2,17 @@ package views
 
 import (
 	"api/api"
+	"api/conf"
 	"api/soso"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"net/http"
 	"proto/core"
 	"proto/payment"
 	"time"
 	"utils/rpc"
+
+	"golang.org/x/net/context"
 )
 
 var monetizationServiceClient = core.NewMonetizationServiceClient(api.CoreConn)
@@ -214,6 +216,13 @@ func BuyCoins(c *soso.Context) {
 		return
 	}
 
+	redirectKey, _ := c.RequestMap["redirect"].(string)
+	redirect, ok := conf.GetSettings().PaymentsRedirects[redirectKey]
+	if !ok {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown redirect key"))
+		return
+	}
+
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
@@ -225,6 +234,7 @@ func BuyCoins(c *soso.Context) {
 			ServiceName: "coins_refill",
 			ServiceData: fmt.Sprintf(`{"user_id": %v, "amount": %v}`, c.Token.UID, offer.Amount),
 			Comment:     fmt.Sprintf("%v trendcoins", offer.Amount),
+			Redirect:    redirect,
 		},
 		Info: &payment.UserInfo{
 			UserId: c.Token.UID,
