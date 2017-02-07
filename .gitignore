@@ -56,3 +56,5 @@ pids
 
 .bashrc
 *.exvim*
+
+.vscode

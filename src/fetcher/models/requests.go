@@ -1,6 +1,7 @@
 package models
 
 import (
+	"proto/bot"
 	"strconv"
 	"strings"
 	"time"
@@ -9,17 +10,11 @@ import (
 
 type RequestType uint64
 
-const (
-	SendMessageRequest RequestType = iota
-	ShareMediaRequest
-	CreateThreadRequest
-)
-
 type DirectRequest struct {
 	ID        uint64 `gorm:"primary_key"`
 	CreatedAt time.Time
 
-	Type   RequestType
+	Kind   bot.MessageType
 	UserID uint64
 	//@CHECK i'm somewhat unsure whether ReplyKey should be unique
 	ReplyKey string // `gorm:"unique" sql:"default:NULL"`

@@ -49,9 +49,28 @@ func (s *svc) Migrate(drop bool) {
 		&Account{},
 	}
 
-	if !drop {
-		db.New().AutoMigrate(models...)
-	} else {
+	if drop {
 		db.New().DropTable(models...)
+	}
+	db.New().AutoMigrate(models...)
+	fixIDs()
+}
+
+func fixIDs() {
+	var broken []Account
+	err := db.New().Where("instagram_id = 0").Where("valid").Find(&broken).Error
+	if err != nil {
+		log.Errorf("failed to load accounts with zero id: %v", err)
+		return
+	}
+	for _, acc := range broken {
+		ig, _ := instagram.Restore(acc.Cookie, "", false)
+		if ig.UserID != 0 {
+			acc.InstagramID = ig.UserID
+			err := db.New().Save(&acc).Error
+			if err != nil {
+				log.Errorf("failed to save fixed acc: %v", err)
+			}
+		}
 	}
 }

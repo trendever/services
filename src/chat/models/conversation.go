@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -11,6 +12,7 @@ import (
 	"sync"
 	"utils/db"
 	"utils/log"
+	"utils/mandible"
 	"utils/nats"
 )
 
@@ -266,7 +268,19 @@ func mapToInstagram(chat *Conversation, message *Message) (kind bot.MessageType,
 			if len(slice) >= 3 {
 				kind = bot.MessageType_MediaShare
 				data = slice[2]
-				break
+				return
+			}
+		case "image/json":
+			var img mandible.Image
+			err := json.Unmarshal([]byte(part.Content), &img)
+			if err != nil {
+				log.Errorf("failed to unmarshel image json in message %v: %v", message.ID, err)
+				continue
+			}
+			if url, ok := img.Thumbs["instagram"]; ok {
+				kind = bot.MessageType_Image
+				data = url
+				return
 			}
 		}
 	}

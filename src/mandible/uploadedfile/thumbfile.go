@@ -31,7 +31,6 @@ type ThumbFile struct {
 	CropHeight    int
 	CropRatio     string
 	Quality       int
-	Format        thumbType.ThumbType
 	StoreURI      string
 	DesiredFormat string
 	NoStore       bool
@@ -56,7 +55,6 @@ func NewThumbFile(width, maxWidth, height, maxHeight int, name, shape, path, cro
 		CropHeight:    cropHeight,
 		CropRatio:     cropRatio,
 		Quality:       quality,
-		Format:        thumbType.JPG,
 		StoreURI:      "",
 		DesiredFormat: desiredFormat,
 		NoStore:       noStore,
@@ -159,6 +157,8 @@ func (this *ThumbFile) Process(original *UploadedFile) error {
 		return this.processSquare(original)
 	case "custom":
 		return this.processCustom(original)
+	case "instagram":
+		return this.processInstagram(original)
 	default:
 		return this.processFull(original)
 	}
@@ -176,7 +176,47 @@ func (this *ThumbFile) processSquare(original *UploadedFile) error {
 		return errors.New("Width too large")
 	}
 
-	filename, err := processorcommand.SquareThumb(original.GetPath(), this.Name, this.Width, this.Quality, this.Format)
+	filename, err := processorcommand.SquareThumb(original.GetPath(), this.Name, this.Width, this.Quality, this.GetOutputFormat(original))
+	if err != nil {
+		return err
+	}
+
+	if err := this.SetPath(filename); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (this *ThumbFile) processInstagram(original *UploadedFile) error {
+	width, height, err := original.Dimensions()
+	if err != nil {
+		return err
+	}
+	ratio := float32(width) / float32(height)
+	switch {
+	case ratio >= 0.8 && ratio <= 1.91:
+		this.Width = 1080
+		this.Height = 1350
+		this.DesiredFormat = "jpg"
+		return this.processSquare(original)
+	case ratio < 0.8:
+		if height > 1350 {
+			this.Height = 1350
+		} else {
+			this.Height = height
+		}
+		this.Width = int(float32(this.Height)*0.8) + 1
+	case ratio > 1.91:
+		if width > 1050 {
+			this.Width = 1050
+		} else {
+			this.Width = width
+		}
+		this.Height = int(float32(this.Width)/1.91) + 1
+	}
+
+	filename, err := processorcommand.ExtentThumb(original.GetPath(), this.Name, this.Width, this.Height, "white", this.Quality, thumbType.JPG)
 	if err != nil {
 		return err
 	}
@@ -225,7 +265,7 @@ func (this *ThumbFile) processThumb(original *UploadedFile) error {
 		return errors.New("Height too large")
 	}
 
-	filename, err := processorcommand.Thumb(original.GetPath(), this.Name, this.Width, this.Height, this.Quality, this.Format)
+	filename, err := processorcommand.Thumb(original.GetPath(), this.Name, this.Width, this.Height, this.Quality, this.GetOutputFormat(original))
 	if err != nil {
 		return err
 	}
@@ -262,7 +302,7 @@ func (this *ThumbFile) processCustom(original *UploadedFile) error {
 		return errors.New("Invalid height")
 	}
 
-	filename, err := processorcommand.CustomThumb(original.GetPath(), this.Name, width, height, this.CropGravity, cropWidth, cropHeight, this.Quality, this.Format)
+	filename, err := processorcommand.CustomThumb(original.GetPath(), this.Name, width, height, this.CropGravity, cropWidth, cropHeight, this.Quality, this.GetOutputFormat(original))
 	if err != nil {
 		return err
 	}

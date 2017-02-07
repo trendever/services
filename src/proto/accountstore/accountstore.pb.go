@@ -91,62 +91,6 @@ func (m *Account) String() string            { return proto.CompactTextString(m)
 func (*Account) ProtoMessage()               {}
 func (*Account) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{0} }
 
-func (m *Account) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *Account) GetInstagramId() uint64 {
-	if m != nil {
-		return m.InstagramId
-	}
-	return 0
-}
-
-func (m *Account) GetCookie() string {
-	if m != nil {
-		return m.Cookie
-	}
-	return ""
-}
-
-func (m *Account) GetValid() bool {
-	if m != nil {
-		return m.Valid
-	}
-	return false
-}
-
-func (m *Account) GetRole() Role {
-	if m != nil {
-		return m.Role
-	}
-	return Role_User
-}
-
-func (m *Account) GetOwnerId() uint64 {
-	if m != nil {
-		return m.OwnerId
-	}
-	return 0
-}
-
-func (m *Account) GetCreatedAt() int64 {
-	if m != nil {
-		return m.CreatedAt
-	}
-	return 0
-}
-
-func (m *Account) GetCreatedAtAgo() uint64 {
-	if m != nil {
-		return m.CreatedAtAgo
-	}
-	return 0
-}
-
 type AddRequest struct {
 	InstagramUsername string `protobuf:"bytes,1,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
 	Password          string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
@@ -160,41 +104,6 @@ func (m *AddRequest) String() string            { return proto.CompactTextString
 func (*AddRequest) ProtoMessage()               {}
 func (*AddRequest) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{1} }
 
-func (m *AddRequest) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *AddRequest) GetPassword() string {
-	if m != nil {
-		return m.Password
-	}
-	return ""
-}
-
-func (m *AddRequest) GetRole() Role {
-	if m != nil {
-		return m.Role
-	}
-	return Role_User
-}
-
-func (m *AddRequest) GetOwnerId() uint64 {
-	if m != nil {
-		return m.OwnerId
-	}
-	return 0
-}
-
-func (m *AddRequest) GetPreferEmail() bool {
-	if m != nil {
-		return m.PreferEmail
-	}
-	return false
-}
-
 type AddReply struct {
 	NeedCode bool `protobuf:"varint,2,opt,name=needCode,proto3" json:"needCode,omitempty"`
 }
@@ -203,13 +112,6 @@ func (m *AddReply) Reset()                    { *m = AddReply{} }
 func (m *AddReply) String() string            { return proto.CompactTextString(m) }
 func (*AddReply) ProtoMessage()               {}
 func (*AddReply) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{2} }
-
-func (m *AddReply) GetNeedCode() bool {
-	if m != nil {
-		return m.NeedCode
-	}
-	return false
-}
 
 type ConfirmRequest struct {
 	InstagramUsername string `protobuf:"bytes,1,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
@@ -222,34 +124,6 @@ func (m *ConfirmRequest) Reset()                    { *m = ConfirmRequest{} }
 func (m *ConfirmRequest) String() string            { return proto.CompactTextString(m) }
 func (*ConfirmRequest) ProtoMessage()               {}
 func (*ConfirmRequest) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{3} }
-
-func (m *ConfirmRequest) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *ConfirmRequest) GetInstagramId() uint64 {
-	if m != nil {
-		return m.InstagramId
-	}
-	return 0
-}
-
-func (m *ConfirmRequest) GetCode() string {
-	if m != nil {
-		return m.Code
-	}
-	return ""
-}
-
-func (m *ConfirmRequest) GetPassword() string {
-	if m != nil {
-		return m.Password
-	}
-	return ""
-}
 
 type ConfirmReply struct {
 }
@@ -269,27 +143,6 @@ func (m *MarkInvalidRequest) Reset()                    { *m = MarkInvalidReques
 func (m *MarkInvalidRequest) String() string            { return proto.CompactTextString(m) }
 func (*MarkInvalidRequest) ProtoMessage()               {}
 func (*MarkInvalidRequest) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{5} }
-
-func (m *MarkInvalidRequest) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *MarkInvalidRequest) GetInstagramId() uint64 {
-	if m != nil {
-		return m.InstagramId
-	}
-	return 0
-}
-
-func (m *MarkInvalidRequest) GetReason() string {
-	if m != nil {
-		return m.Reason
-	}
-	return ""
-}
 
 type MarkInvalidReply struct {
 }
@@ -312,48 +165,6 @@ func (m *SearchRequest) Reset()                    { *m = SearchRequest{} }
 func (m *SearchRequest) String() string            { return proto.CompactTextString(m) }
 func (*SearchRequest) ProtoMessage()               {}
 func (*SearchRequest) Descriptor() ([]byte, []int) { return fileDescriptorAccountstore, []int{7} }
-
-func (m *SearchRequest) GetRoles() []Role {
-	if m != nil {
-		return m.Roles
-	}
-	return nil
-}
-
-func (m *SearchRequest) GetIncludeInvalids() bool {
-	if m != nil {
-		return m.IncludeInvalids
-	}
-	return false
-}
-
-func (m *SearchRequest) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *SearchRequest) GetInstagramId() uint64 {
-	if m != nil {
-		return m.InstagramId
-	}
-	return 0
-}
-
-func (m *SearchRequest) GetHidePrivate() bool {
-	if m != nil {
-		return m.HidePrivate
-	}
-	return false
-}
-
-func (m *SearchRequest) GetOwnerId() uint64 {
-	if m != nil {
-		return m.OwnerId
-	}
-	return 0
-}
 
 type SearchReply struct {
 	Accounts []*Account `protobuf:"bytes,1,rep,name=accounts" json:"accounts,omitempty"`
@@ -1978,24 +1789,7 @@ func (m *SearchRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType == 0 {
-				var v Role
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowAccountstore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (Role(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Roles = append(m.Roles, v)
-			} else if wireType == 2 {
+			if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -2036,6 +1830,23 @@ func (m *SearchRequest) Unmarshal(dAtA []byte) error {
 					}
 					m.Roles = append(m.Roles, v)
 				}
+			} else if wireType == 0 {
+				var v Role
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAccountstore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (Role(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Roles = append(m.Roles, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Roles", wireType)
 			}

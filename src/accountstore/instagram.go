@@ -65,6 +65,7 @@ func (r *InstagramAccessImpl) Login(login, password string, preferEmail bool, ow
 		return nil, err
 	}
 
+	account.InstagramID = api.UserID
 	account.Cookie = cookieJar
 
 	return account, nil
@@ -100,6 +101,7 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 		return err
 	}
 
+	acc.InstagramID = api.UserID
 	acc.Cookie = cookieJar
 
 	return Save(acc)
@@ -139,6 +141,7 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 	}
 
 	acc.Valid = true
+	acc.InstagramID = api.UserID
 	acc.Cookie = cookieJar
 
 	return Save(acc)

@@ -181,6 +181,39 @@ func CircleThumb(filename, name string, width int, quality int, format thumbType
 	return outfile, nil
 }
 
+func ExtentThumb(filename, name string, width, height int, background string, quality int, format thumbType.ThumbType) (string, error) {
+	outfile := fmt.Sprintf("%s_%s", filename, name)
+
+	args := []string{
+		fmt.Sprintf("%s[0]", filename),
+		"-resize",
+		fmt.Sprintf("%dx%d", width, height),
+		"-gravity",
+		"center",
+		"-background",
+		background,
+		"-extent",
+		fmt.Sprintf("%dx%d", width, height),
+		"-density",
+		"72x72",
+	}
+
+	if quality != -1 {
+		args = append(args,
+			"-quality",
+			fmt.Sprintf("%d", quality),
+		)
+	}
+
+	args = append(args, fmt.Sprintf("%s:%s", format.ToString(), outfile))
+	err := runProcessorCommand(GM_COMMAND, args)
+	if err != nil {
+		return "", err
+	}
+
+	return outfile, nil
+}
+
 func CustomThumb(filename, name string, width, height int, cropGravity string, cropWidth, cropHeight, quality int, format thumbType.ThumbType) (string, error) {
 	outfile := fmt.Sprintf("%s_%s", filename, name)
 
