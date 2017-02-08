@@ -140,12 +140,12 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 		}
 
 		if message.Status == "fail" {
-			if message.Message != "login_required" {
-				return nil, errors.New(message.Message)
-			}
 			if message.Message == "checkpoint_required" {
 				ig.LoggedIn = false
 				return nil, ErrorCheckpointRequired
+			}
+			if message.Message != "login_required" {
+				return nil, errors.New(message.Message)
 			}
 			// relogin
 			ig.LoggedIn = false
