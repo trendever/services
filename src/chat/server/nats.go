@@ -146,6 +146,10 @@ func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged
 	}
 	err = cs.chats.UpdateSyncStatus(msgID, notify.MessageId, status)
 	if err != nil {
+		if err.Error() == `pq: duplicate key value violates unique constraint "unique_message_id"` {
+			log.Errorf("UpdateSyncStatus: message with instagram_id = %v already exists", notify.MessageId)
+			return true
+		}
 		log.Errorf("UpdateSyncStatus failed: %v", err)
 		return false
 	}
