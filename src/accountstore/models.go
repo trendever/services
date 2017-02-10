@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"proto/accountstore"
 	"proto/bot"
@@ -120,7 +121,7 @@ func Find(in *accountstore.SearchRequest) ([]Account, error) {
 // FindAccount returns account by template
 func FindAccount(template *Account) (*Account, error) {
 	if *template == (Account{}) {
-		return nil, "empty conditions"
+		return nil, errors.New("empty conditions")
 	}
 	var out Account
 	err := db.New().Where(template).Find(&out).Error
