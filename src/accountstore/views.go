@@ -3,12 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/net/context"
 	"proto/accountstore"
 	"proto/core"
 	"utils/log"
 	"utils/rpc"
-
-	"golang.org/x/net/context"
 )
 
 // StartServer inits grpc server
@@ -17,14 +16,14 @@ func (s *svc) StartServer() {
 	accountstore.RegisterAccountStoreServiceServer(server, s)
 
 	// connect to RPCs
-	coreConn := rpc.Connect(settings.Core)
-	s.shopClient = core.NewShopServiceClient(coreConn)
+	s.shopClient = core.NewShopServiceClient(rpc.Connect(settings.RPC.Core))
 }
 
 func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore.AddReply, error) {
 
 	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.PreferEmail, in.OwnerId)
 	if err != nil {
+		notifyTelegram(fmt.Sprintf("failed to add bot '%v': %v", in.InstagramUsername, err))
 		return nil, err
 	}
 

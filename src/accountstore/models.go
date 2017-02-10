@@ -1,20 +1,23 @@
 package main
 
 import (
-	"time"
-
+	"fmt"
 	"proto/accountstore"
+	"proto/bot"
 	"sync"
+	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
+	"utils/rpc"
 )
 
 const notifyTopic = "accountstore.notify"
 
 var global struct {
-	once       sync.Once
-	notifyChan chan *Account
+	once          sync.Once
+	notifyChan    chan *Account
+	telebotClient bot.TelegramServiceClient
 }
 
 // Account contains instagram account cookie
@@ -45,6 +48,19 @@ func notifier() {
 		global.notifyChan = make(chan *Account, 20)
 		// @TODO notify about service (re-)start? resend all accounts or just tell clients to reload all them
 		for acc := range global.notifyChan {
+			var message string
+			if acc.Role == accountstore.Role_User {
+				message = fmt.Sprintf("account '%v' of user %v", acc.InstagramUsername, fmt.Sprintf(settings.UserURLTemplate, acc.OwnerID))
+			} else {
+				message = fmt.Sprintf("bot '%v' with role %v", acc.InstagramUsername, acc.Role)
+			}
+			if acc.Valid {
+				message += " become valid"
+			} else {
+				message = "invalidated: " + message
+			}
+			notifyTelegram(message)
+
 			for {
 				err := nats.StanPublish(notifyTopic, acc)
 				if err != nil {
@@ -56,6 +72,20 @@ func notifier() {
 			}
 		}
 	})
+}
+
+func notifyTelegram(message string) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	_, err := global.telebotClient.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+		Channel: "accountstore",
+		Message: message,
+	})
+
+	if err != nil {
+		log.Errorf("failed to send notify to telegram: %v", err)
+	}
 }
 
 // Find returns valid only
@@ -89,6 +119,9 @@ func Find(in *accountstore.SearchRequest) ([]Account, error) {
 
 // FindAccount returns account by template
 func FindAccount(template *Account) (*Account, error) {
+	if *template == (Account{}) {
+		return nil, "empty conditions"
+	}
 	var out Account
 	err := db.New().Where(template).Find(&out).Error
 	return &out, err

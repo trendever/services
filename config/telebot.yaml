@@ -10,3 +10,5 @@ rooms:
     room: '@trendever_debug'
   - name: 'new_sms'
     room: '@trendever_debug'
+  - name: 'accountstore'
+    room: '@trendever_debug'
