@@ -91,5 +91,6 @@ func (u User) Decode(cu *core.User) User {
 		SuperSeller: cu.SuperSeller,
 		IsSeller:    cu.Seller,
 		IsFake:      cu.IsFake,
+		Source:      cu.Source,
 	}
 }

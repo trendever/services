@@ -18,9 +18,11 @@ func NotifyUserCreated(u *models.User) {
 	api.NotifyByTelegram(api.TelegramChannelNewUser,
 		fmt.Sprintf(
 			`New user %v registered
-			%v`,
+			%v
+			#%v`,
 			u.Stringify(),
 			fmt.Sprintf("%v/qor/users/%v", conf.GetSettings().SiteURL, u.ID),
+			u.Source,
 		),
 	)
 }

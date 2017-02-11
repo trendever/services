@@ -3,10 +3,11 @@ package models
 import (
 	"core/conf"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"time"
 	"utils/db"
 	"utils/log"
+
+	"github.com/jinzhu/gorm"
 )
 
 // User model
@@ -52,6 +53,8 @@ type User struct {
 	// true if the user was logged in at least once
 	// @TODO remove it, we have LastLogin now
 	Confirmed bool `sql:"default:false"`
+
+	Source string
 
 	// trendcoin balance
 	// may be loaded with call LoadExternals method
@@ -118,8 +121,6 @@ func (u User) getAddr() string {
 func (u User) Stringify() string {
 	name := u.getName()
 	addr := u.getAddr()
-
-	log.Debug("USER %v", u)
 
 	switch {
 	case name != "":

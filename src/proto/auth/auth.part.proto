@@ -18,9 +18,12 @@ message NewUserRequest {
     string username = 3;
     //country code, by default RU
     string country = 4;
+    string source = 5;
 }
 
-message FakeUserRequest{}
+message FakeUserRequest{
+    string source = 1;
+}
 
 message UserReply {
     string phone_number = 1;
