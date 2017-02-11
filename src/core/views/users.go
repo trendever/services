@@ -23,6 +23,7 @@ type userServer struct{}
 
 func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
 	user := models.User{}.Decode(request.User)
+
 	searchUser, found, err := models.FindUserMatchAny(
 		uint64(user.ID), user.InstagramID,
 		user.Name, user.InstagramUsername,

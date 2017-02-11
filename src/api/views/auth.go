@@ -31,6 +31,10 @@ func RegisterNewUser(c *soso.Context) {
 	req := c.RequestMap
 	request := &auth_protocol.NewUserRequest{}
 
+	if value, ok := req["source"].(string); ok {
+		request.Source = value
+	}
+
 	if value, ok := req["phone"].(string); ok {
 		request.PhoneNumber = value
 	}
@@ -81,7 +85,12 @@ func RegisterNewUser(c *soso.Context) {
 }
 
 func RegisterFakeUser(c *soso.Context) {
+	req := c.RequestMap
 	request := &auth_protocol.FakeUserRequest{}
+
+	if value, ok := req["source"].(string); ok {
+		request.Source = value
+	}
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()

@@ -82,6 +82,7 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 			Phone:             phoneNumber,
 			InstagramUsername: request.InstagramUsername,
 			Name:              request.Username,
+			Source:            request.Source,
 		},
 	}
 	resp, err := s.core.FindOrCreateUser(rpcContext, newUser)
@@ -110,6 +111,7 @@ func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protoco
 	newUser := &core_protocol.CreateUserRequest{
 		User: &core_protocol.User{
 			IsFake: true,
+			Source: request.Source,
 		},
 	}
 

@@ -74,6 +74,8 @@ message User {
   repeated uint64 supplier_of = 19;
   //list of shops where user is a seller
   repeated uint64 seller_of = 20;
+
+  string source = 24;
 }
 
 message SetEmailRequest {
