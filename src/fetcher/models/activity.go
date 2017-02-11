@@ -53,7 +53,7 @@ func (act *Activity) Create() error {
 		return fmt.Errorf("failed to save activity: %v", err)
 	}
 
-	log.Debug("Add row: %v", act.Pk)
+	log.Debug("Add row: %v, %v -> %v(%v)", act.Pk, act.UserName, act.MentionedUsername, act.Type)
 	return nil
 }
 

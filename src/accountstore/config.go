@@ -15,5 +15,9 @@ type Settings struct {
 	Listen         string
 	InstagramDebug bool
 	Nats           nats.Config
-	Core           string
+	RPC            struct {
+		Core     string
+		Telegram string
+	}
+	UserURLTemplate string
 }

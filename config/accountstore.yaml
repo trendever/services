@@ -1,7 +1,11 @@
 listen: :5409
 debug: true
 instagramDebug: true
-core: core:3005
+userURLTemplate: "http://localhost:3004/qor/users/%v"
+
+rpc:
+  core: core:3005
+  telegram: telegram:4040
 
 db:
   debug:    true

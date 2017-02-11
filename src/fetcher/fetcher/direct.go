@@ -127,7 +127,6 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
-		log.Debug("current message: %v", log.IndentEncode(message))
 
 		switch message.ItemType {
 		// such a special case for shares feels somewhat inconsistent

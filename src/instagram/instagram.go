@@ -366,9 +366,8 @@ func (ig *Instagram) SendPhoto(threadID string, source io.Reader) (messageID str
 	params := map[string]string{
 		// Format of response is different if this field is present. It is much shorter and probably falser.
 		// @TODO test speed and update other methods
-		"action":         "send_item",
-		"thread_ids":     fmt.Sprintf("[%v]", threadID),
-		"client_context": "42",
+		"action":     "send_item",
+		"thread_ids": fmt.Sprintf("[%v]", threadID),
 	}
 
 	var buf bytes.Buffer
