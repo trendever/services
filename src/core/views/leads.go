@@ -41,7 +41,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	var lead *models.Lead
 
 	var product *models.Product
-	if product, err = models.GetProductByID(uint64(protoLead.ProductId), "Items", "InstagramImages"); err != nil {
+	if product, err = models.GetProductByID(uint64(protoLead.ProductId), "Items", "InstagramImages", "Shop"); err != nil {
 		log.Error(err)
 		return nil, err
 	}
