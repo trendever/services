@@ -58,6 +58,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		for _, phrase := range strings.Split(vocabulary, ",") {
 			phrase_stemmed, _ := models.PrepareText(phrase, "russian")
 			if strings.Contains(comment_prepared, phrase_stemmed) {
+				log.Debug("MATCHED HERE")
 				is_comment_matched = true
 				break
 			}
@@ -65,6 +66,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 		//Also match if shop name supplied in comment
 		if strings.Contains(comment_prepared, fmt.Sprintf("%s", product.Shop.InstagramUsername)) {
+			log.Debug("MATCHED HERE 2")
 			is_comment_matched = true
 		}
 
