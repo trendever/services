@@ -157,7 +157,7 @@ func newMessage(req *chat.NewMessageRequest) {
 		log.Error(err)
 		return
 	}
-	//newLead := lead.IsNew()
+	newLead := lead.IsNew()
 	advance := false
 
 	users := map[*models.User]bool{}
@@ -168,12 +168,12 @@ func newMessage(req *chat.NewMessageRequest) {
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		//if newLead {
-		if msg.User.Role == chat.MemberRole_CUSTOMER {
-			advance = true
+		if newLead {
+			if msg.User.Role == chat.MemberRole_CUSTOMER {
+				advance = true
+			}
+			continue
 		}
-		continue
-		//}
 
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
 			users[&lead.Shop.Supplier] = true
