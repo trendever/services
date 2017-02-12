@@ -64,7 +64,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 
 		//Also match if shop name supplied in comment
-		if strings.Contains(comment_prepared, fmt.Sprintf("%s", product.Shop.Supplier.InstagramUsername)) {
+		if strings.Contains(comment_prepared, fmt.Sprintf("%s", product.Shop.InstagramUsername)) {
 			is_comment_matched = true
 		}
 
