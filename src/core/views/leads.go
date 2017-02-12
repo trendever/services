@@ -300,6 +300,9 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 
 	// notify stuff
 	go models.SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
+
+	log.Debug("NOTIFY HERE %v", lead)
+	log.Debug("NOTIFY HERE %v", req.Event.String())
 	go NotifyAboutLeadEvent(lead, req.Event.String())
 
 	return &core.SetLeadStatusReply{Lead: lead.Encode()}, nil
