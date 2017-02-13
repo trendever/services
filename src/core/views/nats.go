@@ -5,7 +5,6 @@ import (
 	"core/models"
 	"fmt"
 	"proto/chat"
-	"proto/core"
 	"proto/payment"
 	"proto/trendcoin"
 	"time"
@@ -67,7 +66,6 @@ func handleBalanceNotify(notify *trendcoin.BalanceNotify) bool {
 	var autorefill models.AutorefillInfo
 	res := db.New().First(&autorefill, "user_id = ?", notify.UserId)
 	if res.RecordNotFound() {
-		log.Debug("user %v has no autorefill", notify.UserId)
 		return true
 	}
 	if res.Error != nil {
@@ -185,7 +183,7 @@ func newMessage(req *chat.NewMessageRequest) {
 		}
 	}
 	if advance {
-		log.Error(lead.TriggerEvent("PROGRESS"))
+		log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
 	}
 	n := models.GetNotifier()
 	for user := range users {
@@ -257,42 +255,5 @@ func handleNewSession(userID uint) {
 		}).Error
 	if err != nil {
 		log.Errorf("failed to update last session in related shops for user %v: %v", userID, err)
-	}
-}
-
-// NotifyAboutLeadEvent notifies about lead event via NATS, changes related conversation status
-func NotifyAboutLeadEvent(lead *models.Lead, event string) {
-
-	log.Debug("Notifying about lead %v event", lead.ID)
-
-	users, err := models.GetUsersForLead(lead)
-	if err != nil {
-		log.Errorf("failed to get related users for lead %v: %v", lead.ID, err)
-	}
-
-	err = nats.Publish("core.lead.event", &core.LeadEventMessage{
-		LeadId: uint64(lead.ID),
-		Users:  users,
-		Event:  event,
-	})
-	if err != nil {
-		log.Errorf("failed to publush core.lead.event: %v", err)
-	}
-
-	chatStatus := "new"
-	switch lead.State {
-	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
-
-	case core.LeadStatus_CANCELLED.String():
-		chatStatus = "cancelled"
-	default:
-		chatStatus = "active"
-	}
-	err = nats.Publish("chat.conversation.set_status", &chat.SetStatusMessage{
-		ConversationId: lead.ConversationID,
-		Status:         chatStatus,
-	})
-	if err != nil {
-		log.Errorf("failed to publush chat.conversation.set_status: %v", err)
 	}
 }

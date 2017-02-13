@@ -155,8 +155,6 @@ func GenerateAnswers(text, language string, templatesContext interface{}) ([]str
 	lock.RLock()
 	suitable := autos[language]
 	lock.RUnlock()
-	data, _ := json.MarshalIndent(templatesContext, "  ", "  ")
-	log.Debug("answers context: \n%v", string(data))
 
 	var ret = []string{}
 	if len(suitable) == 0 {

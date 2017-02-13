@@ -2,7 +2,9 @@ package models
 
 import (
 	"core/api"
+	"core/conf"
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"proto/chat"
@@ -281,6 +283,15 @@ func init() {
 					}
 				}
 			}()
+			go api.NotifyByTelegram(
+				api.TelegramChannelNewLead,
+				fmt.Sprintf(
+					"Lead %v from %v to %v in now active.\n%v\n%v",
+					lead.ID, lead.Customer.DisplayName(), lead.Shop.Stringify(),
+					fmt.Sprintf("%v/chat/%v", conf.GetSettings().SiteURL, lead.ID),
+					fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, lead.ID),
+				),
+			)
 			return nil
 		},
 	)

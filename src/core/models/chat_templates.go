@@ -9,7 +9,6 @@ import (
 	"github.com/qor/validations"
 	"proto/chat"
 	"strings"
-	"utils/log"
 )
 
 type ChatTemplate struct {
@@ -45,7 +44,6 @@ func (t ChatTemplate) Validate(db *gorm.DB) {
 	if t.TemplateName == "" {
 		db.AddError(validations.NewError(t, "TemplateName", "Template name can not be empty"))
 	}
-	log.Debug("validateing %+v...", t)
 
 	var ok bool
 	for _, group := range TemplatesList["chat"] {

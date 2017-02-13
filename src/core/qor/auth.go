@@ -36,8 +36,6 @@ func (Auth) GetCurrentUser(c *admin.Context) qor.CurrentUser {
 		return nil
 	}
 
-	log.Debug("Got token: %v", cookie.Value)
-
 	tokenData, err := utils.GetTokenData(cookie.Value)
 	if err != nil {
 		log.Error(err)

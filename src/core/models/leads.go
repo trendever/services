@@ -6,9 +6,12 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"github.com/qor/validations"
+	"proto/chat"
 	"proto/core"
 	"time"
 	"utils/db"
+	"utils/log"
+	"utils/nats"
 )
 
 // Possible lead sources
@@ -151,14 +154,102 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 }
 
-func (lead *Lead) TriggerEvent(event string) error {
-	err := LeadState.Trigger(event, lead, db.New())
+func (lead *Lead) TriggerEvent(eventName, statusComment string, cancelReason uint64, mover *User) error {
+	event, ok := leadEvents[eventName]
+	if !ok {
+		return fmt.Errorf("unknown event %v", event)
+	}
+	if event.To == lead.State {
+		return nil
+	}
+	err := LeadState.Trigger(eventName, lead, db.New())
 	if err != nil {
 		return fmt.Errorf("failed to trigger event: %v", err)
 	}
-	err = db.New().Model(&lead).UpdateColumn("state", lead.State).Error
-	if err != nil {
-		return fmt.Errorf("failed to update lead state: %v", err)
+
+	upd := map[string]interface{}{
+		"state":            lead.State,
+		"status_comment":   statusComment,
+		"cancel_reason_id": sql.NullInt64{},
 	}
+
+	reason := LeadCancelReason{ID: cancelReason}
+	reasonIsValid := false
+	if eventName == core.LeadStatusEvent_CANCEL.String() {
+		err := db.New().First(&reason).Error
+		if err != nil {
+			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
+		} else {
+			upd["cancel_reason_id"] = reason.ID
+			reasonIsValid = true
+		}
+
+	}
+
+	if err := db.New().Model(lead).UpdateColumns(upd).Error; err != nil {
+		return err
+	}
+
+	if mover != nil {
+		if reasonIsValid {
+			chatMsg, err := reason.GenChatMessage(lead, mover)
+			if err != nil {
+				log.Errorf(
+					"failed to generate chat message for cancel reason %v: %v",
+					reason.ID, err,
+				)
+			}
+			if chatMsg != nil {
+				go func() {
+					log.Error(SendChatMessages(
+						lead.ConversationID,
+						chatMsg,
+					))
+				}()
+			}
+		}
+	}
+
+	// notify stuff
+	go SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
+	go NotifyAboutLeadEvent(lead, eventName)
+
 	return nil
+}
+
+// NotifyAboutLeadEvent notifies about lead event via NATS, changes related conversation status
+func NotifyAboutLeadEvent(lead *Lead, event string) {
+
+	log.Debug("Notifying about lead %v event", lead.ID)
+
+	users, err := GetUsersForLead(lead)
+	if err != nil {
+		log.Errorf("failed to get related users for lead %v: %v", lead.ID, err)
+	}
+
+	err = nats.Publish("core.lead.event", &core.LeadEventMessage{
+		LeadId: uint64(lead.ID),
+		Users:  users,
+		Event:  event,
+	})
+	if err != nil {
+		log.Errorf("failed to publush core.lead.event: %v", err)
+	}
+
+	chatStatus := "new"
+	switch lead.State {
+	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
+
+	case core.LeadStatus_CANCELLED.String():
+		chatStatus = "cancelled"
+	default:
+		chatStatus = "active"
+	}
+	err = nats.Publish("chat.conversation.set_status", &chat.SetStatusMessage{
+		ConversationId: lead.ConversationID,
+		Status:         chatStatus,
+	})
+	if err != nil {
+		log.Errorf("failed to publush chat.conversation.set_status: %v", err)
+	}
 }

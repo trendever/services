@@ -105,8 +105,6 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		"source":  source,
 		"newUser": isNewUser,
 	}
-	data, _ := json.MarshalIndent(ctx, "  ", "  ")
-	log.Debug("chat template context: \n%v", string(data))
 	for _, msg := range template.Messages {
 		content, err := msg.Execute(ctx)
 

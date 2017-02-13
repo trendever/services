@@ -220,7 +220,6 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 
 func (s *monetizationServer) loop() {
 	for now := range time.Tick(5 * time.Minute) {
-		log.Debug("checking subscriptions...")
 		var shops []*models.Shop
 		err := db.New().Preload("Plan").
 			Where("plan_expires_at < ?", now).
