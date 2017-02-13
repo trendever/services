@@ -4,7 +4,6 @@ import (
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
-	"core/views"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -173,43 +172,20 @@ func addTransitionActions(a *admin.Admin, res *admin.Resource) {
 			Modes: []string{"index", "menu_item"},
 			// that is what called when user clicks action
 			Handle: func(arg *admin.ActionArgument) error {
-
-				// we work in transaction: either everything transits to the new state, either nothing
-				tx := db.NewTransaction()
-				leads := []*models.Lead{}
+				mover, _ := arg.Context.CurrentUser.(*models.User)
 
 				for _, order := range arg.FindSelectedRecords() {
 					lead := order.(*models.Lead)
-					err := tx.Preload("Shop").Preload("Shop.Supplier").Preload("Customer").First(lead).Error
+					err := db.New().Preload("Shop").Preload("Shop.Supplier").Preload("Customer").First(lead).Error
 					if err != nil {
-						tx.Rollback()
 						log.Error(err)
 						return err
 					}
-					log.Debug("Starting processing order %+v", lead)
-
-					// trigger an event using qor/transition state machine instance
-					err = models.LeadState.Trigger(ev.Name, lead, tx)
+					err = lead.TriggerEvent(ev.Name, "", 0, mover)
 					if err != nil {
-						tx.Rollback()
 						log.Error(err)
 						return err
 					}
-
-					// save everything
-					err = tx.Select("state").Save(order).Error
-					if err != nil {
-						tx.Rollback()
-						log.Error(err)
-						return err
-					}
-					leads = append(leads, lead)
-				}
-
-				log.Error(tx.Commit().Error)
-
-				for _, lead := range leads {
-					views.NotifyAboutLeadEvent(lead, ev.Name)
 				}
 
 				return nil
