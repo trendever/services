@@ -94,16 +94,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
 		//Event CREATE performs chat creation
-		if err := models.LeadState.Trigger(core.LeadStatusEvent_CREATE.String(), lead, db.New()); err == nil {
-			//this errors not critical, we can change status from EMPTY to NEW later
-			err = db.New().Model(lead).UpdateColumn("state", lead.State).Error
-			if err != nil {
-				log.Error(err)
-			}
-		} else {
-			//that's also not critical
-			log.Error(err)
-		}
+		log.Error(lead.TriggerEvent(core.LeadStatusEvent_CREATE.String(), "", 0, &lead.Customer))
 	}
 
 	if protoLead.Action == core.LeadAction_BUY {
