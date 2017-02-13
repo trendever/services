@@ -149,9 +149,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(errors.New("lead.ConversationID == 0"))
 	}
 
-	if !lead.IsNew() {
-		go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
-	}
+	go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 
 	leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
 	if err != nil {

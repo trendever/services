@@ -56,25 +56,27 @@ func NotifyLeadCreated(l *models.Lead, p *models.Product, realInstLink string, a
 			p.Shop = *shop
 		}
 	}
-	api.NotifyByTelegram(api.TelegramChannelNewLead,
-		fmt.Sprintf(
-			"%v %v %v by %v from %v, comment: '%v'\n"+ // [client] [action] [product_code] in [shop] from [wantit or website] comment: '[comment]'
-				"%v\n"+ // [website_link]
-				"%v\n"+ // [instgram_repost_link]
-				"%v\n"+ // [qor_link]
-				"#%v", // [tag for search]
-			// first line
-			l.Customer.Stringify(),
-			actionText[action],
-			p.Code,
-			p.Shop.Stringify(),
-			l.Source,
-			l.Comment,
-			// the rest
-			fmt.Sprintf("%v/chat/%v", conf.GetSettings().SiteURL, l.ID),
-			realInstLink,
-			fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
-			actionText[action],
-		),
+	text := fmt.Sprintf(
+		"%v %v %v by %v from %v, comment: '%v'\n%v\n", // [client] [action] [product_code] in [shop] from [wantit or website] comment: '[comment]' \n [qor_link]
+		// first line
+		l.Customer.Stringify(),
+		actionText[action],
+		p.Code,
+		p.Shop.Stringify(),
+		l.Source,
+		l.Comment,
+		fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
 	)
+	if l.IsNew() {
+		text += "lead is new yet\n"
+	} else {
+		text += fmt.Sprintf("%v/chat/%v\n", conf.GetSettings().SiteURL, l.ID)
+	}
+	if realInstLink != "" {
+		text += realInstLink + "\n"
+	}
+	// tag for search
+	text += fmt.Sprintf("#%v", actionText[action])
+
+	api.NotifyByTelegram(api.TelegramChannelNewLead, text)
 }
