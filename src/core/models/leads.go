@@ -154,8 +154,15 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 }
 
-func (lead *Lead) TriggerEvent(event, statusComment string, cancelReason uint64, mover *User) error {
-	err := LeadState.Trigger(event, lead, db.New())
+func (lead *Lead) TriggerEvent(eventName, statusComment string, cancelReason uint64, mover *User) error {
+	event, ok := leadEvents[eventName]
+	if !ok {
+		return fmt.Errorf("unknown event %v", event)
+	}
+	if event.To == lead.State {
+		return nil
+	}
+	err := LeadState.Trigger(eventName, lead, db.New())
 	if err != nil {
 		return fmt.Errorf("failed to trigger event: %v", err)
 	}
@@ -168,7 +175,7 @@ func (lead *Lead) TriggerEvent(event, statusComment string, cancelReason uint64,
 
 	reason := LeadCancelReason{ID: cancelReason}
 	reasonIsValid := false
-	if event == core.LeadStatusEvent_CANCEL.String() {
+	if eventName == core.LeadStatusEvent_CANCEL.String() {
 		err := db.New().First(&reason).Error
 		if err != nil {
 			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
@@ -205,7 +212,7 @@ func (lead *Lead) TriggerEvent(event, statusComment string, cancelReason uint64,
 
 	// notify stuff
 	go SendStatusMessage(lead.ConversationID, "lead.state.changed", lead.State)
-	go NotifyAboutLeadEvent(lead, event)
+	go NotifyAboutLeadEvent(lead, eventName)
 
 	return nil
 }
