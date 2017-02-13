@@ -66,7 +66,6 @@ func handleBalanceNotify(notify *trendcoin.BalanceNotify) bool {
 	var autorefill models.AutorefillInfo
 	res := db.New().First(&autorefill, "user_id = ?", notify.UserId)
 	if res.RecordNotFound() {
-		log.Debug("user %v has no autorefill", notify.UserId)
 		return true
 	}
 	if res.Error != nil {

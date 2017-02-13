@@ -228,7 +228,7 @@ func (s leadServer) SetLeadStatus(ctx context.Context, req *core.SetLeadStatusRe
 	}
 
 	if !models.CanUserChangeLeadState(lead.UserRole.String(), req.Event.String()) {
-		log.Debug("User %v with role %s can't set lead %v state to %v", req.UserId, lead.UserRole.String(), req.LeadId, req.Event.String())
+		log.Errorf("User %v with role %s can't set lead %v state to %v", req.UserId, lead.UserRole.String(), req.LeadId, req.Event.String())
 		return nil, errors.New("Forbidden")
 	}
 
