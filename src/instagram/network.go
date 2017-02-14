@@ -48,7 +48,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body interface{}, logi
 		Transport: &http.Transport{
 			Dial: ig.Dial,
 		},
-		Timeout: 5 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 
 	// fill-in headers
@@ -99,7 +99,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body interface{}, logi
 // Request with five attempts re-login. Re-login if getting error 'login_required'.
 func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]byte, error) {
 
-	for attempt := 0; attempt < 5; attempt++ {
+	for attempt := 0; attempt < 3; attempt++ {
 
 		resp, err := ig.requestMain(method, endpoint, body, false)
 		if err != nil {
