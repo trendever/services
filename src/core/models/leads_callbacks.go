@@ -20,7 +20,7 @@ func (l *Lead) BeforeCreate() {
 }
 
 func (l *Lead) AfterDelete() {
-	go nats.Publish("chat.conversation.delete", l.ConversationID)
+	go nats.StanPublish("chat.conversation.delete", l.ConversationID)
 }
 
 //AfterSave is gorm callback

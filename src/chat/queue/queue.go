@@ -124,7 +124,6 @@ func (q *queue) notify() {
 	}
 
 	delete(q.chatMap, msg.ConversationID)
-	nats.Publish(EventUnreadNotify, msg.Encode())
-	log.Debug("Notify about message %v", msg.ID)
+	nats.StanPublish(EventUnreadNotify, msg.Encode())
 	log.Debug("Notify about message %v", msg.ID)
 }

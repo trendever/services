@@ -12,25 +12,35 @@ import (
 )
 
 func init() {
-	nats.Subscribe(
+	nats.StanSubscribe(
 		// chat notifications
-		&nats.Subscription{
-			Subject: "chat.message.new",
-			Handler: newMessage,
+		&nats.StanSubscription{
+			Subject:        "chat.message.new",
+			DecodedHandler: newMessage,
 		},
-		&nats.Subscription{
-			Subject: "chat.message.readed",
-			Handler: messageReaded,
+		&nats.StanSubscription{
+			Subject:        "chat.message.readed",
+			DecodedHandler: messageReaded,
 		},
-		&nats.Subscription{
-			Subject: "chat.message.appended",
-			Handler: messageAppended,
+		&nats.StanSubscription{
+			Subject:        "chat.message.appended",
+			DecodedHandler: messageAppended,
 		},
-		&nats.Subscription{
-			Subject: "chat.member.join",
-			Handler: newChatMember,
+		&nats.StanSubscription{
+			Subject:        "chat.member.join",
+			DecodedHandler: newChatMember,
 		},
-
+		&nats.StanSubscription{
+			Subject:        "chat.sync_event",
+			DecodedHandler: syncEvent,
+		},
+		// core lead events
+		&nats.StanSubscription{
+			Subject:        "core.lead.event",
+			DecodedHandler: onLeadEvent,
+		},
+	)
+	nats.Subscribe(
 		// core notifications
 		&nats.Subscription{
 			Subject: "core.product.flush",
@@ -44,17 +54,7 @@ func init() {
 			Subject: "core.shop.flush",
 			Handler: cache.FlushShop,
 		},
-
-		// core lead events
-		&nats.Subscription{
-			Subject: "core.lead.event",
-			Handler: onLeadEvent,
-		},
 	)
-	nats.StanSubscribe(&nats.StanSubscription{
-		Subject:        "chat.sync_event",
-		DecodedHandler: syncEvent,
-	})
 }
 
 func syncEvent(chat *chat.Chat) bool {
@@ -65,7 +65,7 @@ func syncEvent(chat *chat.Chat) bool {
 	return true
 }
 
-func newMessage(req *chat.NewMessageRequest) {
+func newMessage(req *chat.NewMessageRequest) bool {
 
 	r := map[string]interface{}{
 		"messages": req.Messages,
@@ -74,9 +74,10 @@ func newMessage(req *chat.NewMessageRequest) {
 	remoteCtx := soso.NewRemoteContext("message", "retrieve", r)
 
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
+	return true
 }
 
-func messageReaded(req *chat.MessageReadedRequest) {
+func messageReaded(req *chat.MessageReadedRequest) bool {
 
 	r := map[string]interface{}{
 		"message_id": req.MessageId,
@@ -86,9 +87,10 @@ func messageReaded(req *chat.MessageReadedRequest) {
 	remoteCtx := soso.NewRemoteContext("message", "readed", r)
 
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
+	return true
 }
 
-func messageAppended(req *chat.MessageAppendedRequest) {
+func messageAppended(req *chat.MessageAppendedRequest) bool {
 
 	r := map[string]interface{}{
 		"message_id": req.Message.Id,
@@ -97,9 +99,10 @@ func messageAppended(req *chat.MessageAppendedRequest) {
 	remoteCtx := soso.NewRemoteContext("message", "appended", r)
 
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
+	return true
 }
 
-func newChatMember(req *chat.NewChatMemberRequest) {
+func newChatMember(req *chat.NewChatMemberRequest) bool {
 	r := map[string]interface{}{
 		"member": req.User,
 		"chat":   req.Chat,
@@ -107,9 +110,10 @@ func newChatMember(req *chat.NewChatMemberRequest) {
 	remoteCtx := soso.NewRemoteContext("member", "joined", r)
 
 	schat.BroadcastMessage(req.Chat.Members, nil, remoteCtx)
+	return true
 }
 
-func onLeadEvent(req *core.LeadEventMessage) {
+func onLeadEvent(req *core.LeadEventMessage) bool {
 
 	log.Debug("Recieved lead event message for %v", req.Users)
 
@@ -121,6 +125,7 @@ func onLeadEvent(req *core.LeadEventMessage) {
 
 	ctx := soso.NewRemoteContext("lead", "event", r)
 	broadcast(req.Users, ctx)
+	return true
 }
 
 func broadcast(users []uint64, remoteCtx *soso.Context) {

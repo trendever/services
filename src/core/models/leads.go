@@ -227,7 +227,7 @@ func NotifyAboutLeadEvent(lead *Lead, event string) {
 		log.Errorf("failed to get related users for lead %v: %v", lead.ID, err)
 	}
 
-	err = nats.Publish("core.lead.event", &core.LeadEventMessage{
+	err = nats.StanPublish("core.lead.event", &core.LeadEventMessage{
 		LeadId: uint64(lead.ID),
 		Users:  users,
 		Event:  event,
@@ -245,7 +245,7 @@ func NotifyAboutLeadEvent(lead *Lead, event string) {
 	default:
 		chatStatus = "active"
 	}
-	err = nats.Publish("chat.conversation.set_status", &chat.SetStatusMessage{
+	err = nats.StanPublish("chat.conversation.set_status", &chat.SetStatusMessage{
 		ConversationId: lead.ConversationID,
 		Status:         chatStatus,
 	})

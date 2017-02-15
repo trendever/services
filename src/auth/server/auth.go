@@ -134,7 +134,7 @@ func (s *authServer) RegisterFakeUser(ctx context.Context, request *auth_protoco
 		return nil, err
 	}
 
-	go nats.Publish(NatsLoginSubject, resp.Id)
+	go nats.StanPublish(NatsLoginSubject, resp.Id)
 
 	return &auth_protocol.LoginReply{Token: token}, nil
 }
@@ -196,7 +196,7 @@ func (s *authServer) Login(ctx context.Context, request *auth_protocol.LoginRequ
 	}
 
 	s.passwords.Delete(pass)
-	go nats.Publish(NatsLoginSubject, resp.Id)
+	go nats.StanPublish(NatsLoginSubject, resp.Id)
 
 	return &auth_protocol.LoginReply{Token: token}, nil
 }
