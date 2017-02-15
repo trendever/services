@@ -130,6 +130,9 @@ func stanSubscribe(sub *StanSubscription) (err error) {
 				log.Errorf("failed to unmarshal argument to stan subscription %v: %v", sub.Subject, err)
 				return
 			}
+			if argType.Kind() != reflect.Ptr {
+				argPtr = reflect.Indirect(argPtr)
+			}
 			var args []reflect.Value
 			var tx *gorm.DB
 			if hasTxArg {
