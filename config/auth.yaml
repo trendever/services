@@ -16,3 +16,5 @@ db:
 
 nats:
   url: nats://nats:4222
+  stanCluster: stan
+  stanID: auth1
