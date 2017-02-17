@@ -21,27 +21,27 @@ const (
 func init() {
 	models.RegisterNotifyTemplate(failedAutorefullTopic)
 
-	nats.Subscribe(&nats.Subscription{
-		Subject: "chat.message.new",
-		Group:   "core",
-		Handler: newMessage,
-	})
-	nats.Subscribe(&nats.Subscription{
-		Subject: "core.notify.message",
-		Group:   "core",
-		Handler: notifyAboutUnreadMessage,
-	})
-	nats.Subscribe(&nats.Subscription{
-		Subject: "auth.login",
-		Group:   "core",
-		Handler: handleUserLogin,
-	})
-	nats.Subscribe(&nats.Subscription{
-		Subject: "api.new_session",
-		Group:   "core",
-		Handler: handleNewSession,
-	})
 	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "chat.message.new",
+		Group:          "core",
+		DurableName:    "core",
+		DecodedHandler: newMessage,
+	}, &nats.StanSubscription{
+		Subject:        "core.notify.message",
+		Group:          "core",
+		DurableName:    "core",
+		DecodedHandler: notifyAboutUnreadMessage,
+	}, &nats.StanSubscription{
+		Subject:        "auth.login",
+		Group:          "core",
+		DurableName:    "core",
+		DecodedHandler: handleUserLogin,
+	}, &nats.StanSubscription{
+		Subject:        "api.new_session",
+		Group:          "core",
+		DurableName:    "core",
+		DecodedHandler: handleNewSession,
+	}, &nats.StanSubscription{
 		Subject:        "coins.balance_notify",
 		Group:          "core",
 		DurableName:    "core",
@@ -147,13 +147,13 @@ func handleBalanceNotify(notify *trendcoin.BalanceNotify) bool {
 	return true
 }
 
-func newMessage(req *chat.NewMessageRequest) {
+func newMessage(req *chat.NewMessageRequest) bool {
 	log.Error(models.TouchLead(req.Chat.Id))
 
 	lead, err := models.GetLead(0, req.Chat.Id, "Shop", "Shop.Supplier", "Shop.Sellers", "Customer")
 	if err != nil {
 		log.Error(err)
-		return
+		return true
 	}
 	newLead := lead.IsNew()
 	advance := false
@@ -189,40 +189,43 @@ func newMessage(req *chat.NewMessageRequest) {
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
 	}
+	return true
 }
 
-func notifyAboutUnreadMessage(msg *chat.Message) {
+func notifyAboutUnreadMessage(msg *chat.Message) bool {
 	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Customer")
 	if err != nil {
 		log.Error(err)
-		return
+		return true
 	}
 
 	var count uint64
 	err = db.New().Model(&models.PushToken{}).Where("user_id = ?", lead.CustomerID).Count(&count).Error
 	if err != nil {
 		log.Errorf("failed to determinate whether user have active push tokens: %v", err)
-		return
+		return true
 	}
 
 	if count != 0 {
-		return
+		return true
 	}
 
 	n := models.GetNotifier()
 	log.Error(n.NotifyAboutUnreadMessage(&lead.Customer, lead, msg))
+	return true
 }
 
-func handleUserLogin(userID uint) {
+func handleUserLogin(userID uint) bool {
 	err := db.New().Model(&models.User{}).
 		Where("id = ?", userID).
 		UpdateColumn("confirmed", true).Error
 	if err != nil {
 		log.Errorf("failed to confirm user: %v", err)
 	}
+	return true
 }
 
-func handleNewSession(userID uint) {
+func handleNewSession(userID uint) bool {
 	now := time.Now()
 	err := db.New().Model(&models.User{}).
 		Where("id = ?", userID).
@@ -256,4 +259,6 @@ func handleNewSession(userID uint) {
 	if err != nil {
 		log.Errorf("failed to update last session in related shops for user %v: %v", userID, err)
 	}
+
+	return true
 }

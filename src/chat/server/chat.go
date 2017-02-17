@@ -33,16 +33,6 @@ type chatServer struct {
 
 //NewChatServer returns implementation of protobuf ChatServiceServer
 func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_chat.ChatServiceServer {
-	nats.Subscribe(&nats.Subscription{
-		Subject: "chat.conversation.delete",
-		Group:   "chat",
-		Handler: chats.DeleteConversation,
-	}, &nats.Subscription{
-		Subject: "chat.conversation.set_status",
-		Group:   "chat",
-		Handler: chats.SetConversationStatus,
-	})
-
 	conf := config.Get()
 
 	coreConn := rpc.Connect(conf.RPC.Core)
@@ -59,6 +49,23 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		DurableName:    "chat",
 		AckTimeout:     time.Second * 30,
 		DecodedHandler: srv.handleDirectNotify,
+	}, &nats.StanSubscription{
+		Subject:     "chat.conversation.delete",
+		Group:       "chat",
+		DurableName: "chat",
+		DecodedHandler: func(id uint64) bool {
+			// @TODO check errors?
+			log.Error(chats.DeleteConversation(id))
+			return true
+		},
+	}, &nats.StanSubscription{
+		Subject:     "chat.conversation.set_status",
+		Group:       "chat",
+		DurableName: "chat",
+		DecodedHandler: func(req *proto_chat.SetStatusMessage) bool {
+			log.Error(chats.SetConversationStatus(req))
+			return true
+		},
 	})
 	return srv
 }
@@ -297,21 +304,21 @@ func (cs *chatServer) notifyChatAboutAppendedMessage(msg *proto_chat.Message) {
 		return
 	}
 
-	nats.Publish(EventMessageAppended, &proto_chat.MessageAppendedRequest{
+	nats.StanPublish(EventMessageAppended, &proto_chat.MessageAppendedRequest{
 		Message: msg,
 		Chat:    chat.Encode(),
 	})
 }
 
 func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
-	nats.Publish(EventMessage, &proto_chat.NewMessageRequest{
+	nats.StanPublish(EventMessage, &proto_chat.NewMessageRequest{
 		Chat:     chat,
 		Messages: messages,
 	})
 }
 
 func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messageID, userID uint64) {
-	nats.Publish(EventMessageReaded, &proto_chat.MessageReadedRequest{
+	nats.StanPublish(EventMessageReaded, &proto_chat.MessageReadedRequest{
 		Chat:      chat,
 		MessageId: messageID,
 		UserId:    userID,
@@ -320,7 +327,7 @@ func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messag
 }
 
 func (cs *chatServer) notifyChatAboutNewMember(chat *proto_chat.Chat, member *proto_chat.Member) {
-	nats.Publish(EventJoin, &proto_chat.NewChatMemberRequest{
+	nats.StanPublish(EventJoin, &proto_chat.NewChatMemberRequest{
 		Chat: chat,
 		User: member,
 	})

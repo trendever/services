@@ -211,7 +211,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 // fill database model by direct message
 func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
 	// ignore items that have been added before the account was added
-	if item.Timestamp < meta.AddedAt {
+	if item.Timestamp/1000000 < meta.AddedAt {
 		return nil
 	}
 
