@@ -39,10 +39,13 @@ func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUs
 		err = db.New().Create(&user).Error
 		log.Error(err)
 	} else {
-		//update user phone if it not exists
 		if !searchUser.Confirmed {
-			searchUser.Phone = request.User.Phone
-			db.New().Model(&searchUser).Update("phone", searchUser.Phone)
+			searchUser.Phone = user.Phone
+			searchUser.Source = user.Source
+			err = db.New().Model(&searchUser).Updates(map[string]interface{}{
+				"phone":  user.Phone,
+				"source": user.Source,
+			}).Error
 		}
 		user = *searchUser
 	}
