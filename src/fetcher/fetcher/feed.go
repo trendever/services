@@ -42,8 +42,8 @@ func getActivity(meta *client.AccountMeta) error {
 func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta) error {
 	// parse text field
 	txt := parseText(stories.Args.Text)
-	// ignore the comments that have been added before the account was added
-	if txt.textType == "commented" && int64(stories.Args.Timestamp) < meta.AddedAt {
+	// ignore all activity that have been added before the account was added
+	if int64(stories.Args.Timestamp) < meta.AddedAt {
 		return nil
 	}
 
