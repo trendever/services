@@ -63,7 +63,7 @@ func notifier() {
 			notifyTelegram(message)
 
 			for {
-				err := nats.StanPublish(notifyTopic, acc)
+				err := nats.StanPublish(notifyTopic, acc.Encode())
 				if err != nil {
 					log.Errorf("failed to notify about account: %v", err)
 					time.Sleep(time.Second * 5)
