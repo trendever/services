@@ -20,7 +20,7 @@ func checkDirect(meta *client.AccountMeta) error {
 	// check which threads got updated since last time
 	// get them
 
-	var threads []models.ThreadInfo
+	threads := []models.ThreadInfo{}
 
 	log.Debug("Checking direct for %v", meta.Get().Username)
 
@@ -66,6 +66,8 @@ collectLoop:
 			break
 		}
 		cursor = resp.Inbox.OldestCursor
+		// process only last page in one call
+		threads = threads[:0]
 	}
 
 	for it := len(threads) - 1; it >= 0; it-- {
@@ -85,14 +87,14 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		msgs     []instagram.ThreadItem
 	)
 
+	ig, err := meta.Delayed()
+	if err != nil {
+		return err
+	}
 	// populate new messages
 	cursor := ""
 	for {
-		ig, err := meta.Delayed()
-		if err != nil {
-			return err
-		}
-		resp, err = ig.DirectThread(threadID, cursor)
+		resp, err := ig.DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
