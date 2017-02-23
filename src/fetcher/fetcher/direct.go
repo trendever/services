@@ -94,7 +94,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	// populate new messages
 	cursor := ""
 	for {
-		resp, err := ig.DirectThread(threadID, cursor)
+		resp, err = ig.DirectThread(threadID, cursor)
 		if err != nil {
 			return err
 		}
