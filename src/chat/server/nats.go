@@ -70,7 +70,11 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 		return true
 	}
 
-	author, err := cs.getAuthor(chat, notify.UserId)
+	author, notExists, err := cs.getAuthor(chat, notify.UserId)
+	if notExists {
+		log.Warn("instagram user with id %v not exists", notify.UserId)
+		return true
+	}
 	if err != nil {
 		log.Errorf("failed to get message author: %v", err)
 		return false
@@ -175,7 +179,7 @@ func (cs *chatServer) handleThreadReply(notify *bot.DirectNotify) (acknowledged 
 	return !retry
 }
 
-func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (author *models.Member, err error) {
+func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (author *models.Member, notExists bool, err error) {
 	for _, member := range chat.Members {
 		if member.InstagramID == instagramID {
 			author = member
@@ -196,16 +200,19 @@ func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (
 		InstagramId: instagramID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to read user: %v", err)
+		return nil, false, fmt.Errorf("failed to read user: %v", err)
 	}
 
 	var user *core.User
 
 	// new user even for core
 	if userReply.Id == 0 {
-		user, err = cs.createUser(instagramID)
+		user, notExists, err = cs.createUser(instagramID)
+		if notExists {
+			return
+		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to create new user: %v", err)
+			return nil, false, fmt.Errorf("failed to create new user: %v", err)
 		}
 	} else {
 		user = userReply.User
@@ -216,7 +223,7 @@ func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (
 			member.InstagramID = instagramID
 			err = cs.chats.UpdateMember(member)
 			if err != nil {
-				return nil, fmt.Errorf("failed to update member: %v", err)
+				return nil, false, fmt.Errorf("failed to update member: %v", err)
 			}
 			author = member
 			return
@@ -230,10 +237,10 @@ func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (
 		ConversationId: chat.ID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to determinate user role: %v", err)
+		return nil, false, fmt.Errorf("failed to determinate user role: %v", err)
 	}
 	if roleReply.Error != "" {
-		return nil, fmt.Errorf("failed to determinate user role: %v", roleReply.Error)
+		return nil, false, fmt.Errorf("failed to determinate user role: %v", roleReply.Error)
 	}
 
 	name := user.Name
@@ -250,29 +257,34 @@ func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (
 	// AddMembers will set member ID after save, but i'm still unsure if it is fair usage
 	err = cs.chats.AddMembers(chat, author)
 	if err != nil {
-		return nil, fmt.Errorf("fialed to add member to conversation: %v", err)
+		return nil, false, fmt.Errorf("fialed to add member to conversation: %v", err)
 	}
-	return author, nil
+	return author, false, nil
 }
 
-func (cs *chatServer) createUser(instagramID uint64) (*core.User, error) {
+func (cs *chatServer) createUser(instagramID uint64) (user *core.User, notExists bool, err error) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
 	profileReply, err := cs.checkerCli.GetProfile(ctx, &checker.GetProfileRequest{
 		Id: instagramID,
 	})
+	switch {
+	case err == nil:
+	case err.Error() == "user not found":
+		return nil, true, nil
+	}
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if profileReply.Error != "" {
-		return nil, errors.New(profileReply.Error)
+		return nil, false, errors.New(profileReply.Error)
 	}
 
 	avatarURL, _, err := mandible.New(config.Get().UploadService).
 		UploadImageByURL(profileReply.AvatarUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upload avatar: %v", err)
+		return nil, false, fmt.Errorf("failed to upload avatar: %v", err)
 	}
 
 	ctx, cancel = rpc.DefaultContext()
@@ -291,10 +303,10 @@ func (cs *chatServer) createUser(instagramID uint64) (*core.User, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return userReply.User, nil
+	return userReply.User, false, nil
 }
 
 func (cs *chatServer) enableSync(chatID uint64) bool {

@@ -96,41 +96,6 @@ func (m *NewUserRequest) String() string            { return proto.CompactTextSt
 func (*NewUserRequest) ProtoMessage()               {}
 func (*NewUserRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{0} }
 
-func (m *NewUserRequest) GetPhoneNumber() string {
-	if m != nil {
-		return m.PhoneNumber
-	}
-	return ""
-}
-
-func (m *NewUserRequest) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *NewUserRequest) GetUsername() string {
-	if m != nil {
-		return m.Username
-	}
-	return ""
-}
-
-func (m *NewUserRequest) GetCountry() string {
-	if m != nil {
-		return m.Country
-	}
-	return ""
-}
-
-func (m *NewUserRequest) GetSource() string {
-	if m != nil {
-		return m.Source
-	}
-	return ""
-}
-
 type FakeUserRequest struct {
 	Source string `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 }
@@ -139,13 +104,6 @@ func (m *FakeUserRequest) Reset()                    { *m = FakeUserRequest{} }
 func (m *FakeUserRequest) String() string            { return proto.CompactTextString(m) }
 func (*FakeUserRequest) ProtoMessage()               {}
 func (*FakeUserRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{1} }
-
-func (m *FakeUserRequest) GetSource() string {
-	if m != nil {
-		return m.Source
-	}
-	return ""
-}
 
 type UserReply struct {
 	PhoneNumber       string `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
@@ -162,48 +120,6 @@ func (m *UserReply) String() string            { return proto.CompactTextString(
 func (*UserReply) ProtoMessage()               {}
 func (*UserReply) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{2} }
 
-func (m *UserReply) GetPhoneNumber() string {
-	if m != nil {
-		return m.PhoneNumber
-	}
-	return ""
-}
-
-func (m *UserReply) GetInstagramUsername() string {
-	if m != nil {
-		return m.InstagramUsername
-	}
-	return ""
-}
-
-func (m *UserReply) GetUsername() string {
-	if m != nil {
-		return m.Username
-	}
-	return ""
-}
-
-func (m *UserReply) GetId() uint64 {
-	if m != nil {
-		return m.Id
-	}
-	return 0
-}
-
-func (m *UserReply) GetErrorCode() ErrorCodes {
-	if m != nil {
-		return m.ErrorCode
-	}
-	return ErrorCodes_NO_ERRORS
-}
-
-func (m *UserReply) GetErrorMessage() string {
-	if m != nil {
-		return m.ErrorMessage
-	}
-	return ""
-}
-
 type LoginRequest struct {
 	PhoneNumber string `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
 	Username    string `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
@@ -214,27 +130,6 @@ func (m *LoginRequest) Reset()                    { *m = LoginRequest{} }
 func (m *LoginRequest) String() string            { return proto.CompactTextString(m) }
 func (*LoginRequest) ProtoMessage()               {}
 func (*LoginRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{3} }
-
-func (m *LoginRequest) GetPhoneNumber() string {
-	if m != nil {
-		return m.PhoneNumber
-	}
-	return ""
-}
-
-func (m *LoginRequest) GetUsername() string {
-	if m != nil {
-		return m.Username
-	}
-	return ""
-}
-
-func (m *LoginRequest) GetPassword() string {
-	if m != nil {
-		return m.Password
-	}
-	return ""
-}
 
 type LoginReply struct {
 	Token        string     `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -247,27 +142,6 @@ func (m *LoginReply) String() string            { return proto.CompactTextString
 func (*LoginReply) ProtoMessage()               {}
 func (*LoginReply) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{4} }
 
-func (m *LoginReply) GetToken() string {
-	if m != nil {
-		return m.Token
-	}
-	return ""
-}
-
-func (m *LoginReply) GetErrorCode() ErrorCodes {
-	if m != nil {
-		return m.ErrorCode
-	}
-	return ErrorCodes_NO_ERRORS
-}
-
-func (m *LoginReply) GetErrorMessage() string {
-	if m != nil {
-		return m.ErrorMessage
-	}
-	return ""
-}
-
 type SmsPasswordRequest struct {
 	PhoneNumber string `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
 }
@@ -276,13 +150,6 @@ func (m *SmsPasswordRequest) Reset()                    { *m = SmsPasswordReques
 func (m *SmsPasswordRequest) String() string            { return proto.CompactTextString(m) }
 func (*SmsPasswordRequest) ProtoMessage()               {}
 func (*SmsPasswordRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{5} }
-
-func (m *SmsPasswordRequest) GetPhoneNumber() string {
-	if m != nil {
-		return m.PhoneNumber
-	}
-	return ""
-}
 
 type SmsPasswordReply struct {
 	Status       string     `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
@@ -295,27 +162,6 @@ func (m *SmsPasswordReply) String() string            { return proto.CompactText
 func (*SmsPasswordReply) ProtoMessage()               {}
 func (*SmsPasswordReply) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{6} }
 
-func (m *SmsPasswordReply) GetStatus() string {
-	if m != nil {
-		return m.Status
-	}
-	return ""
-}
-
-func (m *SmsPasswordReply) GetErrorCode() ErrorCodes {
-	if m != nil {
-		return m.ErrorCode
-	}
-	return ErrorCodes_NO_ERRORS
-}
-
-func (m *SmsPasswordReply) GetErrorMessage() string {
-	if m != nil {
-		return m.ErrorMessage
-	}
-	return ""
-}
-
 type TokenDataRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
@@ -324,13 +170,6 @@ func (m *TokenDataRequest) Reset()                    { *m = TokenDataRequest{} 
 func (m *TokenDataRequest) String() string            { return proto.CompactTextString(m) }
 func (*TokenDataRequest) ProtoMessage()               {}
 func (*TokenDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{7} }
-
-func (m *TokenDataRequest) GetToken() string {
-	if m != nil {
-		return m.Token
-	}
-	return ""
-}
 
 type TokenDataReply struct {
 	Token     *Token     `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
@@ -349,13 +188,6 @@ func (m *TokenDataReply) GetToken() *Token {
 	return nil
 }
 
-func (m *TokenDataReply) GetErrorCode() ErrorCodes {
-	if m != nil {
-		return m.ErrorCode
-	}
-	return ErrorCodes_NO_ERRORS
-}
-
 type Token struct {
 	UID uint64 `protobuf:"varint,1,opt,name=UID,proto3" json:"UID,omitempty"`
 	Exp int64  `protobuf:"varint,2,opt,name=exp,proto3" json:"exp,omitempty"`
@@ -365,20 +197,6 @@ func (m *Token) Reset()                    { *m = Token{} }
 func (m *Token) String() string            { return proto.CompactTextString(m) }
 func (*Token) ProtoMessage()               {}
 func (*Token) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{9} }
-
-func (m *Token) GetUID() uint64 {
-	if m != nil {
-		return m.UID
-	}
-	return 0
-}
-
-func (m *Token) GetExp() int64 {
-	if m != nil {
-		return m.Exp
-	}
-	return 0
-}
 
 type NewTokenRequest struct {
 	PhoneNumber string `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
@@ -390,20 +208,6 @@ func (m *NewTokenRequest) String() string            { return proto.CompactTextS
 func (*NewTokenRequest) ProtoMessage()               {}
 func (*NewTokenRequest) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{10} }
 
-func (m *NewTokenRequest) GetPhoneNumber() string {
-	if m != nil {
-		return m.PhoneNumber
-	}
-	return ""
-}
-
-func (m *NewTokenRequest) GetUserId() uint64 {
-	if m != nil {
-		return m.UserId
-	}
-	return 0
-}
-
 type NewTokenReply struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
@@ -412,13 +216,6 @@ func (m *NewTokenReply) Reset()                    { *m = NewTokenReply{} }
 func (m *NewTokenReply) String() string            { return proto.CompactTextString(m) }
 func (*NewTokenReply) ProtoMessage()               {}
 func (*NewTokenReply) Descriptor() ([]byte, []int) { return fileDescriptorAuth, []int{11} }
-
-func (m *NewTokenReply) GetToken() string {
-	if m != nil {
-		return m.Token
-	}
-	return ""
-}
 
 func init() {
 	proto.RegisterType((*NewUserRequest)(nil), "auth.NewUserRequest")
