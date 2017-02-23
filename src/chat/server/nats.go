@@ -269,13 +269,15 @@ func (cs *chatServer) createUser(instagramID uint64) (user *core.User, notExists
 	profileReply, err := cs.checkerCli.GetProfile(ctx, &checker.GetProfileRequest{
 		Id: instagramID,
 	})
-	switch {
-	case err == nil:
-	case err.Error() == "user not found":
-		return nil, true, nil
-	}
 	if err != nil {
 		return nil, false, err
+	}
+	switch profileReply.Error {
+	case "":
+	case "user not found":
+		return nil, true, nil
+	default:
+		errors.New(profileReply.Error)
 	}
 	if profileReply.Error != "" {
 		return nil, false, errors.New(profileReply.Error)
