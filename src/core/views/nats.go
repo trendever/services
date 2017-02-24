@@ -60,7 +60,7 @@ func handleSyncEvent(in *chat.Chat) bool {
 	if in.SyncStatus != chat.SyncStatus_SYNCED {
 		return true
 	}
-	lead, err := models.GetLead(0, in.Id, "Shop", "Shop.Supplier", "Shop.Sellers", "Customer")
+	lead, err := models.GetLead(0, in.Id, "Shop", "Shop.Supplier", "Customer")
 	if err != nil {
 		log.Error(err)
 		return true
