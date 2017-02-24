@@ -47,7 +47,33 @@ func init() {
 		DurableName:    "core",
 		AckTimeout:     time.Second * 20,
 		DecodedHandler: handleBalanceNotify,
+	}, &nats.StanSubscription{
+		Subject:        "chat.sync_event",
+		Group:          "core",
+		DurableName:    "core",
+		AckTimeout:     time.Second * 10,
+		DecodedHandler: handleSyncEvent,
 	})
+}
+
+func handleSyncEvent(in *chat.Chat) bool {
+	if in.SyncStatus != chat.SyncStatus_SYNCED {
+		return true
+	}
+	lead, err := models.GetLead(0, in.Id, "Shop", "Shop.Supplier", "Customer")
+	if err != nil {
+		log.Error(err)
+		return true
+	}
+	if !lead.IsNew() {
+		return true
+	}
+	err = lead.TriggerEvent("PROGRESS", "", 0, nil)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	return true
 }
 
 func handleBalanceNotify(notify *trendcoin.BalanceNotify) bool {
