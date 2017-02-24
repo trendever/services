@@ -116,7 +116,8 @@ func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 			method == MethodEmail && preferEmail,
 			method == MethodSms && !preferEmail:
 
-			/*_*/ useMethod = method
+			/*_*/
+			useMethod = method
 		}
 	}
 
