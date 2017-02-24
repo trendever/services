@@ -277,9 +277,6 @@ func (cs *chatServer) createUser(instagramID uint64) (user *core.User, notExists
 	case "user not found":
 		return nil, true, nil
 	default:
-		errors.New(profileReply.Error)
-	}
-	if profileReply.Error != "" {
 		return nil, false, errors.New(profileReply.Error)
 	}
 
