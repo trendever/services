@@ -13,6 +13,21 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	SupplierChangedTopic = "shop_supplier_changed"
+)
+
+func init() {
+	notifyTopics := []string{
+		SupplierChangedTopic,
+	}
+	for _, t := range notifyTopics {
+		RegisterTemplate("sms", t)
+		RegisterTemplate("push", t)
+		RegisterTemplate("email", t)
+	}
+}
+
 // Shop model defines virtual "Shop"
 //  shop is instagram user used for selling items
 type Shop struct {
@@ -171,6 +186,11 @@ func (s *Shop) AfterUpdate() error {
 		if err != nil {
 			return err
 		}
+		go GetNotifier().NotifyUserByID(
+			uint64(s.oldSupplier),
+			SupplierChangedTopic,
+			map[string]interface{}{"shop": s},
+		)
 	}
 	go nats.Publish("core.shop.flush", s.ID)
 	return nil
@@ -298,26 +318,36 @@ func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID u
 
 // FindOrCreateAttachedShop func
 func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (shopID uint64, err error) {
-
-	scope := db.New().Where("instagram_username = ?", shopInstagramUsername)
-
 	var shop Shop
-	res := scope.First(&shop)
+	res := db.New().
+		Or("instagram_username = ?", shopInstagramUsername).
+		Or("suppier_id = ?", supplierID).
+		First(&shop)
+
 	if res.Error != nil && !res.RecordNotFound() {
 		return 0, fmt.Errorf("failed to check fot existing shop: %v", res.Error)
 	}
 
-	if shop.ID == 0 {
+	switch {
+	case shop.ID == 0:
 		shop = Shop{
 			InstagramUsername: shopInstagramUsername,
 			SupplierID:        uint(supplierID),
 		}
 
-		err = db.New().Save(&shop).Error
-		if err != nil {
-			return 0, fmt.Errorf("failed to save shop: %v", err)
-		}
+	case uint64(shop.SupplierID) != supplierID:
+		shop.SupplierID = uint(supplierID)
+
+	case shop.InstagramUsername != shopInstagramUsername:
+		shop.InstagramUsername = shopInstagramUsername
+	// everything totally match, just return shop id
+	default:
+		return uint64(shop.ID), nil
 	}
 
+	err = db.New().Save(&shop).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to save shop: %v", err)
+	}
 	return uint64(shop.ID), nil
 }
