@@ -318,6 +318,11 @@ func FindOrCreateShopForSupplier(supplier *User, recreateDeleted bool) (shopID u
 
 // FindOrCreateAttachedShop func
 func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (shopID uint64, err error) {
+	err = SetInstagramForUser(supplierID, shopInstagramUsername)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update instagram username: %v", err)
+	}
+
 	var shop Shop
 	res := db.New().
 		Or("instagram_username = ?", shopInstagramUsername).
@@ -338,6 +343,7 @@ func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (
 	case uint64(shop.SupplierID) != supplierID:
 		shop.SupplierID = uint(supplierID)
 
+	// @CHECK do we realy need to change it?
 	case shop.InstagramUsername != shopInstagramUsername:
 		shop.InstagramUsername = shopInstagramUsername
 	// everything totally match, just return shop id

@@ -175,3 +175,7 @@ func (u *User) GetName() string {
 	}
 	return "User"
 }
+
+func SetInstagramForUser(userID uint64, instagramName string) error {
+	return db.New().Model(&User{}).Where("id = ?", userID).Update("instagram_username", instagramName).Error
+}
