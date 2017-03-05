@@ -321,7 +321,7 @@ func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (
 	var shop Shop
 	res := db.New().
 		Or("instagram_username = ?", shopInstagramUsername).
-		Or("suppier_id = ?", supplierID).
+		Or("supplier_id = ?", supplierID).
 		First(&shop)
 
 	if res.Error != nil && !res.RecordNotFound() {
