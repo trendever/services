@@ -313,12 +313,10 @@ func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (
 			SupplierID:        uint(supplierID),
 		}
 
-		return uint64(shop.ID), nil
-	}
-
-	err = db.New().Save(&shop).Error
-	if err != nil {
-		return 0, fmt.Errorf("failed to save shop: %v", err)
+		err = db.New().Save(&shop).Error
+		if err != nil {
+			return 0, fmt.Errorf("failed to save shop: %v", err)
+		}
 	}
 
 	return uint64(shop.ID), nil
