@@ -24,7 +24,7 @@ var templatesMap = map[core.LeadAction]string{
 }
 
 //SendProductToChat sends the product to the lead chat
-func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, source string, chat_init bool) error {
+func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, source, comment string, chat_init bool) error {
 	// determine whether product is special
 	var specials []uint
 	res := db.New().
@@ -64,14 +64,14 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		return fmt.Errorf("failed to determine whether user is new: %v", err)
 	}
 
-	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source)
+	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source, comment)
 	if err == nil && chat_init {
-		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source)
+		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source, "")
 	}
 	return err
 }
 
-func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string) error {
+func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string, comment string) error {
 	// load templates
 	var template ChatTemplate
 	res := db.New().Preload("Messages").
@@ -104,6 +104,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		"product": product,
 		"source":  source,
 		"newUser": isNewUser,
+		"comment": comment,
 	}
 	for _, msg := range template.Messages {
 		content, err := msg.Execute(ctx)

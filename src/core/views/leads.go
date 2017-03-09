@@ -10,7 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"proto/chat"
 	"proto/core"
 	"strings"
 	"utils/db"
@@ -126,19 +125,8 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	// May be should create leads via stan?
 	if lead.ConversationID != 0 {
 		go func() {
-			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, existsLead == nil); err != nil {
+			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, protoLead.Comment, existsLead == nil); err != nil {
 				log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
-			}
-			if protoLead.Comment != "" {
-				err := models.SendChatMessages(lead.ConversationID, &chat.Message{
-					UserId: uint64(lead.CustomerID),
-					Parts: []*chat.MessagePart{
-						{Content: protoLead.Comment, MimeType: "text/plain"},
-					},
-				})
-				if err != nil {
-					log.Errorf("failed to send user comment to chat: %v", err)
-				}
 			}
 			if protoLead.Source != "website" {
 				// @TODO check whether shop have active directbot

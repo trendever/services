@@ -241,21 +241,12 @@ func init() {
 		products, err := GetLeadProducts(lead)
 		if len(products) != 0 {
 			init := true
+			// we have only firts comment. some data may be lost...
+			comment := lead.Comment
 			for _, product := range products {
-				log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, init))
+				log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, comment, init))
 				init = false
-			}
-			// we have only fits comment. some data may be lost...
-			if lead.Comment != "" {
-				err := SendChatMessages(lead.ConversationID, &chat.Message{
-					UserId: uint64(lead.CustomerID),
-					Parts: []*chat.MessagePart{
-						{Content: lead.Comment, MimeType: "text/plain"},
-					},
-				})
-				if err != nil {
-					log.Errorf("failed to send user comment to chat: %v", err)
-				}
+				comment = ""
 			}
 		}
 		return nil
