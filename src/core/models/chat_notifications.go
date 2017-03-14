@@ -64,6 +64,11 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		return fmt.Errorf("failed to determine whether user is new: %v", err)
 	}
 
+	err = joinChat(lead.ConversationID, chat.MemberRole_SYSTEM, &SystemUser)
+	if err != nil {
+		return fmt.Errorf("failed to join chat: %v", err)
+	}
+
 	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source, comment)
 	if err == nil && chat_init {
 		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source, "")
@@ -91,11 +96,6 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		return fmt.Errorf("failed to load templates: %v", res.Error)
 	}
 	template.MessagesSorter.Sort(&template.Messages)
-
-	err := joinChat(lead.ConversationID, chat.MemberRole_SYSTEM, &SystemUser)
-	if err != nil {
-		return fmt.Errorf("failed to join chat: %v", err)
-	}
 
 	messages := []*chat.Message{}
 
@@ -130,7 +130,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			Parts:  parts,
 		})
 	}
-	err = SendChatMessages(lead.ConversationID, messages...)
+	err := SendChatMessages(lead.ConversationID, messages...)
 	if err != nil {
 		return fmt.Errorf("failed to send messages to chat: %v", err)
 	}
