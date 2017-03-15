@@ -131,15 +131,9 @@ func (c *conversationRepositoryImpl) GetByDirectThread(id string) (*Conversation
 func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*Member) error {
 
 	for _, member := range members {
-		exists, err := c.GetMember(chat, uint64(member.UserID))
-		if err != nil {
+		err := c.db.Model(chat).Association("Members").Append(member).Error
+		if err != nil && err.Error() != `pq: duplicate key value violates unique constraint "once_per_conv"` {
 			return err
-		}
-		if exists == nil {
-			err := c.db.Model(chat).Association("Members").Append(member).Error
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
