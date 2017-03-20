@@ -86,6 +86,30 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 	return &object, err
 }
 
+// GetMediaComment returns comment info for this media
+func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
+
+	token, err := getToken(ig.Cookies)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("/media/%v/comment/?", mediaID)
+
+	var object Message
+	err = ig.postRequest(endpoint, map[string]string{
+		"user_breadcrumb":   "123",
+		"idempotence_token": generateUUID(true),
+		"_uuid":             ig.UUID,
+		"_uid":              fmt.Sprintf("%v", ig.UserID),
+		"_csrftoken":        token,
+		"comment_text":      text,
+		"containermodule":   "comments_feed_timeline",
+	}, &object)
+
+	return &object, err
+}
+
 // GetMedia by id.
 func (ig *Instagram) GetMedia(mediaID string) (*Medias, error) {
 
