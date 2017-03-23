@@ -92,11 +92,13 @@ func (s *authServer) RegisterNewUser(ctx context.Context, request *auth_protocol
 		return nil, err
 	}
 
-	go (func() {
-		if err := s.sendSMSWithPassword(uint(resp.Id), phoneNumber); err != nil {
-			log.Errorf("failed to send password sms to %v: %v", phoneNumber, err)
-		}
-	})()
+	if request.Source != "dressblogger" {
+		go (func() {
+			if err := s.sendSMSWithPassword(uint(resp.Id), phoneNumber); err != nil {
+				log.Errorf("failed to send password sms to %v: %v", phoneNumber, err)
+			}
+		})()
+	}
 
 	return &auth_protocol.UserReply{
 		PhoneNumber:       phoneNumber,

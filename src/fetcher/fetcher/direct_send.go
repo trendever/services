@@ -129,14 +129,11 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 			err = fmt.Errorf("failed to load image for request %v: bad status '%v(%v)'", req, resp.Status, resp.StatusCode)
 			return
 		}
-		contextType := resp.Header.Get("Content-Type")
-		switch contextType {
-		case "":
-		case "application/octet-stream":
-		case "image/jpeg":
-		case "image/pjpeg":
+		contentType := resp.Header.Get("Content-Type")
+		switch contentType {
+		case "", "application/octet-stream", "image/jpeg", "image/pjpeg":
 		default:
-			err = fmt.Errorf("unexpected content type '%v' for request %v", contextType, req)
+			err = fmt.Errorf("unexpected content type '%v' for request %v", contentType, req)
 			return
 		}
 		messageID, err = ig.SendPhoto(threadID, resp.Body)
