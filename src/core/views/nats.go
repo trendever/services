@@ -205,7 +205,8 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			// check for progressing
 			if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
 				progress = true
-			} else if lead.State == "IN_PROGRESS" && msg.User.Role != chat.MemberRole_CUSTOMER {
+			} else if lead.State == "IN_PROGRESS" &&
+				msg.User.Role != chat.MemberRole_CUSTOMER && msg.User.Role != chat.MemberRole_SYSTEM {
 				submit = true
 			}
 		}
