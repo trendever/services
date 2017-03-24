@@ -131,14 +131,23 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 		}
 		contentType := resp.Header.Get("Content-Type")
 		switch contentType {
-		case "", "application/octet-stream", "image/jpeg", "image/pjpeg":
+		case "", "application/octet-stream", "image/jpeg", "image/pjpeg": // ignore
 		default:
 			err = fmt.Errorf("unexpected content type '%v' for request %v", contentType, req)
 			return
 		}
 		messageID, err = ig.SendPhoto(threadID, resp.Body)
 		resp.Body.Close()
+
+	case bot.MessageType_ReplyComment:
+		if req.ThreadID == "" {
+			err = errors.New("bad destination")
+			return
+		}
+		_, err = ig.CommentMedia(req.ThreadID, req.Data)
+		return
 	}
 
 	return
+
 }

@@ -36,6 +36,9 @@ enum MessageType {
 
   // for internal usage inside fether only
   CreateThread = 127;
+
+  // for creating comments
+  ReplyComment = 255;
 }
 
 message SendDirectRequest {

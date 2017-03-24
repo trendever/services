@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/models"
 	"fmt"
+	"proto/bot"
 	"proto/chat"
 	"proto/payment"
 	"proto/trendcoin"
@@ -181,8 +182,11 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		log.Error(err)
 		return true
 	}
-	newLead := lead.IsNew()
-	advance := false
+
+	var (
+		progress = false
+		submit   = false
+	)
 
 	users := map[*models.User]bool{}
 	for _, msg := range req.Messages {
@@ -192,11 +196,11 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		if newLead {
-			if msg.User.Role == chat.MemberRole_CUSTOMER {
-				advance = true
-			}
-			continue
+		// check for progressing
+		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
+			progress = true
+		} else if lead.State == "IN_PROGRESS" && msg.User.Role > chat.MemberRole_CUSTOMER {
+			submit = true
 		}
 
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
@@ -208,14 +212,56 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			}
 		}
 	}
-	if advance {
-		log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
+
+	switch {
+	case progress:
+		go log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
+	case submit:
+		go log.Error(submitLead(lead))
 	}
+
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
 	}
 	return true
+}
+
+func submitLead(lead *models.Lead) error {
+	err := lead.TriggerEvent("SUBMIT", "", 0, nil)
+	if err != nil {
+		return err
+	}
+
+	tmpl, err := models.GetOther(models.InstagramSubmitReplyTemplate)
+	if err != nil {
+		return err
+	}
+
+	res, err := tmpl.Execute(lead)
+	if err != nil {
+		return err
+	}
+
+	renderedString, ok := res.(string)
+	if !ok || renderedString <= "" {
+		return fmt.Errorf("String rendered to weird shit; skipping")
+	}
+
+	log.Debug("ALL OK! Notifyin: %v", res)
+	var req = bot.SendDirectRequest{
+		SenderId: lead.Shop.Supplier.InstagramID,
+		ThreadId: "wat",
+		Type:     bot.MessageType_ReplyComment,
+		ReplyKey: "twat",
+		Data:     renderedString,
+	}
+	err = nats.StanPublish("direct.send", &req)
+	if err != nil {
+		return fmt.Errorf("failed to send send comment request via nats: %v", err)
+	}
+
+	return nil
 }
 
 func notifyAboutUnreadMessage(msg *chat.Message) bool {

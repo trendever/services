@@ -83,7 +83,7 @@ func (l Lead) TableName() string {
 }
 
 func (l Lead) IsNew() bool {
-	return l.State == "NEW" || l.State == "EMPTY"
+	return l.State == leadStateNew || l.State == leadStateEmpty
 }
 
 //Encode returns LeadInfo
@@ -175,7 +175,7 @@ func (lead *Lead) TriggerEvent(eventName, statusComment string, cancelReason uin
 
 	reason := LeadCancelReason{ID: cancelReason}
 	reasonIsValid := false
-	if eventName == core.LeadStatusEvent_CANCEL.String() {
+	if eventName == leadEventCancel {
 		err := db.New().First(&reason).Error
 		if err != nil {
 			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
@@ -238,9 +238,9 @@ func NotifyAboutLeadEvent(lead *Lead, event string) {
 
 	chatStatus := "new"
 	switch lead.State {
-	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
+	case leadStateNew, leadStateEmpty:
 
-	case core.LeadStatus_CANCELLED.String():
+	case leadStateCancelled:
 		chatStatus = "cancelled"
 	default:
 		chatStatus = "active"
