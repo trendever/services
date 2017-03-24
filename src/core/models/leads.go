@@ -37,9 +37,10 @@ type Lead struct {
 	ProductItems []ProductItem `gorm:"many2many:products_leads_items"`
 	Products     []*Product    `sql:"-"`
 	// user comment from instagram
-	Comment       string `gorm:"text"`
-	InstagramPk   string `gorm:"index"`
-	InstagramLink string // link to reposted instagram product
+	Comment          string `gorm:"text"`
+	InstagramPk      string `gorm:"index"`
+	InstagramLink    string // link to reposted instagram product
+	InstagramMediaID string // ID of post where lead originated
 
 	ConversationID uint64 `gorm:"index"`
 
@@ -90,18 +91,19 @@ func (l Lead) IsNew() bool {
 func (l *Lead) Encode() *core.LeadInfo {
 	state, _ := core.LeadStatus_value[l.State]
 	lead := &core.LeadInfo{
-		Id:             uint64(l.ID),
-		Source:         l.Source,
-		CustomerId:     uint64(l.CustomerID),
-		InstagramPk:    l.InstagramPk,
-		InstagramLink:  l.InstagramLink,
-		Status:         core.LeadStatus(state),
-		ConversationId: l.ConversationID,
-		UserRole:       l.UserRole,
-		UpdatedAt:      l.ChatUpdatedAt.UnixNano(),
-		UpdatedAtAgo:   int64(time.Since(l.ChatUpdatedAt).Seconds()),
-		CancelReason:   uint64(l.CancelReasonID.Int64),
-		StatusComment:  l.StatusComment,
+		Id:               uint64(l.ID),
+		Source:           l.Source,
+		CustomerId:       uint64(l.CustomerID),
+		InstagramPk:      l.InstagramPk,
+		InstagramLink:    l.InstagramLink,
+		InstagramMediaId: l.InstagramMediaID,
+		Status:           core.LeadStatus(state),
+		ConversationId:   l.ConversationID,
+		UserRole:         l.UserRole,
+		UpdatedAt:        l.ChatUpdatedAt.UnixNano(),
+		UpdatedAtAgo:     int64(time.Since(l.ChatUpdatedAt).Seconds()),
+		CancelReason:     uint64(l.CancelReasonID.Int64),
+		StatusComment:    l.StatusComment,
 	}
 
 	//if l.ProductItems != nil {
@@ -147,9 +149,10 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 		CustomerID: uint(lead.CustomerId),
 
-		InstagramPk:   lead.InstagramPk,
-		InstagramLink: lead.InstagramLink,
-		Comment:       lead.Comment,
+		InstagramPk:      lead.InstagramPk,
+		InstagramLink:    lead.InstagramLink,
+		InstagramMediaID: l.InstagramMediaID,
+		Comment:          lead.Comment,
 	}
 
 }
