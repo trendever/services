@@ -196,11 +196,18 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		// check for progressing
-		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
-			progress = true
-		} else if lead.State == "IN_PROGRESS" && msg.User.Role != chat.MemberRole_CUSTOMER && msg.UserId != uint64(models.SystemUser.ID) {
-			submit = true
+		isMsgAuto, err := models.IsMessageAuto(msg)
+		if err != nil {
+			log.Errorf("Could not check if msg is auto: %v", err)
+		}
+
+		if isMsgAuto {
+			// check for progressing
+			if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
+				progress = true
+			} else if lead.State == "IN_PROGRESS" && msg.User.Role != chat.MemberRole_CUSTOMER {
+				submit = true
+			}
 		}
 
 		if lead.IsNew() {
