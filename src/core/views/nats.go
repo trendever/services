@@ -199,8 +199,12 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		// check for progressing
 		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
 			progress = true
-		} else if lead.State == "IN_PROGRESS" && msg.User.Role > chat.MemberRole_CUSTOMER {
+		} else if lead.State == "IN_PROGRESS" && msg.User.Role != chat.MemberRole_CUSTOMER && msg.UserId != uint64(models.SystemUser.ID) {
 			submit = true
+		}
+
+		if lead.IsNew() {
+			continue // no need in notifying people until lead is visible
 		}
 
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
