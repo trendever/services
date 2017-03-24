@@ -233,6 +233,10 @@ func submitLead(lead *models.Lead) error {
 		return err
 	}
 
+	if lead.Source != "comment" {
+		return nil
+	}
+
 	tmpl, err := models.GetOther(models.InstagramSubmitReplyTemplate)
 	if err != nil {
 		return err
@@ -248,10 +252,10 @@ func submitLead(lead *models.Lead) error {
 		return fmt.Errorf("String rendered to weird shit; skipping")
 	}
 
-	log.Debug("ALL OK! Notifyin: %v", res)
+	log.Debug("ALL OK! Notifyin: %v", renderedString)
 	var req = bot.SendDirectRequest{
 		SenderId: lead.Shop.Supplier.InstagramID,
-		ThreadId: "wat",
+		ThreadId: lead.InstagramPk,
 		Type:     bot.MessageType_ReplyComment,
 		ReplyKey: "twat",
 		Data:     renderedString,
