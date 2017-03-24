@@ -183,36 +183,49 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		return true
 	}
 
+	//Возможные переходы
 	var (
 		progress = false
 		submit   = false
 	)
 
+	//Создаем мапу для уведомлений
 	users := map[*models.User]bool{}
+
 	for _, msg := range req.Messages {
+		//Если юзер не клиент
 		if msg.User.UserId != uint64(lead.Customer.ID) {
+			//пихаем клиента в массив уведомлений
 			users[&lead.Customer] = true
 		} else {
+			//Если сообщение от кастомера то шлем автоответы
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		// check for progressing
+		// Если лид сейчас новый и пишет клиент, то переводим лид в прогресс
 		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
 			progress = true
 		} else if lead.State == "IN_PROGRESS" && msg.User.Role > chat.MemberRole_CUSTOMER {
+			// А если лид в прогрессе и мы пишем инфу юзеру, то все переходит в submit
 			submit = true
 		}
 
+		//Если юзер не поставщик
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
+			//Уведомляем поставщика
 			users[&lead.Shop.Supplier] = true
 		}
+
+		//Также уведомляем всех селлеров
 		for _, seller := range lead.Shop.Sellers {
+			// Кроме того, который это сообщение отправил
 			if msg.User.UserId != uint64(seller.ID) {
 				users[seller] = true
 			}
 		}
 	}
 
+	//Меняем стейт
 	switch {
 	case progress:
 		go log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
@@ -220,6 +233,7 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		go log.Error(submitLead(lead))
 	}
 
+	//Уведомляем чувачков из мапы (вот ток нафига в мапе bool, можно просто слайс, не?)
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
@@ -228,11 +242,13 @@ func newMessage(req *chat.NewMessageRequest) bool {
 }
 
 func submitLead(lead *models.Lead) error {
+	//Триггерим смену стейта
 	err := lead.TriggerEvent("SUBMIT", "", 0, nil)
 	if err != nil {
 		return err
 	}
 
+	//Дальше будет уведомление в коммент, по эту все остальные идут лесом
 	if lead.Source != "comment" {
 		return nil
 	}

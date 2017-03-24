@@ -69,7 +69,12 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		return fmt.Errorf("failed to join chat: %v", err)
 	}
 
+	//Отправляем стандартные шаблоны после продукта
+
+	//Эти для buy и info
 	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source, comment)
+
+	//Если у нас новый чат, то шлем init темплейты
 	if err == nil && chat_init {
 		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source, "")
 	}
