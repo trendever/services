@@ -201,7 +201,7 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			log.Errorf("Could not check if msg is auto: %v", err)
 		}
 
-		if isMsgAuto {
+		if !isMsgAuto {
 			// check for progressing
 			if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
 				progress = true
