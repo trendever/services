@@ -363,7 +363,7 @@ func (ig *Instagram) SyncFeatures() (*Message, error) {
 	endpoint := "/qe/sync/"
 
 	var object Message
-	err = ig.postRequest(endpoint, map[string]string{
+	err := ig.postRequest(endpoint, map[string]string{
 		"_uid":        fmt.Sprintln(ig.UserID),
 		"id":          fmt.Sprintln(ig.UserID),
 		"experiments": Experiments,
