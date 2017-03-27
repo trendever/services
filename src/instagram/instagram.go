@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"bytes"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -95,11 +96,13 @@ func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 	}
 
 	endpoint := fmt.Sprintf("/media/%v/comment/?", mediaID)
+	hashedstring := fmt.Sprintf("%s", md5.Sum([]byte(text)))
 
 	var object Message
 	err = ig.postRequest(endpoint, map[string]string{
 		"user_breadcrumb":   "123",
-		"idempotence_token": generateUUID(true),
+		"idempotence_token": hashedstring,
+		"src":               "profile",
 		"_uuid":             ig.UUID,
 		"_uid":              fmt.Sprintf("%v", ig.UserID),
 		"_csrftoken":        token,
