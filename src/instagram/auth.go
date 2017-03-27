@@ -77,11 +77,6 @@ func (ig *Instagram) Login() error {
 	ig.updateRankToken()
 	ig.LoggedIn = true
 
-	_, err = ig.SyncFeatures()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
