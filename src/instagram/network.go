@@ -113,7 +113,12 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 		}
 
 		if resp.StatusCode != 200 {
-			log.Debug("got non-200 status code %v for endpoint %v", resp.StatusCode, endpoint)
+
+			if location := resp.Header.Get("Location"); location > "" {
+				log.Debug("got non-200 status code %v for endpoint %v with redirect to %v", resp.StatusCode, endpoint, location)
+			} else {
+				log.Debug("got non-200 status code %v for endpoint %v", resp.StatusCode, endpoint)
+			}
 		}
 		if resp.StatusCode == 404 {
 			return nil, ErrorPageNotFound
