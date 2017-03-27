@@ -96,7 +96,7 @@ func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 	}
 
 	endpoint := fmt.Sprintf("/media/%v/comment/?", mediaID)
-	hashedstring := fmt.Sprintf("%s", md5.Sum([]byte(text)))
+	hashedstring := fmt.Sprintf("%x", md5.Sum([]byte(text)))
 
 	var object Message
 	err = ig.postRequest(endpoint, map[string]string{
