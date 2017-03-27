@@ -90,7 +90,7 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 // CommentMedia returns comment info for this media
 func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 
-	endpoint := fmt.Sprintf("/media/%v/comment/?", mediaID)
+	endpoint := fmt.Sprintf("/media/%v/comment/", mediaID)
 	hashedstring := fmt.Sprintf("%x", md5.Sum([]byte(text)))
 
 	var object Message
