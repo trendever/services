@@ -98,6 +98,7 @@ func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 		"idempotence_token": hashedstring,
 		"src":               "profile",
 		"comment_text":      text,
+		"media_id":          mediaID,
 	}, &object)
 
 	return &object, err
