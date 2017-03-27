@@ -362,17 +362,10 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 func (ig *Instagram) SyncFeatures() (*Message, error) {
 	endpoint := "/qe/sync/"
 
-	token, err := getToken(ig.Cookies)
-	if err != nil {
-		return nil, err
-	}
-
 	var object Message
 	err = ig.postRequest(endpoint, map[string]string{
-		"_uuid":       ig.UUID,
 		"_uid":        fmt.Sprintln(ig.UserID),
 		"id":          fmt.Sprintln(ig.UserID),
-		"_csrftoken":  token,
 		"experiments": Experiments,
 	}, &object)
 
