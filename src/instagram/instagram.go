@@ -90,11 +90,17 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 // CommentMedia returns comment info for this media
 func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 
+	// @TODO testing not to break login and checkpoints
+	_, err := ig.SyncFeatures()
+	if err != nil {
+		return nil, err
+	}
+
 	endpoint := fmt.Sprintf("/media/%v/comment/", mediaID)
 	hashedstring := fmt.Sprintf("%x", md5.Sum([]byte(text)))
 
 	var object Message
-	err := ig.postRequest(endpoint, map[string]string{
+	err = ig.postRequest(endpoint, map[string]string{
 		"idempotence_token": hashedstring,
 		"src":               "profile",
 		"comment_text":      text,
@@ -351,6 +357,27 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 	}
 
 	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
+}
+
+func (ig *Instagram) SyncFeatures() (*Message, error) {
+	endpoint := "/qe/sync"
+
+	token, err := getToken(ig.Cookies)
+	if err != nil {
+		return nil, err
+	}
+
+	var object Message
+	err = ig.postRequest(endpoint, map[string]string{
+		"_uuid":       ig.UUID,
+		"_uid":        fmt.Sprintln(ig.UserID),
+		"id":          fmt.Sprintln(ig.UserID),
+		"_csrftoken":  token,
+		"experiments": Experiments,
+	}, &object)
+
+	return &object, err
+
 }
 
 func (ig *Instagram) ShareMedia(threadID, mediaID string) (messageID string, _ error) {
