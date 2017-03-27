@@ -360,7 +360,7 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 }
 
 func (ig *Instagram) SyncFeatures() (*Message, error) {
-	endpoint := "/qe/sync"
+	endpoint := "/qe/sync/"
 
 	token, err := getToken(ig.Cookies)
 	if err != nil {
