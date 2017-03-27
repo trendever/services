@@ -87,27 +87,17 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 	return &object, err
 }
 
-// GetMediaComment returns comment info for this media
+// CommentMedia returns comment info for this media
 func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
-
-	token, err := getToken(ig.Cookies)
-	if err != nil {
-		return nil, err
-	}
 
 	endpoint := fmt.Sprintf("/media/%v/comment/?", mediaID)
 	hashedstring := fmt.Sprintf("%x", md5.Sum([]byte(text)))
 
 	var object Message
-	err = ig.postRequest(endpoint, map[string]string{
-		"user_breadcrumb":   "123",
+	err := ig.postRequest(endpoint, map[string]string{
 		"idempotence_token": hashedstring,
 		"src":               "profile",
-		"_uuid":             ig.UUID,
-		"_uid":              fmt.Sprintf("%v", ig.UserID),
-		"_csrftoken":        token,
 		"comment_text":      text,
-		"containermodule":   "comments_feed_timeline",
 	}, &object)
 
 	return &object, err
