@@ -194,12 +194,13 @@ func (ig *Instagram) request(method, endpoint string, result interface{}) error 
 }
 
 func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
-	vals := url.Values{}
-	for k, v := range params {
-		vals.Add(k, v)
+
+	encoded, err := json.Marshal(params)
+	if err != nil {
+		return err
 	}
 
-	body, err := ig.tryRequest("POST", endpoint, vals.Encode())
+	body, err := ig.tryRequest("POST", endpoint, generateSignature([]byte(encoded)))
 	if err != nil {
 		return err
 	}
