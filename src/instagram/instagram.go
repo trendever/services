@@ -3,6 +3,7 @@ package instagram
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -91,7 +92,9 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 
 	endpoint := fmt.Sprintf("/media/%v/comment/", mediaID)
-	hashedstring := fmt.Sprintf("%x", md5.Sum([]byte(text)))
+	hash := md5.New()
+	hash.Write([]byte(text))
+	hashedstring := hex.EncodeToString(hash.Sum(nil))[:16]
 
 	var object Message
 	err := ig.postRequest(endpoint, map[string]string{
