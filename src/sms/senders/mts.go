@@ -45,7 +45,7 @@ func NewMTSClient() (server.Sender, error) {
 		password:       fmt.Sprintf("%x", md5.Sum([]byte(s.Password))),
 		naming:         s.Naming,
 		rates:          ratelimit.New(s.Rates, time.Second),
-		validityPeriod: "600.000000000 seconds",
+		validityPeriod: "000000001000000R",
 	}, nil
 }
 
