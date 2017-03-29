@@ -27,10 +27,11 @@ func init() {
 }
 
 type MTS struct {
-	login    string
-	password string
-	naming   string
-	rates    *ratelimit.RateLimiter
+	login          string
+	password       string
+	naming         string
+	validityPeriod string
+	rates          *ratelimit.RateLimiter
 }
 
 type soapMessageStatus struct {
@@ -40,10 +41,11 @@ type soapMessageStatus struct {
 func NewMTSClient() (server.Sender, error) {
 	s := conf.GetSettings().MTS
 	return &MTS{
-		login:    s.Login,
-		password: fmt.Sprintf("%x", md5.Sum([]byte(s.Password))),
-		naming:   s.Naming,
-		rates:    ratelimit.New(s.Rates, time.Second),
+		login:          s.Login,
+		password:       fmt.Sprintf("%x", md5.Sum([]byte(s.Password))),
+		naming:         s.Naming,
+		rates:          ratelimit.New(s.Rates, time.Second),
+		validityPeriod: "600",
 	}, nil
 }
 
@@ -94,11 +96,12 @@ func (s *MTS) request(path string, params url.Values) ([]byte, error) {
 func (s *MTS) send(message, phone string) (id int64, err error) {
 
 	params := url.Values{
-		"msid":     {phone[1:]},
-		"message":  {message},
-		"naming":   {s.naming},
-		"login":    {s.login},
-		"password": {s.password},
+		"msid":           {phone[1:]},
+		"message":        {message},
+		"naming":         {s.naming},
+		"login":          {s.login},
+		"password":       {s.password},
+		"validityPeriod": {s.validityPeriod},
 	}
 
 	m, err := s.request(mtsSOAPActionSendMessage, params)
