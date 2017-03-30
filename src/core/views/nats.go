@@ -213,6 +213,10 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			}
 		}
 
+		if lead.IsNew() {
+			continue // no need in notifying people until lead is visible
+		}
+
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
 			users[&lead.Shop.Supplier] = true
 		}
