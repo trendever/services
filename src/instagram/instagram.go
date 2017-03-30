@@ -97,7 +97,7 @@ func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
 	hashedstring := hex.EncodeToString(hash.Sum(nil))[:16]
 
 	var object Message
-	err := ig.postRequest(endpoint, map[string]string{
+	err := ig.jsonRequest(endpoint, map[string]string{
 		"idempotence_token": hashedstring,
 		"src":               "profile",
 		"comment_text":      text,

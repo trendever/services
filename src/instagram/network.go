@@ -193,7 +193,7 @@ func (ig *Instagram) request(method, endpoint string, result interface{}) error 
 	return err
 }
 
-func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
+func (ig *Instagram) jsonRequest(endpoint string, params map[string]string, result interface{}) error {
 
 	encoded, err := json.Marshal(params)
 	if err != nil {
@@ -201,6 +201,22 @@ func (ig *Instagram) postRequest(endpoint string, params map[string]string, resu
 	}
 
 	body, err := ig.tryRequest("POST", endpoint, generateSignature([]byte(encoded)))
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, result)
+	return err
+}
+
+func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
+
+	vals := url.Values{}
+	for k, v := range params {
+		vals.Add(k, v)
+	}
+
+	body, err := ig.tryRequest("POST", endpoint, vals.Encode())
 	if err != nil {
 		return err
 	}
