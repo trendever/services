@@ -234,6 +234,7 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 			continue
 		}
 		// @TODO check message language somehow? possible set it on lead lvl
+		// Генерируем автоответы по славорям
 		answers, err := GenerateAnswers(part.Content, "russian", map[string]interface{}{
 			"user": lead.Customer,
 			"lead": lead,
@@ -241,6 +242,8 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 		if err != nil {
 			log.Errorf("failed to generate autoanswers: %v", err)
 		}
+
+		//Составляем массив сообщений
 		for _, answer := range answers {
 			messages = append(messages, &chat.Message{
 				UserId: uint64(SystemUser.ID),
@@ -257,6 +260,8 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 			})
 		}
 	}
+
+	// Отправляем сообщения в чат
 	err := SendChatMessages(lead.ConversationID, messages...)
 	if err != nil {
 		log.Errorf("failed to send messages to chat: %v", err)
