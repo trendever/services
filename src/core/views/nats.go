@@ -202,12 +202,25 @@ func newMessage(req *chat.NewMessageRequest) bool {
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		// Если лид сейчас новый и пишет клиент, то переводим лид в прогресс
+		isMsgAuto, err := models.IsMessageAuto(msg)
+		if err != nil {
+			log.Errorf("Could not check if msg is auto: %v", err)
+		}
+
 		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
 			progress = true
-		} else if lead.State == "IN_PROGRESS" && msg.User.Role > chat.MemberRole_CUSTOMER {
-			// А если лид в прогрессе и мы пишем инфу юзеру, то все переходит в submit
-			submit = true
+		}
+
+		if !isMsgAuto {
+			// check for progressing
+			if lead.State == "IN_PROGRESS" &&
+				msg.User.Role != chat.MemberRole_CUSTOMER && msg.User.Role != chat.MemberRole_SYSTEM {
+				submit = true
+			}
+		}
+
+		if lead.IsNew() {
+			continue // no need in notifying people until lead is visible
 		}
 
 		//Если юзер не поставщик
@@ -271,9 +284,9 @@ func submitLead(lead *models.Lead) error {
 	log.Debug("ALL OK! Notifyin: %v", renderedString)
 	var req = bot.SendDirectRequest{
 		SenderId: lead.Shop.Supplier.InstagramID,
-		ThreadId: lead.InstagramPk,
+		ThreadId: lead.InstagramMediaID,
 		Type:     bot.MessageType_ReplyComment,
-		ReplyKey: "twat",
+		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
 		Data:     renderedString,
 	}
 	err = nats.StanPublish("direct.send", &req)

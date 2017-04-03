@@ -182,6 +182,40 @@ func GenerateAnswers(text, language string, templatesContext interface{}) ([]str
 	return ret, nil
 }
 
+func IsMessageAuto(msg *chat.Message) (bool, error) {
+	for _, part := range msg.Parts {
+		auto, err := IsMessagePartAuto(part)
+		if err != nil {
+			return false, err
+		} else if auto {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func IsMessagePartAuto(part *chat.MessagePart) (bool, error) {
+
+	if part.MimeType != "text/x-attrs" {
+		return false, nil
+	}
+
+	var attrs map[string]interface{}
+
+	err := json.Unmarshal([]byte(part.Content), &attrs)
+	if err != nil {
+		return false, err
+	}
+
+	if val, ok := attrs["isAutoAnswer"]; ok {
+		b, isBool := val.(bool)
+		return isBool && b, nil
+	}
+
+	return false, nil
+}
+
 func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 	var messages []*chat.Message
 	for _, part := range msg.Parts {
@@ -189,13 +223,11 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 		case "text/plain":
 
 		case "text/x-attrs":
-			//проверяем на наличие флага isAutoAnswer, дабы не слать автоответы на автоответы
-			var attrs map[string]interface{}
-			json.Unmarshal([]byte(part.Content), &attrs)
-			if val, ok := attrs["isAutoAnswer"]; ok {
-				if b, _ := val.(bool); b {
-					return
-				}
+			autoMsg, err := IsMessagePartAuto(part)
+			if err != nil {
+				log.Errorf("Warning, bad x-attrs: %v", err)
+			} else if autoMsg {
+				return
 			}
 
 		default:

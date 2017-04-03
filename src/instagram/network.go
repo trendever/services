@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 	"utils/log"
 )
@@ -43,10 +44,24 @@ func getToken(cook []*http.Cookie) (string, error) {
 // Request for Login method. Needs to get the authorization cookies.
 func (ig *Instagram) requestMain(method, endpoint string, body interface{}, login bool) (*http.Response, error) {
 
+	var (
+		proxy    func(*http.Request) (*url.URL, error)
+		proxyURL = os.Getenv("HTTP_PROXY")
+	)
+
+	if proxyURL > "" {
+		proxyUrl, err := url.Parse(os.Getenv("HTTP_PROXY"))
+
+		if err == nil {
+			proxy = http.ProxyURL(proxyUrl)
+		}
+	}
+
 	// create request
 	client := &http.Client{
 		Transport: &http.Transport{
-			Dial: ig.Dial,
+			Dial:  ig.Dial,
+			Proxy: proxy,
 		},
 		Timeout: 20 * time.Second,
 	}
@@ -113,7 +128,12 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 		}
 
 		if resp.StatusCode != 200 {
-			log.Debug("got non-200 status code %v for endpoint %v", resp.StatusCode, endpoint)
+
+			if location := resp.Header.Get("Location"); location > "" {
+				log.Debug("got non-200 status code %v for endpoint %v with redirect to %v", resp.StatusCode, endpoint, location)
+			} else {
+				log.Debug("got non-200 status code %v for endpoint %v", resp.StatusCode, endpoint)
+			}
 		}
 		if resp.StatusCode == 404 {
 			return nil, ErrorPageNotFound
@@ -173,7 +193,24 @@ func (ig *Instagram) request(method, endpoint string, result interface{}) error 
 	return err
 }
 
+func (ig *Instagram) jsonRequest(endpoint string, params map[string]string, result interface{}) error {
+
+	encoded, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	body, err := ig.tryRequest("POST", endpoint, generateSignature([]byte(encoded)))
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, result)
+	return err
+}
+
 func (ig *Instagram) postRequest(endpoint string, params map[string]string, result interface{}) error {
+
 	vals := url.Values{}
 	for k, v := range params {
 		vals.Add(k, v)

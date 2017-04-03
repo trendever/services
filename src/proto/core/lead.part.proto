@@ -48,10 +48,12 @@ message Lead {
     int64 customer_id = 4;
     string instagram_pk = 5;
     string instagram_link = 7;
+    string instagram_media_id = 10;
 
     int64 product_id = 6;
 
     LeadAction action = 8;
+
 }
 
 
@@ -116,6 +118,7 @@ message LeadInfo {
     repeated Product products = 5;
     string instagram_pk = 7;
     string instagram_link = 14;
+    string instagram_media_id = 18;
     User customer = 8;
     LeadStatus status = 9;
     LeadUserRole user_role = 10;

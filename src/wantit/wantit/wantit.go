@@ -296,13 +296,14 @@ func createOrder(mention *bot.Activity, media *instagram.MediaInfo, customerID, 
 	}
 
 	_, err := api.LeadClient.CreateLead(ctx, &core.Lead{
-		Source:        source,
-		DirectThread:  mention.DirectThreadId,
-		CustomerId:    customerID,
-		ProductId:     int64(productID),
-		Comment:       mention.Comment,
-		InstagramPk:   mention.Pk,
-		InstagramLink: fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
+		Source:           source,
+		DirectThread:     mention.DirectThreadId,
+		CustomerId:       customerID,
+		ProductId:        int64(productID),
+		Comment:          mention.Comment,
+		InstagramPk:      mention.Pk,
+		InstagramLink:    fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
+		InstagramMediaId: mention.MediaId,
 	})
 
 	return err
