@@ -271,7 +271,9 @@ func submitLead(lead *models.Lead) error {
 		return err
 	}
 
-	res, err := tmpl.Execute(lead)
+	res, err := tmpl.Execute(map[string]interface{}{
+		"lead": lead,
+	})
 	if err != nil {
 		return err
 	}

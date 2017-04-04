@@ -151,7 +151,7 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 		InstagramPk:      lead.InstagramPk,
 		InstagramLink:    lead.InstagramLink,
-		InstagramMediaID: lead.InstagramMediaId,
+		InstagramMediaId: lead.InstagramMediaId,
 		Comment:          lead.Comment,
 	}
 
