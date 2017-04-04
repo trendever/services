@@ -24,7 +24,7 @@ func parseOwnPosts(meta *client.AccountMeta) error {
 		act := &models.Activity{
 			Pk:       fmt.Sprintf("%v", story.Pk), // instagram's post primary key from json
 			UserID:   story.User.Pk,
-			MediaID:  story.ID,
+			MediaId:  story.ID,
 			MediaURL: fmt.Sprintf("https://instagram.com/p/%v/", story.Code),
 
 			MentionedUsername: meta.Get().Username,

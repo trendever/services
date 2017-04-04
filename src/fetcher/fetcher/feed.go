@@ -62,7 +62,7 @@ func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta)
 
 	// check if Args.Media have items
 	if len(stories.Args.Media) > 0 {
-		act.MediaID = stories.Args.Media[0].ID
+		act.MediaId = stories.Args.Media[0].ID
 		act.MediaURL = stories.Args.Media[0].Image
 	}
 
