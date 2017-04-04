@@ -122,7 +122,7 @@ func (t OtherTemplate) TableName() string {
 
 func GetOther(id string) (*OtherTemplate, error) {
 	template := &OtherTemplate{}
-	ret := db.New().Find(template, "template_id = ?", "chat_caption")
+	ret := db.New().Find(template, "template_id = ?", id)
 	return template, ret.Error
 }
 
