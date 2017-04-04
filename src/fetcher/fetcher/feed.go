@@ -54,10 +54,9 @@ func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta)
 
 		MentionedUsername: meta.Get().Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
-		ThreadID:	
-		UserName: txt.userName,
-		Type:     txt.textType,
-		Comment:  txt.comment,
+		UserName:          txt.userName,
+		Type:              txt.textType,
+		Comment:           txt.comment,
 	}
 
 	// check if Args.Media have items
