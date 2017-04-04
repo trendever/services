@@ -3,6 +3,7 @@ package fetcher
 import (
 	"accountstore/client"
 	"fetcher/models"
+	"fmt"
 	"instagram"
 	"proto/bot"
 	"strings"
