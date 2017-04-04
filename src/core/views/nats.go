@@ -284,7 +284,7 @@ func submitLead(lead *models.Lead) error {
 	log.Debug("ALL OK! Notifyin: %v", renderedString)
 	var req = bot.SendDirectRequest{
 		SenderId: lead.Shop.Supplier.InstagramID,
-		ThreadId: lead.InstagramMediaID,
+		ThreadId: lead.InstagramMediaId,
 		Type:     bot.MessageType_ReplyComment,
 		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
 		Data:     renderedString,

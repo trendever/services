@@ -40,7 +40,7 @@ type Lead struct {
 	Comment          string `gorm:"text"`
 	InstagramPk      string `gorm:"index"`
 	InstagramLink    string // link to reposted instagram product
-	InstagramMediaID string // ID of post where lead originated
+	InstagramMediaId string // Id of post where lead originated
 
 	ConversationID uint64 `gorm:"index"`
 
@@ -96,7 +96,7 @@ func (l *Lead) Encode() *core.LeadInfo {
 		CustomerId:       uint64(l.CustomerID),
 		InstagramPk:      l.InstagramPk,
 		InstagramLink:    l.InstagramLink,
-		InstagramMediaId: l.InstagramMediaID,
+		InstagramMediaId: l.InstagramMediaId,
 		Status:           core.LeadStatus(state),
 		ConversationId:   l.ConversationID,
 		UserRole:         l.UserRole,
@@ -151,7 +151,7 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 		InstagramPk:      lead.InstagramPk,
 		InstagramLink:    lead.InstagramLink,
-		InstagramMediaID: l.InstagramMediaID,
+		InstagramMediaId: l.InstagramMediaId,
 		Comment:          lead.Comment,
 	}
 
