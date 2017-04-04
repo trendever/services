@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/models"
 	"fmt"
+	"proto/bot"
 	"proto/chat"
 	"proto/payment"
 	"proto/trendcoin"
@@ -181,41 +182,121 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		log.Error(err)
 		return true
 	}
-	newLead := lead.IsNew()
-	advance := false
 
+	//Возможные переходы
+	var (
+		progress = false
+		submit   = false
+	)
+
+	//Создаем мапу для уведомлений
 	users := map[*models.User]bool{}
+
 	for _, msg := range req.Messages {
+		//Если юзер не клиент
 		if msg.User.UserId != uint64(lead.Customer.ID) {
+			//пихаем клиента в массив уведомлений
 			users[&lead.Customer] = true
 		} else {
+			//Если сообщение от кастомера то шлем автоответы
 			models.SendAutoAnswers(msg, lead)
 		}
 
-		if newLead {
-			if msg.User.Role == chat.MemberRole_CUSTOMER {
-				advance = true
-			}
-			continue
+		isMsgAuto, err := models.IsMessageAuto(msg)
+		if err != nil {
+			log.Errorf("Could not check if msg is auto: %v", err)
 		}
 
+		if lead.IsNew() && msg.User.Role == chat.MemberRole_CUSTOMER {
+			progress = true
+		}
+
+		if !isMsgAuto {
+			// check for progressing
+			if lead.State == "IN_PROGRESS" &&
+				msg.User.Role != chat.MemberRole_CUSTOMER && msg.User.Role != chat.MemberRole_SYSTEM {
+				submit = true
+			}
+		}
+
+		if lead.IsNew() {
+			continue // no need in notifying people until lead is visible
+		}
+
+		//Если юзер не поставщик
 		if msg.User.UserId != uint64(lead.Shop.SupplierID) {
+			//Уведомляем поставщика
 			users[&lead.Shop.Supplier] = true
 		}
+
+		//Также уведомляем всех селлеров
 		for _, seller := range lead.Shop.Sellers {
+			// Кроме того, который это сообщение отправил
 			if msg.User.UserId != uint64(seller.ID) {
 				users[seller] = true
 			}
 		}
 	}
-	if advance {
-		log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
+
+	//Меняем стейт
+	switch {
+	case progress:
+		go log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
+	case submit:
+		go log.Error(submitLead(lead))
 	}
+
+	//Уведомляем чувачков из мапы (вот ток нафига в мапе bool, можно просто слайс, не?)
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
 	}
 	return true
+}
+
+func submitLead(lead *models.Lead) error {
+	//Триггерим смену стейта
+	err := lead.TriggerEvent("SUBMIT", "", 0, nil)
+	if err != nil {
+		return err
+	}
+
+	//Дальше будет уведомление в коммент, по эту все остальные идут лесом
+	if lead.Source != "comment" {
+		return nil
+	}
+
+	tmpl, err := models.GetOther(models.InstagramSubmitReplyTemplate)
+	if err != nil {
+		return err
+	}
+
+	res, err := tmpl.Execute(map[string]interface{}{
+		"lead": lead,
+	})
+	if err != nil {
+		return err
+	}
+
+	renderedString, ok := res.(string)
+	if !ok || renderedString <= "" {
+		return fmt.Errorf("String rendered to weird shit; skipping")
+	}
+
+	log.Debug("ALL OK! Notifyin: %v", renderedString)
+	var req = bot.SendDirectRequest{
+		SenderId: lead.Shop.Supplier.InstagramID,
+		ThreadId: lead.InstagramMediaId,
+		Type:     bot.MessageType_ReplyComment,
+		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
+		Data:     renderedString,
+	}
+	err = nats.StanPublish("direct.send", &req)
+	if err != nil {
+		return fmt.Errorf("failed to send send comment request via nats: %v", err)
+	}
+
+	return nil
 }
 
 func notifyAboutUnreadMessage(msg *chat.Message) bool {

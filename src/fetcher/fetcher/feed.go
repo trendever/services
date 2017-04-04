@@ -3,6 +3,7 @@ package fetcher
 import (
 	"accountstore/client"
 	"fetcher/models"
+	"fmt"
 	"instagram"
 	"proto/bot"
 	"strings"
@@ -48,21 +49,20 @@ func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta)
 	}
 
 	act := &models.Activity{
-		Pk:           stories.Pk, // instagram's post primary key from json
+		Pk:           fmt.Sprintf("%v", stories.Pk), // instagram's post primary key from json
 		UserID:       stories.Args.ProfileID,
 		UserImageURL: stories.Args.ProfileImage,
 
 		MentionedUsername: meta.Get().Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
-
-		UserName: txt.userName,
-		Type:     txt.textType,
-		Comment:  txt.comment,
+		UserName:          txt.userName,
+		Type:              txt.textType,
+		Comment:           txt.comment,
 	}
 
 	// check if Args.Media have items
 	if len(stories.Args.Media) > 0 {
-		act.MediaID = stories.Args.Media[0].ID
+		act.MediaId = stories.Args.Media[0].ID
 		act.MediaURL = stories.Args.Media[0].Image
 	}
 

@@ -14,7 +14,7 @@ type Activity struct {
 
 	// instagram's post primary key from json
 	Pk                string `gorm:"not null;unique"`
-	MediaID           string
+	MediaId           string
 	MediaURL          string
 	UserID            uint64 // commentary owner ID
 	UserName          string // commentary owner username
@@ -67,7 +67,7 @@ func (act *Activity) Encode() *bot.Activity {
 	return &bot.Activity{
 		Id:                int64(act.ID),
 		Pk:                act.Pk,
-		MediaId:           act.MediaID,
+		MediaId:           act.MediaId,
 		MediaUrl:          act.MediaURL,
 		UserId:            act.UserID,
 		UserImageUrl:      act.UserImageURL,

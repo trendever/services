@@ -182,6 +182,40 @@ func GenerateAnswers(text, language string, templatesContext interface{}) ([]str
 	return ret, nil
 }
 
+func IsMessageAuto(msg *chat.Message) (bool, error) {
+	for _, part := range msg.Parts {
+		auto, err := IsMessagePartAuto(part)
+		if err != nil {
+			return false, err
+		} else if auto {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func IsMessagePartAuto(part *chat.MessagePart) (bool, error) {
+
+	if part.MimeType != "text/x-attrs" {
+		return false, nil
+	}
+
+	var attrs map[string]interface{}
+
+	err := json.Unmarshal([]byte(part.Content), &attrs)
+	if err != nil {
+		return false, err
+	}
+
+	if val, ok := attrs["isAutoAnswer"]; ok {
+		b, isBool := val.(bool)
+		return isBool && b, nil
+	}
+
+	return false, nil
+}
+
 func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 	var messages []*chat.Message
 	for _, part := range msg.Parts {
@@ -189,18 +223,18 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 		case "text/plain":
 
 		case "text/x-attrs":
-			var attrs map[string]interface{}
-			json.Unmarshal([]byte(part.Content), &attrs)
-			if val, ok := attrs["isAutoAnswer"]; ok {
-				if b, _ := val.(bool); b {
-					return
-				}
+			autoMsg, err := IsMessagePartAuto(part)
+			if err != nil {
+				log.Errorf("Warning, bad x-attrs: %v", err)
+			} else if autoMsg {
+				return
 			}
 
 		default:
 			continue
 		}
 		// @TODO check message language somehow? possible set it on lead lvl
+		// Генерируем автоответы по славорям
 		answers, err := GenerateAnswers(part.Content, "russian", map[string]interface{}{
 			"user": lead.Customer,
 			"lead": lead,
@@ -208,6 +242,8 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 		if err != nil {
 			log.Errorf("failed to generate autoanswers: %v", err)
 		}
+
+		//Составляем массив сообщений
 		for _, answer := range answers {
 			messages = append(messages, &chat.Message{
 				UserId: uint64(SystemUser.ID),
@@ -224,6 +260,8 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 			})
 		}
 	}
+
+	// Отправляем сообщения в чат
 	err := SendChatMessages(lead.ConversationID, messages...)
 	if err != nil {
 		log.Errorf("failed to send messages to chat: %v", err)

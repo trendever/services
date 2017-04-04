@@ -37,9 +37,10 @@ type Lead struct {
 	ProductItems []ProductItem `gorm:"many2many:products_leads_items"`
 	Products     []*Product    `sql:"-"`
 	// user comment from instagram
-	Comment       string `gorm:"text"`
-	InstagramPk   string `gorm:"index"`
-	InstagramLink string // link to reposted instagram product
+	Comment          string `gorm:"text"`
+	InstagramPk      string `gorm:"index"`
+	InstagramLink    string // link to reposted instagram product
+	InstagramMediaId string // Id of post where lead originated
 
 	ConversationID uint64 `gorm:"index"`
 
@@ -83,25 +84,26 @@ func (l Lead) TableName() string {
 }
 
 func (l Lead) IsNew() bool {
-	return l.State == "NEW" || l.State == "EMPTY"
+	return l.State == leadStateNew || l.State == leadStateEmpty
 }
 
 //Encode returns LeadInfo
 func (l *Lead) Encode() *core.LeadInfo {
 	state, _ := core.LeadStatus_value[l.State]
 	lead := &core.LeadInfo{
-		Id:             uint64(l.ID),
-		Source:         l.Source,
-		CustomerId:     uint64(l.CustomerID),
-		InstagramPk:    l.InstagramPk,
-		InstagramLink:  l.InstagramLink,
-		Status:         core.LeadStatus(state),
-		ConversationId: l.ConversationID,
-		UserRole:       l.UserRole,
-		UpdatedAt:      l.ChatUpdatedAt.UnixNano(),
-		UpdatedAtAgo:   int64(time.Since(l.ChatUpdatedAt).Seconds()),
-		CancelReason:   uint64(l.CancelReasonID.Int64),
-		StatusComment:  l.StatusComment,
+		Id:               uint64(l.ID),
+		Source:           l.Source,
+		CustomerId:       uint64(l.CustomerID),
+		InstagramPk:      l.InstagramPk,
+		InstagramLink:    l.InstagramLink,
+		InstagramMediaId: l.InstagramMediaId,
+		Status:           core.LeadStatus(state),
+		ConversationId:   l.ConversationID,
+		UserRole:         l.UserRole,
+		UpdatedAt:        l.ChatUpdatedAt.UnixNano(),
+		UpdatedAtAgo:     int64(time.Since(l.ChatUpdatedAt).Seconds()),
+		CancelReason:     uint64(l.CancelReasonID.Int64),
+		StatusComment:    l.StatusComment,
 	}
 
 	//if l.ProductItems != nil {
@@ -147,9 +149,10 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 		CustomerID: uint(lead.CustomerId),
 
-		InstagramPk:   lead.InstagramPk,
-		InstagramLink: lead.InstagramLink,
-		Comment:       lead.Comment,
+		InstagramPk:      lead.InstagramPk,
+		InstagramLink:    lead.InstagramLink,
+		InstagramMediaId: lead.InstagramMediaId,
+		Comment:          lead.Comment,
 	}
 
 }
@@ -175,7 +178,7 @@ func (lead *Lead) TriggerEvent(eventName, statusComment string, cancelReason uin
 
 	reason := LeadCancelReason{ID: cancelReason}
 	reasonIsValid := false
-	if eventName == core.LeadStatusEvent_CANCEL.String() {
+	if eventName == leadEventCancel {
 		err := db.New().First(&reason).Error
 		if err != nil {
 			log.Errorf("failed to load cancel reason %v: %v", reason.ID, err)
@@ -238,9 +241,9 @@ func NotifyAboutLeadEvent(lead *Lead, event string) {
 
 	chatStatus := "new"
 	switch lead.State {
-	case core.LeadStatus_NEW.String(), core.LeadStatus_EMPTY.String():
+	case leadStateNew, leadStateEmpty:
 
-	case core.LeadStatus_CANCELLED.String():
+	case leadStateCancelled:
 		chatStatus = "cancelled"
 	default:
 		chatStatus = "active"

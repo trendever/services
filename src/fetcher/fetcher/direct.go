@@ -253,7 +253,7 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "direct",
 		Comment:           comment,
-		MediaID:           share.ID,
+		MediaId:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          thread.ThreadID,
 	}

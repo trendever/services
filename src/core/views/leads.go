@@ -96,6 +96,12 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(lead.TriggerEvent(core.LeadStatusEvent_CREATE.String(), "", 0, &lead.Customer))
 	}
 
+	// comment leads should be auto-advances
+	if lead.Source == "comment" && models.LeadEventPossible(core.LeadStatusEvent_PROGRESS.String(), lead.State) {
+		//Event CREATE performs chat creation
+		log.Error(lead.TriggerEvent(core.LeadStatusEvent_PROGRESS.String(), "", 0, &lead.Customer))
+	}
+
 	if protoLead.Action == core.LeadAction_BUY {
 		if count, err := models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)

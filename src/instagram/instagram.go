@@ -2,6 +2,8 @@ package instagram
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -82,6 +84,25 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 
 	var object MediaComment
 	err := ig.request("GET", endpoint, &object)
+
+	return &object, err
+}
+
+// CommentMedia returns comment info for this media
+func (ig *Instagram) CommentMedia(mediaID, text string) (*Message, error) {
+
+	endpoint := fmt.Sprintf("/media/%v/comment/", mediaID)
+	hash := md5.New()
+	hash.Write([]byte(text))
+	hashedstring := hex.EncodeToString(hash.Sum(nil))[:16]
+
+	var object Message
+	err := ig.jsonRequest(endpoint, map[string]string{
+		"idempotence_token": hashedstring,
+		"src":               "profile",
+		"comment_text":      text,
+		"media_id":          mediaID,
+	}, &object)
 
 	return &object, err
 }
@@ -333,6 +354,20 @@ func (ig *Instagram) SendText(message string, userIDs ...uint64) (threadID strin
 	}
 
 	return object.Threads[0].ThreadID, object.Threads[0].NewestCursor, nil
+}
+
+func (ig *Instagram) SyncFeatures() (*Message, error) {
+	endpoint := "/qe/sync/"
+
+	var object Message
+	err := ig.postRequest(endpoint, map[string]string{
+		"_uid":        fmt.Sprintln(ig.UserID),
+		"id":          fmt.Sprintln(ig.UserID),
+		"experiments": Experiments,
+	}, &object)
+
+	return &object, err
+
 }
 
 func (ig *Instagram) ShareMedia(threadID, mediaID string) (messageID string, _ error) {

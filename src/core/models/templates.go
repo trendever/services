@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
+	"utils/db"
+	"utils/log"
+
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"gopkg.in/flosch/pongo2.v3"
-	"regexp"
-	"strings"
-	"utils/log"
 )
 
 // Template is a common interface for all the models
@@ -116,6 +118,12 @@ func (t PushTemplate) TableName() string {
 
 func (t OtherTemplate) TableName() string {
 	return "settings_templates_other"
+}
+
+func GetOther(id string) (*OtherTemplate, error) {
+	template := &OtherTemplate{}
+	ret := db.New().Find(template, "template_id = ?", id)
+	return template, ret.Error
 }
 
 // Validate fields
