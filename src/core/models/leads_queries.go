@@ -258,6 +258,7 @@ func FindActiveLead(shopID, customerID, productID uint64) (*Lead, error) {
 			core.LeadStatus_EMPTY.String(),
 			core.LeadStatus_NEW.String(),
 			core.LeadStatus_IN_PROGRESS.String(),
+			core.LeadStatus_SUBMITTED.String(),
 		}).
 		Where(`
 		NOT shop.separate_leads
