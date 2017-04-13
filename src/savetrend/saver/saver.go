@@ -243,9 +243,9 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		return -1, true, err
 	}
 
-	productID, err = createProduct(mediaID, &productMedia, shopID, mentionerID)
+	productID, retry, err := createProduct(mediaID, &productMedia, shopID, mentionerID)
 	if err != nil {
-		return -1, true, err
+		return -1, retry, err
 	}
 
 	if !mentioner.Confirmed {
@@ -258,10 +258,11 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 	return productID, false, nil
 }
 
-func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, err error) {
+func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, retry bool, err error) {
 
-	if len(media.ImageVersions2.Candidates) < 1 {
-		return -1, errors.New("Product media has no images!")
+	// @CHECK so what? why not add product without image?
+	if media.MediaType != 1 || len(media.ImageVersions2.Candidates) < 1 {
+		return -1, false, errors.New("Product media has unsupported type or images are missing!")
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -276,12 +277,12 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 
 	case *mandible.ImageResp:
 		if resp.Status < 400 || resp.Status >= 500 {
-			return -1, err
+			return -1, true, err
 		}
 		log.Warn("medai %v have invalid image", mediaID)
 
 	default:
-		return -1, err
+		return -1, true, err
 	}
 
 	request := &core.CreateProductRequest{Product: &core.Product{
@@ -301,9 +302,9 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 
 	res, err := api.ProductClient.CreateProduct(ctx, request)
 	if err != nil {
-		return -1, err
+		return -1, true, err
 	}
-	return res.Id, nil
+	return res.Id, false, nil
 }
 
 // check if product with this mediaId present.
