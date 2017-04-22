@@ -61,16 +61,8 @@ func (svc *projectService) run() error {
 
 	log.Info("Successfully started")
 
-	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			log.Info("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
+	<-interrupt
+	log.Info("Cleanup and terminating...")
 
 	return nil
 }
-
-// if you see this; email to meow-I-saw-this-line@2-47.ru
