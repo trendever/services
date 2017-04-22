@@ -734,7 +734,7 @@
 		{
 			"importpath": "github.com/tucnak/telebot",
 			"repository": "https://github.com/tucnak/telebot",
-			"revision": "7d22fdc72cfa355169082ddc46843f9f7cc56a3f",
+			"revision": "6360f1f7d9464545d98f2b478cd83240a8ced98e",
 			"branch": "master"
 		},
 		{
