@@ -44,7 +44,7 @@ func (svc *projectService) run() error {
 	settings := GetSettings()
 
 	// init Telegram
-	t, err := StartBot(settings.Token, settings.Rooms)
+	t, err := InitBot(settings.Token, settings.Rooms)
 	if err != nil {
 		return err
 	}

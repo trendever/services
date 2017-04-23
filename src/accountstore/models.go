@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"proto/accountstore"
-	"proto/bot"
+	"proto/telegram"
 	"sync"
 	"time"
 	"utils/db"
@@ -18,7 +18,7 @@ const notifyTopic = "accountstore.notify"
 var global struct {
 	once          sync.Once
 	notifyChan    chan *Account
-	telebotClient bot.TelegramServiceClient
+	telebotClient telegram.TelegramServiceClient
 }
 
 // Account contains instagram account cookie
@@ -79,7 +79,7 @@ func notifyTelegram(message string) {
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	_, err := global.telebotClient.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+	_, err := global.telebotClient.NotifyMessage(ctx, &telegram.NotifyMessageRequest{
 		Channel: "accountstore",
 		Message: message,
 	})

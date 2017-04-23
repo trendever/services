@@ -7,13 +7,13 @@ import (
 	"google.golang.org/grpc"
 	"net/url"
 	"proto/auth"
-	"proto/bot"
 	"proto/chat"
 	"proto/checker"
 	"proto/mail"
 	"proto/payment"
 	"proto/push"
 	"proto/sms"
+	"proto/telegram"
 	"proto/trendcoin"
 	"utils/log"
 	"utils/rpc"
@@ -33,7 +33,7 @@ var (
 	ChatServiceClient      chat.ChatServiceClient
 	AuthServiceClient      auth.AuthServiceClient
 	PushServiceClient      push.PushServiceClient
-	TelegramServiceClient  bot.TelegramServiceClient
+	TelegramServiceClient  telegram.TelegramServiceClient
 	CheckerServiceClient   checker.CheckerServiceClient
 	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
 	PaymentsServiceClient  payment.PaymentServiceClient
@@ -83,7 +83,7 @@ func startClients() {
 	PushServiceClient = push.NewPushServiceClient(pushConn)
 
 	telegramConn := rpc.Connect(config.RPC.Telegram)
-	TelegramServiceClient = bot.NewTelegramServiceClient(telegramConn)
+	TelegramServiceClient = telegram.NewTelegramServiceClient(telegramConn)
 
 	checkerConn := rpc.Connect(config.RPC.Checker)
 	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
@@ -147,7 +147,7 @@ func NotifyByTelegram(channel, message string) (err error) {
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
 
-		_, err = TelegramServiceClient.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+		_, err = TelegramServiceClient.NotifyMessage(ctx, &telegram.NotifyMessageRequest{
 			Channel: channel,
 			Message: message,
 		})

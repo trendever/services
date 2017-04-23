@@ -3,8 +3,8 @@ package server
 import (
 	"fmt"
 	"golang.org/x/net/context"
-	"proto/bot"
 	"proto/sms"
+	"proto/telegram"
 	"sms/conf"
 	"sms/models"
 	"utils/log"
@@ -13,7 +13,7 @@ import (
 
 type smsServer struct {
 	sender        Sender
-	telegramCli   bot.TelegramServiceClient
+	telegramCli   telegram.TelegramServiceClient
 	telegramRoom  string
 	smsRepository models.SmsRepository
 }
@@ -51,7 +51,7 @@ func NewSmsServer(sender Sender, smsRepository models.SmsRepository) sms.SmsServ
 	conn := rpc.Connect(s.RPC)
 	return &smsServer{
 		sender:        sender,
-		telegramCli:   bot.NewTelegramServiceClient(conn),
+		telegramCli:   telegram.NewTelegramServiceClient(conn),
 		telegramRoom:  s.Channel,
 		smsRepository: smsRepository,
 	}
@@ -86,7 +86,7 @@ func (ss *smsServer) SendSMS(ctx context.Context, in *sms.SendSMSRequest) (*sms.
 
 		ctx, cancel := rpc.DefaultContext()
 		defer cancel()
-		_, err := ss.telegramCli.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+		_, err := ss.telegramCli.NotifyMessage(ctx, &telegram.NotifyMessageRequest{
 			Channel: ss.telegramRoom,
 			Message: fmt.Sprintf("SMS for %v with status '%v':\n%v", smsDbObj.Phone, smsDbObj.SmsStatus, smsDbObj.Message),
 		})

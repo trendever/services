@@ -43,6 +43,9 @@ type Settings struct {
 	Token     string
 	Rooms     []Room
 	SentryDSN string
+	Messages  struct {
+		Help string
+	}
 }
 
 // Room defines telegram chat room (common name and real @room)

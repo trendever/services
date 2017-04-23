@@ -2,10 +2,15 @@ package main
 
 import (
 	"github.com/tucnak/telebot"
+	"strings"
 	"time"
 	"utils/log"
-	"strings"
 )
+
+func init() {
+	RegisterHandler("/start", helpHandler)
+	RegisterHandler("/help", helpHandler)
+}
 
 // Telegram defines telegram sender
 type Telegram struct {
@@ -19,8 +24,15 @@ func (dest chatDestination) Destination() string {
 	return string(dest)
 }
 
-// Init initializes the bot
-func StartBot(token string, rooms []Room) (*Telegram, error) {
+type messageHandler func(bot *telebot.Bot, msg *telebot.Message)
+
+var handlers = map[string]messageHandler{}
+
+func RegisterHandler(name string, handler messageHandler) {
+	handlers[name] = handler
+}
+
+func InitBot(token string, rooms []Room) (*Telegram, error) {
 	bot, err := telebot.NewBot(token)
 	if err != nil {
 		return nil, err
@@ -37,16 +49,27 @@ func StartBot(token string, rooms []Room) (*Telegram, error) {
 	return telegram, nil
 }
 
+func helpHandler(bot *telebot.Bot, msg *telebot.Message) {
+	log.Error(bot.SendMessage(msg.Chat, settings.Messages.Help, nil))
+}
+
 func (t *Telegram) Listen() {
 	messages := make(chan telebot.Message, 100)
 	t.bot.Listen(messages, 1*time.Second)
 
 	for message := range messages {
-		if(!message.IsPersonal()) {
+		if !message.IsPersonal() {
 			continue
 		}
 		split := strings.SplitAfterN(message.Text, " ", 2)
 		log.Debug("%v from %v", split[0], message.Chat.Username)
+
+		handler, ok := handlers[split[0]]
+		if !ok {
+			helpHandler(t.bot, &message)
+			continue
+		}
+		handler(t.bot, &message)
 	}
 }
 
