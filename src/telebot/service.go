@@ -4,9 +4,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"telebot/conf"
-	"telebot/telegram"
-	"telebot/views"
 	"utils/log"
 
 	"github.com/codegangsta/cli"
@@ -44,16 +41,16 @@ func main() {
 // Run bot
 func (svc *projectService) run() error {
 
-	settings := conf.GetSettings()
+	settings := GetSettings()
 
 	// init Telegram
-	t, err := telegram.Init(settings.Token, settings.Rooms)
+	t, err := StartBot(settings.Token, settings.Rooms)
 	if err != nil {
 		return err
 	}
 
 	// init api
-	views.Init(t)
+	InitViews(t)
 
 	// interrupt
 	interrupt := make(chan os.Signal)

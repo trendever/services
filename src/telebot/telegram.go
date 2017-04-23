@@ -1,10 +1,10 @@
-package telegram
+package main
 
 import (
 	"github.com/tucnak/telebot"
-	"telebot/conf"
 	"time"
 	"utils/log"
+	"strings"
 )
 
 // Telegram defines telegram sender
@@ -20,7 +20,7 @@ func (dest chatDestination) Destination() string {
 }
 
 // Init initializes the bot
-func Init(token string, rooms []conf.Room) (*Telegram, error) {
+func StartBot(token string, rooms []Room) (*Telegram, error) {
 	bot, err := telebot.NewBot(token)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,22 @@ func Init(token string, rooms []conf.Room) (*Telegram, error) {
 		telegram.chats[room.Name] = chatDestination(room.Room)
 	}
 
+	go telegram.Listen()
+
 	return telegram, nil
+}
+
+func (t *Telegram) Listen() {
+	messages := make(chan telebot.Message, 100)
+	t.bot.Listen(messages, 1*time.Second)
+
+	for message := range messages {
+		if(!message.IsPersonal()) {
+			continue
+		}
+		split := strings.SplitAfterN(message.Text, " ", 2)
+		log.Debug("%v from %v", split[0], message.Chat.Username)
+	}
 }
 
 // Notify sends message to chat named dst

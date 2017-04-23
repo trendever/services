@@ -1,18 +1,15 @@
-package views
+package main
 
 import (
-	"telebot/conf"
-	"telebot/telegram"
-
 	"golang.org/x/net/context"
 	"proto/bot"
 	"utils/rpc"
 )
 
 // Init initializes telegram RPC service
-func Init(telegram *telegram.Telegram) {
+func InitViews(telegram *Telegram) {
 
-	grpcServer := rpc.Serve(conf.GetSettings().RPC)
+	grpcServer := rpc.Serve(GetSettings().RPC)
 
 	bot.RegisterTelegramServiceServer(grpcServer, telebotServer{
 		Telegram: telegram,
@@ -20,7 +17,7 @@ func Init(telegram *telegram.Telegram) {
 }
 
 type telebotServer struct {
-	Telegram *telegram.Telegram
+	Telegram *Telegram
 }
 
 func (t telebotServer) NotifyMessage(ctx context.Context, req *bot.NotifyMessageRequest) (*bot.NotifyMessageResult, error) {
