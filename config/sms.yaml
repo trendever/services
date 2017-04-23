@@ -18,6 +18,9 @@ atompark:
   keyprivate: e0bcb10cd2bbdb35596de9649feb5a4a
   sender:      Trendever
 
-telegram:
-  rpc: telegram:4040
-  channel: new_sms
+telegramChannel: new_sms
+
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: sms1

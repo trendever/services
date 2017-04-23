@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/tucnak/telebot"
+	"proto/telegram"
+	"strconv"
 	"strings"
 	"time"
 	"utils/log"
@@ -74,31 +77,23 @@ func (t *Telegram) Listen() {
 }
 
 // Notify sends message to chat named dst
-func (t *Telegram) Notify(dst, msg string) {
-	chat, ok := t.chats[dst]
-	if !ok {
-		log.Errorf("Chat %v not defined in config", dst)
-		return
-	}
-
-	var (
-		err     error
-		retries = 15
-	)
-
-	for {
-		err = t.bot.SendMessage(chat, msg, nil)
-		if err != nil {
-			log.Errorf("failed to send message to channel '%v': %+v", chat, err)
-			retries--
-			if retries == 0 {
-				log.Errorf("to many errors in row, message dropped")
-				return
-			}
-			time.Sleep(time.Second * 300)
-		} else {
-			return
+func (t *Telegram) Notify(req *telegram.NotifyMessageRequest) (err error, retry bool) {
+	var dest chatDestination
+	if req.ChatId != 0 {
+		dest = chatDestination(strconv.FormatUint(req.ChatId, 10))
+	} else {
+		var ok bool
+		dest, ok = t.chats[req.Channel]
+		if !ok {
+			err := fmt.Errorf("chat %v not defined in config", req.Channel)
+			log.Error(err)
+			return err, false
 		}
 	}
-
+	err = t.bot.SendMessage(dest, req.Message, nil)
+	if err == nil {
+		return nil, false
+	}
+	// ugly check, but probably it is shortest way to determinate kind of error without changes in telebot lib
+	return err, !strings.HasPrefix(err.Error(), "telebot:")
 }

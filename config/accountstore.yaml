@@ -5,7 +5,6 @@ userURLTemplate: "http://localhost:3004/qor/users/%v"
 
 rpc:
   core: core:3005
-  telegram: telegram:4040
 
 db:
   debug:    true

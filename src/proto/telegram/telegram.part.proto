@@ -5,9 +5,10 @@ service TelegramService {
 
 message NotifyMessageRequest {
   string channel = 1;
+  uint64 chat_id = 3;
   string message = 2;
 }
 
 message NotifyMessageResult{
-
+  string error = 1;
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"golang.org/x/net/context"
 	"proto/telegram"
+	"time"
 	"utils/nats"
 	"utils/rpc"
 )
@@ -11,12 +12,20 @@ import (
 func InitViews(t *Telegram) {
 
 	grpcServer := rpc.Serve(GetSettings().RPC)
-
-	telegram.RegisterTelegramServiceServer(grpcServer, telebotServer{
+	srv := telebotServer{
 		Telegram: t,
-	})
+	}
 
-	nats.StanSubscribe(&nats.StanSubscription{})
+	telegram.RegisterTelegramServiceServer(grpcServer, srv)
+
+	nats.StanSubscribe(&nats.StanSubscription{
+		Subject:        "telegram.notify",
+		Group:          "telegram",
+		DurableName:    "telegram",
+		AckTimeout:     time.Second * 30,
+		DecodedHandler: srv.StanMessage,
+	})
+	nats.Init(&settings.Nats, true)
 }
 
 type telebotServer struct {
@@ -24,7 +33,15 @@ type telebotServer struct {
 }
 
 func (t telebotServer) NotifyMessage(ctx context.Context, req *telegram.NotifyMessageRequest) (*telegram.NotifyMessageResult, error) {
-	go t.Telegram.Notify(req.Channel, req.Message)
+	err, _ := t.Telegram.Notify(req)
+	if err != nil {
+		return &telegram.NotifyMessageResult{Error: err.Error()}, nil
+	} else {
+		return &telegram.NotifyMessageResult{}, nil
+	}
+}
 
-	return &telegram.NotifyMessageResult{}, nil
+func (t telebotServer) StanMessage(req *telegram.NotifyMessageRequest) bool {
+	_, retry := t.Telegram.Notify(req)
+	return !retry
 }

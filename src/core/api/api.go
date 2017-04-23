@@ -16,6 +16,7 @@ import (
 	"proto/telegram"
 	"proto/trendcoin"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -33,7 +34,6 @@ var (
 	ChatServiceClient      chat.ChatServiceClient
 	AuthServiceClient      auth.AuthServiceClient
 	PushServiceClient      push.PushServiceClient
-	TelegramServiceClient  telegram.TelegramServiceClient
 	CheckerServiceClient   checker.CheckerServiceClient
 	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
 	PaymentsServiceClient  payment.PaymentServiceClient
@@ -81,9 +81,6 @@ func startClients() {
 
 	pushConn := rpc.Connect(config.RPC.Push)
 	PushServiceClient = push.NewPushServiceClient(pushConn)
-
-	telegramConn := rpc.Connect(config.RPC.Telegram)
-	TelegramServiceClient = telegram.NewTelegramServiceClient(telegramConn)
 
 	checkerConn := rpc.Connect(config.RPC.Checker)
 	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)
@@ -143,18 +140,13 @@ func GetNewAPIToken(userID uint) (token string, err error) {
 
 // NotifyByTelegram sends string message to a channel
 func NotifyByTelegram(channel, message string) (err error) {
-	if TelegramServiceClient != nil { // do nothing for tests and etc
-		ctx, cancel := rpc.DefaultContext()
-		defer cancel()
+	err = nats.StanPublish("telegram.notify", &telegram.NotifyMessageRequest{
+		Channel: channel,
+		Message: message,
+	})
 
-		_, err = TelegramServiceClient.NotifyMessage(ctx, &telegram.NotifyMessageRequest{
-			Channel: channel,
-			Message: message,
-		})
-
-		if err != nil {
-			log.Error(err)
-		}
+	if err != nil {
+		log.Error(err)
 	}
 
 	return err

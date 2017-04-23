@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"utils/config"
 	"utils/log"
+	"utils/nats"
 )
 
 var (
@@ -43,6 +44,7 @@ type Settings struct {
 	Token     string
 	Rooms     []Room
 	SentryDSN string
+	Nats      nats.Config
 	Messages  struct {
 		Help string
 	}
