@@ -39,14 +39,19 @@ func GetSettings() *Settings {
 
 // Settings defines service configuration
 type Settings struct {
-	Debug     bool
-	RPC       string
-	Token     string
-	Rooms     []Room
-	SentryDSN string
-	Nats      nats.Config
-	Messages  struct {
-		Help string
+	Debug      bool
+	RPC        string
+	CoreServer string
+	Token      string
+	Rooms      []Room
+	SentryDSN  string
+	Nats       nats.Config
+	Messages   struct {
+		Help          string
+		Subscribed    string
+		Unsubscribed  string
+		ExternalError string
+		UserNotFound  string
 	}
 }
 
