@@ -71,7 +71,7 @@ type Telegram struct {
 	UserID    uint64 `gorm:"primary_key;index"`
 	ChatID    uint64 `gorm:"primary_key;index"`
 	Username  string
-	Confirmed bool
+	Confirmed bool `sql:"default:false"`
 }
 
 type AutorefillInfo struct {

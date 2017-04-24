@@ -213,7 +213,24 @@ func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegram
 }
 
 func (s userServer) DelTelegram(_ context.Context, req *core.DelTelegramRequest) (*core.DelTelegramReply, error) {
-	err := db.New().Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).Delete(&models.Telegram{}).Error
+	var userID uint64
+	if req.Username != "" {
+		user, found, err := models.FindUserMatchAny(
+			0, 0,
+			req.Username, req.Username,
+			"", "",
+		)
+		if err != nil {
+			return &core.DelTelegramReply{Error: err.Error()}, nil
+		}
+		if !found {
+			return &core.DelTelegramReply{Error: "user not found"}, nil
+		}
+		userID = uint64(user.ID)
+	} else {
+		userID = req.UserId
+	}
+	err := db.New().Where("user_id = ?", userID).Where("chat_id = ?", req.ChatId).Delete(&models.Telegram{}).Error
 	if err != nil {
 		return &core.DelTelegramReply{Error: err.Error()}, nil
 	}

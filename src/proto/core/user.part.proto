@@ -142,7 +142,8 @@ message ConfirmTelegramReply {
 
 message DelTelegramRequest {
   uint64 user_id = 1;
-  uint64 chat_id = 2;
+  string username = 2;
+  uint64 chat_id = 3;
 }
 
 message DelTelegramReply {
