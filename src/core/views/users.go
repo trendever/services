@@ -156,3 +156,66 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 
 	return &core.SetDataReply{}, nil
 }
+
+func (s userServer) ListTelegrams(_ context.Context, req *core.ListTelegramsRequest) (*core.ListTelegramsReply, error) {
+	var list []*models.Telegram
+	q := db.New().Where("user_id = ?", req.UserId)
+	if req.ConfirmedOnly {
+		q = q.Where("confirmed")
+	}
+	err := q.Find(&list).Error
+	if err != nil {
+		return &core.ListTelegramsReply{Error: err.Error()}, nil
+	}
+
+	ret := core.ListTelegramsReply{}
+	for _, t := range list {
+		ret.Telegrams = append(ret.Telegrams, t.Encode())
+	}
+	return &ret, nil
+}
+
+func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest) (*core.AddTelegramReply, error) {
+	var userID uint64
+	if req.Username != "" {
+		user, found, err := models.FindUserMatchAny(
+			0, 0,
+			req.Username, req.Username,
+			"", "",
+		)
+		if err != nil {
+			return &core.AddTelegramReply{Error: err.Error()}, nil
+		}
+		if !found {
+			return &core.AddTelegramReply{Error: "user not found"}, nil
+		}
+		userID = uint64(user.ID)
+	} else {
+		userID = req.UserId
+	}
+	err := db.New().Save(&models.Telegram{
+		UserID:   userID,
+		ChatID:   req.ChatId,
+		Username: req.SubsricberName,
+	}).Error
+	if err != nil {
+		return &core.AddTelegramReply{Error: err.Error()}, nil
+	}
+	return &core.AddTelegramReply{}, nil
+}
+
+func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegramRequest) (*core.ConfirmTelegramReply, error) {
+	err := db.New().Model(&models.Telegram{}).Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).UpdateColumn("confirmed", true).Error
+	if err != nil {
+		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
+	}
+	return &core.ConfirmTelegramReply{}, nil
+}
+
+func (s userServer) DelTelegram(_ context.Context, req *core.DelTelegramRequest) (*core.DelTelegramReply, error) {
+	err := db.New().Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).Delete(&models.Telegram{}).Error
+	if err != nil {
+		return &core.DelTelegramReply{Error: err.Error()}, nil
+	}
+	return &core.DelTelegramReply{}, nil
+}

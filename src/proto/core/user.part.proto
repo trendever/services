@@ -11,6 +11,12 @@ service UserService {
   rpc SetEmail (SetEmailRequest) returns (SetEmailReply) {}
 
   rpc SetData (SetDataRequest) returns (SetDataReply) {}
+
+
+  rpc AddTelegram(AddTelegramRequest) returns (AddTelegramReply) {}
+  rpc ConfirmTelegram(ConfirmTelegramRequest) returns (ConfirmTelegramReply) {}
+  rpc ListTelegrams(ListTelegramsRequest) returns (ListTelegramsReply) {}
+  rpc DelTelegram(DelTelegramRequest) returns (DelTelegramReply) {}
 }
 
 message CreateUserRequest {
@@ -94,3 +100,52 @@ message SetDataRequest {
 }
 
 message SetDataReply {}
+
+message AddTelegramRequest {
+  uint64 user_id = 1;
+  // our local username, alternative for user_id to avoid surplus rpc calls
+  string username = 2;
+  uint64 chat_id = 3;
+  // telegram username
+  string subsricber_name = 4;
+}
+
+message AddTelegramReply {
+  string error = 1;
+}
+
+message Telegram {
+  uint64 user_id = 1;
+  uint64 chat_id = 2;
+  string subsriber_name = 3;
+  bool confirmed = 4;
+}
+
+message ListTelegramsRequest {
+  uint64 user_id = 1;
+  bool confirmed_only = 2;
+}
+
+message ListTelegramsReply {
+  repeated Telegram telegrams = 1;
+  string error = 2;
+}
+
+message ConfirmTelegramRequest {
+  uint64 user_id = 1;
+  uint64 chat_id = 2;
+}
+
+message ConfirmTelegramReply {
+  string error = 1;
+}
+
+message DelTelegramRequest {
+  uint64 user_id = 1;
+  uint64 chat_id = 2;
+}
+
+message DelTelegramReply {
+  string error = 1;
+}
+
