@@ -25,6 +25,10 @@ func init() {
 		Name: "Chat templates",
 		Menu: []string{"Settings"},
 	}, initChatTemplateResource)
+	addResource(&models.TelegramTemplate{}, &admin.Config{
+		Name: "Telegram templates",
+		Menu: []string{"Settings"},
+	}, initTelegramTemplateResource)
 	addResource(&models.OtherTemplate{}, &admin.Config{
 		Name: "Other templates",
 		Menu: []string{"Settings"},
@@ -57,6 +61,40 @@ func initOtherTemplateResource(res *admin.Resource) {
 	}
 	res.NewAttrs(attrs)
 	res.EditAttrs(attrs)
+}
+
+func initTelegramTemplateResource(sms *admin.Resource) {
+	sms.Meta(&admin.Meta{
+		Name:       "TemplateID",
+		Type:       "select_one",
+		Collection: models.TemplatesList["telegram"],
+	})
+	sms.Meta(&admin.Meta{
+		Name: "Message",
+		Type: "text",
+	})
+	sms.IndexAttrs(
+		"TemplateID", "TemplateName",
+	)
+	sms.SearchAttrs(
+		"TemplateName", "TemplateID",
+	)
+	attrs := []*admin.Section{
+		{
+			Title: "Template settings",
+			Rows: [][]string{
+				{"TemplateID", "TemplateName"},
+			},
+		},
+		{
+			Title: "Message",
+			Rows: [][]string{
+				{"Message"},
+			},
+		},
+	}
+	sms.NewAttrs(attrs)
+	sms.EditAttrs(attrs)
 }
 
 func initSMSTemplateResource(sms *admin.Resource) {

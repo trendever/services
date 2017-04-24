@@ -9,10 +9,12 @@ import (
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
+	"proto/telegram"
 	"push/typemap"
 	"reflect"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -26,9 +28,7 @@ func init() {
 		"call_customer_to_chat",
 	}
 	for _, t := range topics {
-		RegisterTemplate("sms", t)
-		RegisterTemplate("push", t)
-		RegisterTemplate("email", t)
+		RegisterNotifyTemplate(t)
 	}
 }
 
@@ -180,22 +180,61 @@ func (n *Notifier) NotifyByPush(receivers []*push.Receiver, about string, model 
 	return err
 }
 
-// NotifyByTelegram sends string message to a channel
-func (n *Notifier) NotifyByTelegram(channel string, message interface{}) error {
-	return api.NotifyByTelegram(channel, message.(string))
+func (n *Notifier) NotifyUserByTelegram(user *User, about string, context interface{}) error {
+	// may be not loaded yet
+	if len(user.Telegram) == 0 {
+		if err := db.New().Model(user).Related(&user.Telegram, "Telegram").Error; err != nil {
+			return fmt.Errorf("failed to load related telegrams: %v", err)
+		}
+	}
+	template := &TelegramTemplate{}
+	ret := n.db.Find(template, "template_id = ?", about)
+	if ret.RecordNotFound() {
+		return nil
+	}
+	if ret.Error != nil {
+		return ret.Error
+	}
+	result, err := template.Execute(context)
+	if err != nil {
+		return err
+	}
+	msg, ok := result.(string)
+	if !ok {
+		return errors.New("expected string, but got " + reflect.TypeOf(msg).Name())
+	}
+	if msg == "" {
+		return nil
+	}
+	for _, tg := range user.Telegram {
+		if !tg.Confirmed {
+			continue
+		}
+		err := nats.StanPublish("telegram.notify", &telegram.NotifyMessageRequest{
+			ChatId:  tg.ChatID,
+			Message: msg,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NotifyUserAbout sends to user notifications messages
 // that are based on templates with TemplateId = about and execute argument context
 func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}) error {
 	log.Debug("Notify user %v about %v", user.Stringify(), about)
-	var smsError, emailError error
+	var smsError, emailError, telgramError error
 	// @WARN be aware: users from directbot never receive sms from here
 	if user.Phone != "" && user.Source != "directbot" {
 		smsError = n.NotifyBySms(user.Phone, about, context)
 	}
 	if user.Email != "" {
 		emailError = n.NotifyByEmail(user.Email, about, context)
+	}
+	if user.HasTelegram {
+		telgramError = n.NotifyUserByTelegram(user, about, context)
 	}
 
 	var pushError error
@@ -215,7 +254,7 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 		pushError = n.NotifyByPush(receivers, about, context)
 	}
 
-	if smsError == nil && emailError == nil && pushError == nil {
+	if smsError == nil && emailError == nil && pushError == nil && telgramError != nil {
 		return nil
 	}
 	strErr := fmt.Sprintf(
@@ -230,6 +269,9 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 	}
 	if pushError != nil {
 		strErr += fmt.Sprintf("\n\t push: %v", pushError)
+	}
+	if telgramError != nil {
+		strErr += fmt.Sprintf("\n\t telegram: %v", telgramError)
 	}
 	return errors.New(strErr)
 }

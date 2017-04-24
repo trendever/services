@@ -22,9 +22,7 @@ func init() {
 		SupplierChangedTopic,
 	}
 	for _, t := range notifyTopics {
-		RegisterTemplate("sms", t)
-		RegisterTemplate("push", t)
-		RegisterTemplate("email", t)
+		RegisterNotifyTemplate(t)
 	}
 }
 
