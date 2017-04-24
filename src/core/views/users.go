@@ -193,10 +193,9 @@ func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest)
 	} else {
 		userID = req.UserId
 	}
-	err := db.New().Save(&models.Telegram{
-		UserID:   userID,
-		ChatID:   req.ChatId,
-		Username: req.SubsricberName,
+	err := db.New().Assign(&models.Telegram{Username: req.SubsricberName}).FirstOrCreate(&models.Telegram{
+		UserID: userID,
+		ChatID: req.ChatId,
 	}).Error
 	if err != nil {
 		return &core.AddTelegramReply{Error: err.Error()}, nil
@@ -205,7 +204,7 @@ func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest)
 }
 
 func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegramRequest) (*core.ConfirmTelegramReply, error) {
-	err := db.New().Model(&models.Telegram{}).Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).UpdateColumn("confirmed", true).Error
+	err := db.New().Model(&models.Telegram{}).Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).Update("confirmed", true).Error
 	if err != nil {
 		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
 	}
