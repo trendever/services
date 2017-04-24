@@ -8,22 +8,20 @@ import (
 	"utils/rpc"
 )
 
-var coreServer = core.NewUserServiceClient(rpc.Connect(settings.CoreServer))
-
 func init() {
 	RegisterHandler("/subscribe", subscribeHandler)
 	RegisterHandler("/unsubscribe", unsubscribeHandler)
 }
 
 func subscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
-	split := strings.SplitAfter(msg.Text, " ")
+	split := strings.Split(msg.Text, " ")
 	if len(split) != 2 {
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.Help, nil))
 		return
 	}
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	reply, err := coreServer.AddTelegram(ctx, &core.AddTelegramRequest{
+	reply, err := userServer.AddTelegram(ctx, &core.AddTelegramRequest{
 		Username:       split[1],
 		ChatId:         uint64(msg.Chat.ID),
 		SubsricberName: msg.Chat.Username,
@@ -52,7 +50,7 @@ func unsubscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 	}
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
-	reply, err := coreServer.DelTelegram(ctx, &core.DelTelegramRequest{
+	reply, err := userServer.DelTelegram(ctx, &core.DelTelegramRequest{
 		Username: split[1],
 		ChatId:   uint64(msg.Chat.ID),
 	})

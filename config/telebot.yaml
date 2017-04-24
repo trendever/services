@@ -1,4 +1,5 @@
 debug: true
+coreServer: core:3005
 token: '307338702:AAFxxBxqaHGYYGG_xAZ1rSopzCmbFJhWS60'
 rpc:   ':4040'
 
@@ -15,7 +16,11 @@ rooms:
     room: '@local_tdebug'
 
 messages:
-  help: "nothing can help you"
+  help: "/subscribe trendever_username\n/unsubscribe trendever_username"
+  subscribed: "confirm subscribtion in your account settings"
+  unsubscribed: "unsubscribed"
+  externalError: "request failed, try again later"
+  userNotFound: "user not found"
 
 nats:
   url: nats://nats:4222

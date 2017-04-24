@@ -64,8 +64,7 @@ func (t *Telegram) Listen() {
 		if !message.IsPersonal() {
 			continue
 		}
-		split := strings.SplitAfterN(message.Text, " ", 2)
-		log.Debug("%v from %v", split[0], message.Chat.Username)
+		split := strings.SplitN(message.Text, " ", 2)
 
 		handler, ok := handlers[split[0]]
 		if !ok {

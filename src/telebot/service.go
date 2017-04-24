@@ -3,13 +3,17 @@ package main
 import (
 	"os"
 	"os/signal"
+	"proto/core"
 	"syscall"
 	"utils/log"
+	"utils/rpc"
 
 	"github.com/codegangsta/cli"
 )
 
 type projectService struct{}
+
+var userServer core.UserServiceClient
 
 func main() {
 
@@ -42,6 +46,7 @@ func main() {
 func (svc *projectService) run() error {
 
 	settings := GetSettings()
+	userServer = core.NewUserServiceClient(rpc.Connect(settings.CoreServer))
 
 	// init Telegram
 	t, err := InitBot(settings.Token, settings.Rooms)
