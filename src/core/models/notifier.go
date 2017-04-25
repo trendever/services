@@ -181,12 +181,6 @@ func (n *Notifier) NotifyByPush(receivers []*push.Receiver, about string, model 
 }
 
 func (n *Notifier) NotifyUserByTelegram(user *User, about string, context interface{}) error {
-	// may be not loaded yet
-	if len(user.Telegram) == 0 {
-		if err := db.New().Model(user).Related(&user.Telegram, "Telegram").Error; err != nil {
-			return fmt.Errorf("failed to load related telegrams: %v", err)
-		}
-	}
 	template := &TelegramTemplate{}
 	ret := n.db.Find(template, "template_id = ?", about)
 	if ret.RecordNotFound() {
@@ -205,6 +199,12 @@ func (n *Notifier) NotifyUserByTelegram(user *User, about string, context interf
 	}
 	if msg == "" {
 		return nil
+	}
+	// may be not loaded yet
+	if len(user.Telegram) == 0 {
+		if err := db.New().Model(user).Related(&user.Telegram, "Telegram").Error; err != nil {
+			return fmt.Errorf("failed to load related telegrams: %v", err)
+		}
 	}
 	for _, tg := range user.Telegram {
 		if !tg.Confirmed {
@@ -254,7 +254,7 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 		pushError = n.NotifyByPush(receivers, about, context)
 	}
 
-	if smsError == nil && emailError == nil && pushError == nil && telgramError != nil {
+	if smsError == nil && emailError == nil && pushError == nil && telgramError == nil {
 		return nil
 	}
 	strErr := fmt.Sprintf(

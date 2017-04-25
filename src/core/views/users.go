@@ -204,7 +204,7 @@ func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest)
 }
 
 func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegramRequest) (*core.ConfirmTelegramReply, error) {
-	err := db.New().Model(&models.Telegram{}).Where("user_id = ?", req.UserId).Where("chat_id = ?", req.ChatId).Update("confirmed", true).Error
+	err := db.New().Model(&models.Telegram{UserID: req.UserId, ChatID: req.ChatId}).Update("confirmed", true).Error
 	if err != nil {
 		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
 	}
@@ -229,7 +229,7 @@ func (s userServer) DelTelegram(_ context.Context, req *core.DelTelegramRequest)
 	} else {
 		userID = req.UserId
 	}
-	err := db.New().Where("user_id = ?", userID).Where("chat_id = ?", req.ChatId).Delete(&models.Telegram{}).Error
+	err := db.New().Delete(&models.Telegram{UserID: userID, ChatID: req.ChatId}).Error
 	if err != nil {
 		return &core.DelTelegramReply{Error: err.Error()}, nil
 	}
