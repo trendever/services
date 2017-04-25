@@ -477,40 +477,60 @@
 		{
 			"importpath": "github.com/nats-io/gnatsd/conf",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
+			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
 			"branch": "master",
 			"path": "/conf"
 		},
 		{
+			"importpath": "github.com/nats-io/gnatsd/logger",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
+			"branch": "master",
+			"path": "/logger"
+		},
+		{
 			"importpath": "github.com/nats-io/gnatsd/server",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
+			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
 			"branch": "master",
 			"path": "/server"
 		},
 		{
 			"importpath": "github.com/nats-io/gnatsd/test",
 			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
+			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
 			"branch": "master",
 			"path": "/test"
 		},
 		{
+			"importpath": "github.com/nats-io/gnatsd/util",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
+			"branch": "master",
+			"path": "/util"
+		},
+		{
+			"importpath": "github.com/nats-io/go-nats",
+			"repository": "https://github.com/nats-io/go-nats",
+			"revision": "5fac23b79413c449de80d4afbd3d453e72da990a",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/nats-io/go-nats-streaming",
 			"repository": "https://github.com/nats-io/go-nats-streaming",
-			"revision": "f0b13ceaf55c6d86604169520dfd8ee3c03e9524",
+			"revision": "c1b2b0c67dcf0a6b2eceb4f2e69d9d655cdfea55",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/nats-io/nats",
 			"repository": "https://github.com/nats-io/nats",
-			"revision": "aab6caaf3a868d3f1a8cd87b7c34b364306df278",
+			"revision": "5fac23b79413c449de80d4afbd3d453e72da990a",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/nats-io/nuid",
 			"repository": "https://github.com/nats-io/nuid",
-			"revision": "289cccf02c178dc782430d534e3c1f5b72af807f",
+			"revision": "3cf34f9fca4e88afa9da8eabd75e3326c9941b44",
 			"branch": "master"
 		},
 		{

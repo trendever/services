@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nats-io/gnatsd/auth"
 	"github.com/nats-io/gnatsd/server"
 )
 
@@ -48,7 +47,22 @@ func RunDefaultServer() *server.Server {
 
 // RunServer starts a new Go routine based server
 func RunServer(opts *server.Options) *server.Server {
-	return RunServerWithAuth(opts, nil)
+	if opts == nil {
+		opts = &DefaultTestOptions
+	}
+	s := server.New(opts)
+	if s == nil {
+		panic("No NATS Server object returned.")
+	}
+
+	// Run server in Go routine.
+	go s.Start()
+
+	// Wait for accept loop(s) to be started
+	if !s.ReadyForConnections(10 * time.Second) {
+		panic("Unable to start NATS Server in Go Routine")
+	}
+	return s
 }
 
 // LoadConfig loads a configuration from a filename
@@ -64,61 +78,8 @@ func LoadConfig(configFile string) (opts *server.Options) {
 // RunServerWithConfig starts a new Go routine based server with a configuration file.
 func RunServerWithConfig(configFile string) (srv *server.Server, opts *server.Options) {
 	opts = LoadConfig(configFile)
-
-	// Check for auth
-	var a server.Auth
-	if opts.Authorization != "" {
-		a = &auth.Token{Token: opts.Authorization}
-	}
-	if opts.Username != "" {
-		a = &auth.Plain{Username: opts.Username, Password: opts.Password}
-	}
-	if opts.Users != nil {
-		a = auth.NewMultiUser(opts.Users)
-	}
-	srv = RunServerWithAuth(opts, a)
+	srv = RunServer(opts)
 	return
-}
-
-// RunServerWithAuth starts a new Go routine based server with auth
-func RunServerWithAuth(opts *server.Options, auth server.Auth) *server.Server {
-	if opts == nil {
-		opts = &DefaultTestOptions
-	}
-	s := server.New(opts)
-	if s == nil {
-		panic("No NATS Server object returned.")
-	}
-
-	if auth != nil {
-		s.SetClientAuthMethod(auth)
-	}
-
-	// Run server in Go routine.
-	go s.Start()
-
-	end := time.Now().Add(10 * time.Second)
-	for time.Now().Before(end) {
-		addr := s.GetListenEndpoint()
-		if addr == "" {
-			time.Sleep(50 * time.Millisecond)
-			// Retry. We might take a little while to open a connection.
-			continue
-		}
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			// Retry after 50ms
-			time.Sleep(50 * time.Millisecond)
-			continue
-		}
-		conn.Close()
-		// Wait a bit to give a chance to the server to remove this
-		// "client" from its state, which may otherwise interfere with
-		// some tests.
-		time.Sleep(25 * time.Millisecond)
-		return s
-	}
-	panic("Unable to start NATS Server in Go Routine")
 }
 
 func stackFatalf(t tLogger, f string, args ...interface{}) {
@@ -169,7 +130,7 @@ func createRouteConn(t tLogger, host string, port int) net.Conn {
 
 func createClientConn(t tLogger, host string, port int) net.Conn {
 	addr := fmt.Sprintf("%s:%d", host, port)
-	c, err := net.DialTimeout("tcp", addr, 1*time.Second)
+	c, err := net.DialTimeout("tcp", addr, 3*time.Second)
 	if err != nil {
 		stackFatalf(t, "Could not connect to server: %v\n", err)
 	}
@@ -226,8 +187,8 @@ func doRouteAuthConnect(t tLogger, c net.Conn, user, pass, id string) {
 }
 
 func setupRouteEx(t tLogger, c net.Conn, opts *server.Options, id string) (sendFun, expectFun) {
-	user := opts.ClusterUsername
-	pass := opts.ClusterPassword
+	user := opts.Cluster.Username
+	pass := opts.Cluster.Password
 	doRouteAuthConnect(t, c, user, pass, id)
 	return sendCommand(t, c), expectCommand(t, c)
 }
@@ -410,7 +371,7 @@ func checkForPubSids(t tLogger, matches [][][]byte, sids []string) {
 func nextServerOpts(opts *server.Options) *server.Options {
 	nopts := *opts
 	nopts.Port++
-	nopts.ClusterPort++
+	nopts.Cluster.Port++
 	nopts.HTTPPort++
 	return &nopts
 }
