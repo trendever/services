@@ -19,6 +19,12 @@ func init() {
 	})
 }
 
+const ConfirmedTelegramTopic = "telegram_conformed"
+
+func init() {
+	models.RegisterNotifyTemplate(ConfirmedTelegramTopic)
+}
+
 type userServer struct{}
 
 func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
@@ -204,10 +210,22 @@ func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest)
 }
 
 func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegramRequest) (*core.ConfirmTelegramReply, error) {
-	err := db.New().Model(&models.Telegram{UserID: req.UserId, ChatID: req.ChatId}).Update("confirmed", true).Error
+	tg := models.Telegram{UserID: req.UserId, ChatID: req.ChatId}
+	err := db.New().First(&tg).Error
 	if err != nil {
 		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
 	}
+	if tg.Confirmed {
+		return &core.ConfirmTelegramReply{}, nil
+	}
+	tg.Confirmed = true
+	err = db.New().Save(&tg).Error
+	if err != nil {
+		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
+	}
+	go models.GetNotifier().NotifyUserByID(req.UserId, ConfirmedTelegramTopic, map[string]interface{}{
+		"telegram": tg,
+	})
 	return &core.ConfirmTelegramReply{}, nil
 }
 
