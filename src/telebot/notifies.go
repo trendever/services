@@ -32,9 +32,8 @@ func subscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 		return
 	}
 	switch reply.Error {
-	/// @TODO remove comment after adding confirmation support to frontend
-	//case "":
-	//log.Error(bot.SendMessage(msg.Chat, settings.Messages.Subscribed, nil))
+	case "":
+		log.Error(bot.SendMessage(msg.Chat, settings.Messages.Subscribed, nil))
 	case "user not found":
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.UserNotFound, nil))
 	default:
