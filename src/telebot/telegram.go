@@ -64,9 +64,11 @@ func (t *Telegram) Listen() {
 		if !message.IsPersonal() {
 			continue
 		}
-		split := strings.SplitN(message.Text, " ", 2)
 
-		handler, ok := handlers[split[0]]
+		// Need only /subscribe handler now
+		// @TODO: return to handlers(split[0]) afterwards
+		// split := strings.SplitN(message.Text, " ", 2)
+		handler, ok := handlers["/subscribe"]
 		if !ok {
 			helpHandler(t.bot, &message)
 			continue

@@ -16,11 +16,11 @@ rooms:
     room: '@local_tdebug'
 
 messages:
-  help: "/subscribe trendever_username\n/unsubscribe trendever_username"
-  subscribed: "confirm subscribtion in your account settings"
-  unsubscribed: "unsubscribed"
+  help: "Введите название магазина в instagram для подписки на уведомления"
+  subscribed: "Подтвердите подписку в настройках аккаунта"
+  unsubscribed: "Уведомления с данного аккаунта отключены"
   externalError: "request failed, try again later"
-  userNotFound: "user not found"
+  userNotFound: "У нас нет магазина с таким именем :("
 
 nats:
   url: nats://nats:4222

@@ -15,14 +15,14 @@ func init() {
 
 func subscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 	split := strings.Split(msg.Text, " ")
-	if len(split) != 2 {
+	if len(split) != 1 {
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.Help, nil))
 		return
 	}
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 	reply, err := userServer.AddTelegram(ctx, &core.AddTelegramRequest{
-		Username:       split[1],
+		Username:       split[0],
 		ChatId:         uint64(msg.Chat.ID),
 		SubsricberName: msg.Chat.Username,
 	})
@@ -32,8 +32,9 @@ func subscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 		return
 	}
 	switch reply.Error {
-	case "":
-		log.Error(bot.SendMessage(msg.Chat, settings.Messages.Subscribed, nil))
+	/// @TODO remove comment after adding confirmation support to frontend
+	//case "":
+	//log.Error(bot.SendMessage(msg.Chat, settings.Messages.Subscribed, nil))
 	case "user not found":
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.UserNotFound, nil))
 	default:
