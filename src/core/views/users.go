@@ -202,6 +202,8 @@ func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest)
 	err := db.New().Assign(&models.Telegram{Username: req.SubsricberName}).FirstOrCreate(&models.Telegram{
 		UserID: userID,
 		ChatID: req.ChatId,
+		// @TODO remove it after adding confirmation support to frontend
+		Confirmed: true,
 	}).Error
 	if err != nil {
 		return &core.AddTelegramReply{Error: err.Error()}, nil
