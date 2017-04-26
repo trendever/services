@@ -38,7 +38,7 @@ func subscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 	case "user not found":
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.UserNotFound, nil))
 	default:
-		log.Errorf("failed to add telegram: %v", err)
+		log.Errorf("failed to add telegram: %v", reply.Error)
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.ExternalError, nil))
 	}
 }
@@ -66,7 +66,7 @@ func unsubscribeHandler(bot *telebot.Bot, msg *telebot.Message) {
 	case "user not found":
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.UserNotFound, nil))
 	default:
-		log.Errorf("failed to del telegram: %v", err)
+		log.Errorf("failed to del telegram: %v", reply.Error)
 		log.Error(bot.SendMessage(msg.Chat, settings.Messages.ExternalError, nil))
 	}
 }
