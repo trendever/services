@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/tucnak/telebot"
 	"proto/telegram"
 	"strconv"
 	"strings"
 	"time"
 	"utils/log"
+
+	"github.com/tucnak/telebot"
 )
 
 func init() {
@@ -65,10 +66,16 @@ func (t *Telegram) Listen() {
 			continue
 		}
 
-		// Need only /subscribe handler now
-		// @TODO: return to handlers(split[0]) afterwards
-		// split := strings.SplitN(message.Text, " ", 2)
-		handler, ok := handlers["/subscribe"]
+		split := strings.SplitN(message.Text, " ", 2)
+		var handler messageHandler
+		var ok bool
+
+		if strings.Index(split[0], "/") == 0 {
+			handler, ok = handlers[split[0]]
+		} else {
+			handler, ok = handlers["/subscribe"]
+		}
+
 		if !ok {
 			helpHandler(t.bot, &message)
 			continue
