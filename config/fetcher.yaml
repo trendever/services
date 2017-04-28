@@ -20,3 +20,4 @@ instagram:
   timeoutMin: 3s
   timeoutMax: 5s
   responseLogging: false
+  indentLogging: false

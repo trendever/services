@@ -35,6 +35,7 @@ func init() {
 	}
 	log.Init(settings.Debug, tagName, settings.SentryDSN)
 	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
+	instagram.DisableJSONIndent = !settings.Instagram.IndentLogging
 }
 
 // GetSettings returns service settings
@@ -57,4 +58,5 @@ type Instagram struct {
 	client.Settings `mapstructure:",squash"`
 	StoreAddr       string
 	ResponseLogging bool
+	IndentLogging   bool
 }

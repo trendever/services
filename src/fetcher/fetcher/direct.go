@@ -52,6 +52,10 @@ collectLoop:
 			if err != nil {
 				return err
 			}
+			// ignore too old activity
+			if thread.LastActivityAt/1000000 < meta.AddedAt {
+				break collectLoop
+			}
 			// check if getting shiet is necessary
 			if len(thread.Items) == 0 {
 				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
@@ -99,8 +103,9 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 			return err
 		}
 
-		if info.LaterThan(resp.Thread.OldestCursor) {
-			msgs = append(msgs, resp.Thread.Items...)
+		items := resp.Thread.Items
+		if info.LaterThan(resp.Thread.OldestCursor) && items[len(items)-1].Timestamp/1000000 >= meta.AddedAt {
+			msgs = append(msgs, items...)
 			cursor = resp.Thread.OldestCursor
 			if !resp.Thread.HasOlder {
 				break
@@ -109,13 +114,13 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 		}
 
 		if info.LastCheckedID == resp.Thread.OldestCursor {
-			msgs = append(msgs, resp.Thread.Items...)
+			msgs = append(msgs, items...)
 			break
 		}
 
-		for it, msg := range resp.Thread.Items {
-			if !info.LaterThan(msg.ItemID) {
-				msgs = append(msgs, resp.Thread.Items[:it]...)
+		for it, msg := range items {
+			if !info.LaterThan(msg.ItemID) || msg.Timestamp/1000000 < meta.AddedAt {
+				msgs = append(msgs, items[:it]...)
 				break
 			}
 		}
@@ -212,11 +217,6 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 
 // fill database model by direct message
 func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
-	// ignore items that have been added before the account was added
-	if item.Timestamp/1000000 < meta.AddedAt {
-		return nil
-	}
-
 	share := item.MediaShare
 	ig := meta.Get()
 
