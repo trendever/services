@@ -42,10 +42,12 @@ collectLoop:
 			if err != nil {
 				return err
 			}
+			log.Debug("%v: approving threads...", ig.Username)
 			_, err = ig.DirectThreadApproveAll()
 			// do nothing else now
 			return err
 		}
+		log.Debug("%v: checking threads...", ig.Username)
 
 		for _, thread := range resp.Inbox.Threads {
 			info, err := models.GetThreadInfo(thread.ThreadID, ig.UserID)
@@ -57,12 +59,15 @@ collectLoop:
 				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
 			}
 			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
+				log.Debug("%v: checked thread reached", ig.Username)
 				break collectLoop
 			}
 			threads = append(threads, info)
 		}
+		log.Debug("%v: %v threads collected with cursor '%v'", ig.Username, len(threads), cursor)
 
 		if !resp.Inbox.HasOlder {
+			log.Debug("%v: no older threads avialbe, proccess", ig.Username)
 			break
 		}
 		cursor = resp.Inbox.OldestCursor
