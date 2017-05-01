@@ -25,6 +25,7 @@ func checkDirect(meta *client.AccountMeta) error {
 	log.Debug("Checking direct for %v", meta.Get().Username)
 
 	cursor := ""
+	var upperTime int64
 
 collectLoop:
 	for {
@@ -46,6 +47,12 @@ collectLoop:
 			// do nothing else now
 			return err
 		}
+
+		if len(resp.Inbox.Threads) == 0 {
+			return nil
+		}
+
+		upperTime = resp.Inbox.Threads[0].LastActivityAt
 
 		for _, thread := range resp.Inbox.Threads {
 			info, err := models.GetThreadInfo(thread.ThreadID, ig.UserID)
@@ -75,7 +82,7 @@ collectLoop:
 	}
 
 	for it := len(threads) - 1; it >= 0; it-- {
-		err := processThread(meta, &threads[it])
+		err := processThread(meta, &threads[it], upperTime)
 		if err != nil {
 			return err
 		}
@@ -84,7 +91,7 @@ collectLoop:
 	return nil
 }
 
-func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
+func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime int64) error {
 	var (
 		threadID = info.ThreadID
 		resp     *instagram.DirectThreadResponse
@@ -134,6 +141,10 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo) error {
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
+		// temporarily ignore newest messages to prevent possible shading part of direct activity
+		if message.Timestamp > upperTime {
+			continue
+		}
 
 		switch message.ItemType {
 		// such a special case for shares feels somewhat inconsistent
