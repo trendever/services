@@ -212,8 +212,8 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 				log.Errorf("failed to send send direct request via nats: %v", err)
 				break
 			}
+			ids = append(ids, msg.ID)
 		}
-		ids = append(ids, msg.ID)
 	}
 	// @TODO db errors should be rare but state may become inconsistent... not to much can be done quick btw
 	if err != nil {
