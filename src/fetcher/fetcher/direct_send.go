@@ -147,6 +147,7 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 		_, err = ig.CommentMedia(req.ThreadID, req.Data)
 		// @TODO looks non-nice. Can we return status code inside error or instagram.Message?
 		if err != nil && err.Error() == "Sorry, this media has been deleted" {
+			log.Warn("Media %v has been deleted", req.ThreadID)
 			err = nil
 		}
 		return
