@@ -113,6 +113,11 @@ func performSend(ig *instagram.Instagram, req *models.DirectRequest) (threadID, 
 		}
 		threadID = req.ThreadID
 		messageID, err = ig.ShareMedia(threadID, req.Data)
+		// @TODO actuality chat should be warned about it...
+		if err != nil && err.Error() == "Media is not accessible" {
+			log.Warn("Media %v has been deleted, unable to share", req.ThreadID)
+			err = nil
+		}
 
 	case bot.MessageType_Image:
 		if req.ThreadID == "" {
