@@ -324,6 +324,7 @@ func productExists(mediaID string) (id int64, deleted bool, err error) {
 	return res.Id, res.Deleted, nil
 }
 
+// @TODO @REFACTOR move common wantit and savetrend logic in separate package or reorganise it in another way
 // find core user with given instagramID; if not exists -- create one
 func userID(instagramID uint64, instagramUsername string) (uint64, *core.User, error) {
 
@@ -365,7 +366,16 @@ func userID(instagramID uint64, instagramUsername string) (uint64, *core.User, e
 
 		// upload avatar
 		avatarURL, err := uploadAvatar(userInfo.User.ProfilePicURL)
-		if err != nil {
+		switch resp := err.(type) {
+		case nil:
+
+		case *mandible.ImageResp:
+			if resp.Status < 400 || resp.Status >= 500 {
+				return 0, nil, err
+			}
+			log.Warn("instagram user %v have invalid avatar", userInfo.User.Username)
+
+		default:
 			return 0, nil, err
 		}
 
