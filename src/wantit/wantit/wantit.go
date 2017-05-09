@@ -375,7 +375,16 @@ func coreUser(instagramID uint64, instagramUsername string) (*core.User, error) 
 	}
 
 	avatarURL, _, err := avatarUploader.UploadImageByURL(userInfo.User.ProfilePicURL)
-	if err != nil {
+	switch resp := err.(type) {
+	case nil:
+
+	case *mandible.ImageResp:
+		if resp.Status < 400 || resp.Status >= 500 {
+			return nil, err
+		}
+		log.Warn("instagram user %v have invalid avatar", userInfo.User.Username)
+
+	default:
 		return nil, err
 	}
 
