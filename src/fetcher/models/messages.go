@@ -36,7 +36,7 @@ func GetThreadInfo(threadID string, sourceID uint64) (ThreadInfo, error) {
 
 	var res ThreadInfo
 	err := db.New().
-		FirstOrCreate(&res, ThreadInfo{ThreadID: threadID, SourceID: sourceID}).
+		FirstOrInit(&res, ThreadInfo{ThreadID: threadID, SourceID: sourceID}).
 		Error
 
 	return res, err

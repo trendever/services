@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming/pb"
-	"github.com/nats-io/nats"
 	"github.com/nats-io/nuid"
 )
 
 // Version is the NATS Streaming Go Client version
-const Version = "0.3.0"
+const Version = "0.3.4"
 
 const (
 	// DefaultNatsURL is the default URL the client connects to
@@ -58,6 +58,8 @@ type Conn interface {
 var (
 	ErrConnectReqTimeout = errors.New("stan: connect request timeout")
 	ErrCloseReqTimeout   = errors.New("stan: close request timeout")
+	ErrSubReqTimeout     = errors.New("stan: subscribe request timeout")
+	ErrUnsubReqTimeout   = errors.New("stan: unsubscribe request timeout")
 	ErrConnectionClosed  = errors.New("stan: connection closed")
 	ErrTimeout           = errors.New("stan: publish ack timeout")
 	ErrBadAck            = errors.New("stan: malformed ack")
@@ -65,6 +67,7 @@ var (
 	ErrBadConnection     = errors.New("stan: invalid connection")
 	ErrManualAck         = errors.New("stan: cannot manually ack in auto-ack mode")
 	ErrNilMsg            = errors.New("stan: nil message")
+	ErrNoServerSupport   = errors.New("stan: not supported by server")
 )
 
 // AckHandler is used for Async Publishing to provide status of the ack.
@@ -140,21 +143,22 @@ func NatsConn(nc *nats.Conn) Option {
 // A conn represents a bare connection to a stan cluster.
 type conn struct {
 	sync.RWMutex
-	clientID        string
-	serverID        string
-	pubPrefix       string // Publish prefix set by stan, append our subject.
-	subRequests     string // Subject to send subscription requests.
-	unsubRequests   string // Subject to send unsubscribe requests.
-	closeRequests   string // Subject to send close requests.
-	ackSubject      string // publish acks
-	ackSubscription *nats.Subscription
-	hbSubscription  *nats.Subscription
-	subMap          map[string]*subscription
-	pubAckMap       map[string]*ack
-	pubAckChan      chan (struct{})
-	opts            Options
-	nc              *nats.Conn
-	ncOwned         bool // NATS Streaming created the connection, so needs to close it.
+	clientID         string
+	serverID         string
+	pubPrefix        string // Publish prefix set by stan, append our subject.
+	subRequests      string // Subject to send subscription requests.
+	unsubRequests    string // Subject to send unsubscribe requests.
+	subCloseRequests string // Subject to send subscription close requests.
+	closeRequests    string // Subject to send close requests.
+	ackSubject       string // publish acks
+	ackSubscription  *nats.Subscription
+	hbSubscription   *nats.Subscription
+	subMap           map[string]*subscription
+	pubAckMap        map[string]*ack
+	pubAckChan       chan (struct{})
+	opts             Options
+	nc               *nats.Conn
+	ncOwned          bool // NATS Streaming created the connection, so needs to close it.
 }
 
 // Closure for ack contexts.
@@ -177,7 +181,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.nc = c.opts.NatsConn
 	// Create a NATS connection if it doesn't exist.
 	if c.nc == nil {
-		nc, err := nats.Connect(c.opts.NatsURL)
+		nc, err := nats.Connect(c.opts.NatsURL, nats.Name(clientID))
 		if err != nil {
 			return nil, err
 		}
@@ -224,6 +228,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.pubPrefix = cr.PubPrefix
 	c.subRequests = cr.SubRequests
 	c.unsubRequests = cr.UnsubRequests
+	c.subCloseRequests = cr.SubCloseRequests
 	c.closeRequests = cr.CloseRequests
 
 	// Setup the ACK subscription
@@ -248,10 +253,6 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 
 // Close a connection to the stan system.
 func (sc *conn) Close() error {
-	if sc == nil {
-		return ErrBadConnection
-	}
-
 	sc.Lock()
 	defer sc.Unlock()
 
@@ -317,9 +318,7 @@ func (sc *conn) processAck(m *nats.Msg) {
 	pa := &pb.PubAck{}
 	err := pa.Unmarshal(m.Data)
 	if err != nil {
-		// FIXME, make closure to have context?
-		fmt.Printf("Error processing unmarshal\n")
-		return
+		panic(fmt.Errorf("Error during ack unmarshal: %v", err))
 	}
 
 	// Remove
@@ -390,11 +389,16 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 	// Setup the timer for expiration.
 	sc.Lock()
 	a.t = time.AfterFunc(ackTimeout, func() {
-		sc.removeAck(peGUID)
-		if a.ah != nil {
-			ah(peGUID, ErrTimeout)
+		pubAck := sc.removeAck(peGUID)
+		// processAck could get here before and handle the ack.
+		// If that's the case, we would get nil here and simply return.
+		if pubAck == nil {
+			return
+		}
+		if pubAck.ah != nil {
+			pubAck.ah(peGUID, ErrTimeout)
 		} else if a.ch != nil {
-			a.ch <- ErrTimeout
+			pubAck.ch <- ErrTimeout
 		}
 	})
 	sc.Unlock()
@@ -431,7 +435,7 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 	msg := &Msg{}
 	err := msg.Unmarshal(raw.Data)
 	if err != nil {
-		panic("Error processing unmarshal for msg")
+		panic(fmt.Errorf("Error processing unmarshal for msg: %v", err))
 	}
 	// Lookup the subscription
 	sc.RLock()

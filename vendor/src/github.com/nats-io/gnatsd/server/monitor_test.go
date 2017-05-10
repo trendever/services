@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2017 Apcera Inc. All rights reserved.
 
 package server
 
@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode"
 
-	"github.com/nats-io/nats"
-	"sync"
+	"github.com/nats-io/go-nats"
 )
 
 const CLIENT_PORT = 11224
@@ -22,14 +22,16 @@ const MONITOR_PORT = 11424
 const CLUSTER_PORT = 12444
 
 var DefaultMonitorOptions = Options{
-	Host:        "localhost",
-	Port:        CLIENT_PORT,
-	HTTPHost:    "127.0.0.1",
-	HTTPPort:    MONITOR_PORT,
-	ClusterHost: "localhost",
-	ClusterPort: CLUSTER_PORT,
-	NoLog:       true,
-	NoSigs:      true,
+	Host:     "localhost",
+	Port:     CLIENT_PORT,
+	HTTPHost: "127.0.0.1",
+	HTTPPort: MONITOR_PORT,
+	Cluster: ClusterOpts{
+		Host: "localhost",
+		Port: CLUSTER_PORT,
+	},
+	NoLog:  true,
+	NoSigs: true,
 }
 
 func runMonitorServer() *Server {
@@ -1009,14 +1011,16 @@ func TestConnzWithRoutes(t *testing.T) {
 	defer s.Shutdown()
 
 	var opts = Options{
-		Host:        "localhost",
-		Port:        CLIENT_PORT + 1,
-		ClusterHost: "localhost",
-		ClusterPort: CLUSTER_PORT + 1,
-		NoLog:       true,
-		NoSigs:      true,
+		Host: "localhost",
+		Port: CLIENT_PORT + 1,
+		Cluster: ClusterOpts{
+			Host: "localhost",
+			Port: CLUSTER_PORT + 1,
+		},
+		NoLog:  true,
+		NoSigs: true,
 	}
-	routeURL, _ := url.Parse(fmt.Sprintf("nats-route://localhost:%d", CLUSTER_PORT))
+	routeURL, _ := url.Parse(fmt.Sprintf("nats-route://127.0.0.1:%d", CLUSTER_PORT))
 	opts.Routes = []*url.URL{routeURL}
 
 	sc := RunServer(&opts)
@@ -1307,28 +1311,40 @@ func TestConcurrentMonitoring(t *testing.T) {
 	endpoints := []string{"varz", "varz", "varz", "connz", "connz", "subsz", "subsz", "routez", "routez"}
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
+	ech := make(chan string, len(endpoints))
+
 	for _, e := range endpoints {
 		go func(endpoint string) {
 			defer wg.Done()
 			for i := 0; i < 150; i++ {
 				resp, err := http.Get(url + endpoint)
 				if err != nil {
-					t.Fatalf("Expected no error: Got %v\n", err)
+					ech <- fmt.Sprintf("Expected no error: Got %v\n", err)
+					return
 				}
 				if resp.StatusCode != 200 {
-					t.Fatalf("Expected a 200 response, got %d\n", resp.StatusCode)
+					ech <- fmt.Sprintf("Expected a 200 response, got %d\n", resp.StatusCode)
+					return
 				}
 				ct := resp.Header.Get("Content-Type")
 				if ct != "application/json" {
-					t.Fatalf("Expected application/json content-type, got %s\n", ct)
+					ech <- fmt.Sprintf("Expected application/json content-type, got %s\n", ct)
+					return
 				}
 				defer resp.Body.Close()
 				if _, err := ioutil.ReadAll(resp.Body); err != nil {
-					t.Fatalf("Got an error reading the body: %v\n", err)
+					ech <- fmt.Sprintf("Got an error reading the body: %v\n", err)
+					return
 				}
 				resp.Body.Close()
 			}
 		}(e)
 	}
 	wg.Wait()
+	// Check for any errors
+	select {
+	case err := <-ech:
+		t.Fatal(err)
+	default:
+	}
 }

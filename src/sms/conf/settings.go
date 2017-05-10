@@ -6,6 +6,7 @@ import (
 	"utils/config"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 )
 
 var (
@@ -54,10 +55,8 @@ type Settings struct {
 		Naming   string
 		Rates    int
 	}
-	Telegram struct {
-		RPC     string
-		Channel string
-	}
+	TelegramChannel string
+	Nats            nats.Config
 }
 
 //Atompark is Atompark settings

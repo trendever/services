@@ -17,7 +17,7 @@ nats:
 
 instagram:
   storeAddr: accountstore:5409
-  timeoutMin: 10s
-  timeoutMax: 15s
+  timeoutMin: 3s
+  timeoutMax: 5s
   responseLogging: false
   indentLogging: false

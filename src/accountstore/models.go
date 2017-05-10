@@ -4,21 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"proto/accountstore"
-	"proto/bot"
+	"proto/telegram"
 	"sync"
 	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
-	"utils/rpc"
 )
 
 const notifyTopic = "accountstore.notify"
 
 var global struct {
-	once          sync.Once
-	notifyChan    chan *Account
-	telebotClient bot.TelegramServiceClient
+	once       sync.Once
+	notifyChan chan *Account
 }
 
 // Account contains instagram account cookie
@@ -76,10 +74,7 @@ func notifier() {
 }
 
 func notifyTelegram(message string) {
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	_, err := global.telebotClient.NotifyMessage(ctx, &bot.NotifyMessageRequest{
+	err := nats.StanPublish("telegram.notify", &telegram.NotifyMessageRequest{
 		Channel: "accountstore",
 		Message: message,
 	})

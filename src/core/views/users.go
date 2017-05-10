@@ -19,6 +19,12 @@ func init() {
 	})
 }
 
+const ConfirmedTelegramTopic = "telegram_conformed"
+
+func init() {
+	models.RegisterNotifyTemplate(ConfirmedTelegramTopic)
+}
+
 type userServer struct{}
 
 func (s userServer) FindOrCreateUser(ctx context.Context, request *core.CreateUserRequest) (*core.ReadUserReply, error) {
@@ -155,4 +161,97 @@ func (s userServer) SetData(_ context.Context, req *core.SetDataRequest) (*core.
 	}
 
 	return &core.SetDataReply{}, nil
+}
+
+func (s userServer) ListTelegrams(_ context.Context, req *core.ListTelegramsRequest) (*core.ListTelegramsReply, error) {
+	var list []*models.Telegram
+	q := db.New().Where("user_id = ?", req.UserId)
+	if req.ConfirmedOnly {
+		q = q.Where("confirmed")
+	}
+	err := q.Find(&list).Error
+	if err != nil {
+		return &core.ListTelegramsReply{Error: err.Error()}, nil
+	}
+
+	ret := core.ListTelegramsReply{}
+	for _, t := range list {
+		ret.Telegrams = append(ret.Telegrams, t.Encode())
+	}
+	return &ret, nil
+}
+
+func (s userServer) AddTelegram(_ context.Context, req *core.AddTelegramRequest) (*core.AddTelegramReply, error) {
+	var userID uint64
+	if req.Username != "" {
+		user, found, err := models.FindUserMatchAny(
+			0, 0,
+			req.Username, req.Username,
+			"", "",
+		)
+		if err != nil {
+			return &core.AddTelegramReply{Error: err.Error()}, nil
+		}
+		if !found {
+			return &core.AddTelegramReply{Error: "user not found"}, nil
+		}
+		userID = uint64(user.ID)
+	} else {
+		userID = req.UserId
+	}
+	err := db.New().Assign(&models.Telegram{Username: req.SubsricberName}).FirstOrCreate(&models.Telegram{
+		UserID: userID,
+		ChatID: req.ChatId,
+		// @TODO remove it after adding confirmation support to frontend
+		Confirmed: true,
+	}).Error
+	if err != nil {
+		return &core.AddTelegramReply{Error: err.Error()}, nil
+	}
+	return &core.AddTelegramReply{}, nil
+}
+
+func (s userServer) ConfirmTelegram(_ context.Context, req *core.ConfirmTelegramRequest) (*core.ConfirmTelegramReply, error) {
+	tg := models.Telegram{UserID: req.UserId, ChatID: req.ChatId}
+	err := db.New().First(&tg).Error
+	if err != nil {
+		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
+	}
+	if tg.Confirmed {
+		return &core.ConfirmTelegramReply{}, nil
+	}
+	tg.Confirmed = true
+	err = db.New().Save(&tg).Error
+	if err != nil {
+		return &core.ConfirmTelegramReply{Error: err.Error()}, nil
+	}
+	go models.GetNotifier().NotifyUserByID(req.UserId, ConfirmedTelegramTopic, map[string]interface{}{
+		"telegram": tg,
+	})
+	return &core.ConfirmTelegramReply{}, nil
+}
+
+func (s userServer) DelTelegram(_ context.Context, req *core.DelTelegramRequest) (*core.DelTelegramReply, error) {
+	var userID uint64
+	if req.Username != "" {
+		user, found, err := models.FindUserMatchAny(
+			0, 0,
+			req.Username, req.Username,
+			"", "",
+		)
+		if err != nil {
+			return &core.DelTelegramReply{Error: err.Error()}, nil
+		}
+		if !found {
+			return &core.DelTelegramReply{Error: "user not found"}, nil
+		}
+		userID = uint64(user.ID)
+	} else {
+		userID = req.UserId
+	}
+	err := db.New().Delete(&models.Telegram{UserID: userID, ChatID: req.ChatId}).Error
+	if err != nil {
+		return &core.DelTelegramReply{Error: err.Error()}, nil
+	}
+	return &core.DelTelegramReply{}, nil
 }

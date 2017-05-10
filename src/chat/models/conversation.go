@@ -212,8 +212,8 @@ func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages .
 				log.Errorf("failed to send send direct request via nats: %v", err)
 				break
 			}
+			ids = append(ids, msg.ID)
 		}
-		ids = append(ids, msg.ID)
 	}
 	// @TODO db errors should be rare but state may become inconsistent... not to much can be done quick btw
 	if err != nil {
@@ -408,8 +408,11 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 	rows, err := c.db.Model(&Message{}).
 		Select("count(messages.id), messages.conversation_id").
 		Joins("LEFT JOIN members ON (members.conversation_id = messages.conversation_id AND members.user_id = ?)", userID).
+		Joins("LEFT JOIN message_parts ON (message_parts.message_id = messages.id)").
 		Where("(messages.id > members.last_message_id OR members.last_message_id IS NULL)").
 		Where("messages.conversation_id in (?)", ids).
+		Where("messages.member_id != members.id").
+		Where("message_parts.mime_type != 'json/status'").
 		Group("messages.conversation_id").
 		Rows()
 	if err != nil {

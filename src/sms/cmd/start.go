@@ -9,6 +9,7 @@ import (
 	"utils/cli"
 	"utils/db"
 	"utils/log"
+	"utils/nats"
 	"utils/rpc"
 
 	_ "sms/senders"
@@ -42,6 +43,8 @@ var startCmd = &cobra.Command{
 				models.MakeNewSmsRepository(db.New()),
 			),
 		)
+		nats.Init(&settings.Nats, true)
+
 		cli.Terminate(nil)
 	},
 }

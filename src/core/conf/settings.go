@@ -75,7 +75,6 @@ type Settings struct {
 		Chat      string
 		Auth      string
 		Push      string
-		Telegram  string
 		Checker   string
 		Trendcoin string
 		Payments  string

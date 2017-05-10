@@ -1,14 +1,28 @@
 debug: true
-token: '202642129:AAEQ2Dg-n_daCiSWqQwtlNjDFfIbAPmDgQU'
+coreServer: core:3005
+token: '307338702:AAFxxBxqaHGYYGG_xAZ1rSopzCmbFJhWS60'
 rpc:   ':4040'
+
 rooms: 
   - name: 'new_user'
-    room: '@trendever_debug'
+    room: '@local_tdebug'
   - name: 'new_lead'
-    room: '@trendever_debug'
+    room: '@local_tdebug'
   - name: 'new_product'
-    room: '@trendever_debug'
+    room: '@local_tdebug'
   - name: 'new_sms'
-    room: '@trendever_debug'
+    room: '@local_tdebug'
   - name: 'accountstore'
-    room: '@trendever_debug'
+    room: '@local_tdebug'
+
+messages:
+  help: "Введите название магазина в instagram для подписки на уведомления"
+  subscribed: "Подтвердите подписку в настройках аккаунта"
+  unsubscribed: "Уведомления с данного аккаунта отключены"
+  externalError: "request failed, try again later"
+  userNotFound: "У нас нет магазина с таким именем :("
+
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: telegram1

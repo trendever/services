@@ -18,6 +18,20 @@ import (
 //NotifyUserCreated is a notification function
 var NotifyUserCreated func(u *User)
 
+func (t Telegram) AfterSave(db *gorm.DB) {
+	err := db.Exec("UPDATE users_user SET has_telegram = EXISTS (SELECT 1 FROM telegrams WHERE user_id = ? AND confirmed) WHERE id = ?", t.UserID, t.UserID).Error
+	if err != nil {
+		db.AddError(err)
+	}
+}
+
+func (t Telegram) AfterDelete(db *gorm.DB) {
+	err := db.Exec("UPDATE users_user SET has_telegram = EXISTS (SELECT 1 FROM telegrams WHERE user_id = ? AND confirmed) WHERE id = ?", t.UserID, t.UserID).Error
+	if err != nil {
+		db.AddError(err)
+	}
+}
+
 func (u *User) BeforeSave(db *gorm.DB) {
 	u.validatePhone(db)
 	u.fetchPreviousPhone(db)

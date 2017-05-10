@@ -26,7 +26,91 @@ func init() {
 		soso.Route{"retrieve", "user", GetUserProfile},
 		soso.Route{"set_email", "user", SetEmail},
 		soso.Route{"set_data", "user", SetData},
+		soso.Route{"list_telegrams", "user", ListTelegrams},
+		soso.Route{"confirm_telegram", "user", ConfirmTelegram},
+		soso.Route{"del_telegram", "user", DelTelegram},
 	)
+}
+
+func ListTelegrams(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := userServiceClient.ListTelegrams(ctx, &core.ListTelegramsRequest{
+		UserId: c.Token.UID,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"list": resp.Telegrams,
+	})
+}
+
+func ConfirmTelegram(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	chat_id, _ := c.RequestMap["chat_id"].(float64)
+	if chat_id <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid chat_id"))
+		return
+	}
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := userServiceClient.ConfirmTelegram(ctx, &core.ConfirmTelegramRequest{
+		UserId: c.Token.UID,
+		ChatId: uint64(chat_id),
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
+}
+
+func DelTelegram(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	chat_id, _ := c.RequestMap["chat_id"].(float64)
+	if chat_id <= 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid chat_id"))
+		return
+	}
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := userServiceClient.DelTelegram(ctx, &core.DelTelegramRequest{
+		UserId: c.Token.UID,
+		ChatId: uint64(chat_id),
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"status": "success",
+	})
 }
 
 func GetUserProfile(c *soso.Context) {

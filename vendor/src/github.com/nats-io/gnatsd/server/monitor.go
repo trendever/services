@@ -1,4 +1,4 @@
-// Copyright 2013-2015 Apcera Inc. All rights reserved.
+// Copyright 2013-2017 Apcera Inc. All rights reserved.
 
 package server
 
@@ -240,7 +240,7 @@ func (s *Server) HandleConnz(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		Errorf("Error marshalling response to /connz request: %v", err)
+		Errorf("Error marshaling response to /connz request: %v", err)
 	}
 
 	// Handle response
@@ -331,7 +331,7 @@ func (s *Server) HandleRoutez(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.MarshalIndent(rs, "", "  ")
 	if err != nil {
-		Errorf("Error marshalling response to /routez request: %v", err)
+		Errorf("Error marshaling response to /routez request: %v", err)
 	}
 
 	// Handle response
@@ -347,7 +347,7 @@ func (s *Server) HandleSubsz(w http.ResponseWriter, r *http.Request) {
 	st := &Subsz{s.sl.Stats()}
 	b, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
-		Errorf("Error marshalling response to /subscriptionsz request: %v", err)
+		Errorf("Error marshaling response to /subscriptionsz request: %v", err)
 	}
 
 	// Handle response
@@ -397,12 +397,6 @@ type Varz struct {
 	SlowConsumers    int64             `json:"slow_consumers"`
 	Subscriptions    uint32            `json:"subscriptions"`
 	HTTPReqStats     map[string]uint64 `json:"http_req_stats"`
-}
-
-type usage struct {
-	CPU   float32
-	Cores int
-	Mem   int64
 }
 
 func myUptime(d time.Duration) string {
@@ -473,11 +467,11 @@ func (s *Server) HandleVarz(w http.ResponseWriter, r *http.Request) {
 	v.TotalConnections = s.totalClients
 	v.Routes = len(s.routes)
 	v.Remotes = len(s.remotes)
-	v.InMsgs = s.inMsgs
-	v.InBytes = s.inBytes
-	v.OutMsgs = s.outMsgs
-	v.OutBytes = s.outBytes
-	v.SlowConsumers = s.slowConsumers
+	v.InMsgs = atomic.LoadInt64(&s.inMsgs)
+	v.InBytes = atomic.LoadInt64(&s.inBytes)
+	v.OutMsgs = atomic.LoadInt64(&s.outMsgs)
+	v.OutBytes = atomic.LoadInt64(&s.outBytes)
+	v.SlowConsumers = atomic.LoadInt64(&s.slowConsumers)
 	v.Subscriptions = s.sl.Count()
 	s.httpReqStats[VarzPath]++
 	// Need a copy here since s.httpReqStas can change while doing
@@ -490,7 +484,7 @@ func (s *Server) HandleVarz(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		Errorf("Error marshalling response to /varz request: %v", err)
+		Errorf("Error marshaling response to /varz request: %v", err)
 	}
 
 	// Handle response

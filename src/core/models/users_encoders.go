@@ -94,3 +94,12 @@ func (u User) Decode(cu *core.User) User {
 		Source:      cu.Source,
 	}
 }
+
+func (t Telegram) Encode() *core.Telegram {
+	return &core.Telegram{
+		UserId:        t.UserID,
+		ChatId:        t.ChatID,
+		SubsriberName: t.Username,
+		Confirmed:     t.Confirmed,
+	}
+}

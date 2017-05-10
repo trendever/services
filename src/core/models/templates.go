@@ -40,7 +40,7 @@ func RegisterTemplate(domain, name string) error {
 	return nil
 }
 
-var notifyDomains = []string{"email", "sms", "push"}
+var notifyDomains = []string{"email", "sms", "push", "telegram"}
 
 func RegisterNotifyTemplate(name string) error {
 	for _, domain := range notifyDomains {
@@ -51,6 +51,8 @@ func RegisterNotifyTemplate(name string) error {
 	}
 	return nil
 }
+
+// @TODO too many types with minor differences, refactor it somehow?
 
 // TemplateTypes contains types that correspond to available send actions
 
@@ -96,6 +98,11 @@ type PushTemplate struct {
 	PushMessage
 }
 
+type TelegramTemplate struct {
+	BaseNotifierTemplate
+	Message string `gorm:"type:text"`
+}
+
 // generic templates
 type OtherTemplate struct {
 	BaseNotifierTemplate
@@ -114,6 +121,10 @@ func (t SMSTemplate) TableName() string {
 
 func (t PushTemplate) TableName() string {
 	return "settings_templates_push"
+}
+
+func (t TelegramTemplate) TableName() string {
+	return "settings_templates_telegram"
 }
 
 func (t OtherTemplate) TableName() string {
@@ -182,6 +193,18 @@ func (t OtherTemplate) Validate(db *gorm.DB) {
 	}
 }
 
+func (t TelegramTemplate) Validate(db *gorm.DB) {
+	t.BaseNotifierTemplate.Validate(db)
+	_, err := pongo2.FromString(t.Message)
+	if err != nil {
+		db.AddError(validations.NewError(
+			t,
+			"Message",
+			fmt.Sprintf("Failed to compile template: %v", err),
+		))
+	}
+}
+
 func (t PushTemplate) Validate(db *gorm.DB) {
 	t.BaseNotifierTemplate.Validate(db)
 	sources := map[string]string{
@@ -228,6 +251,10 @@ func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
 // Execute returns ready-to-use message text
 func (t *SMSTemplate) Execute(ctx interface{}) (interface{}, error) {
+	return applyTemplate(t.Message, ctx, false)
+}
+
+func (t *TelegramTemplate) Execute(ctx interface{}) (interface{}, error) {
 	return applyTemplate(t.Message, ctx, false)
 }
 

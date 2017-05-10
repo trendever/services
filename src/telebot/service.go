@@ -3,16 +3,17 @@ package main
 import (
 	"os"
 	"os/signal"
+	"proto/core"
 	"syscall"
-	"telebot/conf"
-	"telebot/telegram"
-	"telebot/views"
 	"utils/log"
+	"utils/rpc"
 
 	"github.com/codegangsta/cli"
 )
 
 type projectService struct{}
+
+var userServer core.UserServiceClient
 
 func main() {
 
@@ -44,16 +45,17 @@ func main() {
 // Run bot
 func (svc *projectService) run() error {
 
-	settings := conf.GetSettings()
+	settings := GetSettings()
+	userServer = core.NewUserServiceClient(rpc.Connect(settings.CoreServer))
 
 	// init Telegram
-	t, err := telegram.Init(settings.Token, settings.Rooms)
+	t, err := InitBot(settings.Token, settings.Rooms)
 	if err != nil {
 		return err
 	}
 
 	// init api
-	views.Init(t)
+	InitViews(t)
 
 	// interrupt
 	interrupt := make(chan os.Signal)
@@ -61,16 +63,8 @@ func (svc *projectService) run() error {
 
 	log.Info("Successfully started")
 
-	// wait for terminating
-	for {
-		select {
-		case <-interrupt:
-			log.Info("Cleanup and terminating...")
-			os.Exit(0)
-		}
-	}
+	<-interrupt
+	log.Info("Cleanup and terminating...")
 
 	return nil
 }
-
-// if you see this; email to meow-I-saw-this-line@2-47.ru

@@ -62,6 +62,16 @@ type User struct {
 	Balance int64 `sql:"-"`
 
 	Autorefill AutorefillInfo `gorm:"ForeignKey:UserID"`
+
+	HasTelegram bool
+	Telegram    []Telegram `gorm:"ForeignKey:UserID"`
+}
+
+type Telegram struct {
+	UserID    uint64 `gorm:"primary_key;index"`
+	ChatID    uint64 `gorm:"primary_key;index"`
+	Username  string
+	Confirmed bool `sql:"default:false"`
 }
 
 type AutorefillInfo struct {

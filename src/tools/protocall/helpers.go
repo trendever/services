@@ -14,6 +14,7 @@ import "proto/mail"
 import "proto/payment"
 import "proto/push"
 import "proto/sms"
+import "proto/telegram"
 import "proto/trendcoin"
 
 var services map[string]interface{}
@@ -25,7 +26,6 @@ func connect() {
 		"AuthService":         auth.NewAuthServiceClient(conn),
 		"FetcherService":      bot.NewFetcherServiceClient(conn),
 		"SaveTrendService":    bot.NewSaveTrendServiceClient(conn),
-		"TelegramService":     bot.NewTelegramServiceClient(conn),
 		"ChatService":         chat.NewChatServiceClient(conn),
 		"Notifier":            chat.NewNotifierClient(conn),
 		"CheckerService":      checker.NewCheckerServiceClient(conn),
@@ -33,14 +33,15 @@ func connect() {
 		"MonetizationService": core.NewMonetizationServiceClient(conn),
 		"ProductService":      core.NewProductServiceClient(conn),
 		"PushTokensService":   core.NewPushTokensServiceClient(conn),
-		"ShopService":         core.NewShopServiceClient(conn),
 		"ShopCardService":     core.NewShopCardServiceClient(conn),
+		"ShopService":         core.NewShopServiceClient(conn),
 		"TagService":          core.NewTagServiceClient(conn),
 		"UserService":         core.NewUserServiceClient(conn),
 		"MailService":         mail.NewMailServiceClient(conn),
 		"PaymentService":      payment.NewPaymentServiceClient(conn),
 		"PushService":         push.NewPushServiceClient(conn),
 		"SmsService":          sms.NewSmsServiceClient(conn),
+		"TelegramService":     telegram.NewTelegramServiceClient(conn),
 		"TrendcoinService":    trendcoin.NewTrendcoinServiceClient(conn),
 	}
 }

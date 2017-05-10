@@ -2,14 +2,12 @@ package main
 
 import (
 	"instagram"
-	"proto/bot"
 	"proto/core"
 	"utils/cli"
 	"utils/config"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
-	"utils/rpc"
 )
 
 var service *svc
@@ -17,7 +15,6 @@ var service *svc
 type svc struct {
 	ig         InstagramAccess
 	shopClient core.ShopServiceClient
-	teleClient bot.TelegramServiceClient
 }
 
 func main() {
@@ -32,7 +29,6 @@ func (s *svc) Load() {
 	log.Init(settings.Debug, "accountstore", settings.SentryDSN)
 	db.Init(settings.DB)
 	instagram.DoResponseLogging = settings.InstagramDebug
-	global.telebotClient = bot.NewTelegramServiceClient(rpc.Connect(settings.RPC.Telegram))
 	go notifier()
 	nats.Init(&settings.Nats, true)
 }

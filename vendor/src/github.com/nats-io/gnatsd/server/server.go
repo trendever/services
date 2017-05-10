@@ -6,20 +6,22 @@ import (
 	"bufio"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	// Allow dynamic profiling.
-	"github.com/nats-io/gnatsd/util"
 	_ "net/http/pprof"
+
+	"github.com/nats-io/gnatsd/util"
 )
 
 // Info is the information sent to clients to help them understand information
@@ -52,8 +54,6 @@ type Server struct {
 	infoJSON      []byte
 	sl            *Sublist
 	opts          *Options
-	cAuth         Auth
-	rAuth         Auth
 	trace         bool
 	debug         bool
 	running       bool
@@ -61,6 +61,7 @@ type Server struct {
 	clients       map[uint64]*client
 	routes        map[uint64]*client
 	remotes       map[string]*client
+	users         map[string]*User
 	totalClients  uint64
 	done          chan bool
 	start         time.Time
@@ -135,35 +136,21 @@ func New(opts *Options) *Server {
 	// Used to kick out all of the route
 	// connect Go routines.
 	s.rcQuit = make(chan bool)
+
+	// Used to setup Authorization.
+	s.configureAuthorization()
+
 	s.generateServerInfoJSON()
 	s.handleSignals()
 
 	return s
 }
 
-// SetClientAuthMethod sets the authentication method for clients.
-func (s *Server) SetClientAuthMethod(authMethod Auth) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.info.AuthRequired = true
-	s.cAuth = authMethod
-
-	s.generateServerInfoJSON()
-}
-
-// SetRouteAuthMethod sets the authentication method for routes.
-func (s *Server) SetRouteAuthMethod(authMethod Auth) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.rAuth = authMethod
-}
-
 func (s *Server) generateServerInfoJSON() {
 	// Generate the info json
 	b, err := json.Marshal(s.info)
 	if err != nil {
-		Fatalf("Error marshalling INFO JSON: %+v\n", err)
+		Fatalf("Error marshaling INFO JSON: %+v\n", err)
 		return
 	}
 	s.infoJSON = []byte(fmt.Sprintf("INFO %s %s", b, CR_LF))
@@ -181,21 +168,23 @@ func PrintServerAndExit() {
 	os.Exit(0)
 }
 
-// Signal Handling
-func (s *Server) handleSignals() {
-	if s.opts.NoSigs {
-		return
-	}
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for sig := range c {
-			Debugf("Trapped Signal; %v", sig)
-			// FIXME, trip running?
-			Noticef("Server Exiting..")
-			os.Exit(0)
+// ProcessCommandLineArgs takes the command line arguments
+// validating and setting flags for handling in case any
+// sub command was present.
+func ProcessCommandLineArgs(cmd *flag.FlagSet) (showVersion bool, showHelp bool, err error) {
+	if len(cmd.Args()) > 0 {
+		arg := cmd.Args()[0]
+		switch strings.ToLower(arg) {
+		case "version":
+			return true, false, nil
+		case "help":
+			return false, true, nil
+		default:
+			return false, false, fmt.Errorf("Unrecognized command: %q\n", arg)
 		}
-	}()
+	}
+
+	return false, false, nil
 }
 
 // Protected check on running state
@@ -252,7 +241,7 @@ func (s *Server) Start() {
 	clientListenReady := make(chan struct{})
 
 	// Start up routing as well if needed.
-	if s.opts.ClusterPort != 0 {
+	if s.opts.Cluster.Port != 0 {
 		s.startGoRoutine(func() {
 			s.StartRouting(clientListenReady)
 		})
@@ -564,6 +553,13 @@ func (s *Server) createClient(conn net.Conn) *client {
 		s.mu.Unlock()
 		return c
 	}
+	// If there is a max connections specified, check that adding
+	// this new client would not push us over the max
+	if s.opts.MaxConn > 0 && len(s.clients) >= s.opts.MaxConn {
+		s.mu.Unlock()
+		c.maxConnExceeded()
+		return nil
+	}
 	s.clients[c.cid] = c
 	s.mu.Unlock()
 
@@ -636,7 +632,7 @@ func (s *Server) updateServerINFO(urls []string) bool {
 	defer s.mu.Unlock()
 
 	// Feature disabled, do not update.
-	if s.opts.ClusterNoAdvertise {
+	if s.opts.Cluster.NoAdvertise {
 		return false
 	}
 
@@ -723,32 +719,6 @@ func tlsCipher(cs uint16) string {
 	return fmt.Sprintf("Unknown [%x]", cs)
 }
 
-func (s *Server) checkClientAuth(c *client) bool {
-	if s.cAuth == nil {
-		return true
-	}
-	return s.cAuth.Check(c)
-}
-
-func (s *Server) checkRouterAuth(c *client) bool {
-	if s.rAuth == nil {
-		return true
-	}
-	return s.rAuth.Check(c)
-}
-
-// Check auth and return boolean indicating if client is ok
-func (s *Server) checkAuth(c *client) bool {
-	switch c.typ {
-	case CLIENT:
-		return s.checkClientAuth(c)
-	case ROUTER:
-		return s.checkRouterAuth(c)
-	default:
-		return false
-	}
-}
-
 // Remove a client or route from our internal accounting.
 func (s *Server) removeClient(c *client) {
 	var rID string
@@ -828,51 +798,21 @@ func (s *Server) Addr() net.Addr {
 	return s.listener.Addr()
 }
 
-// GetListenEndpoint will return a string of the form host:port suitable for
-// a connect. Will return empty string if the server is not ready to accept
-// client connections.
-func (s *Server) GetListenEndpoint() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	// Wait for the listener to be set, see note about RANDOM_PORT below
-	if s.listener == nil {
-		return ""
+// ReadyForConnections returns `true` if the server is ready to accept client
+// and, if routing is enabled, route connections. If after the duration
+// `dur` the server is still not ready, returns `false`.
+func (s *Server) ReadyForConnections(dur time.Duration) bool {
+	end := time.Now().Add(dur)
+	for time.Now().Before(end) {
+		s.mu.Lock()
+		ok := s.listener != nil && (s.opts.Cluster.Port == 0 || s.routeListener != nil)
+		s.mu.Unlock()
+		if ok {
+			return true
+		}
+		time.Sleep(25 * time.Millisecond)
 	}
-
-	host := s.opts.Host
-
-	// On windows, a connect with host "0.0.0.0" (or "::") will fail.
-	// We replace it with "localhost" when that's the case.
-	if host == "0.0.0.0" || host == "::" || host == "[::]" {
-		host = "localhost"
-	}
-
-	// Return the opts's Host and Port. Note that the Port may be set
-	// when the listener is started, due to the use of RANDOM_PORT
-	return net.JoinHostPort(host, strconv.Itoa(s.opts.Port))
-}
-
-// GetRouteListenEndpoint will return a string of the form host:port suitable
-// for a connect. Will return empty string if the server is not configured for
-// routing or not ready to accept route connections.
-func (s *Server) GetRouteListenEndpoint() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.routeListener == nil {
-		return ""
-	}
-
-	host := s.opts.ClusterHost
-
-	// On windows, a connect with host "0.0.0.0" (or "::") will fail.
-	// We replace it with "localhost" when that's the case.
-	if host == "0.0.0.0" || host == "::" || host == "[::]" {
-		host = "localhost"
-	}
-
-	// Return the cluster's Host and Port.
-	return net.JoinHostPort(host, strconv.Itoa(s.opts.ClusterPort))
+	return false
 }
 
 // ID returns the server's ID

@@ -27,6 +27,7 @@ var (
 	// Models contains list of used db models
 	Models = []interface{}{
 		&models.User{},
+		&models.Telegram{},
 		&models.Shop{},
 		&models.ShopCard{},
 		&models.Tag{},
@@ -41,6 +42,7 @@ var (
 		&models.ChatTemplate{},
 		&models.ChatTemplateMessage{},
 		&models.EmailTemplate{},
+		&models.TelegramTemplate{},
 		&models.OtherTemplate{},
 		&transition.StateChangeLog{},
 		&models.UsersProducts{},
