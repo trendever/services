@@ -386,7 +386,7 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	)
 }
 
-func SubmitCommnetReply(lead *Lead) error {
+func SubmitCommentReply(lead *Lead) error {
 	tmpl, err := GetOther(InstagramSubmitReplyTemplate)
 	if err != nil {
 		return err

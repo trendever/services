@@ -65,7 +65,16 @@ func handleSyncEvent(in *chat.Chat) bool {
 		log.Error(err)
 		return true
 	}
+
 	if !lead.IsNew() {
+		// @TODO technically it's possible to get second event if sync will be reenabled after error...
+		if lead.Source == "comment" {
+			err := models.SubmitCommentReply(lead)
+			if err != nil {
+				log.Errorf("failed to send submit reply comment: %v", err)
+				return false
+			}
+		}
 		return true
 	}
 	err = lead.TriggerEvent("PROGRESS", "", 0, nil)

@@ -227,12 +227,6 @@ func init() {
 			if lead.Source == "website" {
 				return nil
 			}
-			if lead.Source == "comment" {
-				err := SubmitCommnetReply(lead)
-				if err != nil {
-					log.Errorf("failed to send submit reply comment: %v", err)
-				}
-			}
 
 			return SetChatSync(lead.ConversationID, "")
 		},
