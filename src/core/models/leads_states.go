@@ -7,12 +7,8 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
-	"proto/chat"
 	"proto/core"
-	"reflect"
-	"utils/db"
 	"utils/log"
-	"utils/rpc"
 )
 
 // Possible lead states
@@ -180,77 +176,12 @@ type LeadEvent struct {
 func init() {
 	RegisterTemplate("other", "chat_caption")
 
-	LeadState.Initial(leadStateEmpty)
+	LeadState.Initial(leadStateNew)
 
 	// init state machine
 	for _, state := range leadStates {
 		LeadState.State(state)
 	}
-
-	// @CHECK @REFACTOR Some ugly err-ignoring spaghetti happens here. WTF?
-	// @TODO Use transcation not to set new state if some errors hapenned during state changing?
-	LeadState.State(leadStateNew).Enter(func(model interface{}, tx *gorm.DB) error {
-		lead, ok := model.(*Lead)
-		if !ok {
-			return errors.New("Unsuported type for lead")
-		}
-		//already has related chat
-		if lead.ConversationID != 0 {
-			return nil
-		}
-		context, cancel := rpc.DefaultContext()
-		defer cancel()
-		var members []*chat.Member
-
-		if customer, err := GetUserByID(lead.CustomerID); err == nil {
-			members = append(members, &chat.Member{
-				UserId:      uint64(customer.ID),
-				Role:        chat.MemberRole_CUSTOMER,
-				Name:        customer.GetName(),
-				InstagramId: customer.InstagramID,
-			})
-		}
-
-		if sellers, err := GetSellersByShopID(lead.ShopID); err == nil {
-			for _, seller := range sellers {
-				members = append(members, &chat.Member{
-					UserId: uint64(seller.ID),
-					Role:   chat.MemberRole_SELLER,
-					Name:   seller.GetName(),
-				})
-			}
-		}
-
-		resp, err := api.ChatServiceClient.CreateChat(context, &chat.NewChatRequest{
-			Chat: &chat.Chat{
-				Members: members,
-				Caption: genChatCaption(lead),
-			},
-			PrimaryInstagram: lead.Shop.Supplier.InstagramID,
-		})
-		if err != nil {
-			return err
-		}
-		lead.ConversationID = resp.Chat.Id
-		err = db.New().Model(lead).UpdateColumn("conversation_id", resp.Chat.Id).Error
-		if err != nil {
-			// @CHECK chat leak... can we do something?
-			return err
-		}
-		// send products that have been added before chat creation
-		products, err := GetLeadProducts(lead)
-		if len(products) != 0 {
-			init := true
-			// we have only firts comment. some data may be lost...
-			comment := lead.Comment
-			for _, product := range products {
-				log.Error(SendProductToChat(lead, product, core.LeadAction_BUY, lead.Source, comment, init))
-				init = false
-				comment = ""
-			}
-		}
-		return nil
-	})
 
 	LeadState.State(leadStateInProgress).Enter(
 		func(model interface{}, tx *gorm.DB) error {
@@ -287,34 +218,22 @@ func init() {
 		},
 	)
 
+	LeadState.State(leadStateSubmited).Enter(
+		func(model interface{}, tx *gorm.DB) error {
+			lead, ok := model.(*Lead)
+			if !ok {
+				return errors.New("Unsuported type for lead")
+			}
+			if lead.Source == "website" {
+				return nil
+			}
+			return SetChatSync(lead.ConversationID, "")
+		},
+	)
+
 	for _, event := range leadEvents {
 		LeadState.Event(event.Name).To(event.To).From(event.From...)
 	}
-}
-
-func genChatCaption(lead *Lead) string {
-	template := &OtherTemplate{}
-	ret := db.New().Find(template, "template_id = ?", "chat_caption")
-	if ret.RecordNotFound() {
-		return ""
-	}
-	if ret.Error != nil {
-		log.Errorf("failed to load template: %v", ret.Error)
-		return ""
-	}
-	result, err := template.Execute(map[string]interface{}{
-		"lead": lead,
-	})
-	if err != nil {
-		log.Errorf("failed to execute template: %v", err)
-		return ""
-	}
-	text, ok := result.(string)
-	if !ok {
-		log.Errorf("expected string, but got " + reflect.TypeOf(text).Name())
-		return ""
-	}
-	return text
 }
 
 // LeadEventPossible returns true if triggering event eventName from specified state is possible

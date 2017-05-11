@@ -91,14 +91,8 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		lead = existsLead
 	}
 
-	if models.LeadEventPossible(core.LeadStatusEvent_CREATE.String(), lead.State) {
-		//Event CREATE performs chat creation
-		log.Error(lead.TriggerEvent(core.LeadStatusEvent_CREATE.String(), "", 0, &lead.Customer))
-	}
-
 	// comment leads should be auto-advances
 	if lead.Source == "comment" && models.LeadEventPossible(core.LeadStatusEvent_PROGRESS.String(), lead.State) {
-		//Event CREATE performs chat creation
 		log.Error(lead.TriggerEvent(core.LeadStatusEvent_PROGRESS.String(), "", 0, &lead.Customer))
 	}
 
@@ -122,26 +116,14 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	}
 
-	// If chat is down, conversation is not created (yet)
-	// Later CREATE lead event (see below) can be triggered to fix it
-	// So, everything is partly fine now
-	//
-	// @TODO Nobody will trigger events if user don't use our website.
-	// Moreover i'm insure if leads in NEW status are even accessible for clients from there now...
-	// May be should create leads via stan?
-	if lead.ConversationID != 0 {
-		go func() {
-			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, protoLead.Comment, existsLead == nil); err != nil {
-				log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
-			}
-			if protoLead.Source != "website" {
-				// @TODO check whether shop have active directbot
-				models.SetChatSync(lead.ConversationID, protoLead.DirectThread)
-			}
-		}()
-	} else {
-		log.Error(errors.New("lead.ConversationID == 0"))
-	}
+	go func() {
+		if protoLead.Source == "direct" {
+			models.SetChatSync(lead.ConversationID, protoLead.DirectThread)
+		}
+		if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, protoLead.Comment, existsLead == nil); err != nil {
+			log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
+		}
+	}()
 
 	go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 
