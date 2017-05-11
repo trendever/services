@@ -227,6 +227,13 @@ func init() {
 			if lead.Source == "website" {
 				return nil
 			}
+			if lead.Source == "comment" {
+				err := SubmitCommnetReply(lead)
+				if err != nil {
+					return fmt.Errorf("failed to send send comment request via nats: %v", err)
+				}
+			}
+
 			return SetChatSync(lead.ConversationID, "")
 		},
 	)

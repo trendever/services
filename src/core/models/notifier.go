@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"proto/bot"
 	"proto/chat"
 	"proto/mail"
 	"proto/push"
@@ -383,6 +384,39 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 			"Lead":     lead,
 		},
 	)
+}
+
+func SubmitCommnetReply(lead *Lead) error {
+	tmpl, err := GetOther(InstagramSubmitReplyTemplate)
+	if err != nil {
+		return err
+	}
+
+	res, err := tmpl.Execute(map[string]interface{}{
+		"lead": lead,
+	})
+	if err != nil {
+		return err
+	}
+
+	renderedString, ok := res.(string)
+	if !ok || renderedString <= "" {
+		return errors.New("String rendered to weird shit; skipping")
+	}
+
+	var req = bot.SendDirectRequest{
+		SenderId: lead.Shop.Supplier.InstagramID,
+		ThreadId: lead.InstagramMediaId,
+		Type:     bot.MessageType_ReplyComment,
+		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
+		Data:     renderedString,
+	}
+	err = nats.StanPublish("direct.send", &req)
+	if err != nil {
+		return fmt.Errorf("failed to send send comment request via nats: %v", err)
+	}
+
+	return nil
 }
 
 func mkShortChatUrl(userId uint, leadId uint) (url string, err error) {
