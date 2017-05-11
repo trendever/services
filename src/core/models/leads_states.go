@@ -230,7 +230,7 @@ func init() {
 			if lead.Source == "comment" {
 				err := SubmitCommnetReply(lead)
 				if err != nil {
-					return fmt.Errorf("failed to send send comment request via nats: %v", err)
+					log.Errorf("failed to send submit reply comment: %v", err)
 				}
 			}
 
