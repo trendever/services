@@ -68,13 +68,6 @@ func handleSyncEvent(in *chat.Chat) bool {
 
 	if !lead.IsNew() {
 		// @TODO technically it's possible to get second event if sync will be reenabled after error...
-		if lead.Source == "comment" {
-			err := models.SubmitCommentReply(lead)
-			if err != nil {
-				log.Errorf("failed to send submit reply comment: %v", err)
-				return false
-			}
-		}
 		return true
 	}
 	err = lead.TriggerEvent("PROGRESS", "", 0, nil)
@@ -251,6 +244,13 @@ func newMessage(req *chat.NewMessageRequest) bool {
 	case progress:
 		go log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
 	case submit:
+		if lead.Source == "comment" {
+			err := models.SubmitCommentReply(lead)
+			if err != nil {
+				log.Errorf("failed to send submit reply comment: %v", err)
+				return false
+			}
+		}
 		go log.Error(lead.TriggerEvent("SUBMIT", "", 0, nil))
 	}
 
