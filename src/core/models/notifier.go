@@ -406,8 +406,8 @@ func SubmitCommentReply(lead *Lead) error {
 	}
 
 	res, err := tmpl.Execute(map[string]interface{}{
-		"lead":          lead,
-		"randomComment": randomComment,
+		"lead":           lead,
+		"randomfunction": randomComment,
 	})
 	if err != nil {
 		return err
