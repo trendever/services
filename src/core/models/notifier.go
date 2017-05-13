@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"errors"
 	"fmt"
+	"math/rand"
 	"proto/bot"
 	"proto/chat"
 	"proto/mail"
@@ -12,6 +13,8 @@ import (
 	"proto/telegram"
 	"push/typemap"
 	"reflect"
+	"strings"
+	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -389,10 +392,11 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 }
 
 func randomComment(comments *pongo2.Value) *pongo2.Value {
+	rand.Seed(time.Now().UnixNano())
 	result := comments.String()
-	result += "TEST"
-
-	return pongo2.AsValue(result)
+	splitted := strings.Split(result, "?")
+	index := rand.Intn(len(splitted))
+	return pongo2.AsValue(splitted[index])
 }
 
 func SubmitCommentReply(lead *Lead) error {
@@ -402,8 +406,8 @@ func SubmitCommentReply(lead *Lead) error {
 	}
 
 	res, err := tmpl.Execute(map[string]interface{}{
-		"lead":      lead,
-		"functions": randomComment,
+		"lead":          lead,
+		"randomComment": randomComment,
 	})
 	if err != nil {
 		return err
