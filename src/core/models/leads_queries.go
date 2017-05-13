@@ -1,13 +1,19 @@
 package models
 
 import (
+	"core/api"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
+	"proto/chat"
 	"proto/core"
+	"reflect"
 	"strings"
 	"time"
 	"utils/db"
+	"utils/log"
+	"utils/rpc"
 )
 
 // FindLeadByID returns Lead with id
@@ -282,21 +288,109 @@ func FindActiveLead(shopID, customerID, productID uint64) (*Lead, error) {
 }
 
 //CreateLead creates new lead
-func CreateLead(protoLead *core.Lead, shopID uint) (*Lead, error) {
-	lead := Lead{}.Decode(protoLead)
-	lead.State = core.LeadStatus_EMPTY.String()
+func CreateLead(protoLead *core.Lead, shopID uint) (lead *Lead, err error) {
+	lead = Lead{}.Decode(protoLead)
+
+	err = db.New().First(&lead.Customer, lead.CustomerID).Error
+	if err != nil {
+		return nil, err
+	}
+
 	lead.ShopID = shopID
-	// If customer id is not correct, it should throw an error
+	err = db.New().First(&lead.Shop, shopID).Error
+	if err != nil {
+		return nil, err
+	}
+	err = db.New().First(&lead.Shop.Supplier, lead.Shop.SupplierID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var members = []*chat.Member{
+		{
+			UserId:      uint64(lead.CustomerID),
+			Role:        chat.MemberRole_CUSTOMER,
+			Name:        lead.Customer.GetName(),
+			InstagramId: lead.Customer.InstagramID,
+		},
+	}
+
+	if sellers, err := GetSellersByShopID(lead.ShopID); err == nil {
+		for _, seller := range sellers {
+			members = append(members, &chat.Member{
+				UserId: uint64(seller.ID),
+				Role:   chat.MemberRole_SELLER,
+				Name:   seller.GetName(),
+			})
+		}
+	}
+
+	lead.ConversationID, err = CreateChat(
+		members,
+		genChatCaption(lead),
+		protoLead.DirectThread,
+		lead.Shop.Supplier.InstagramID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create chat: %v", err)
+	}
+
+	lead.State = core.LeadStatus_NEW.String()
 	if err := db.New().Create(&lead).Error; err != nil {
-		return nil, err
-	}
-	if err := db.New().Model(&lead).Related(&lead.Shop, "Shop").Related(&lead.Customer, "Customer").Error; err != nil {
-		return nil, err
-	}
-	if err := db.New().Model(&lead.Shop).Related(&lead.Shop.Supplier, "Supplier").Error; err != nil {
+		//here we have a chat leak... this is rare case anyway
 		return nil, err
 	}
 	return lead, nil
+}
+
+func CreateChat(members []*chat.Member, caption, directThread string, primaryInstagram uint64) (chatID uint64, err error) {
+	context, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := api.ChatServiceClient.CreateChat(context, &chat.NewChatRequest{
+		Chat: &chat.Chat{
+			Members:      members,
+			Caption:      caption,
+			DirectThread: directThread,
+		},
+		PrimaryInstagram: primaryInstagram,
+	})
+	switch {
+	case err != nil:
+		return 0, err
+
+	case resp.Error != nil:
+		return 0, errors.New(resp.Error.Message)
+
+	default:
+		return resp.Chat.Id, nil
+	}
+}
+
+func genChatCaption(lead *Lead) string {
+	template := &OtherTemplate{}
+	ret := db.New().Find(template, "template_id = ?", "chat_caption")
+	if ret.RecordNotFound() {
+		return ""
+	}
+	if ret.Error != nil {
+		log.Errorf("failed to load template: %v", ret.Error)
+		return ""
+	}
+	result, err := template.Execute(map[string]interface{}{
+		"lead": lead,
+	})
+	if err != nil {
+		log.Errorf("failed to execute template: %v", err)
+		return ""
+	}
+	text, ok := result.(string)
+	if !ok {
+		log.Errorf("expected string, but got " + reflect.TypeOf(text).Name())
+		return ""
+	}
+	return text
 }
 
 //AppendLeadItems adds new items to the lead, and returns count of new items

@@ -4,7 +4,8 @@ import (
 	"core/api"
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
+	"math/rand"
+	"proto/bot"
 	"proto/chat"
 	"proto/mail"
 	"proto/push"
@@ -12,10 +13,15 @@ import (
 	"proto/telegram"
 	"push/typemap"
 	"reflect"
+	"strings"
+	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
 	"utils/rpc"
+
+	"github.com/jinzhu/gorm"
+	pongo2 "gopkg.in/flosch/pongo2.v3"
 )
 
 func init() {
@@ -383,6 +389,50 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 			"Lead":     lead,
 		},
 	)
+}
+
+func randomComment(comments *pongo2.Value) *pongo2.Value {
+	rand.Seed(time.Now().UnixNano())
+	result := comments.String()
+	splitted := strings.Split(result, "?")
+	index := rand.Intn(len(splitted))
+	return pongo2.AsValue(splitted[index])
+}
+
+func SubmitCommentReply(lead *Lead) error {
+	tmpl, err := GetOther(InstagramSubmitReplyTemplate)
+	if err != nil {
+		return err
+	}
+
+	res, err := tmpl.Execute(map[string]interface{}{
+		"lead":           lead,
+		"randomfunction": randomComment,
+	})
+	if err != nil {
+		return err
+	}
+
+	renderedString, ok := res.(string)
+	if !ok || renderedString <= "" {
+		return errors.New("String rendered to weird shit; skipping")
+	}
+
+	log.Debug("Requested to send `%v` to thread `%v`", renderedString, lead.InstagramMediaId)
+
+	var req = bot.SendDirectRequest{
+		SenderId: lead.Shop.Supplier.InstagramID,
+		ThreadId: lead.InstagramMediaId,
+		Type:     bot.MessageType_ReplyComment,
+		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
+		Data:     renderedString,
+	}
+	err = nats.StanPublish("direct.send", &req)
+	if err != nil {
+		return fmt.Errorf("failed to send send comment request via nats: %v", err)
+	}
+
+	return nil
 }
 
 func mkShortChatUrl(userId uint, leadId uint) (url string, err error) {

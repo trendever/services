@@ -250,6 +250,7 @@ func (pool *AccountsPool) update(acc *accountstore.Account) {
 // adds account to pool and starts individualWorker(if any),
 // pool should be already locked on higher level
 func (pool *AccountsPool) addAcc(ig *instagram.Instagram, addedAt int64) {
+
 	meta := &AccountMeta{
 		ig:      ig,
 		pool:    pool,

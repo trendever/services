@@ -4,7 +4,6 @@ import (
 	"core/api"
 	"core/models"
 	"fmt"
-	"proto/bot"
 	"proto/chat"
 	"proto/payment"
 	"proto/trendcoin"
@@ -66,7 +65,16 @@ func handleSyncEvent(in *chat.Chat) bool {
 		log.Error(err)
 		return true
 	}
+
 	if !lead.IsNew() {
+		// @TODO technically it's possible to get second event if sync will be reenabled after error...
+		if lead.Source == "comment" {
+			err := models.SubmitCommentReply(lead)
+			if err != nil {
+				log.Errorf("failed to send submit reply comment: %v", err)
+				return false
+			}
+		}
 		return true
 	}
 	err = lead.TriggerEvent("PROGRESS", "", 0, nil)
@@ -243,7 +251,7 @@ func newMessage(req *chat.NewMessageRequest) bool {
 	case progress:
 		go log.Error(lead.TriggerEvent("PROGRESS", "", 0, nil))
 	case submit:
-		go log.Error(submitLead(lead))
+		go log.Error(lead.TriggerEvent("SUBMIT", "", 0, nil))
 	}
 
 	//Уведомляем чувачков из мапы (вот ток нафига в мапе bool, можно просто слайс, не?)
@@ -252,51 +260,6 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
 	}
 	return true
-}
-
-func submitLead(lead *models.Lead) error {
-	//Триггерим смену стейта
-	err := lead.TriggerEvent("SUBMIT", "", 0, nil)
-	if err != nil {
-		return err
-	}
-
-	//Дальше будет уведомление в коммент, по эту все остальные идут лесом
-	if lead.Source != "comment" {
-		return nil
-	}
-
-	tmpl, err := models.GetOther(models.InstagramSubmitReplyTemplate)
-	if err != nil {
-		return err
-	}
-
-	res, err := tmpl.Execute(map[string]interface{}{
-		"lead": lead,
-	})
-	if err != nil {
-		return err
-	}
-
-	renderedString, ok := res.(string)
-	if !ok || renderedString <= "" {
-		return fmt.Errorf("String rendered to weird shit; skipping")
-	}
-
-	log.Debug("ALL OK! Notifyin: %v", renderedString)
-	var req = bot.SendDirectRequest{
-		SenderId: lead.Shop.Supplier.InstagramID,
-		ThreadId: lead.InstagramMediaId,
-		Type:     bot.MessageType_ReplyComment,
-		ReplyKey: fmt.Sprintf("lead.%v.twat^Wsubmit", lead.ID), //change this when you need a reply %)
-		Data:     renderedString,
-	}
-	err = nats.StanPublish("direct.send", &req)
-	if err != nil {
-		return fmt.Errorf("failed to send send comment request via nats: %v", err)
-	}
-
-	return nil
 }
 
 func notifyAboutUnreadMessage(msg *chat.Message) bool {
