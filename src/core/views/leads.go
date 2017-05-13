@@ -93,13 +93,14 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		lead.Comment = protoLead.Comment
 		lead.InstagramMediaId = protoLead.InstagramMediaId
 
-		err := db.New().Model(lead).Where("id = ?", lead.ID).Updates(map[string]string{
-			"comment":            lead.Comment,
-			"instagram_media_id": lead.InstagramMediaId,
+		err := db.New().Model(lead).Updates(map[string]string{
+			"Comment":          lead.Comment,
+			"InstagramMediaId": lead.InstagramMediaId,
 		}).Error
 
 		if err != nil {
 			log.Error(err)
+			return nil, err
 		}
 	}
 
