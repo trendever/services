@@ -90,7 +90,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	} else {
 		lead = existsLead
 
-		lead.Source = protoLead.Source
+		lead.Comment = protoLead.Comment
 		lead.InstagramMediaId = protoLead.InstagramMediaId
 
 		err := db.New().Model(lead).Where("id = ?", lead.ID).Updates(map[string]string{
