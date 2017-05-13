@@ -47,10 +47,6 @@ type AccountMeta struct {
 	pool  *AccountsPool
 	ready chan *instagram.Instagram
 	// stopper for individual workers
-	timeout struct {
-		min int
-		max int
-	}
 	stopper *stopper.Stopper
 	wait    sync.WaitGroup
 	AddedAt int64
@@ -62,11 +58,6 @@ func (meta *AccountMeta) Get() *instagram.Instagram {
 
 func (meta *AccountMeta) Role() accountstore.Role {
 	return meta.pool.role
-}
-
-func (meta *AccountMeta) RandomTimeout() {
-	rndTimeout := meta.timeout.min + rand.Intn(meta.timeout.max-meta.timeout.min)
-	time.Sleep(time.Duration(rndTimeout))
 }
 
 func (meta *AccountMeta) Delayed() (*instagram.Instagram, error) {
@@ -266,10 +257,6 @@ func (pool *AccountsPool) addAcc(ig *instagram.Instagram, addedAt int64) {
 		ready:   make(chan *instagram.Instagram),
 		stopper: stopper.NewStopper(),
 		AddedAt: addedAt,
-		timeout: struct {
-			min int
-			max int
-		}{min: int(pool.timeout.min), max: int(pool.timeout.max)},
 	}
 	pool.idMap[ig.UserID] = meta
 	pool.idSlice = append(pool.idSlice, ig.UserID)

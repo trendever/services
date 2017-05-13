@@ -64,7 +64,6 @@ func Start() error {
 func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 	var step = 0
 	for {
-		meta.RandomTimeout()
 		select {
 		case <-stopChan:
 			return
