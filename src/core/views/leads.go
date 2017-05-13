@@ -7,13 +7,14 @@ import (
 	"core/telegram"
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"proto/core"
 	"strings"
 	"utils/db"
 	"utils/log"
+
+	"github.com/jinzhu/gorm"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func init() {
@@ -92,10 +93,12 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 		lead.Comment = protoLead.Comment
 		lead.InstagramMediaId = protoLead.InstagramMediaId
+		lead.Source = protoLead.Source
 
 		err := db.New().Model(lead).Updates(map[string]string{
 			"Comment":          lead.Comment,
 			"InstagramMediaId": lead.InstagramMediaId,
+			"Source":           lead.Source,
 		}).Error
 
 		if err != nil {
