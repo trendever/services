@@ -418,6 +418,8 @@ func SubmitCommentReply(lead *Lead) error {
 		return errors.New("String rendered to weird shit; skipping")
 	}
 
+	log.Debug("Requested to send `%v` to thread `%v`", renderedString, lead.InstagramMediaId)
+
 	var req = bot.SendDirectRequest{
 		SenderId: lead.Shop.Supplier.InstagramID,
 		ThreadId: lead.InstagramMediaId,
