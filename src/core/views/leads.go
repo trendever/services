@@ -89,16 +89,22 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	} else {
 		lead = existsLead
+
+		lead.Source = protoLead.Source
+		lead.InstagramMediaId = protoLead.InstagramMediaId
+
+		err := db.New().Model(lead).Where("id = ?", lead.ID).Updates(map[string]string{
+			"source":             lead.Source,
+			"instagram_media_id": lead.InstagramMediaId,
+		}).Error
+
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 	// comment leads should be auto-advances
 	if lead.Source == "comment" && models.LeadEventPossible(core.LeadStatusEvent_PROGRESS.String(), lead.State) {
-
-		if existsLead != nil { // overwrite new data
-			lead.Comment = protoLead.Comment
-			lead.InstagramMediaId = protoLead.InstagramMediaId
-		}
-
 		log.Error(lead.TriggerEvent(core.LeadStatusEvent_PROGRESS.String(), "", 0, &lead.Customer))
 	}
 
