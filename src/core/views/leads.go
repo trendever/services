@@ -56,7 +56,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		//Match comment if it contains key phrases
 		for _, phrase := range strings.Split(vocabulary, ",") {
 			phrase_stemmed, _ := models.PrepareText(phrase, "russian")
-			if strings.Contains(comment_prepared, phrase_stemmed) {
+			if strings.Contains(comment_prepared, phrase_stemmed) || strings.Contains(comment_prepared, "?") {
 				is_comment_matched = true
 				break
 			}
