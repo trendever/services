@@ -4,7 +4,6 @@ import (
 	"core/api"
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"proto/bot"
 	"proto/chat"
 	"proto/mail"
@@ -17,6 +16,9 @@ import (
 	"utils/log"
 	"utils/nats"
 	"utils/rpc"
+
+	"github.com/jinzhu/gorm"
+	pongo2 "gopkg.in/flosch/pongo2.v3"
 )
 
 func init() {
@@ -386,6 +388,13 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	)
 }
 
+func randomComment(comments *pongo2.Value) *pongo2.Value {
+	result := comments.String()
+	result += "TEST"
+
+	return pongo2.AsValue(result)
+}
+
 func SubmitCommentReply(lead *Lead) error {
 	tmpl, err := GetOther(InstagramSubmitReplyTemplate)
 	if err != nil {
@@ -393,7 +402,8 @@ func SubmitCommentReply(lead *Lead) error {
 	}
 
 	res, err := tmpl.Execute(map[string]interface{}{
-		"lead": lead,
+		"lead":      lead,
+		"functions": randomComment,
 	})
 	if err != nil {
 		return err
