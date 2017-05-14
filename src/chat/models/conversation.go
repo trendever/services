@@ -586,7 +586,7 @@ func (c *conversationRepositoryImpl) SetSyncError(chatID uint64) (retry bool, er
 		return false, errors.New("unknown chat")
 	}
 	if res.Error != nil {
-		return false, res.Error
+		return true, res.Error
 	}
 	return true, c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
 }
