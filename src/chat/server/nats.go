@@ -169,8 +169,12 @@ func (cs *chatServer) handleThreadReply(notify *bot.DirectNotify) (acknowledged 
 	log.Debug("got thread create reply for chat %v", chatID)
 	if notify.Error != "" {
 		log.Errorf("error in create thread reply for chat %v: %v", chatID, notify.Error)
-		// @TODO anything else?
-		return true
+		retry, err := cs.chats.SetSyncError(chatID)
+		if err == nil {
+			return true
+		}
+		log.Errorf("failed to set sync error for chat %v: %v", chatID, notify.Error)
+		return !retry
 	}
 	retry, err := cs.chats.SetRelatedThread(chatID, notify.ThreadId)
 	if err != nil {

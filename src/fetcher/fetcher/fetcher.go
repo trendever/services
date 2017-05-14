@@ -70,7 +70,7 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 		default:
 			err := processRequests(meta)
 			if err != nil {
-				log.Debug("failed to process pending requests form user %v: %v", meta.Get().Username, err)
+				log.Warn("failed to process pending requests form user %v: %v", meta.Get().Username, err)
 				continue
 			}
 			switch step {

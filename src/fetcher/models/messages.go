@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"utils/db"
 )
 
@@ -40,20 +39,6 @@ func GetThreadInfo(threadID string, sourceID uint64) (ThreadInfo, error) {
 		Error
 
 	return res, err
-}
-
-// SaveLastCheckedID updates threadInfo with lastCheckedID=messageID
-func SaveLastCheckedID(sourceID uint64, threadID, messageID string) error {
-	err := db.New().
-		Model(&ThreadInfo{}).
-		Where("thread_id = ?", threadID).
-		Where("source_id = ?", sourceID).
-		Update("last_checked_id", messageID).
-		Error
-	if err != nil {
-		return fmt.Errorf("failed to save last checked id for thread %v: %v", threadID, err)
-	}
-	return nil
 }
 
 // Save just saves it in usual way

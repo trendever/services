@@ -205,7 +205,8 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 		}
 		// only if we have no media in progress
 		if relatedMedia == nil {
-			err := models.SaveLastCheckedID(sourceID, threadID, message.ItemID)
+			info.LastCheckedID = message.ItemID
+			err := info.Save()
 			if err != nil {
 				return err
 			}
@@ -217,7 +218,8 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 		if err := fillDirect(relatedMedia, &resp.Thread, meta, ""); err != nil {
 			return err
 		}
-		err := models.SaveLastCheckedID(sourceID, threadID, msgs[0].ItemID)
+		info.LastCheckedID = msgs[0].ItemID
+		err := info.Save()
 		if err != nil {
 			return err
 		}
@@ -243,7 +245,6 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 	if username == "" {
 		//this is media_share sent by our account
 		//ignore it silently
-		log.Debug("Wut? Could not find username for userID=%v in thread=%v itemID=%v", item.UserID, thread.ThreadID, item.ItemID)
 		return nil
 	}
 
