@@ -80,6 +80,7 @@ type ConversationRepository interface {
 	SetConversationStatus(req *pb_chat.SetStatusMessage) error
 	CheckMessageExists(instagramID string) (bool, error)
 	EnableSync(chatID, primaryInstagram uint64, threadID string, forceNowThread bool) (retry bool, err error)
+	SetSyncError(chatID uint64) (retry bool, err error)
 	SetRelatedThread(chatID uint64, directThread string) (retry bool, err error)
 	UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error
 }
@@ -576,6 +577,18 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 	err = errors.New("unreachable point is reached in EnableSync()")
 	log.Error(err)
 	return false, err
+}
+
+func (c *conversationRepositoryImpl) SetSyncError(chatID uint64) (retry bool, err error) {
+	var chat Conversation
+	res := c.db.Preload("Members").First(&chat, chatID)
+	if res.RecordNotFound() {
+		return false, errors.New("unknown chat")
+	}
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return true, c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
 }
 
 func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThread string) (retry bool, err error) {
