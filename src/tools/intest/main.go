@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	i, err := instagram.NewInstagram("theta.tnd", "422312", nil)
+	i, err := instagram.NewInstagram("theta.tnd", "422312", "")
 	if err != nil {
 		panic(err)
 	}

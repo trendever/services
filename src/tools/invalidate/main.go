@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"golang.org/x/net/proxy"
 	"instagram"
 	"math/rand"
 	"os"
@@ -26,24 +25,12 @@ func main() {
 		log.Fatalf("failed to open file: %v\n", err)
 	}
 	scanner := bufio.NewScanner(file)
-	var proxies []Proxy
+	var proxies []string
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), "#") || scanner.Text() == "" {
 			continue
 		}
-		slice := strings.Split(scanner.Text(), ";")
-		switch len(slice) {
-		case 1:
-			proxies = append(proxies, Proxy{Addr: slice[0]})
-		case 3:
-			proxies = append(proxies, Proxy{
-				Addr: slice[0],
-				User: slice[1],
-				Pass: slice[2],
-			})
-		default:
-			log.Errorf("unexpected format in '%v', skipping", scanner.Text())
-		}
+		proxies = append(proxies, scanner.Text())
 	}
 	if scanner.Err() != nil {
 		log.Fatal(scanner.Err())
@@ -54,35 +41,32 @@ func main() {
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	_, err = instagram.NewInstagram(os.Args[1], os.Args[2], nil)
+	_, err = instagram.NewInstagram(os.Args[1], os.Args[2], "")
 	if err != nil {
 		log.Fatalf("failed to initialize account without proxies %v", err)
 	}
 
-	instagram.DoResponseLogging = true
-
 INV:
-	for _, conf := range proxies {
-		dialer, _ := proxy.SOCKS5("tcp", conf.Addr, &proxy.Auth{
-			User:     conf.User,
-			Password: conf.Pass,
-		}, proxy.Direct)
-		ig, err := instagram.NewInstagram(os.Args[1], os.Args[2], dialer.Dial)
+	for _, proxy := range proxies {
+		ig, err := instagram.NewInstagram(os.Args[1], os.Args[2], proxy)
 		if err != nil {
 			if ig.CheckpointURL != "" {
 				log.Info("checkpoint required!")
 				return
 			}
-			log.Errorf("proxy %v: %v", conf.Addr, err)
+			log.Errorf("proxy %v: %v", proxy, err)
 			continue
 		}
-		ret, err := ig.Inbox("")
-		log.Debug("%v", ret)
-		if ig.CheckpointURL != "" {
-			log.Debug("got checkpoint!")
-			return
+		_, err = ig.Inbox("")
+		if err != nil {
+			log.Errorf("proxy %v: %v", proxy, err)
+			if ig.CheckpointURL != "" {
+				log.Debug("got checkpoint!")
+				return
+			}
+		} else {
+			log.Info("proxy %v passed", proxy)
 		}
-		log.Info("proxy %v passed", conf.Addr)
 	}
 	goto INV
 }

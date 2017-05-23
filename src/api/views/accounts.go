@@ -145,6 +145,7 @@ func AddBot(c *soso.Context) {
 	}
 
 	preferEmail, _ := c.RequestMap["prefer_email"].(bool)
+	proxy, _ := c.RequestMap["proxy"].(string)
 
 	resp, err := accountStoreServiceClient.Add(context.Background(), &accountstore.AddRequest{
 		InstagramUsername: username,
@@ -152,6 +153,7 @@ func AddBot(c *soso.Context) {
 		Role:              accountstore.Role(role),
 		OwnerId:           c.Token.UID,
 		PreferEmail:       preferEmail,
+		Proxy:             proxy,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

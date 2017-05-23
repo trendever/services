@@ -30,6 +30,7 @@ type Account struct {
 	OwnerID           uint64 `gorm:"index"`
 	CodeSent          int64
 	CodeSentBy        string
+	Proxy             string
 }
 
 // Save it
@@ -145,6 +146,7 @@ func (acc *Account) Encode() *accountstore.Account {
 		Cookie:            acc.Cookie,
 		Valid:             acc.Valid,
 		Role:              acc.Role,
+		Proxy:             acc.Proxy,
 		CreatedAt:         acc.CreatedAt.Unix(),
 		CreatedAtAgo:      uint64(time.Since(acc.CreatedAt).Seconds()),
 	}
