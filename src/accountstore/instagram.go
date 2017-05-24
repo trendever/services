@@ -14,6 +14,7 @@ type InstagramAccess interface {
 	Login(login, password, proxy string, preferEmail bool, owner uint64) (*Account, error)
 	SendCode(*Account, string, bool) error
 	VerifyCode(acc *Account, password, code string) error
+	SetProxy(acc *Account, proxy string) error
 }
 
 // InstagramAccessImpl is real instagram connector
@@ -45,7 +46,13 @@ func (r *InstagramAccessImpl) Login(login, password, proxy string, preferEmail b
 
 	if account.Cookie > "" && owner == account.OwnerID {
 		api, err = instagram.Restore(account.Cookie, password, false)
-		api.SetProxy(proxy)
+		if err != nil {
+			return nil, err
+		}
+		err = api.SetProxy(proxy)
+		if err != nil {
+			return nil, err
+		}
 		_, err = api.GetRecentActivity()
 		if err != nil {
 			return nil, err
@@ -150,4 +157,22 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 	acc.Cookie = cookieJar
 
 	return Save(acc)
+}
+
+func (r *InstagramAccessImpl) SetProxy(acc *Account, proxy string) error {
+	api, err := instagram.Restore(acc.Cookie, "", false)
+	err = api.SetProxy(proxy)
+	if err != nil {
+		return err
+	}
+	_, err = api.GetRecentActivity()
+	if err != nil {
+		return err
+	}
+	cookieJar, err := api.Save()
+	if err != nil {
+		return err
+	}
+	acc.Cookie = cookieJar
+	return nil
 }

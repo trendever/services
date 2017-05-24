@@ -3,6 +3,7 @@ service AccountStoreService {
 	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
 	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
 	rpc Search(SearchRequest) returns (SearchReply) {}
+	rpc SetProxy(SetProxyRequest) returns (SetProxyReply) {}
 }
 
 enum Role {
@@ -72,4 +73,13 @@ message SearchRequest {
 
 message SearchReply {
   repeated Account accounts = 1;
+}
+
+message SetProxyRequest {
+  string instagram_username = 1;
+  string proxy = 2;
+}
+
+message SetProxyReply {
+
 }

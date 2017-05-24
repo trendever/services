@@ -110,3 +110,24 @@ func (s *svc) Search(_ context.Context, in *accountstore.SearchRequest) (*accoun
 		Accounts: EncodeAll(accounts, in.HidePrivate),
 	}, nil
 }
+
+func (s *svc) SetProxy(_ context.Context, in *accountstore.SetProxyRequest) (*accountstore.SetProxyReply, error) {
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.ig.SetProxy(account, in.Proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	err = Save(account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &accountstore.SetProxyReply{}, nil
+}
