@@ -20,6 +20,7 @@ func init() {
 		soso.Route{"add", "account", AddBot},
 		soso.Route{"list", "account", ListAccounts},
 		soso.Route{"confirm", "account", Confirm},
+		soso.Route{"set_proxy", "account", SetProxy},
 		//		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
@@ -145,6 +146,7 @@ func AddBot(c *soso.Context) {
 	}
 
 	preferEmail, _ := c.RequestMap["prefer_email"].(bool)
+	proxy, _ := c.RequestMap["proxy"].(string)
 
 	resp, err := accountStoreServiceClient.Add(context.Background(), &accountstore.AddRequest{
 		InstagramUsername: username,
@@ -152,6 +154,7 @@ func AddBot(c *soso.Context) {
 		Role:              accountstore.Role(role),
 		OwnerId:           c.Token.UID,
 		PreferEmail:       preferEmail,
+		Proxy:             proxy,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
@@ -161,5 +164,40 @@ func AddBot(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"success":   true,
 		"need_code": resp.NeedCode,
+	})
+}
+
+func SetProxy(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("user not authorized"))
+		return
+	}
+	user, err := GetUser(c.Token.UID, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if !user.IsAdmin {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("permission denied"))
+		return
+	}
+	username, _ := c.RequestMap["username"].(string)
+	proxy, _ := c.RequestMap["proxy"].(string)
+	if username == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty username"))
+		return
+	}
+
+	_, err = accountStoreServiceClient.SetProxy(context.Background(), &accountstore.SetProxyRequest{
+		InstagramUsername: username,
+		Proxy:             proxy,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"success": true,
 	})
 }

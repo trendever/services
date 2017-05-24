@@ -108,7 +108,7 @@ func initInstagramPool() {
 	for {
 		activeCount := 0
 		for _, user := range settings.Users {
-			item, err := instagram.NewInstagram(user.Name, user.Pass, nil)
+			item, err := instagram.NewInstagram(user.Name, user.Pass, "")
 			if err != nil {
 				log.Errorf("failed to add instagram user %v: %v", user.Name, err)
 				continue

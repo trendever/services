@@ -3,6 +3,7 @@ service AccountStoreService {
 	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
 	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
 	rpc Search(SearchRequest) returns (SearchReply) {}
+	rpc SetProxy(SetProxyRequest) returns (SetProxyReply) {}
 }
 
 enum Role {
@@ -26,6 +27,7 @@ message Account {
   uint64 owner_id = 6;
   int64 created_at = 7;
   uint64 created_at_ago = 8;
+  string proxy = 9;
 }
 
 message AddRequest {
@@ -34,6 +36,7 @@ message AddRequest {
   Role role = 3;
   uint64 owner_id = 4;
   bool prefer_email = 5;
+  string proxy = 6;
 }
 
 message AddReply {
@@ -70,4 +73,13 @@ message SearchRequest {
 
 message SearchReply {
   repeated Account accounts = 1;
+}
+
+message SetProxyRequest {
+  string instagram_username = 1;
+  string proxy = 2;
+}
+
+message SetProxyReply {
+
 }

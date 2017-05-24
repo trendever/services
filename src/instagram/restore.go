@@ -30,6 +30,10 @@ func Restore(cookieJar, password string, tryPing bool) (*Instagram, error) {
 	}
 
 	res.password = password
+	res.transport, err = transportFromURL(res.Proxy)
+	if err != nil {
+		return nil, err
+	}
 
 	// test request
 	if tryPing {

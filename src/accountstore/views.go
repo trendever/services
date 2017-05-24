@@ -21,7 +21,7 @@ func (s *svc) StartServer() {
 
 func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore.AddReply, error) {
 
-	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.PreferEmail, in.OwnerId)
+	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.Proxy, in.PreferEmail, in.OwnerId)
 	if err != nil {
 		notifyTelegram(fmt.Sprintf("failed to add bot '%v': %v", in.InstagramUsername, err))
 		return nil, err
@@ -109,4 +109,25 @@ func (s *svc) Search(_ context.Context, in *accountstore.SearchRequest) (*accoun
 	return &accountstore.SearchReply{
 		Accounts: EncodeAll(accounts, in.HidePrivate),
 	}, nil
+}
+
+func (s *svc) SetProxy(_ context.Context, in *accountstore.SetProxyRequest) (*accountstore.SetProxyReply, error) {
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.ig.SetProxy(account, in.Proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	err = Save(account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &accountstore.SetProxyReply{}, nil
 }

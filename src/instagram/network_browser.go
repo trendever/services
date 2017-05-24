@@ -8,7 +8,9 @@ import (
 	"utils/log"
 
 	// use custom-patched http pkg to allow using backslashes in cookies
+	"golang.org/x/net/proxy"
 	fixedhttp "instagram/http"
+	"net"
 	http "net/http"
 )
 
@@ -32,13 +34,59 @@ func encode(params map[string]string) string {
 	return vals.Encode()
 }
 
+// "fixedhttp" version
+func transportFromURL_WTFVersion(proxyURL string) (ret *fixedhttp.Transport, err error) {
+	// mostly copy of http.DefaultTransport
+	ret = &fixedhttp.Transport{
+		Proxy: fixedhttp.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if proxyURL == "" {
+		return
+	}
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	switch parsed.Scheme {
+	case "http", "https":
+		ret.Proxy = fixedhttp.ProxyURL(parsed)
+	default:
+		// DialContext in x/net/proxy is on review for now
+		ret.DialContext = nil
+
+		var dialer proxy.Dialer
+		// correctly supports only socks5
+		dialer, err = proxy.FromURL(parsed, &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		})
+		if err != nil {
+			return
+		}
+		ret.Dial = dialer.Dial
+	}
+	return
+}
+
 func (ig *Instagram) browserRequest(method, addr, referer string, cookies []*http.Cookie, body string) (string, []*http.Cookie, error) {
+	transport, err := transportFromURL_WTFVersion(ig.Proxy)
+	if err != nil {
+		return "", nil, err
+	}
 
 	client := &fixedhttp.Client{
-		Transport: &fixedhttp.Transport{
-			Dial: ig.Dial,
-		},
-		Timeout: 5 * time.Second,
+		Transport: transport,
+		Timeout:   5 * time.Second,
 	}
 	req, err := fixedhttp.NewRequest(method, addr, bytes.NewReader([]byte(body)))
 	if err != nil {

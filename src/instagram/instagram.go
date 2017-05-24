@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"golang.org/x/net/proxy"
 	"io"
 	"mime/multipart"
 	"net"
@@ -29,7 +30,9 @@ type Instagram struct {
 	CheckpointURL     string
 	Cookies           []*http.Cookie
 	CheckpointCookies []*http.Cookie
-	Dial              DialFunc `json:"-"`
+	Proxy             string
+
+	transport *http.Transport
 
 	// needed only for auth, but leave it there to make auth more stable
 	UUID     string
@@ -38,7 +41,12 @@ type Instagram struct {
 }
 
 // NewInstagram initializes client for futher use
-func NewInstagram(userName, password string, dial DialFunc) (*Instagram, error) {
+func NewInstagram(userName, password, proxy string) (*Instagram, error) {
+	transport, err := transportFromURL(proxy)
+	if err != nil {
+		return nil, err
+	}
+
 	i := &Instagram{
 		Username:  userName,
 		password:  password,
@@ -49,11 +57,65 @@ func NewInstagram(userName, password string, dial DialFunc) (*Instagram, error) 
 		UserID:    0,
 		RankToken: "",
 		Cookies:   nil,
-		Dial:      dial,
+		Proxy:     proxy,
+		transport: transport,
 	}
 
-	err := i.Login()
+	err = i.Login()
 	return i, err
+}
+
+func transportFromURL(proxyURL string) (ret *http.Transport, err error) {
+	// mostly copy of http.DefaultTransport
+	ret = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if proxyURL == "" {
+		return
+	}
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	switch parsed.Scheme {
+	case "http", "https":
+		ret.Proxy = http.ProxyURL(parsed)
+	default:
+		// DialContext in x/net/proxy is on review for now
+		ret.DialContext = nil
+
+		var dialer proxy.Dialer
+		// correctly supports only socks5
+		dialer, err = proxy.FromURL(parsed, &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		})
+		if err != nil {
+			return
+		}
+		ret.Dial = dialer.Dial
+	}
+	return
+}
+
+func (ig *Instagram) SetProxy(proxy string) error {
+	transport, err := transportFromURL(proxy)
+	if err != nil {
+		return err
+	}
+	ig.transport = transport
+	ig.Proxy = proxy
+	return nil
 }
 
 // IsLoggedIn returns if last request does not have auth error
