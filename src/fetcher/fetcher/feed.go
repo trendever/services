@@ -49,9 +49,8 @@ func fillFeed(stories instagram.RecentActivityStories, meta *client.AccountMeta)
 	}
 
 	act := &models.Activity{
-		Pk:           fmt.Sprintf("%v", stories.Pk), // instagram's post primary key from json
-		UserID:       stories.Args.ProfileID,
-		UserImageURL: stories.Args.ProfileImage,
+		Pk:     fmt.Sprintf("%v", stories.Pk), // instagram's post primary key from json
+		UserID: stories.Args.ProfileID,
 
 		MentionedUsername: meta.Get().Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),

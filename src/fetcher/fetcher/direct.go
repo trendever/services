@@ -260,7 +260,6 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		Pk:                item.ItemID,
 		UserID:            item.UserID,
 		UserName:          username,
-		UserImageURL:      share.User.ProfilePicURL,
 		MentionedUsername: ig.Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "direct",
