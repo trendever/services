@@ -152,15 +152,22 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 		case "media_share":
 			// there was older media without comment
 			if relatedMedia != nil {
-				if err := fillDirect(message, &resp.Thread, meta, ""); err != nil {
+				if err := addDirectActivity(relatedMedia, &resp.Thread, meta, ""); err != nil {
 					return err
 				}
+				relatedMedia = nil
 			}
+
+			// not sure why i added this check, it looks weird...
 			if message.MediaShare != nil {
-				relatedMedia = message
+				if meta.Role() == accountstore.Role_User && message.MediaShare.User.Pk != ig.UserID {
+					// ignore media with someone else's posts for shops
+					log.Debug("ignoring medaishare %v with foreign post", message.ItemID)
+				} else {
+					relatedMedia = message
+				}
 			} else {
 				log.Errorf("message %v with type 'media_share' has empty media", message.ItemID)
-				relatedMedia = nil
 			}
 
 		case "media":
@@ -192,10 +199,14 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 				if relatedMedia.UserID == message.UserID {
 					comment = message.Text
 				}
-				if err := fillDirect(relatedMedia, &resp.Thread, meta, comment); err != nil {
+				if err := addDirectActivity(relatedMedia, &resp.Thread, meta, comment); err != nil {
 					return err
 				}
 				relatedMedia = nil
+			} else if info.LastCheckedID == "" { // new untracked thread
+				if err := addThreadActivity(message, &resp.Thread, meta); err != nil {
+					return err
+				}
 			}
 
 			err := nats.StanPublish(DirectNotifySubject, &notify)
@@ -215,7 +226,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 
 	// some unfinished stuff
 	if relatedMedia != nil {
-		if err := fillDirect(relatedMedia, &resp.Thread, meta, ""); err != nil {
+		if err := addDirectActivity(relatedMedia, &resp.Thread, meta, ""); err != nil {
 			return err
 		}
 		info.LastCheckedID = msgs[0].ItemID
@@ -228,8 +239,26 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 	return nil
 }
 
+func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta) error {
+	// process private threads only
+	if thread.ThreadType != "private" || meta.Role() != accountstore.Role_User {
+		return nil
+	}
+
+	act := &models.Activity{
+		Pk:                item.ItemID,
+		UserID:            item.UserID,
+		UserName:          thread.Users[0].Username,
+		MentionedUsername: meta.Get().Username,
+		MentionedRole:     bot.MentionedRole(meta.Role()),
+		Type:              "thread",
+		ThreadID:          thread.ThreadID,
+	}
+	return act.Create()
+}
+
 // fill database model by direct message
-func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
+func addDirectActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
 	share := item.MediaShare
 	ig := meta.Get()
 
@@ -248,19 +277,12 @@ func fillDirect(item *instagram.ThreadItem, thread *instagram.Thread, meta *clie
 		return nil
 	}
 
-	if meta.Role() == accountstore.Role_User && share.User.Pk != ig.UserID {
-		// ignore media with someone else's posts for shops
-		log.Debug("ignoring medaishare %v with foreign post", item.ItemID)
-		return nil
-	}
-
 	log.Debug("Filling in new direct story")
 
 	act := &models.Activity{
 		Pk:                item.ItemID,
 		UserID:            item.UserID,
 		UserName:          username,
-		UserImageURL:      share.User.ProfilePicURL,
 		MentionedUsername: ig.Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "direct",

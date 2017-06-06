@@ -1,0 +1,7 @@
+#cat CreateProduct.yaml | ./bin/protocall localhost:3005 ProductService CreateProduct
+product:
+  instagramimageid: "0"
+  title: "NoProduct"
+  code: "help9"
+  supplierid: 9
+  mentionedid: 2

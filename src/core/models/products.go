@@ -3,13 +3,14 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"proto/core"
 	"savetrend/tumbmap"
 	"time"
 	"utils/db"
 	"utils/nats"
+
+	"github.com/jinzhu/gorm"
 )
 
 const productTable = "products_product"
@@ -23,7 +24,7 @@ type Product struct {
 	IsSale bool
 
 	InstagramImageCaption string `gorm:"type:text"`
-	InstagramImageID      string `gorm:"unique"`
+	InstagramImageID      string
 	InstagramImageHeight  uint
 	InstagramImageWidth   uint
 	InstagramImageURL     string `gorm:"text"`

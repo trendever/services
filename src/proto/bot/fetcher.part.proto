@@ -64,7 +64,6 @@ message Activity {
 
   uint64 user_id = 5;
   string user_name = 6;
-  string user_image_url = 7;
   string mentioned_username = 8;
   MentionedRole metioned_role = 13;
 

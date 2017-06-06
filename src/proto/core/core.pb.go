@@ -431,6 +431,13 @@ func (m *ReadLeadResult) String() string            { return proto.CompactTextSt
 func (*ReadLeadResult) ProtoMessage()               {}
 func (*ReadLeadResult) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{1} }
 
+func (m *ReadLeadResult) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
 // representation of lead model
 type Lead struct {
 	Id     int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -451,6 +458,76 @@ func (m *Lead) String() string            { return proto.CompactTextString(m) }
 func (*Lead) ProtoMessage()               {}
 func (*Lead) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{2} }
 
+func (m *Lead) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *Lead) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *Lead) GetDirectThread() string {
+	if m != nil {
+		return m.DirectThread
+	}
+	return ""
+}
+
+func (m *Lead) GetComment() string {
+	if m != nil {
+		return m.Comment
+	}
+	return ""
+}
+
+func (m *Lead) GetCustomerId() int64 {
+	if m != nil {
+		return m.CustomerId
+	}
+	return 0
+}
+
+func (m *Lead) GetInstagramPk() string {
+	if m != nil {
+		return m.InstagramPk
+	}
+	return ""
+}
+
+func (m *Lead) GetInstagramLink() string {
+	if m != nil {
+		return m.InstagramLink
+	}
+	return ""
+}
+
+func (m *Lead) GetInstagramMediaId() string {
+	if m != nil {
+		return m.InstagramMediaId
+	}
+	return ""
+}
+
+func (m *Lead) GetProductId() int64 {
+	if m != nil {
+		return m.ProductId
+	}
+	return 0
+}
+
+func (m *Lead) GetAction() LeadAction {
+	if m != nil {
+		return m.Action
+	}
+	return LeadAction_BUY
+}
+
 type CreateLeadResult struct {
 	Id   int64     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Lead *LeadInfo `protobuf:"bytes,2,opt,name=lead" json:"lead,omitempty"`
@@ -460,6 +537,13 @@ func (m *CreateLeadResult) Reset()                    { *m = CreateLeadResult{} 
 func (m *CreateLeadResult) String() string            { return proto.CompactTextString(m) }
 func (*CreateLeadResult) ProtoMessage()               {}
 func (*CreateLeadResult) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{3} }
+
+func (m *CreateLeadResult) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
 
 func (m *CreateLeadResult) GetLead() *LeadInfo {
 	if m != nil {
@@ -486,6 +570,48 @@ func (m *UserLeadsRequest) Reset()                    { *m = UserLeadsRequest{} 
 func (m *UserLeadsRequest) String() string            { return proto.CompactTextString(m) }
 func (*UserLeadsRequest) ProtoMessage()               {}
 func (*UserLeadsRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{4} }
+
+func (m *UserLeadsRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *UserLeadsRequest) GetRole() []LeadUserRole {
+	if m != nil {
+		return m.Role
+	}
+	return nil
+}
+
+func (m *UserLeadsRequest) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
+
+func (m *UserLeadsRequest) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *UserLeadsRequest) GetDirection() bool {
+	if m != nil {
+		return m.Direction
+	}
+	return false
+}
+
+func (m *UserLeadsRequest) GetFromUpdatedAt() int64 {
+	if m != nil {
+		return m.FromUpdatedAt
+	}
+	return 0
+}
 
 type UserLeadsReply struct {
 	Leads []*LeadInfo `protobuf:"bytes,1,rep,name=leads" json:"leads,omitempty"`
@@ -528,11 +654,60 @@ func (m *LeadInfo) String() string            { return proto.CompactTextString(m
 func (*LeadInfo) ProtoMessage()               {}
 func (*LeadInfo) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{6} }
 
+func (m *LeadInfo) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *LeadInfo) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *LeadInfo) GetComment() string {
+	if m != nil {
+		return m.Comment
+	}
+	return ""
+}
+
+func (m *LeadInfo) GetCustomerId() uint64 {
+	if m != nil {
+		return m.CustomerId
+	}
+	return 0
+}
+
 func (m *LeadInfo) GetProducts() []*Product {
 	if m != nil {
 		return m.Products
 	}
 	return nil
+}
+
+func (m *LeadInfo) GetInstagramPk() string {
+	if m != nil {
+		return m.InstagramPk
+	}
+	return ""
+}
+
+func (m *LeadInfo) GetInstagramLink() string {
+	if m != nil {
+		return m.InstagramLink
+	}
+	return ""
+}
+
+func (m *LeadInfo) GetInstagramMediaId() string {
+	if m != nil {
+		return m.InstagramMediaId
+	}
+	return ""
 }
 
 func (m *LeadInfo) GetCustomer() *User {
@@ -542,11 +717,60 @@ func (m *LeadInfo) GetCustomer() *User {
 	return nil
 }
 
+func (m *LeadInfo) GetStatus() LeadStatus {
+	if m != nil {
+		return m.Status
+	}
+	return LeadStatus_EMPTY
+}
+
+func (m *LeadInfo) GetUserRole() LeadUserRole {
+	if m != nil {
+		return m.UserRole
+	}
+	return LeadUserRole_UNKNOWN
+}
+
+func (m *LeadInfo) GetConversationId() uint64 {
+	if m != nil {
+		return m.ConversationId
+	}
+	return 0
+}
+
 func (m *LeadInfo) GetShop() *Shop {
 	if m != nil {
 		return m.Shop
 	}
 	return nil
+}
+
+func (m *LeadInfo) GetUpdatedAt() int64 {
+	if m != nil {
+		return m.UpdatedAt
+	}
+	return 0
+}
+
+func (m *LeadInfo) GetCancelReason() uint64 {
+	if m != nil {
+		return m.CancelReason
+	}
+	return 0
+}
+
+func (m *LeadInfo) GetStatusComment() string {
+	if m != nil {
+		return m.StatusComment
+	}
+	return ""
+}
+
+func (m *LeadInfo) GetUpdatedAtAgo() int64 {
+	if m != nil {
+		return m.UpdatedAtAgo
+	}
+	return 0
 }
 
 type LeadEventMessage struct {
@@ -560,6 +784,27 @@ func (m *LeadEventMessage) String() string            { return proto.CompactText
 func (*LeadEventMessage) ProtoMessage()               {}
 func (*LeadEventMessage) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{7} }
 
+func (m *LeadEventMessage) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
+
+func (m *LeadEventMessage) GetEvent() string {
+	if m != nil {
+		return m.Event
+	}
+	return ""
+}
+
+func (m *LeadEventMessage) GetUsers() []uint64 {
+	if m != nil {
+		return m.Users
+	}
+	return nil
+}
+
 type SetLeadStatusRequest struct {
 	LeadId        uint64          `protobuf:"varint,1,opt,name=lead_id,json=leadId,proto3" json:"lead_id,omitempty"`
 	Event         LeadStatusEvent `protobuf:"varint,2,opt,name=event,proto3,enum=core.LeadStatusEvent" json:"event,omitempty"`
@@ -572,6 +817,41 @@ func (m *SetLeadStatusRequest) Reset()                    { *m = SetLeadStatusRe
 func (m *SetLeadStatusRequest) String() string            { return proto.CompactTextString(m) }
 func (*SetLeadStatusRequest) ProtoMessage()               {}
 func (*SetLeadStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{8} }
+
+func (m *SetLeadStatusRequest) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
+
+func (m *SetLeadStatusRequest) GetEvent() LeadStatusEvent {
+	if m != nil {
+		return m.Event
+	}
+	return LeadStatusEvent_CREATE
+}
+
+func (m *SetLeadStatusRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SetLeadStatusRequest) GetCancelReason() uint64 {
+	if m != nil {
+		return m.CancelReason
+	}
+	return 0
+}
+
+func (m *SetLeadStatusRequest) GetStatusComment() string {
+	if m != nil {
+		return m.StatusComment
+	}
+	return ""
+}
 
 type SetLeadStatusReply struct {
 	Lead *LeadInfo `protobuf:"bytes,1,opt,name=lead" json:"lead,omitempty"`
@@ -598,6 +878,13 @@ func (m *CallSupplierRequest) String() string            { return proto.CompactT
 func (*CallSupplierRequest) ProtoMessage()               {}
 func (*CallSupplierRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{10} }
 
+func (m *CallSupplierRequest) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
+
 type CallSupplierReply struct {
 }
 
@@ -614,6 +901,13 @@ func (m *CallCustomerRequest) Reset()                    { *m = CallCustomerRequ
 func (m *CallCustomerRequest) String() string            { return proto.CompactTextString(m) }
 func (*CallCustomerRequest) ProtoMessage()               {}
 func (*CallCustomerRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{12} }
+
+func (m *CallCustomerRequest) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
 
 type CallCustomerReply struct {
 }
@@ -657,6 +951,13 @@ func (m *GetLeadRequest) GetSearchBy() isGetLeadRequest_SearchBy {
 		return m.SearchBy
 	}
 	return nil
+}
+
+func (m *GetLeadRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
 }
 
 func (m *GetLeadRequest) GetId() uint64 {
@@ -771,6 +1072,20 @@ func (m *CancelReason) String() string            { return proto.CompactTextStri
 func (*CancelReason) ProtoMessage()               {}
 func (*CancelReason) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{17} }
 
+func (m *CancelReason) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *CancelReason) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
 type GetCancelReasonsReply struct {
 	Reasons []*CancelReason `protobuf:"bytes,1,rep,name=reasons" json:"reasons,omitempty"`
 }
@@ -799,6 +1114,34 @@ func (m *GetUserRoleRequest) String() string            { return proto.CompactTe
 func (*GetUserRoleRequest) ProtoMessage()               {}
 func (*GetUserRoleRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{19} }
 
+func (m *GetUserRoleRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *GetUserRoleRequest) GetInstagramUserId() uint64 {
+	if m != nil {
+		return m.InstagramUserId
+	}
+	return 0
+}
+
+func (m *GetUserRoleRequest) GetLeadId() uint64 {
+	if m != nil {
+		return m.LeadId
+	}
+	return 0
+}
+
+func (m *GetUserRoleRequest) GetConversationId() uint64 {
+	if m != nil {
+		return m.ConversationId
+	}
+	return 0
+}
+
 type GetUserRoleReply struct {
 	Role  LeadUserRole `protobuf:"varint,1,opt,name=role,proto3,enum=core.LeadUserRole" json:"role,omitempty"`
 	Error string       `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
@@ -809,6 +1152,20 @@ func (m *GetUserRoleReply) String() string            { return proto.CompactText
 func (*GetUserRoleReply) ProtoMessage()               {}
 func (*GetUserRoleReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{20} }
 
+func (m *GetUserRoleReply) GetRole() LeadUserRole {
+	if m != nil {
+		return m.Role
+	}
+	return LeadUserRole_UNKNOWN
+}
+
+func (m *GetUserRoleReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type GetPlanRequest struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
@@ -817,6 +1174,13 @@ func (m *GetPlanRequest) Reset()                    { *m = GetPlanRequest{} }
 func (m *GetPlanRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetPlanRequest) ProtoMessage()               {}
 func (*GetPlanRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{21} }
+
+func (m *GetPlanRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
 
 type MonezationPlan struct {
 	Id                    uint64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -836,6 +1200,76 @@ func (m *MonezationPlan) String() string            { return proto.CompactTextSt
 func (*MonezationPlan) ProtoMessage()               {}
 func (*MonezationPlan) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{22} }
 
+func (m *MonezationPlan) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *MonezationPlan) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *MonezationPlan) GetAbout() string {
+	if m != nil {
+		return m.About
+	}
+	return ""
+}
+
+func (m *MonezationPlan) GetPrimaryCurrency() string {
+	if m != nil {
+		return m.PrimaryCurrency
+	}
+	return ""
+}
+
+func (m *MonezationPlan) GetSubscriptionPeriod() uint64 {
+	if m != nil {
+		return m.SubscriptionPeriod
+	}
+	return 0
+}
+
+func (m *MonezationPlan) GetSubscriptionPrice() uint64 {
+	if m != nil {
+		return m.SubscriptionPrice
+	}
+	return 0
+}
+
+func (m *MonezationPlan) GetTransactionCommission() float64 {
+	if m != nil {
+		return m.TransactionCommission
+	}
+	return 0
+}
+
+func (m *MonezationPlan) GetCoinsExchangeRate() float64 {
+	if m != nil {
+		return m.CoinsExchangeRate
+	}
+	return 0
+}
+
+func (m *MonezationPlan) GetPublic() bool {
+	if m != nil {
+		return m.Public
+	}
+	return false
+}
+
+func (m *MonezationPlan) GetDirectbotEnabled() bool {
+	if m != nil {
+		return m.DirectbotEnabled
+	}
+	return false
+}
+
 type GetPlanReply struct {
 	Plan  *MonezationPlan `protobuf:"bytes,1,opt,name=plan" json:"plan,omitempty"`
 	Error string          `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
@@ -853,6 +1287,13 @@ func (m *GetPlanReply) GetPlan() *MonezationPlan {
 	return nil
 }
 
+func (m *GetPlanReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type GetPlansListRequest struct {
 	Currency string `protobuf:"bytes,1,opt,name=currency,proto3" json:"currency,omitempty"`
 	WithBot  bool   `protobuf:"varint,2,opt,name=with_bot,json=withBot,proto3" json:"with_bot,omitempty"`
@@ -862,6 +1303,20 @@ func (m *GetPlansListRequest) Reset()                    { *m = GetPlansListRequ
 func (m *GetPlansListRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetPlansListRequest) ProtoMessage()               {}
 func (*GetPlansListRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{24} }
+
+func (m *GetPlansListRequest) GetCurrency() string {
+	if m != nil {
+		return m.Currency
+	}
+	return ""
+}
+
+func (m *GetPlansListRequest) GetWithBot() bool {
+	if m != nil {
+		return m.WithBot
+	}
+	return false
+}
 
 type GetPlansListReply struct {
 	Plans []*MonezationPlan `protobuf:"bytes,1,rep,name=plans" json:"plans,omitempty"`
@@ -880,6 +1335,13 @@ func (m *GetPlansListReply) GetPlans() []*MonezationPlan {
 	return nil
 }
 
+func (m *GetPlansListReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type CoinsOffer struct {
 	Id       uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Amount   uint64 `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
@@ -892,6 +1354,34 @@ func (m *CoinsOffer) String() string            { return proto.CompactTextString
 func (*CoinsOffer) ProtoMessage()               {}
 func (*CoinsOffer) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{26} }
 
+func (m *CoinsOffer) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *CoinsOffer) GetAmount() uint64 {
+	if m != nil {
+		return m.Amount
+	}
+	return 0
+}
+
+func (m *CoinsOffer) GetPrice() uint64 {
+	if m != nil {
+		return m.Price
+	}
+	return 0
+}
+
+func (m *CoinsOffer) GetCurrency() string {
+	if m != nil {
+		return m.Currency
+	}
+	return ""
+}
+
 type GetCoinsOffersRequest struct {
 	Currency string `protobuf:"bytes,1,opt,name=currency,proto3" json:"currency,omitempty"`
 	// get single offer by id
@@ -902,6 +1392,20 @@ func (m *GetCoinsOffersRequest) Reset()                    { *m = GetCoinsOffers
 func (m *GetCoinsOffersRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetCoinsOffersRequest) ProtoMessage()               {}
 func (*GetCoinsOffersRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{27} }
+
+func (m *GetCoinsOffersRequest) GetCurrency() string {
+	if m != nil {
+		return m.Currency
+	}
+	return ""
+}
+
+func (m *GetCoinsOffersRequest) GetOfferId() uint64 {
+	if m != nil {
+		return m.OfferId
+	}
+	return 0
+}
 
 type GetCoinsOffersReply struct {
 	Offers []*CoinsOffer `protobuf:"bytes,1,rep,name=offers" json:"offers,omitempty"`
@@ -920,6 +1424,13 @@ func (m *GetCoinsOffersReply) GetOffers() []*CoinsOffer {
 	return nil
 }
 
+func (m *GetCoinsOffersReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type SubscribeRequest struct {
 	ShopId uint64 `protobuf:"varint,1,opt,name=shop_id,json=shopId,proto3" json:"shop_id,omitempty"`
 	// should be supplier of shop
@@ -933,6 +1444,34 @@ func (m *SubscribeRequest) String() string            { return proto.CompactText
 func (*SubscribeRequest) ProtoMessage()               {}
 func (*SubscribeRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{29} }
 
+func (m *SubscribeRequest) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
+
+func (m *SubscribeRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SubscribeRequest) GetPlanId() uint64 {
+	if m != nil {
+		return m.PlanId
+	}
+	return 0
+}
+
+func (m *SubscribeRequest) GetAutoRenewal() bool {
+	if m != nil {
+		return m.AutoRenewal
+	}
+	return false
+}
+
 type SubscribeReply struct {
 	Ok    bool   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	Error string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
@@ -942,6 +1481,20 @@ func (m *SubscribeReply) Reset()                    { *m = SubscribeReply{} }
 func (m *SubscribeReply) String() string            { return proto.CompactTextString(m) }
 func (*SubscribeReply) ProtoMessage()               {}
 func (*SubscribeReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{30} }
+
+func (m *SubscribeReply) GetOk() bool {
+	if m != nil {
+		return m.Ok
+	}
+	return false
+}
+
+func (m *SubscribeReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type SetAutorefillRequest struct {
 	UserId  uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -953,6 +1506,20 @@ func (m *SetAutorefillRequest) String() string            { return proto.Compact
 func (*SetAutorefillRequest) ProtoMessage()               {}
 func (*SetAutorefillRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{31} }
 
+func (m *SetAutorefillRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SetAutorefillRequest) GetOfferId() uint64 {
+	if m != nil {
+		return m.OfferId
+	}
+	return 0
+}
+
 type SetAutorefillReply struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
@@ -961,6 +1528,13 @@ func (m *SetAutorefillReply) Reset()                    { *m = SetAutorefillRepl
 func (m *SetAutorefillReply) String() string            { return proto.CompactTextString(m) }
 func (*SetAutorefillReply) ProtoMessage()               {}
 func (*SetAutorefillReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{32} }
+
+func (m *SetAutorefillReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type GetProductRequest struct {
 	// Types that are valid to be assigned to SearchBy:
@@ -1024,6 +1598,20 @@ func (m *GetProductRequest) GetMediaId() string {
 		return x.MediaId
 	}
 	return ""
+}
+
+func (m *GetProductRequest) GetWithDeleted() bool {
+	if m != nil {
+		return m.WithDeleted
+	}
+	return false
+}
+
+func (m *GetProductRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
@@ -1152,6 +1740,27 @@ func (m *SearchProductRequest) GetOffsetBy() isSearchProductRequest_OffsetBy {
 	return nil
 }
 
+func (m *SearchProductRequest) GetKeyword() string {
+	if m != nil {
+		return m.Keyword
+	}
+	return ""
+}
+
+func (m *SearchProductRequest) GetTags() []int64 {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *SearchProductRequest) GetLimit() int64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
 func (m *SearchProductRequest) GetOffset() int64 {
 	if x, ok := m.GetOffsetBy().(*SearchProductRequest_Offset); ok {
 		return x.Offset
@@ -1164,6 +1773,41 @@ func (m *SearchProductRequest) GetFromId() uint64 {
 		return x.FromId
 	}
 	return 0
+}
+
+func (m *SearchProductRequest) GetIsSaleOnly() bool {
+	if m != nil {
+		return m.IsSaleOnly
+	}
+	return false
+}
+
+func (m *SearchProductRequest) GetOffsetDirection() bool {
+	if m != nil {
+		return m.OffsetDirection
+	}
+	return false
+}
+
+func (m *SearchProductRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SearchProductRequest) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
+
+func (m *SearchProductRequest) GetInstagramName() string {
+	if m != nil {
+		return m.InstagramName
+	}
+	return ""
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
@@ -1256,6 +1900,20 @@ func (m *ProductReadResult) String() string            { return proto.CompactTex
 func (*ProductReadResult) ProtoMessage()               {}
 func (*ProductReadResult) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{36} }
 
+func (m *ProductReadResult) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *ProductReadResult) GetDeleted() bool {
+	if m != nil {
+		return m.Deleted
+	}
+	return false
+}
+
 type CreateProductRequest struct {
 	Product     *Product `protobuf:"bytes,1,opt,name=product" json:"product,omitempty"`
 	MentionedBy uint64   `protobuf:"varint,2,opt,name=mentioned_by,json=mentionedBy,proto3" json:"mentioned_by,omitempty"`
@@ -1273,6 +1931,13 @@ func (m *CreateProductRequest) GetProduct() *Product {
 	return nil
 }
 
+func (m *CreateProductRequest) GetMentionedBy() uint64 {
+	if m != nil {
+		return m.MentionedBy
+	}
+	return 0
+}
+
 type CreateProductResult struct {
 	Id     int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Exists bool   `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
@@ -1283,6 +1948,27 @@ func (m *CreateProductResult) Reset()                    { *m = CreateProductRes
 func (m *CreateProductResult) String() string            { return proto.CompactTextString(m) }
 func (*CreateProductResult) ProtoMessage()               {}
 func (*CreateProductResult) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{38} }
+
+func (m *CreateProductResult) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *CreateProductResult) GetExists() bool {
+	if m != nil {
+		return m.Exists
+	}
+	return false
+}
+
+func (m *CreateProductResult) GetCode() string {
+	if m != nil {
+		return m.Code
+	}
+	return ""
+}
 
 // representation of product model
 type Product struct {
@@ -1313,6 +1999,90 @@ func (m *Product) String() string            { return proto.CompactTextString(m)
 func (*Product) ProtoMessage()               {}
 func (*Product) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{39} }
 
+func (m *Product) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *Product) GetTitle() string {
+	if m != nil {
+		return m.Title
+	}
+	return ""
+}
+
+func (m *Product) GetCode() string {
+	if m != nil {
+		return m.Code
+	}
+	return ""
+}
+
+func (m *Product) GetInstagramImageCaption() string {
+	if m != nil {
+		return m.InstagramImageCaption
+	}
+	return ""
+}
+
+func (m *Product) GetInstagramImageId() string {
+	if m != nil {
+		return m.InstagramImageId
+	}
+	return ""
+}
+
+func (m *Product) GetInstagramImageUrl() string {
+	if m != nil {
+		return m.InstagramImageUrl
+	}
+	return ""
+}
+
+func (m *Product) GetInstagramLink() string {
+	if m != nil {
+		return m.InstagramLink
+	}
+	return ""
+}
+
+func (m *Product) GetInstagramImageWidth() uint32 {
+	if m != nil {
+		return m.InstagramImageWidth
+	}
+	return 0
+}
+
+func (m *Product) GetInstagramImageHeight() uint32 {
+	if m != nil {
+		return m.InstagramImageHeight
+	}
+	return 0
+}
+
+func (m *Product) GetInstagramPublishedAt() int64 {
+	if m != nil {
+		return m.InstagramPublishedAt
+	}
+	return 0
+}
+
+func (m *Product) GetInstagramLikesCount() int32 {
+	if m != nil {
+		return m.InstagramLikesCount
+	}
+	return 0
+}
+
+func (m *Product) GetSupplierId() int64 {
+	if m != nil {
+		return m.SupplierId
+	}
+	return 0
+}
+
 func (m *Product) GetSupplier() *Shop {
 	if m != nil {
 		return m.Supplier
@@ -1320,11 +2090,25 @@ func (m *Product) GetSupplier() *Shop {
 	return nil
 }
 
+func (m *Product) GetMentionedId() int64 {
+	if m != nil {
+		return m.MentionedId
+	}
+	return 0
+}
+
 func (m *Product) GetMentioned() *User {
 	if m != nil {
 		return m.Mentioned
 	}
 	return nil
+}
+
+func (m *Product) GetIsSale() bool {
+	if m != nil {
+		return m.IsSale
+	}
+	return false
 }
 
 func (m *Product) GetItems() []*ProductItem {
@@ -1348,6 +2132,13 @@ func (m *Product) GetLikedBy() []*User {
 	return nil
 }
 
+func (m *Product) GetInstagramPublishedAtAgo() int64 {
+	if m != nil {
+		return m.InstagramPublishedAtAgo
+	}
+	return 0
+}
+
 type ProductItem struct {
 	Id            int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -1360,6 +2151,34 @@ func (m *ProductItem) Reset()                    { *m = ProductItem{} }
 func (m *ProductItem) String() string            { return proto.CompactTextString(m) }
 func (*ProductItem) ProtoMessage()               {}
 func (*ProductItem) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{40} }
+
+func (m *ProductItem) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *ProductItem) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ProductItem) GetPrice() uint64 {
+	if m != nil {
+		return m.Price
+	}
+	return 0
+}
+
+func (m *ProductItem) GetDiscountPrice() uint64 {
+	if m != nil {
+		return m.DiscountPrice
+	}
+	return 0
+}
 
 func (m *ProductItem) GetTags() []*Tag {
 	if m != nil {
@@ -1379,6 +2198,27 @@ func (m *ImageCandidate) String() string            { return proto.CompactTextSt
 func (*ImageCandidate) ProtoMessage()               {}
 func (*ImageCandidate) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{41} }
 
+func (m *ImageCandidate) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *ImageCandidate) GetUrl() string {
+	if m != nil {
+		return m.Url
+	}
+	return ""
+}
+
+func (m *ImageCandidate) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
 type GetLikedByRequest struct {
 	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 }
@@ -1388,6 +2228,13 @@ func (m *GetLikedByRequest) String() string            { return proto.CompactTex
 func (*GetLikedByRequest) ProtoMessage()               {}
 func (*GetLikedByRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{42} }
 
+func (m *GetLikedByRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
 type GetLikedByReply struct {
 	ProductIds []uint64 `protobuf:"varint,1,rep,packed,name=product_ids,json=productIds" json:"product_ids,omitempty"`
 }
@@ -1396,6 +2243,13 @@ func (m *GetLikedByReply) Reset()                    { *m = GetLikedByReply{} }
 func (m *GetLikedByReply) String() string            { return proto.CompactTextString(m) }
 func (*GetLikedByReply) ProtoMessage()               {}
 func (*GetLikedByReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{43} }
+
+func (m *GetLikedByReply) GetProductIds() []uint64 {
+	if m != nil {
+		return m.ProductIds
+	}
+	return nil
+}
 
 type LikeProductRequest struct {
 	UserId    uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1408,6 +2262,27 @@ func (m *LikeProductRequest) Reset()                    { *m = LikeProductReques
 func (m *LikeProductRequest) String() string            { return proto.CompactTextString(m) }
 func (*LikeProductRequest) ProtoMessage()               {}
 func (*LikeProductRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{44} }
+
+func (m *LikeProductRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *LikeProductRequest) GetProductId() uint64 {
+	if m != nil {
+		return m.ProductId
+	}
+	return 0
+}
+
+func (m *LikeProductRequest) GetLike() bool {
+	if m != nil {
+		return m.Like
+	}
+	return false
+}
 
 type LikeProductReply struct {
 }
@@ -1435,6 +2310,20 @@ func (m *SpecialProductInfo) String() string            { return proto.CompactTe
 func (*SpecialProductInfo) ProtoMessage()               {}
 func (*SpecialProductInfo) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{47} }
 
+func (m *SpecialProductInfo) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *SpecialProductInfo) GetTitle() string {
+	if m != nil {
+		return m.Title
+	}
+	return ""
+}
+
 type GetSpecialProductsReply struct {
 	List []*SpecialProductInfo `protobuf:"bytes,1,rep,name=list" json:"list,omitempty"`
 	Err  string                `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
@@ -1452,6 +2341,13 @@ func (m *GetSpecialProductsReply) GetList() []*SpecialProductInfo {
 	return nil
 }
 
+func (m *GetSpecialProductsReply) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
 type GetLastProductIDRequest struct {
 	ShopId uint64 `protobuf:"varint,1,opt,name=shop_id,json=shopId,proto3" json:"shop_id,omitempty"`
 }
@@ -1460,6 +2356,13 @@ func (m *GetLastProductIDRequest) Reset()                    { *m = GetLastProdu
 func (m *GetLastProductIDRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetLastProductIDRequest) ProtoMessage()               {}
 func (*GetLastProductIDRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{49} }
+
+func (m *GetLastProductIDRequest) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
 
 type GetLastProductIDReply struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1470,6 +2373,13 @@ func (m *GetLastProductIDReply) String() string            { return proto.Compac
 func (*GetLastProductIDReply) ProtoMessage()               {}
 func (*GetLastProductIDReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{50} }
 
+func (m *GetLastProductIDReply) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
 type DelProductRequest struct {
 	ProductId uint64 `protobuf:"varint,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
 }
@@ -1479,6 +2389,13 @@ func (m *DelProductRequest) String() string            { return proto.CompactTex
 func (*DelProductRequest) ProtoMessage()               {}
 func (*DelProductRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{51} }
 
+func (m *DelProductRequest) GetProductId() uint64 {
+	if m != nil {
+		return m.ProductId
+	}
+	return 0
+}
+
 type DelProductReply struct {
 	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
@@ -1487,6 +2404,13 @@ func (m *DelProductReply) Reset()                    { *m = DelProductReply{} }
 func (m *DelProductReply) String() string            { return proto.CompactTextString(m) }
 func (*DelProductReply) ProtoMessage()               {}
 func (*DelProductReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{52} }
+
+func (m *DelProductReply) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
 
 type TokenInfo struct {
 	Id     uint64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1500,6 +2424,41 @@ func (m *TokenInfo) Reset()                    { *m = TokenInfo{} }
 func (m *TokenInfo) String() string            { return proto.CompactTextString(m) }
 func (*TokenInfo) ProtoMessage()               {}
 func (*TokenInfo) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{53} }
+
+func (m *TokenInfo) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *TokenInfo) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *TokenInfo) GetType() TokenType {
+	if m != nil {
+		return m.Type
+	}
+	return TokenType_Android
+}
+
+func (m *TokenInfo) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
+func (m *TokenInfo) GetAbout() string {
+	if m != nil {
+		return m.About
+	}
+	return ""
+}
 
 type AddTokenRequest struct {
 	Token *TokenInfo `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
@@ -1528,6 +2487,20 @@ func (m *DelTokenRequest) String() string            { return proto.CompactTextS
 func (*DelTokenRequest) ProtoMessage()               {}
 func (*DelTokenRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{55} }
 
+func (m *DelTokenRequest) GetTokenId() uint64 {
+	if m != nil {
+		return m.TokenId
+	}
+	return 0
+}
+
+func (m *DelTokenRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
 type ErrorResult struct {
 	// empty if there was no errors
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
@@ -1538,6 +2511,13 @@ func (m *ErrorResult) String() string            { return proto.CompactTextStrin
 func (*ErrorResult) ProtoMessage()               {}
 func (*ErrorResult) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{56} }
 
+func (m *ErrorResult) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type GetTokensRequest struct {
 	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 }
@@ -1546,6 +2526,13 @@ func (m *GetTokensRequest) Reset()                    { *m = GetTokensRequest{} 
 func (m *GetTokensRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetTokensRequest) ProtoMessage()               {}
 func (*GetTokensRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{57} }
+
+func (m *GetTokensRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
 
 type GetTokensResult struct {
 	Tokens []*TokenInfo `protobuf:"bytes,1,rep,name=tokens" json:"tokens,omitempty"`
@@ -1564,6 +2551,13 @@ func (m *GetTokensResult) GetTokens() []*TokenInfo {
 	return nil
 }
 
+func (m *GetTokensResult) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type InvalidateTokensRequest struct {
 	Type   TokenType `protobuf:"varint,1,opt,name=type,proto3,enum=core.TokenType" json:"type,omitempty"`
 	Tokens []string  `protobuf:"bytes,2,rep,name=tokens" json:"tokens,omitempty"`
@@ -1573,6 +2567,20 @@ func (m *InvalidateTokensRequest) Reset()                    { *m = InvalidateTo
 func (m *InvalidateTokensRequest) String() string            { return proto.CompactTextString(m) }
 func (*InvalidateTokensRequest) ProtoMessage()               {}
 func (*InvalidateTokensRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{59} }
+
+func (m *InvalidateTokensRequest) GetType() TokenType {
+	if m != nil {
+		return m.Type
+	}
+	return TokenType_Android
+}
+
+func (m *InvalidateTokensRequest) GetTokens() []string {
+	if m != nil {
+		return m.Tokens
+	}
+	return nil
+}
 
 type InvalidateTokensResult struct {
 }
@@ -1592,6 +2600,27 @@ func (m *UpdateTokenRequest) Reset()                    { *m = UpdateTokenReques
 func (m *UpdateTokenRequest) String() string            { return proto.CompactTextString(m) }
 func (*UpdateTokenRequest) ProtoMessage()               {}
 func (*UpdateTokenRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{61} }
+
+func (m *UpdateTokenRequest) GetType() TokenType {
+	if m != nil {
+		return m.Type
+	}
+	return TokenType_Android
+}
+
+func (m *UpdateTokenRequest) GetOldToken() string {
+	if m != nil {
+		return m.OldToken
+	}
+	return ""
+}
+
+func (m *UpdateTokenRequest) GetNewToken() string {
+	if m != nil {
+		return m.NewToken
+	}
+	return ""
+}
 
 type UpdateTokenResult struct {
 }
@@ -1613,6 +2642,41 @@ func (m *ShopCard) Reset()                    { *m = ShopCard{} }
 func (m *ShopCard) String() string            { return proto.CompactTextString(m) }
 func (*ShopCard) ProtoMessage()               {}
 func (*ShopCard) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{63} }
+
+func (m *ShopCard) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *ShopCard) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
+
+func (m *ShopCard) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ShopCard) GetNumber() string {
+	if m != nil {
+		return m.Number
+	}
+	return ""
+}
+
+func (m *ShopCard) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
 
 type CreateCardRequest struct {
 	Card *ShopCard `protobuf:"bytes,2,opt,name=card" json:"card,omitempty"`
@@ -1640,6 +2704,20 @@ func (m *CreateCardReply) String() string            { return proto.CompactTextS
 func (*CreateCardReply) ProtoMessage()               {}
 func (*CreateCardReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{65} }
 
+func (m *CreateCardReply) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *CreateCardReply) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
 type DeleteCardRequest struct {
 	Id     uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	UserId uint64 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1649,6 +2727,20 @@ func (m *DeleteCardRequest) Reset()                    { *m = DeleteCardRequest{
 func (m *DeleteCardRequest) String() string            { return proto.CompactTextString(m) }
 func (*DeleteCardRequest) ProtoMessage()               {}
 func (*DeleteCardRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{66} }
+
+func (m *DeleteCardRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *DeleteCardRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
 
 type DeleteCardReply struct {
 }
@@ -1667,6 +2759,20 @@ func (m *GetCardsRequest) Reset()                    { *m = GetCardsRequest{} }
 func (m *GetCardsRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetCardsRequest) ProtoMessage()               {}
 func (*GetCardsRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{68} }
+
+func (m *GetCardsRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *GetCardsRequest) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
 
 type GetCardsReply struct {
 	Cards []*ShopCard `protobuf:"bytes,1,rep,name=cards" json:"cards,omitempty"`
@@ -1693,6 +2799,20 @@ func (m *GetCardByIDRequest) Reset()                    { *m = GetCardByIDReques
 func (m *GetCardByIDRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetCardByIDRequest) ProtoMessage()               {}
 func (*GetCardByIDRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{70} }
+
+func (m *GetCardByIDRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *GetCardByIDRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
 
 type GetCardReply struct {
 	Card *ShopCard `protobuf:"bytes,1,opt,name=card" json:"card,omitempty"`
@@ -1748,6 +2868,20 @@ func (m *Shop) String() string            { return proto.CompactTextString(m) }
 func (*Shop) ProtoMessage()               {}
 func (*Shop) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{72} }
 
+func (m *Shop) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *Shop) GetSupplierId() int64 {
+	if m != nil {
+		return m.SupplierId
+	}
+	return 0
+}
+
 func (m *Shop) GetSupplier() *User {
 	if m != nil {
 		return m.Supplier
@@ -1755,11 +2889,144 @@ func (m *Shop) GetSupplier() *User {
 	return nil
 }
 
+func (m *Shop) GetInstagramId() uint64 {
+	if m != nil {
+		return m.InstagramId
+	}
+	return 0
+}
+
+func (m *Shop) GetInstagramUsername() string {
+	if m != nil {
+		return m.InstagramUsername
+	}
+	return ""
+}
+
+func (m *Shop) GetInstagramFullname() string {
+	if m != nil {
+		return m.InstagramFullname
+	}
+	return ""
+}
+
+func (m *Shop) GetInstagramAvatarUrl() string {
+	if m != nil {
+		return m.InstagramAvatarUrl
+	}
+	return ""
+}
+
+func (m *Shop) GetInstagramCaption() string {
+	if m != nil {
+		return m.InstagramCaption
+	}
+	return ""
+}
+
+func (m *Shop) GetInstagramWebsite() string {
+	if m != nil {
+		return m.InstagramWebsite
+	}
+	return ""
+}
+
+func (m *Shop) GetPaymentRules() string {
+	if m != nil {
+		return m.PaymentRules
+	}
+	return ""
+}
+
+func (m *Shop) GetShippingRules() string {
+	if m != nil {
+		return m.ShippingRules
+	}
+	return ""
+}
+
+func (m *Shop) GetCaption() string {
+	if m != nil {
+		return m.Caption
+	}
+	return ""
+}
+
 func (m *Shop) GetSellers() []*User {
 	if m != nil {
 		return m.Sellers
 	}
 	return nil
+}
+
+func (m *Shop) GetAvatarUrl() string {
+	if m != nil {
+		return m.AvatarUrl
+	}
+	return ""
+}
+
+func (m *Shop) GetSlogan() string {
+	if m != nil {
+		return m.Slogan
+	}
+	return ""
+}
+
+func (m *Shop) GetAvailable() bool {
+	if m != nil {
+		return m.Available
+	}
+	return false
+}
+
+func (m *Shop) GetCreatedAt() uint64 {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return 0
+}
+
+func (m *Shop) GetSuspended() bool {
+	if m != nil {
+		return m.Suspended
+	}
+	return false
+}
+
+func (m *Shop) GetPlanId() uint64 {
+	if m != nil {
+		return m.PlanId
+	}
+	return 0
+}
+
+func (m *Shop) GetPlanExpiresAt() int64 {
+	if m != nil {
+		return m.PlanExpiresAt
+	}
+	return 0
+}
+
+func (m *Shop) GetAutoRenewal() bool {
+	if m != nil {
+		return m.AutoRenewal
+	}
+	return false
+}
+
+func (m *Shop) GetLocation() string {
+	if m != nil {
+		return m.Location
+	}
+	return ""
+}
+
+func (m *Shop) GetWorkingTime() string {
+	if m != nil {
+		return m.WorkingTime
+	}
+	return ""
 }
 
 type ShopProfileRequest struct {
@@ -1893,6 +3160,13 @@ func (m *ShopProfileReply) GetShop() *Shop {
 	return nil
 }
 
+func (m *ShopProfileReply) GetProductsCount() uint64 {
+	if m != nil {
+		return m.ProductsCount
+	}
+	return 0
+}
+
 type FindOrCreateShopForSupplierRequest struct {
 	SupplierId uint64 `protobuf:"varint,1,opt,name=supplier_id,json=supplierId,proto3" json:"supplier_id,omitempty"`
 	// when false shop will not be recreated if it was deleted
@@ -1904,6 +3178,20 @@ func (m *FindOrCreateShopForSupplierRequest) String() string { return proto.Comp
 func (*FindOrCreateShopForSupplierRequest) ProtoMessage()    {}
 func (*FindOrCreateShopForSupplierRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptorCore, []int{75}
+}
+
+func (m *FindOrCreateShopForSupplierRequest) GetSupplierId() uint64 {
+	if m != nil {
+		return m.SupplierId
+	}
+	return 0
+}
+
+func (m *FindOrCreateShopForSupplierRequest) GetRecreateDeleted() bool {
+	if m != nil {
+		return m.RecreateDeleted
+	}
+	return false
 }
 
 type FindOrCreateShopForSupplierReply struct {
@@ -1919,6 +3207,27 @@ func (*FindOrCreateShopForSupplierReply) Descriptor() ([]byte, []int) {
 	return fileDescriptorCore, []int{76}
 }
 
+func (m *FindOrCreateShopForSupplierReply) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
+
+func (m *FindOrCreateShopForSupplierReply) GetDeleted() bool {
+	if m != nil {
+		return m.Deleted
+	}
+	return false
+}
+
+func (m *FindOrCreateShopForSupplierReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type FindOrCreateAttachedShopRequest struct {
 	SupplierId        uint64 `protobuf:"varint,1,opt,name=supplier_id,json=supplierId,proto3" json:"supplier_id,omitempty"`
 	InstagramUsername string `protobuf:"bytes,2,opt,name=instagram_username,json=instagramUsername,proto3" json:"instagram_username,omitempty"`
@@ -1929,6 +3238,20 @@ func (m *FindOrCreateAttachedShopRequest) String() string { return proto.Compact
 func (*FindOrCreateAttachedShopRequest) ProtoMessage()    {}
 func (*FindOrCreateAttachedShopRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptorCore, []int{77}
+}
+
+func (m *FindOrCreateAttachedShopRequest) GetSupplierId() uint64 {
+	if m != nil {
+		return m.SupplierId
+	}
+	return 0
+}
+
+func (m *FindOrCreateAttachedShopRequest) GetInstagramUsername() string {
+	if m != nil {
+		return m.InstagramUsername
+	}
+	return ""
 }
 
 type FindOrCreateAttachedShopReply struct {
@@ -1943,6 +3266,20 @@ func (*FindOrCreateAttachedShopReply) Descriptor() ([]byte, []int) {
 	return fileDescriptorCore, []int{78}
 }
 
+func (m *FindOrCreateAttachedShopReply) GetShopId() uint64 {
+	if m != nil {
+		return m.ShopId
+	}
+	return 0
+}
+
+func (m *FindOrCreateAttachedShopReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type GetMainTagsRequest struct {
 	Limit int64 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 }
@@ -1951,6 +3288,13 @@ func (m *GetMainTagsRequest) Reset()                    { *m = GetMainTagsReques
 func (m *GetMainTagsRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetMainTagsRequest) ProtoMessage()               {}
 func (*GetMainTagsRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{79} }
+
+func (m *GetMainTagsRequest) GetLimit() int64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
 
 type GetRelatedTagsRequest struct {
 	// tag list
@@ -1962,6 +3306,20 @@ func (m *GetRelatedTagsRequest) Reset()                    { *m = GetRelatedTags
 func (m *GetRelatedTagsRequest) String() string            { return proto.CompactTextString(m) }
 func (*GetRelatedTagsRequest) ProtoMessage()               {}
 func (*GetRelatedTagsRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{80} }
+
+func (m *GetRelatedTagsRequest) GetTags() []int64 {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *GetRelatedTagsRequest) GetLimit() int64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
 
 // tag object list
 type TagSearchResult struct {
@@ -1990,6 +3348,20 @@ func (m *Tag) Reset()                    { *m = Tag{} }
 func (m *Tag) String() string            { return proto.CompactTextString(m) }
 func (*Tag) ProtoMessage()               {}
 func (*Tag) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{82} }
+
+func (m *Tag) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *Tag) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
 
 type CreateUserRequest struct {
 	User *User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
@@ -2026,6 +3398,55 @@ func (m *ReadUserRequest) String() string            { return proto.CompactTextS
 func (*ReadUserRequest) ProtoMessage()               {}
 func (*ReadUserRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{84} }
 
+func (m *ReadUserRequest) GetInstagramId() uint64 {
+	if m != nil {
+		return m.InstagramId
+	}
+	return 0
+}
+
+func (m *ReadUserRequest) GetPhone() string {
+	if m != nil {
+		return m.Phone
+	}
+	return ""
+}
+
+func (m *ReadUserRequest) GetInstagramUsername() string {
+	if m != nil {
+		return m.InstagramUsername
+	}
+	return ""
+}
+
+func (m *ReadUserRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ReadUserRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *ReadUserRequest) GetPublic() bool {
+	if m != nil {
+		return m.Public
+	}
+	return false
+}
+
+func (m *ReadUserRequest) GetGetShops() bool {
+	if m != nil {
+		return m.GetShops
+	}
+	return false
+}
+
 type SearchUserReply struct {
 	Result []*User `protobuf:"bytes,1,rep,name=result" json:"result,omitempty"`
 }
@@ -2051,6 +3472,13 @@ func (m *ReadUserReply) Reset()                    { *m = ReadUserReply{} }
 func (m *ReadUserReply) String() string            { return proto.CompactTextString(m) }
 func (*ReadUserReply) ProtoMessage()               {}
 func (*ReadUserReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{86} }
+
+func (m *ReadUserReply) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
 
 func (m *ReadUserReply) GetUser() *User {
 	if m != nil {
@@ -2094,6 +3522,174 @@ func (m *User) String() string            { return proto.CompactTextString(m) }
 func (*User) ProtoMessage()               {}
 func (*User) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{87} }
 
+func (m *User) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *User) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *User) GetEmail() string {
+	if m != nil {
+		return m.Email
+	}
+	return ""
+}
+
+func (m *User) GetPhone() string {
+	if m != nil {
+		return m.Phone
+	}
+	return ""
+}
+
+func (m *User) GetWebsite() string {
+	if m != nil {
+		return m.Website
+	}
+	return ""
+}
+
+func (m *User) GetCaption() string {
+	if m != nil {
+		return m.Caption
+	}
+	return ""
+}
+
+func (m *User) GetAvatarUrl() string {
+	if m != nil {
+		return m.AvatarUrl
+	}
+	return ""
+}
+
+func (m *User) GetSlogan() string {
+	if m != nil {
+		return m.Slogan
+	}
+	return ""
+}
+
+func (m *User) GetInstagramId() uint64 {
+	if m != nil {
+		return m.InstagramId
+	}
+	return 0
+}
+
+func (m *User) GetInstagramUsername() string {
+	if m != nil {
+		return m.InstagramUsername
+	}
+	return ""
+}
+
+func (m *User) GetInstagramFullname() string {
+	if m != nil {
+		return m.InstagramFullname
+	}
+	return ""
+}
+
+func (m *User) GetInstagramAvatarUrl() string {
+	if m != nil {
+		return m.InstagramAvatarUrl
+	}
+	return ""
+}
+
+func (m *User) GetInstagramCaption() string {
+	if m != nil {
+		return m.InstagramCaption
+	}
+	return ""
+}
+
+func (m *User) GetOptOut() bool {
+	if m != nil {
+		return m.OptOut
+	}
+	return false
+}
+
+func (m *User) GetSuperSeller() bool {
+	if m != nil {
+		return m.SuperSeller
+	}
+	return false
+}
+
+func (m *User) GetHasEmail() bool {
+	if m != nil {
+		return m.HasEmail
+	}
+	return false
+}
+
+func (m *User) GetHasPhone() bool {
+	if m != nil {
+		return m.HasPhone
+	}
+	return false
+}
+
+func (m *User) GetConfirmed() bool {
+	if m != nil {
+		return m.Confirmed
+	}
+	return false
+}
+
+func (m *User) GetIsFake() bool {
+	if m != nil {
+		return m.IsFake
+	}
+	return false
+}
+
+func (m *User) GetIsAdmin() bool {
+	if m != nil {
+		return m.IsAdmin
+	}
+	return false
+}
+
+func (m *User) GetSeller() bool {
+	if m != nil {
+		return m.Seller
+	}
+	return false
+}
+
+func (m *User) GetSupplierOf() []uint64 {
+	if m != nil {
+		return m.SupplierOf
+	}
+	return nil
+}
+
+func (m *User) GetSellerOf() []uint64 {
+	if m != nil {
+		return m.SellerOf
+	}
+	return nil
+}
+
+func (m *User) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
 type SetEmailRequest struct {
 	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Email  string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
@@ -2104,6 +3700,20 @@ func (m *SetEmailRequest) String() string            { return proto.CompactTextS
 func (*SetEmailRequest) ProtoMessage()               {}
 func (*SetEmailRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{88} }
 
+func (m *SetEmailRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SetEmailRequest) GetEmail() string {
+	if m != nil {
+		return m.Email
+	}
+	return ""
+}
+
 type SetEmailReply struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
@@ -2112,6 +3722,13 @@ func (m *SetEmailReply) Reset()                    { *m = SetEmailReply{} }
 func (m *SetEmailReply) String() string            { return proto.CompactTextString(m) }
 func (*SetEmailReply) ProtoMessage()               {}
 func (*SetEmailReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{89} }
+
+func (m *SetEmailReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type SetDataRequest struct {
 	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -2123,6 +3740,27 @@ func (m *SetDataRequest) Reset()                    { *m = SetDataRequest{} }
 func (m *SetDataRequest) String() string            { return proto.CompactTextString(m) }
 func (*SetDataRequest) ProtoMessage()               {}
 func (*SetDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{90} }
+
+func (m *SetDataRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *SetDataRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *SetDataRequest) GetPhone() string {
+	if m != nil {
+		return m.Phone
+	}
+	return ""
+}
 
 type SetDataReply struct {
 }
@@ -2146,6 +3784,34 @@ func (m *AddTelegramRequest) String() string            { return proto.CompactTe
 func (*AddTelegramRequest) ProtoMessage()               {}
 func (*AddTelegramRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{92} }
 
+func (m *AddTelegramRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *AddTelegramRequest) GetUsername() string {
+	if m != nil {
+		return m.Username
+	}
+	return ""
+}
+
+func (m *AddTelegramRequest) GetChatId() uint64 {
+	if m != nil {
+		return m.ChatId
+	}
+	return 0
+}
+
+func (m *AddTelegramRequest) GetSubsricberName() string {
+	if m != nil {
+		return m.SubsricberName
+	}
+	return ""
+}
+
 type AddTelegramReply struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
@@ -2154,6 +3820,13 @@ func (m *AddTelegramReply) Reset()                    { *m = AddTelegramReply{} 
 func (m *AddTelegramReply) String() string            { return proto.CompactTextString(m) }
 func (*AddTelegramReply) ProtoMessage()               {}
 func (*AddTelegramReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{93} }
+
+func (m *AddTelegramReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type Telegram struct {
 	UserId        uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -2167,6 +3840,34 @@ func (m *Telegram) String() string            { return proto.CompactTextString(m
 func (*Telegram) ProtoMessage()               {}
 func (*Telegram) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{94} }
 
+func (m *Telegram) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *Telegram) GetChatId() uint64 {
+	if m != nil {
+		return m.ChatId
+	}
+	return 0
+}
+
+func (m *Telegram) GetSubsriberName() string {
+	if m != nil {
+		return m.SubsriberName
+	}
+	return ""
+}
+
+func (m *Telegram) GetConfirmed() bool {
+	if m != nil {
+		return m.Confirmed
+	}
+	return false
+}
+
 type ListTelegramsRequest struct {
 	UserId        uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConfirmedOnly bool   `protobuf:"varint,2,opt,name=confirmed_only,json=confirmedOnly,proto3" json:"confirmed_only,omitempty"`
@@ -2176,6 +3877,20 @@ func (m *ListTelegramsRequest) Reset()                    { *m = ListTelegramsRe
 func (m *ListTelegramsRequest) String() string            { return proto.CompactTextString(m) }
 func (*ListTelegramsRequest) ProtoMessage()               {}
 func (*ListTelegramsRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{95} }
+
+func (m *ListTelegramsRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *ListTelegramsRequest) GetConfirmedOnly() bool {
+	if m != nil {
+		return m.ConfirmedOnly
+	}
+	return false
+}
 
 type ListTelegramsReply struct {
 	Telegrams []*Telegram `protobuf:"bytes,1,rep,name=telegrams" json:"telegrams,omitempty"`
@@ -2194,6 +3909,13 @@ func (m *ListTelegramsReply) GetTelegrams() []*Telegram {
 	return nil
 }
 
+func (m *ListTelegramsReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
+
 type ConfirmTelegramRequest struct {
 	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ChatId uint64 `protobuf:"varint,2,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
@@ -2204,6 +3926,20 @@ func (m *ConfirmTelegramRequest) String() string            { return proto.Compa
 func (*ConfirmTelegramRequest) ProtoMessage()               {}
 func (*ConfirmTelegramRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{97} }
 
+func (m *ConfirmTelegramRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *ConfirmTelegramRequest) GetChatId() uint64 {
+	if m != nil {
+		return m.ChatId
+	}
+	return 0
+}
+
 type ConfirmTelegramReply struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
@@ -2212,6 +3948,13 @@ func (m *ConfirmTelegramReply) Reset()                    { *m = ConfirmTelegram
 func (m *ConfirmTelegramReply) String() string            { return proto.CompactTextString(m) }
 func (*ConfirmTelegramReply) ProtoMessage()               {}
 func (*ConfirmTelegramReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{98} }
+
+func (m *ConfirmTelegramReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type DelTelegramRequest struct {
 	UserId   uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -2224,6 +3967,27 @@ func (m *DelTelegramRequest) String() string            { return proto.CompactTe
 func (*DelTelegramRequest) ProtoMessage()               {}
 func (*DelTelegramRequest) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{99} }
 
+func (m *DelTelegramRequest) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+func (m *DelTelegramRequest) GetUsername() string {
+	if m != nil {
+		return m.Username
+	}
+	return ""
+}
+
+func (m *DelTelegramRequest) GetChatId() uint64 {
+	if m != nil {
+		return m.ChatId
+	}
+	return 0
+}
+
 type DelTelegramReply struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
@@ -2232,6 +3996,13 @@ func (m *DelTelegramReply) Reset()                    { *m = DelTelegramReply{} 
 func (m *DelTelegramReply) String() string            { return proto.CompactTextString(m) }
 func (*DelTelegramReply) ProtoMessage()               {}
 func (*DelTelegramReply) Descriptor() ([]byte, []int) { return fileDescriptorCore, []int{100} }
+
+func (m *DelTelegramReply) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterType((*ReadLeadRequest)(nil), "core.ReadLeadRequest")
@@ -10551,7 +12322,24 @@ func (m *UserLeadsRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 2:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v LeadUserRole
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (LeadUserRole(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Role = append(m.Role, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -10592,23 +12380,6 @@ func (m *UserLeadsRequest) Unmarshal(dAtA []byte) error {
 					}
 					m.Role = append(m.Role, v)
 				}
-			} else if wireType == 0 {
-				var v LeadUserRole
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (LeadUserRole(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Role = append(m.Role, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Role", wireType)
 			}
@@ -11342,7 +13113,24 @@ func (m *LeadEventMessage) Unmarshal(dAtA []byte) error {
 			m.Event = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Users = append(m.Users, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -11383,23 +13171,6 @@ func (m *LeadEventMessage) Unmarshal(dAtA []byte) error {
 					}
 					m.Users = append(m.Users, v)
 				}
-			} else if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Users = append(m.Users, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Users", wireType)
 			}
@@ -14168,7 +15939,24 @@ func (m *SearchProductRequest) Unmarshal(dAtA []byte) error {
 			m.Keyword = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v int64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (int64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Tags = append(m.Tags, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -14209,23 +15997,6 @@ func (m *SearchProductRequest) Unmarshal(dAtA []byte) error {
 					}
 					m.Tags = append(m.Tags, v)
 				}
-			} else if wireType == 0 {
-				var v int64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Tags = append(m.Tags, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
 			}
@@ -15754,7 +17525,24 @@ func (m *GetLikedByReply) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.ProductIds = append(m.ProductIds, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -15795,23 +17583,6 @@ func (m *GetLikedByReply) Unmarshal(dAtA []byte) error {
 					}
 					m.ProductIds = append(m.ProductIds, v)
 				}
-			} else if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.ProductIds = append(m.ProductIds, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProductIds", wireType)
 			}
@@ -19611,7 +21382,24 @@ func (m *GetRelatedTagsRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v int64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (int64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Tags = append(m.Tags, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -19652,23 +21440,6 @@ func (m *GetRelatedTagsRequest) Unmarshal(dAtA []byte) error {
 					}
 					m.Tags = append(m.Tags, v)
 				}
-			} else if wireType == 0 {
-				var v int64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Tags = append(m.Tags, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
 			}
@@ -20859,7 +22630,24 @@ func (m *User) Unmarshal(dAtA []byte) error {
 			m.Slogan = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 19:
-			if wireType == 2 {
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCore
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.SupplierOf = append(m.SupplierOf, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -20900,7 +22688,11 @@ func (m *User) Unmarshal(dAtA []byte) error {
 					}
 					m.SupplierOf = append(m.SupplierOf, v)
 				}
-			} else if wireType == 0 {
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupplierOf", wireType)
+			}
+		case 20:
+			if wireType == 0 {
 				var v uint64
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -20916,12 +22708,8 @@ func (m *User) Unmarshal(dAtA []byte) error {
 						break
 					}
 				}
-				m.SupplierOf = append(m.SupplierOf, v)
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field SupplierOf", wireType)
-			}
-		case 20:
-			if wireType == 2 {
+				m.SellerOf = append(m.SellerOf, v)
+			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
@@ -20962,23 +22750,6 @@ func (m *User) Unmarshal(dAtA []byte) error {
 					}
 					m.SellerOf = append(m.SellerOf, v)
 				}
-			} else if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCore
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.SellerOf = append(m.SellerOf, v)
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field SellerOf", wireType)
 			}

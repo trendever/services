@@ -18,7 +18,6 @@ type Activity struct {
 	MediaURL          string
 	UserID            uint64 // commentary owner ID
 	UserName          string // commentary owner username
-	UserImageURL      string
 	MentionedUsername string // mention tag. @saveit, for instance
 	MentionedRole     bot.MentionedRole
 	Type              string
@@ -70,7 +69,6 @@ func (act *Activity) Encode() *bot.Activity {
 		MediaId:           act.MediaId,
 		MediaUrl:          act.MediaURL,
 		UserId:            act.UserID,
-		UserImageUrl:      act.UserImageURL,
 		UserName:          act.UserName,
 		MentionedUsername: act.MentionedUsername,
 		MetionedRole:      act.MentionedRole,

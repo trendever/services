@@ -13,6 +13,7 @@ var (
 	UserClient      core.UserServiceClient
 	ProductClient   core.ProductServiceClient
 	LeadClient      core.LeadServiceClient
+	ShopClient      core.ShopServiceClient
 )
 
 func Start() {
@@ -25,4 +26,5 @@ func Start() {
 	UserClient = core.NewUserServiceClient(coreConn)
 	ProductClient = core.NewProductServiceClient(coreConn)
 	LeadClient = core.NewLeadServiceClient(coreConn)
+	ShopClient = core.NewShopServiceClient(coreConn)
 }
