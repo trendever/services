@@ -494,7 +494,7 @@ func (c *conversationRepositoryImpl) CheckMessageExists(instagramID string) (boo
 }
 
 func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64, threadID string, forceNowThread bool) (retry bool, err error) {
-	log.Debug("enabling sync for chat %v...", chatID)
+	log.Debug("enabling sync for chat %v(threadID = %v, force = %v)...", chatID, threadID, forceNowThread)
 
 	var chat Conversation
 	err = c.db.Preload("Members").First(&chat, "id = ?", chatID).Error
@@ -515,7 +515,7 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 		return false, fmt.Errorf("chat %v has no primary instagram", chat.ID)
 	}
 
-	if threadID != "" && threadID != chat.DirectThread {
+	if threadID != "" {
 		return c.SetRelatedThread(chatID, threadID)
 	}
 
@@ -574,6 +574,7 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 		c.syncRecent(&chat)
 		return false, nil
 	}
+
 	err = errors.New("unreachable point is reached in EnableSync()")
 	log.Error(err)
 	return false, err
@@ -604,30 +605,34 @@ func (c *conversationRepositoryImpl) SetRelatedThread(chatID uint64, directThrea
 		return true, fmt.Errorf("failed to load chat: %v", err)
 	}
 
-	var old Conversation
-	scope = c.db.
-		Where("direct_thread = ?", directThread).
-		Where("id != ?", chatID).
-		Preload("Members").
-		First(&old)
-	switch {
-	case scope.RecordNotFound():
+	if chat.DirectThread != directThread {
+		var old Conversation
+		scope = c.db.
+			Where("direct_thread = ?", directThread).
+			Where("id != ?", chatID).
+			Preload("Members").
+			First(&old)
 
-	case scope.Error != nil:
-		return true, fmt.Errorf("failed to detach other chats: %v", err)
+		switch {
+		case scope.RecordNotFound():
 
-	default:
-		old.DirectThread = ""
-		err := c.updateSyncStatus(&old, pb_chat.SyncStatus_DETACHED)
-		if err != nil {
+		case scope.Error != nil:
 			return true, fmt.Errorf("failed to detach other chats: %v", err)
+
+		default:
+			old.DirectThread = ""
+			err := c.updateSyncStatus(&old, pb_chat.SyncStatus_DETACHED)
+			if err != nil {
+				return true, fmt.Errorf("failed to detach other chats: %v", err)
+			}
 		}
+
+		if chat.DirectThread != "" {
+			log.Warn("chat %v already had related instagram thread '%v', replacing", chatID, chat.DirectThread)
+		}
+		chat.DirectThread = directThread
 	}
 
-	if chat.DirectThread != "" {
-		log.Warn("chat %v already had related instagram thread '%v', replacing", chatID, chat.DirectThread)
-	}
-	chat.DirectThread = directThread
 	err = c.updateSyncStatus(&chat, pb_chat.SyncStatus_SYNCED)
 	if err != nil {
 		return true, fmt.Errorf("failed to save chat info: %v", err)
