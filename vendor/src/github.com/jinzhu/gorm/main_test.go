@@ -58,8 +58,13 @@ func OpenTestConnection() (db *gorm.DB, err error) {
 		fmt.Println("testing foundation...")
 		db, err = gorm.Open("foundation", "dbname=gorm port=15432 sslmode=disable")
 	case "mssql":
+		// CREATE LOGIN gorm WITH PASSWORD = 'LoremIpsum86';
+		// CREATE DATABASE gorm;
+		// USE gorm;
+		// CREATE USER gorm FROM LOGIN gorm;
+		// sp_changedbowner 'gorm';
 		fmt.Println("testing mssql...")
-		db, err = gorm.Open("mssql", "server=SERVER_HERE;database=rogue;user id=USER_HERE;password=PW_HERE;port=1433")
+		db, err = gorm.Open("mssql", "sqlserver://gorm:LoremIpsum86@localhost:1433?database=gorm")
 	default:
 		fmt.Println("testing sqlite3...")
 		db, err = gorm.Open("sqlite3", filepath.Join(os.TempDir(), "gorm.db"))
@@ -315,8 +320,14 @@ func TestNullValuesWithFirstOrCreate(t *testing.T) {
 	}
 
 	var nv2 NullValue
-	if err := DB.Where(nv1).FirstOrCreate(&nv2).Error; err != nil {
-		t.Errorf("Should not raise any error, but got %v", err)
+	result := DB.Where(nv1).FirstOrCreate(&nv2)
+
+	if result.RowsAffected != 1 {
+		t.Errorf("RowsAffected should be 1 after create some record")
+	}
+
+	if result.Error != nil {
+		t.Errorf("Should not raise any error, but got %v", result.Error)
 	}
 
 	if nv2.Name.String != "first_or_create" || nv2.Gender.String != "M" {
@@ -371,9 +382,9 @@ func TestTransaction(t *testing.T) {
 }
 
 func TestRow(t *testing.T) {
-	user1 := User{Name: "RowUser1", Age: 1, Birthday: now.MustParse("2000-1-1")}
-	user2 := User{Name: "RowUser2", Age: 10, Birthday: now.MustParse("2010-1-1")}
-	user3 := User{Name: "RowUser3", Age: 20, Birthday: now.MustParse("2020-1-1")}
+	user1 := User{Name: "RowUser1", Age: 1, Birthday: parseTime("2000-1-1")}
+	user2 := User{Name: "RowUser2", Age: 10, Birthday: parseTime("2010-1-1")}
+	user3 := User{Name: "RowUser3", Age: 20, Birthday: parseTime("2020-1-1")}
 	DB.Save(&user1).Save(&user2).Save(&user3)
 
 	row := DB.Table("users").Where("name = ?", user2.Name).Select("age").Row()
@@ -385,9 +396,9 @@ func TestRow(t *testing.T) {
 }
 
 func TestRows(t *testing.T) {
-	user1 := User{Name: "RowsUser1", Age: 1, Birthday: now.MustParse("2000-1-1")}
-	user2 := User{Name: "RowsUser2", Age: 10, Birthday: now.MustParse("2010-1-1")}
-	user3 := User{Name: "RowsUser3", Age: 20, Birthday: now.MustParse("2020-1-1")}
+	user1 := User{Name: "RowsUser1", Age: 1, Birthday: parseTime("2000-1-1")}
+	user2 := User{Name: "RowsUser2", Age: 10, Birthday: parseTime("2010-1-1")}
+	user3 := User{Name: "RowsUser3", Age: 20, Birthday: parseTime("2020-1-1")}
 	DB.Save(&user1).Save(&user2).Save(&user3)
 
 	rows, err := DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age").Rows()
@@ -409,9 +420,9 @@ func TestRows(t *testing.T) {
 }
 
 func TestScanRows(t *testing.T) {
-	user1 := User{Name: "ScanRowsUser1", Age: 1, Birthday: now.MustParse("2000-1-1")}
-	user2 := User{Name: "ScanRowsUser2", Age: 10, Birthday: now.MustParse("2010-1-1")}
-	user3 := User{Name: "ScanRowsUser3", Age: 20, Birthday: now.MustParse("2020-1-1")}
+	user1 := User{Name: "ScanRowsUser1", Age: 1, Birthday: parseTime("2000-1-1")}
+	user2 := User{Name: "ScanRowsUser2", Age: 10, Birthday: parseTime("2010-1-1")}
+	user3 := User{Name: "ScanRowsUser3", Age: 20, Birthday: parseTime("2020-1-1")}
 	DB.Save(&user1).Save(&user2).Save(&user3)
 
 	rows, err := DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age").Rows()
@@ -439,9 +450,9 @@ func TestScanRows(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	user1 := User{Name: "ScanUser1", Age: 1, Birthday: now.MustParse("2000-1-1")}
-	user2 := User{Name: "ScanUser2", Age: 10, Birthday: now.MustParse("2010-1-1")}
-	user3 := User{Name: "ScanUser3", Age: 20, Birthday: now.MustParse("2020-1-1")}
+	user1 := User{Name: "ScanUser1", Age: 1, Birthday: parseTime("2000-1-1")}
+	user2 := User{Name: "ScanUser2", Age: 10, Birthday: parseTime("2010-1-1")}
+	user3 := User{Name: "ScanUser3", Age: 20, Birthday: parseTime("2020-1-1")}
 	DB.Save(&user1).Save(&user2).Save(&user3)
 
 	type result struct {
@@ -455,8 +466,10 @@ func TestScan(t *testing.T) {
 		t.Errorf("Scan into struct should work")
 	}
 
-	var doubleAgeRes result
-	DB.Table("users").Select("age + age as age").Where("name = ?", user3.Name).Scan(&doubleAgeRes)
+	var doubleAgeRes = &result{}
+	if err := DB.Table("users").Select("age + age as age").Where("name = ?", user3.Name).Scan(&doubleAgeRes).Error; err != nil {
+		t.Errorf("Scan to pointer of pointer")
+	}
 	if doubleAgeRes.Age != res.Age*2 {
 		t.Errorf("Scan double age as age")
 	}
@@ -469,9 +482,9 @@ func TestScan(t *testing.T) {
 }
 
 func TestRaw(t *testing.T) {
-	user1 := User{Name: "ExecRawSqlUser1", Age: 1, Birthday: now.MustParse("2000-1-1")}
-	user2 := User{Name: "ExecRawSqlUser2", Age: 10, Birthday: now.MustParse("2010-1-1")}
-	user3 := User{Name: "ExecRawSqlUser3", Age: 20, Birthday: now.MustParse("2020-1-1")}
+	user1 := User{Name: "ExecRawSqlUser1", Age: 1, Birthday: parseTime("2000-1-1")}
+	user2 := User{Name: "ExecRawSqlUser2", Age: 10, Birthday: parseTime("2010-1-1")}
+	user3 := User{Name: "ExecRawSqlUser3", Age: 20, Birthday: parseTime("2020-1-1")}
 	DB.Save(&user1).Save(&user2).Save(&user3)
 
 	type result struct {
@@ -611,11 +624,12 @@ func TestTimeWithZone(t *testing.T) {
 
 	for index, vtime := range times {
 		name := "time_with_zone_" + strconv.Itoa(index)
-		user := User{Name: name, Birthday: vtime}
+		user := User{Name: name, Birthday: &vtime}
 
 		if !DialectHasTzSupport() {
 			// If our driver dialect doesn't support TZ's, just use UTC for everything here.
-			user.Birthday = vtime.UTC()
+			utcBirthday := user.Birthday.UTC()
+			user.Birthday = &utcBirthday
 		}
 
 		DB.Save(&user)
@@ -754,15 +768,64 @@ func TestDdlErrors(t *testing.T) {
 	}
 }
 
+func TestOpenWithOneParameter(t *testing.T) {
+	db, err := gorm.Open("dialect")
+	if db != nil {
+		t.Error("Open with one parameter returned non nil for db")
+	}
+	if err == nil {
+		t.Error("Open with one parameter returned err as nil")
+	}
+}
+
+func TestBlockGlobalUpdate(t *testing.T) {
+	db := DB.New()
+	db.Create(&Toy{Name: "Stuffed Animal", OwnerType: "Nobody"})
+
+	err := db.Model(&Toy{}).Update("OwnerType", "Human").Error
+	if err != nil {
+		t.Error("Unexpected error on global update")
+	}
+
+	err = db.Delete(&Toy{}).Error
+	if err != nil {
+		t.Error("Unexpected error on global delete")
+	}
+
+	db.BlockGlobalUpdate(true)
+
+	db.Create(&Toy{Name: "Stuffed Animal", OwnerType: "Nobody"})
+
+	err = db.Model(&Toy{}).Update("OwnerType", "Human").Error
+	if err == nil {
+		t.Error("Expected error on global update")
+	}
+
+	err = db.Model(&Toy{}).Where(&Toy{OwnerType: "Martian"}).Update("OwnerType", "Astronaut").Error
+	if err != nil {
+		t.Error("Unxpected error on conditional update")
+	}
+
+	err = db.Delete(&Toy{}).Error
+	if err == nil {
+		t.Error("Expected error on global delete")
+	}
+	err = db.Where(&Toy{OwnerType: "Martian"}).Delete(&Toy{}).Error
+	if err != nil {
+		t.Error("Unexpected error on conditional delete")
+	}
+}
+
 func BenchmarkGorm(b *testing.B) {
 	b.N = 2000
 	for x := 0; x < b.N; x++ {
 		e := strconv.Itoa(x) + "benchmark@example.org"
-		email := BigEmail{Email: e, UserAgent: "pc", RegisteredAt: time.Now()}
+		now := time.Now()
+		email := EmailWithIdx{Email: e, UserAgent: "pc", RegisteredAt: &now}
 		// Insert
 		DB.Save(&email)
 		// Query
-		DB.First(&BigEmail{}, "email = ?", e)
+		DB.First(&EmailWithIdx{}, "email = ?", e)
 		// Update
 		DB.Model(&email).UpdateColumn("email", "new-"+e)
 		// Delete
@@ -782,7 +845,8 @@ func BenchmarkRawSql(b *testing.B) {
 	for x := 0; x < b.N; x++ {
 		var id int64
 		e := strconv.Itoa(x) + "benchmark@example.org"
-		email := BigEmail{Email: e, UserAgent: "pc", RegisteredAt: time.Now()}
+		now := time.Now()
+		email := EmailWithIdx{Email: e, UserAgent: "pc", RegisteredAt: &now}
 		// Insert
 		DB.QueryRow(insertSql, email.UserId, email.Email, email.UserAgent, email.RegisteredAt, time.Now(), time.Now()).Scan(&id)
 		// Query
@@ -793,4 +857,9 @@ func BenchmarkRawSql(b *testing.B) {
 		// Delete
 		DB.Exec(deleteSql, id)
 	}
+}
+
+func parseTime(str string) *time.Time {
+	t := now.New(time.Now().UTC()).MustParse(str)
+	return &t
 }
