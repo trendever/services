@@ -18,6 +18,7 @@ services:
     ports:
       - 127.0.0.1:3004:3004
       - 127.0.0.1:6060:6060
+      - 127.0.0.1:3005:3005
   checker:
     image: debian:jessie
     volumes_from:

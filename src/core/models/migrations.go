@@ -50,7 +50,7 @@ func Migrate() error {
 
 	db.New().Model(&ImageCandidate{}).AddIndex("idx_products_product_images_product_id", "product_id")
 
-	db.New().Model(&Product{}).AddUniqueIndex("idx_products_product_instagram_image_id", "instagram_image_id")
+	db.New().Model(&Product{}).AddIndex("idx_products_product_instagram_image_id", "instagram_image_id")
 
 	db.New().Model(&PushToken{}).AddForeignKey("user_id", "users_user(id)", "CASCADE", "RESTRICT")
 
