@@ -36,13 +36,13 @@ type Product struct {
 
 	// Product shop
 	ShopID uint `gorm:"index:shops_index"`
-	Shop   Shop
+	Shop   Shop `gorm:"save_associations:false"`
 	// for update related chats in update callbacks
 	oldShop uint
 
 	// Product mentioner
 	MentionedByID uint `gorm:"index:mentioners_index"`
-	MentionedBy   User
+	MentionedBy   User `gorm:"save_associations:false"`
 
 	LikedBy []*User `gorm:"many2many:users_products"`
 
