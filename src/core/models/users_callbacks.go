@@ -81,7 +81,7 @@ func (u *User) LoadExternals(db *gorm.DB) {
 
 func (u *User) fetchPreviousPhone(db *gorm.DB) {
 	origin := &User{}
-	if err := db.Model(&User{}).Select("phone").Find(origin, u.ID); err == nil {
+	if err := db.Model(&User{}).Select("phone").Find(origin, u.ID).Error; err == nil {
 		u.previousPhone = origin.Phone
 	}
 }
