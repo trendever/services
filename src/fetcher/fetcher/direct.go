@@ -92,50 +92,23 @@ collectLoop:
 }
 
 func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime int64) error {
-	var (
-		threadID = info.ThreadID
-		resp     *instagram.DirectThreadResponse
-		msgs     []instagram.ThreadItem
-	)
-
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
 	}
-	// populate new messages
-	cursor := ""
-	for {
-		resp, err = ig.DirectThread(threadID, cursor)
-		if err != nil {
-			return err
-		}
+	threadID := info.ThreadID
 
-		items := resp.Thread.Items
-		if info.LaterThan(resp.Thread.OldestCursor) && items[len(items)-1].Timestamp/1000000 >= meta.AddedAt {
-			msgs = append(msgs, items...)
-			cursor = resp.Thread.OldestCursor
-			if !resp.Thread.HasOlder {
-				break
-			}
-			continue
-		}
-
-		if info.LastCheckedID == resp.Thread.OldestCursor {
-			msgs = append(msgs, items...)
-			break
-		}
-
-		for it, msg := range items {
-			if !info.LaterThan(msg.ItemID) || msg.Timestamp/1000000 < meta.AddedAt {
-				msgs = append(msgs, items[:it]...)
-				break
-			}
-		}
-		break
+	resp, msgs, err := loadThread(meta, threadID, info.LastCheckedID)
+	if err != nil {
+		return err
+	}
+	// strip checked message
+	if len(msgs) > 0 && msgs[len(msgs)-1].ItemID == info.LastCheckedID {
+		msgs = msgs[:len(msgs)-1]
 	}
 
 	log.Debug("Got %v new messages for %v from thread %v", len(msgs), meta.Get().Username, threadID)
-
+	// @TODO send one notify for multiple messages where possible
 	var relatedMedia *instagram.ThreadItem
 	sourceID := meta.Get().UserID
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
@@ -171,13 +144,17 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 			}
 
 		case "media":
-			notify := bot.DirectNotify{
-				ThreadId:  threadID,
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				SourceId:  sourceID,
-				Type:      bot.MessageType_Image,
-				Data:      message.Media.ImageVersions2.Largest(),
+			notify := bot.Notify{
+				ThreadId: threadID,
+				SourceId: sourceID,
+				Messages: []*bot.Message{
+					{
+						MessageId: message.ItemID,
+						UserId:    message.UserID,
+						Type:      bot.MessageType_Image,
+						Data:      message.Media.ImageVersions2.Largest(),
+					},
+				},
 			}
 			err := nats.StanPublish(DirectNotifySubject, &notify)
 			if err != nil {
@@ -185,15 +162,18 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 			}
 
 		case "text":
-			notify := bot.DirectNotify{
-				ThreadId:  threadID,
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				SourceId:  sourceID,
-				Type:      bot.MessageType_Text,
-				Data:      message.Text,
+			notify := bot.Notify{
+				ThreadId: threadID,
+				SourceId: sourceID,
+				Messages: []*bot.Message{
+					{
+						MessageId: message.ItemID,
+						UserId:    message.UserID,
+						Type:      bot.MessageType_Text,
+						Data:      message.Text,
+					},
+				},
 			}
-
 			if relatedMedia != nil {
 				comment := ""
 				if relatedMedia.UserID == message.UserID {
@@ -237,6 +217,78 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 	}
 
 	return nil
+}
+
+// populate new messages from direct thread starting with message with passed ID(inclusive)
+// returned instagram.DirectThreadResponse is from last page query
+func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *instagram.DirectThreadResponse, msgs []instagram.ThreadItem, err error) {
+	ig := meta.Get()
+	cursor := ""
+	for {
+		thread, err = ig.DirectThread(threadID, cursor)
+		if err != nil {
+			return
+		}
+
+		items := thread.Thread.Items
+		if models.CompareID(thread.Thread.OldestCursor, sinceID) > 0 && items[len(items)-1].Timestamp/1000000 >= meta.AddedAt {
+			msgs = append(msgs, items...)
+			cursor = thread.Thread.OldestCursor
+			if !thread.Thread.HasOlder {
+				return
+			}
+			continue
+		}
+
+		if sinceID == thread.Thread.OldestCursor {
+			msgs = append(msgs, items...)
+			return
+		}
+
+		for it, msg := range items {
+			if models.CompareID(msg.ItemID, sinceID) < 0 || msg.Timestamp/1000000 < meta.AddedAt {
+				msgs = append(msgs, items[:it]...)
+				break
+			}
+		}
+		return
+	}
+}
+
+func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*bot.Message, err error) {
+	_, msgs, err := loadThread(meta, threadID, since)
+	ret = []*bot.Message{}
+	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
+	for it := len(msgs) - 1; it >= 0; it-- {
+		message := &msgs[it]
+
+		switch message.ItemType {
+		case "media_share":
+			ret = append(ret, &bot.Message{
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				Type:      bot.MessageType_MediaShare,
+				Data:      message.MediaShare.ID,
+			})
+
+		case "media":
+			ret = append(ret, &bot.Message{
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				Type:      bot.MessageType_Image,
+				Data:      message.Media.ImageVersions2.Largest(),
+			})
+
+		case "text":
+			ret = append(ret, &bot.Message{
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				Type:      bot.MessageType_Text,
+				Data:      message.Text,
+			})
+		}
+	}
+	return ret, nil
 }
 
 func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta) error {

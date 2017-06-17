@@ -1,5 +1,4 @@
 service FetcherService {
-
   rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
 
   rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
@@ -37,6 +36,7 @@ enum MessageType {
   // for internal usage inside fether only
   CreateThread = 127;
 
+  FetchThread = 254;
   // for creating comments
   ReplyComment = 255;
 }
@@ -75,20 +75,20 @@ message Activity {
   string direct_thread_id = 12;
 }
 
-// to avoid races this message used in feed notifications AND replies on SendDirect|CreateThread
-message DirectNotify {
-  string thread_id = 1;
-  string message_id = 2;
-
-  // fields for new message notifies
+message Message {
+  string message_id = 1;
   // instagram id
-  uint64 user_id = 3;
-  // instagram id of account which provided notification
-  uint64 source_id = 8;
-  MessageType type = 9;
+  uint64 user_id = 2;
+  MessageType type = 3;
   string data = 4;
+}
 
-  // for replies
+// to avoid races this message used in feed notifications AND replies for requests
+message Notify {
+  string thread_id = 1;
+  // instagram id of account which provided notification
+  uint64 source_id = 2;
+  repeated Message messages = 10;
   string reply_key = 6;
   string error = 7;
 }
@@ -102,6 +102,6 @@ message CreateThreadRequest {
   string caption = 3;
   // initial comment message
   string init_message = 4;
-  // will be send back in CreateThreadReply
+  // will be sent back in reply
   string reply_key = 5;
 }

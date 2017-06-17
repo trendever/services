@@ -25,6 +25,23 @@ func (info *ThreadInfo) LaterThan(otherID string) bool {
 	return info.LastCheckedID < otherID
 }
 
+func CompareID(one, two string) int {
+	lenDiff := len(one) - len(two)
+	if lenDiff != 0 {
+		if lenDiff > 0 {
+			return 1
+		}
+		return -1
+	}
+	if one == two {
+		return 0
+	}
+	if one > two {
+		return 1
+	}
+	return -1
+}
+
 // TableName defines table name
 func (info *ThreadInfo) TableName() string {
 	return "direct_thread"
