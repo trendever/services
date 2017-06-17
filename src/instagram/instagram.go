@@ -134,7 +134,7 @@ func (ig *Instagram) GetMediaLikers(mediaID string) (*MediaLikers, error) {
 	endpoint := fmt.Sprintf("/media/%v/likers/?", mediaID)
 
 	var object MediaLikers
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -145,7 +145,7 @@ func (ig *Instagram) GetMediaComment(mediaID string) (*MediaComment, error) {
 	endpoint := fmt.Sprintf("/media/%v/comments/?", mediaID)
 
 	var object MediaComment
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -175,7 +175,7 @@ func (ig *Instagram) GetMedia(mediaID string) (*Medias, error) {
 	endpoint := fmt.Sprintf("/media/%v/info/?", mediaID)
 
 	var object Medias
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -186,7 +186,7 @@ func (ig *Instagram) GetRecentActivity() (*RecentActivity, error) {
 	endpoint := "/news/inbox/?"
 
 	var object RecentActivity
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -198,7 +198,7 @@ func (ig *Instagram) GetUserFeed(userID uint64) (*UserFeed, error) {
 	// @TODO: use max_id parameter
 
 	var object UserFeed
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -212,7 +212,7 @@ func (ig *Instagram) SearchUsers(query string) (*SearchUsers, error) {
 	)
 
 	var object SearchUsers
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -223,7 +223,7 @@ func (ig *Instagram) GetUserNameInfo(userNameID uint64) (*UserNameInfo, error) {
 	endpoint := fmt.Sprintf("/users/%d/info/?", userNameID)
 
 	var object UserNameInfo
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -237,7 +237,7 @@ func (ig *Instagram) GetUserTags(userNameID uint64) (*UserTags, error) {
 	)
 
 	var object UserTags
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -251,7 +251,7 @@ func (ig *Instagram) SearchTags(query string) (*SearchTags, error) {
 	)
 
 	var object SearchTags
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -265,7 +265,7 @@ func (ig *Instagram) TagFeed(tag, maxID string) (*TagFeed, error) {
 	)
 
 	var object TagFeed
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -276,7 +276,7 @@ func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
 	endpoint := "/direct_v2/pending_inbox/?"
 
 	var object PendingInboxResponse
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -290,7 +290,7 @@ func (ig *Instagram) Inbox(cursor string) (*InboxResponse, error) {
 	}
 
 	var object InboxResponse
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -300,7 +300,7 @@ func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 	endpoint := "/direct_v2/ranked_recipients/?show_threads=true"
 
 	var object RankedRecipientsResponse
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 
@@ -315,7 +315,7 @@ func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadRespons
 	}
 
 	var object DirectThreadResponse
-	err := ig.request("GET", endpoint, &object)
+	err := ig.Request("GET", endpoint, &object)
 
 	return &object, err
 }
@@ -334,7 +334,7 @@ func (ig *Instagram) DirectThreadAction(threadID, action string) (*DirectThreadA
 	endpoint := fmt.Sprintf("/direct_v2/threads/%v/%v/", threadID, action)
 
 	var object DirectThreadActionResponse
-	err := ig.request("POST", endpoint, &object)
+	err := ig.Request("POST", endpoint, &object)
 
 	return &object, err
 }
@@ -357,7 +357,7 @@ func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, 
 	endpoint := "/direct_v2/threads/approve_all/?"
 
 	var object DirectThreadApproveAllResponse
-	err := ig.request("POST", endpoint, &object)
+	err := ig.Request("POST", endpoint, &object)
 
 	return &object, err
 }
