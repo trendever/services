@@ -48,7 +48,7 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		Group:          "chat",
 		DurableName:    "chat",
 		AckTimeout:     time.Second * 30,
-		DecodedHandler: srv.handleDirectNotify,
+		DecodedHandler: srv.handleNotify,
 	}, &nats.StanSubscription{
 		Subject:     "chat.conversation.delete",
 		Group:       "chat",

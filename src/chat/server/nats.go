@@ -18,7 +18,7 @@ import (
 	"utils/rpc"
 )
 
-func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged bool) {
+func (cs *chatServer) handleNotify(notify *bot.Notify) (acknowledged bool) {
 	log.Debug("new direct notify: %+v", notify)
 
 	switch {
@@ -33,16 +33,6 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 
 	default:
 		// do not care about foreign replies
-		return true
-	}
-
-	exists, err := cs.chats.CheckMessageExists(notify.MessageId)
-	if err != nil {
-		log.Errorf("failed to check message existence: %v", err)
-		return false
-	}
-	if exists {
-		log.Debug("message %v already exists", notify.MessageId)
 		return true
 	}
 
@@ -63,79 +53,102 @@ func (cs *chatServer) handleDirectNotify(notify *bot.DirectNotify) (acknowledged
 		return true
 	}
 
-	// ignore init message
-	// @TODO may be there is better way to do it
-	if notify.UserId == chat.PrimaryInstagram && notify.Type == bot.MessageType_Text &&
-		(notify.Data == chat.Caption || notify.Data == models.DefaultSyncInitMessage) {
-		return true
+	for _, msg := range notify.Messages {
+		retry, err := cs.handleNewMessage(chat, msg)
+		if err != nil {
+			log.Error(err)
+			if retry {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Message) (retry bool, err error) {
+	exists, err := cs.chats.CheckMessageExists(msg.MessageId)
+	if err != nil {
+		return true, fmt.Errorf("failed to check message existence: %v", err)
+	}
+	if exists {
+		log.Debug("message %v already exists", msg.MessageId)
+		return false, nil
 	}
 
-	author, notExists, err := cs.getAuthor(chat, notify.UserId)
+	// ignore init message
+	// @TODO may be there is better way to do it
+	if msg.UserId == chat.PrimaryInstagram && msg.Type == bot.MessageType_Text &&
+		(msg.Data == chat.Caption || msg.Data == models.DefaultSyncInitMessage) {
+		return false, nil
+	}
+
+	author, notExists, err := cs.getAuthor(chat, msg.UserId)
 	if notExists {
-		log.Warn("instagram user with id %v not exists", notify.UserId)
-		return true
+		log.Warn("instagram user with id %v not exists", msg.UserId)
+		return false, nil
 	}
 	if err != nil {
-		log.Errorf("failed to get message author: %v", err)
-		return false
+		return true, fmt.Errorf("failed to get message author: %v", err)
 	}
 
 	// well, it isn't normal
 	if author == nil {
-		log.Errorf("getAuthor returned nil")
-		return false
+		return true, fmt.Errorf("getAuthor returned nil")
 	}
 
 	var parts = make([]*models.MessagePart, 0, 8)
-	switch notify.Type {
+
+	switch msg.Type {
 	case bot.MessageType_Text:
 		parts = append(parts, &models.MessagePart{
-			Content:  notify.Data,
+			Content:  msg.Data,
 			MimeType: "text/plain",
 		})
+
 	case bot.MessageType_Image:
-		img, err := models.ImageUploader.DoRequest("url", notify.Data)
+		img, err := models.ImageUploader.DoRequest("url", msg.Data)
 		switch resp := err.(type) {
 		case nil:
+			j, _ := json.Marshal(img)
+			parts = append(parts, &models.MessagePart{
+				MimeType:  "image/json",
+				ContentID: img.Hash,
+				Content:   string(j),
+			})
 
 		case *mandible.ImageResp:
 			if resp.Status < 400 || resp.Status >= 500 {
-				return false
+				return true, err
 			}
-			log.Warn("direct notify for message %v contains invalid image", notify.MessageId, notify.Type)
-			return true
+			log.Warn("direct notify for message %v contains invalid image", msg.MessageId, msg.Type)
+			parts = append(parts, &models.MessagePart{
+				Content:  msg.Data,
+				MimeType: "text/plain",
+			})
 
 		default:
-			return false
+			return true, err
 		}
-		j, _ := json.Marshal(img)
-		parts = append(parts, &models.MessagePart{
-			MimeType:  "image/json",
-			ContentID: img.Hash,
-			Content:   string(j),
-		})
 
 	default:
-		log.Warn("direct notify for message %v with unsupported content type %v was skipped", notify.MessageId, notify.Type)
-		return true
+		log.Warn("direct notify for message %v with unsupported content type %v was skipped", msg.MessageId, msg.Type)
+		return false, nil
 	}
 
 	_, err = cs.sendMessage(chat, &models.Message{
 		MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
 		Member:      author,
-		InstagramID: notify.MessageId,
+		InstagramID: msg.MessageId,
 		SyncStatus:  proto.SyncStatus_SYNCED,
 		Parts:       parts,
 	})
 	if err != nil {
-		log.Errorf("failed to add message: %v", err)
-		return false
-	} else {
-		return true
+		return true, fmt.Errorf("failed to add message: %v", err)
 	}
+	return false, nil
 }
 
-func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged bool) {
+func (cs *chatServer) handleMessageReply(notify *bot.Notify) (acknowledged bool) {
 	msgID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.MessageReplyPrefix), 10, 64)
 	if err != nil {
 		log.Errorf("bad format of send direct reply key '%v'", notify.ReplyKey)
@@ -143,15 +156,21 @@ func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged
 	}
 	log.Debug("got message send reply for chat %v", msgID)
 	// @TODO check what kind of error we have. May be we should handle deleted threads in special way for example
-	status := proto.SyncStatus_SYNCED
+	var (
+		status      proto.SyncStatus
+		instagramID string
+	)
 	if notify.Error != "" {
 		log.Errorf("error in send direct reply: %v", notify.Error)
 		status = proto.SyncStatus_ERROR
+	} else {
+		status = proto.SyncStatus_SYNCED
+		instagramID = notify.Messages[0].MessageId
 	}
-	err = cs.chats.UpdateSyncStatus(msgID, notify.MessageId, status)
+	err = cs.chats.UpdateSyncStatus(msgID, instagramID, status)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "unique_message_id"` {
-			log.Errorf("UpdateSyncStatus: message with instagram_id = %v already exists", notify.MessageId)
+			log.Errorf("UpdateSyncStatus: message with instagram_id = %v already exists", notify.Messages[0].MessageId)
 			return true
 		}
 		log.Errorf("UpdateSyncStatus failed: %v", err)
@@ -160,7 +179,7 @@ func (cs *chatServer) handleMessageReply(notify *bot.DirectNotify) (acknowledged
 	return true
 }
 
-func (cs *chatServer) handleThreadReply(notify *bot.DirectNotify) (acknowledged bool) {
+func (cs *chatServer) handleThreadReply(notify *bot.Notify) (acknowledged bool) {
 	chatID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.ThreadReplyPrefix), 10, 64)
 	if err != nil {
 		log.Errorf("bad format of create thread reply key '%v'", notify.ReplyKey)
