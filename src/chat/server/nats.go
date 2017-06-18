@@ -15,6 +15,7 @@ import (
 	"strings"
 	"utils/log"
 	"utils/mandible"
+	code "utils/product_code"
 	"utils/rpc"
 )
 
@@ -24,6 +25,7 @@ func (cs *chatServer) handleNotify(notify *bot.Notify) (acknowledged bool) {
 	switch {
 	// normal notify, not a reply for something
 	case notify.ReplyKey == "":
+		return cs.handleNonReplyNotify(notify)
 
 	case strings.HasPrefix(notify.ReplyKey, models.MessageReplyPrefix):
 		return cs.handleMessageReply(notify)
@@ -31,11 +33,17 @@ func (cs *chatServer) handleNotify(notify *bot.Notify) (acknowledged bool) {
 	case strings.HasPrefix(notify.ReplyKey, models.ThreadReplyPrefix):
 		return cs.handleThreadReply(notify)
 
+	case strings.HasPrefix(notify.ReplyKey, models.FetchReplyPrefix):
+		return cs.handleFetchReply(notify)
+
 	default:
 		// do not care about foreign replies
 		return true
 	}
 
+}
+
+func (cs *chatServer) handleNonReplyNotify(notify *bot.Notify) (acknowledged bool) {
 	chat, err := cs.chats.GetByDirectThread(notify.ThreadId)
 	if err != nil {
 		log.Errorf("failed to load chat by direct thread %v: %v", notify.ThreadId, err)
@@ -129,6 +137,23 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 		default:
 			return true, err
 		}
+	case bot.MessageType_MediaShare:
+		part, err := code.ID2URL(msg.Data)
+		if err != nil {
+			log.Errorf("invalid id %v in Mediashare message", msg.Data)
+			return false, nil
+		}
+		parts = append(parts,
+			&models.MessagePart{
+				Content:  msg.Data,
+				MimeType: "instagram/share",
+			},
+			// @CHECK actuality that could be done on front with previous part
+			&models.MessagePart{
+				Content:  "https://www.instagram.com/p/" + part + "/",
+				MimeType: "text/plain",
+			},
+		)
 
 	default:
 		log.Warn("direct notify for message %v with unsupported content type %v was skipped", msg.MessageId, msg.Type)
@@ -179,6 +204,51 @@ func (cs *chatServer) handleMessageReply(notify *bot.Notify) (acknowledged bool)
 	return true
 }
 
+func (cs *chatServer) handleFetchReply(notify *bot.Notify) (acknowledged bool) {
+	chatID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.FetchReplyPrefix), 10, 64)
+	if err != nil {
+		log.Errorf("bad format of fetch thread reply key '%v'", notify.ReplyKey)
+		return true
+	}
+	log.Debug("got thread fetch reply for chat %v", chatID)
+	if notify.Error != "" {
+		log.Errorf("error in fetch thread reply for chat %v: %v", chatID, notify.Error)
+		retry, err := cs.chats.SetSyncError(chatID)
+		if err == nil {
+			return true
+		}
+		log.Errorf("failed to set sync error for chat %v: %v", chatID, notify.Error)
+		return !retry
+	}
+
+	chat, err := cs.chats.GetByDirectThread(notify.ThreadId)
+	if err != nil {
+		log.Errorf("failed to load chat by direct thread %v: %v", notify.ThreadId, err)
+		return false
+	}
+	if chat == nil {
+		log.Debug("unknown thread %v", notify.ThreadId)
+		return true
+	}
+
+	err = cs.chats.SetRelatedThread(chat, notify.ThreadId, "")
+	if err != nil {
+		log.Errorf("failed to set related direct thread: %v", err)
+		return false
+	}
+
+	for _, msg := range notify.Messages {
+		retry, err := cs.handleNewMessage(chat, msg)
+		if err != nil {
+			log.Error(err)
+			if retry {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (cs *chatServer) handleThreadReply(notify *bot.Notify) (acknowledged bool) {
 	chatID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.ThreadReplyPrefix), 10, 64)
 	if err != nil {
@@ -195,11 +265,23 @@ func (cs *chatServer) handleThreadReply(notify *bot.Notify) (acknowledged bool) 
 		log.Errorf("failed to set sync error for chat %v: %v", chatID, notify.Error)
 		return !retry
 	}
-	retry, err := cs.chats.SetRelatedThread(chatID, notify.ThreadId)
+
+	chat, err := cs.chats.GetByDirectThread(notify.ThreadId)
+	if err != nil {
+		log.Errorf("failed to load chat by direct thread %v: %v", notify.ThreadId, err)
+		return false
+	}
+	if chat == nil {
+		log.Debug("unknown thread %v", notify.ThreadId)
+		return true
+	}
+
+	err = cs.chats.SetRelatedThread(chat, notify.ThreadId, "")
 	if err != nil {
 		log.Errorf("failed to set related direct thread: %v", err)
+		return false
 	}
-	return !retry
+	return true
 }
 
 func (cs *chatServer) getAuthor(chat *models.Conversation, instagramID uint64) (author *models.Member, notExists bool, err error) {
@@ -329,12 +411,4 @@ func (cs *chatServer) createUser(instagramID uint64) (user *core.User, notExists
 	}
 
 	return userReply.User, false, nil
-}
-
-func (cs *chatServer) enableSync(chatID uint64) bool {
-	retry, err := cs.chats.EnableSync(chatID, 0, "", false)
-	if err != nil {
-		log.Errorf("failed to enable sync: %v", err)
-	}
-	return retry
 }

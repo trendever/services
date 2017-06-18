@@ -22,9 +22,6 @@ var (
 // 1436562162406503138_4118841035 -> BPvsazsAbLi
 func ID2URL(id string) (out string, err error) {
 	parts := strings.Split(id, "_")
-	if len(parts) == 0 {
-		return "", errors.New("invalid id")
-	}
 	num, err := strconv.ParseUint(parts[0], 10, 64)
 	if err != nil {
 		return "", errors.New("invalid id")

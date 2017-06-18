@@ -34,7 +34,6 @@ message NewChatRequest {
     Chat chat = 1;
     // instagram id of supplier
     uint64 primary_instagram = 2;
-    bool enable_sync = 3;
 }
 
 message ChatReply {

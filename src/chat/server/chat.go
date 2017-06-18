@@ -9,6 +9,7 @@ import (
 	proto_chat "proto/chat"
 	"proto/checker"
 	"proto/core"
+	"strings"
 	"time"
 	"utils/log"
 	"utils/nats"
@@ -76,9 +77,10 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 	if req.Chat == nil {
 		return nil, errors.New("Chat is required")
 	}
+	parts := strings.Split(req.Chat.DirectThread, "#")
 	chat := &models.Conversation{
 		Name:             req.Chat.Name,
-		DirectThread:     req.Chat.DirectThread,
+		DirectThread:     parts[0],
 		PrimaryInstagram: req.PrimaryInstagram,
 		Caption:          req.Chat.Caption,
 	}
@@ -91,9 +93,6 @@ func (cs *chatServer) CreateChat(ctx context.Context, req *proto_chat.NewChatReq
 			return nil, err
 		}
 
-	}
-	if req.EnableSync {
-		go cs.enableSync(chat.ID)
 	}
 	return &proto_chat.ChatReply{
 		Chat: chat.Encode(),
@@ -211,6 +210,7 @@ func (cs *chatServer) sendMessage(chat *models.Conversation, messages ...*models
 		cs.queue.Push(message)
 		encoded = append(encoded, message.Encode())
 	}
+	// @TODO wrong place?
 	go cs.notifyChatAboutNewMessage(chat.Encode(), encoded)
 	return
 }
@@ -341,7 +341,12 @@ func (cs *chatServer) GetTotalCountUnread(_ context.Context, req *proto_chat.Tot
 
 func (cs *chatServer) EnableSync(_ context.Context, req *proto_chat.EnableSyncRequest) (*proto_chat.EnableSyncReply, error) {
 	var reply proto_chat.EnableSyncReply
-	_, err := cs.chats.EnableSync(req.ChatId, req.PrimaryInstagram, req.ThreadId, req.ForceNewThread)
+	parts := strings.Split(req.ThreadId, "#")
+	var since string
+	if len(parts) > 1 {
+		since = parts[1]
+	}
+	_, err := cs.chats.EnableSync(req.ChatId, req.PrimaryInstagram, parts[0], since, req.ForceNewThread)
 	if err != nil {
 		reply.Error = err.Error()
 	}
