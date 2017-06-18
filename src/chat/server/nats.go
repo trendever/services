@@ -205,22 +205,8 @@ func (cs *chatServer) handleMessageReply(notify *bot.Notify) (acknowledged bool)
 }
 
 func (cs *chatServer) handleFetchReply(notify *bot.Notify) (acknowledged bool) {
-	chatID, err := strconv.ParseUint(strings.TrimPrefix(notify.ReplyKey, models.FetchReplyPrefix), 10, 64)
-	if err != nil {
-		log.Errorf("bad format of fetch thread reply key '%v'", notify.ReplyKey)
-		return true
-	}
-	log.Debug("got thread fetch reply for chat %v", chatID)
-	if notify.Error != "" {
-		log.Errorf("error in fetch thread reply for chat %v: %v", chatID, notify.Error)
-		retry, err := cs.chats.SetSyncError(chatID)
-		if err == nil {
-			return true
-		}
-		log.Errorf("failed to set sync error for chat %v: %v", chatID, notify.Error)
-		return !retry
-	}
-
+	threadID := strings.TrimPrefix(notify.ReplyKey, models.FetchReplyPrefix)
+	log.Debug("got thread fetch reply for %v", threadID)
 	chat, err := cs.chats.GetByDirectThread(notify.ThreadId)
 	if err != nil {
 		log.Errorf("failed to load chat by direct thread %v: %v", notify.ThreadId, err)
@@ -229,6 +215,16 @@ func (cs *chatServer) handleFetchReply(notify *bot.Notify) (acknowledged bool) {
 	if chat == nil {
 		log.Debug("unknown thread %v", notify.ThreadId)
 		return true
+	}
+
+	if notify.Error != "" {
+		log.Errorf("error in fetch thread reply for chat %v: %v", chat.ID, notify.Error)
+		retry, err := cs.chats.SetSyncError(chat.ID)
+		if err == nil {
+			return true
+		}
+		log.Errorf("failed to set sync error for chat %v: %v", chat.ID, notify.Error)
+		return !retry
 	}
 
 	err = cs.chats.SetRelatedThread(chat, notify.ThreadId, "")
