@@ -304,7 +304,7 @@ func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 		MentionedUsername: meta.Get().Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "thread",
-		ThreadID:          thread.ThreadID,
+		ThreadID:          fmt.Sprintf("%v#%v", thread.ThreadID, item.ItemID),
 	}
 	return act.Create()
 }
@@ -341,7 +341,7 @@ func addDirectActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 		Comment:           comment,
 		MediaId:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
-		ThreadID:          thread.ThreadID,
+		ThreadID:          fmt.Sprintf("%v#%v", thread.ThreadID, item.ItemID),
 	}
 	return act.Create()
 }
