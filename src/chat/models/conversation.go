@@ -79,7 +79,7 @@ type ConversationRepository interface {
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
 	DeleteConversation(id uint64) error
 	SetConversationStatus(req *pb_chat.SetStatusMessage) error
-	CheckMessageExists(instagramID string) (bool, error)
+	CheckMessageExists(chatID uint64, instagramID string) (bool, error)
 	// If sinceID is not empty, messages from that instagram id thread will be loaded to chat
 	EnableSync(chatID, primaryInstagram uint64, threadID, sinceID string, forceNowThread bool) (retry bool, err error)
 	SetRelatedThread(chat *Conversation, directThread, sinceID string) error
@@ -501,9 +501,9 @@ func (c *conversationRepositoryImpl) SetConversationStatus(req *pb_chat.SetStatu
 	return c.db.Model(&Conversation{}).Where("id = ?", req.ConversationId).UpdateColumn("status", req.Status).Error
 }
 
-func (c *conversationRepositoryImpl) CheckMessageExists(instagramID string) (bool, error) {
+func (c *conversationRepositoryImpl) CheckMessageExists(chatID uint64, instagramID string) (bool, error) {
 	var count int
-	err := db.New().Model(&Message{}).Where("instagram_id = ?", instagramID).Count(&count).Error
+	err := db.New().Model(&Message{}).Where("instagram_id = ?", instagramID).Where("conversation_id = ?", chatID).Count(&count).Error
 	return count != 0, err
 }
 

@@ -74,7 +74,7 @@ func (cs *chatServer) handleNonReplyNotify(notify *bot.Notify) (acknowledged boo
 }
 
 func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Message) (retry bool, err error) {
-	exists, err := cs.chats.CheckMessageExists(msg.MessageId)
+	exists, err := cs.chats.CheckMessageExists(chat.ID, msg.MessageId)
 	if err != nil {
 		return true, fmt.Errorf("failed to check message existence: %v", err)
 	}

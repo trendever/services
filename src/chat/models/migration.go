@@ -22,7 +22,8 @@ func Migrate() error {
 	db.New().Model(&Member{}).AddUniqueIndex("once_per_conv", "user_id", "conversation_id")
 	db.New().Exec("DROP INDEX IF EXISTS idx_messages_instagram_id")
 	db.New().Exec("DROP INDEX IF EXISTS messages_instagram_id_key")
-	db.New().Exec("CREATE UNIQUE INDEX unique_message_id ON messages(instagram_id) WHERE (instagram_id != '' AND instagram_id IS NOT NULL)")
+	db.New().Exec("DROP INDEX IF EXISTS unique_message_id")
+	db.New().Exec("CREATE UNIQUE INDEX unique_message_per_conv_id ON messages(instagram_id, conversation_id) WHERE (instagram_id != '' AND instagram_id IS NOT NULL)")
 	if db.HasColumn(&Conversation{}, "direct_sync") {
 		tx := db.NewTransaction()
 		tx.Model(&Conversation{}).Where("direct_sync").UpdateColumn("sync_status", chat.SyncStatus_SYNCED)
