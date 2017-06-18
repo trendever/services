@@ -56,8 +56,8 @@ func (cs *chatServer) handleNonReplyNotify(notify *bot.Notify) (acknowledged boo
 		return true
 	}
 
-	// listen to primary source only
-	if notify.SourceId != chat.PrimaryInstagram {
+	// listen to primary source of synced chats only
+	if notify.SourceId != chat.PrimaryInstagram || chat.SyncStatus != proto.SyncStatus_SYNCED {
 		return true
 	}
 
@@ -144,14 +144,14 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 			return false, nil
 		}
 		parts = append(parts,
-			&models.MessagePart{
-				Content:  msg.Data,
-				MimeType: "instagram/share",
-			},
-			// @CHECK actuality that could be done on front with previous part
+			// @CHECK actuality that could be done on front by using with part
 			&models.MessagePart{
 				Content:  "https://www.instagram.com/p/" + part + "/",
 				MimeType: "text/plain",
+			},
+			&models.MessagePart{
+				Content:  msg.Data,
+				MimeType: "instagram/share",
 			},
 		)
 
