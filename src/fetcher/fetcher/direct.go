@@ -109,7 +109,6 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 
 	log.Debug("Got %v new messages for %v from thread %v", len(msgs), meta.Get().Username, threadID)
 	// @TODO send one notify for multiple messages where possible
-	var relatedMedia *instagram.ThreadItem
 	sourceID := meta.Get().UserID
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
@@ -119,28 +118,22 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 			continue
 		}
 
+		if info.LastCheckedID == "" { // new untracked thread
+			if err := addThreadActivity(message, &resp.Thread, meta); err != nil {
+				return err
+			}
+		}
+
 		switch message.ItemType {
 		// such a special case for shares feels somewhat inconsistent
 		// we can use notifications in wantit probably...
 		case "media_share":
-			// there was older media without comment
-			if relatedMedia != nil {
-				if err := addDirectActivity(relatedMedia, &resp.Thread, meta, ""); err != nil {
+			if meta.Role() == accountstore.Role_User &&
+				message.MediaShare != nil &&
+				message.MediaShare.User.Pk == ig.UserID {
+				if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
 					return err
 				}
-				relatedMedia = nil
-			}
-
-			// not sure why i added this check, it looks weird...
-			if message.MediaShare != nil {
-				if meta.Role() == accountstore.Role_User && message.MediaShare.User.Pk != ig.UserID {
-					// ignore media with someone else's posts for shops
-					log.Debug("ignoring medaishare %v with foreign post", message.ItemID)
-				} else {
-					relatedMedia = message
-				}
-			} else {
-				log.Errorf("message %v with type 'media_share' has empty media", message.ItemID)
 			}
 
 		case "media":
@@ -174,42 +167,12 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 					},
 				},
 			}
-			if relatedMedia != nil {
-				comment := ""
-				if relatedMedia.UserID == message.UserID {
-					comment = message.Text
-				}
-				if err := addDirectActivity(relatedMedia, &resp.Thread, meta, comment); err != nil {
-					return err
-				}
-				relatedMedia = nil
-			} else if info.LastCheckedID == "" { // new untracked thread
-				if err := addThreadActivity(message, &resp.Thread, meta); err != nil {
-					return err
-				}
-			}
-
 			err := nats.StanPublish(DirectNotifySubject, &notify)
 			if err != nil {
 				return fmt.Errorf("failed to send message notification via stan: %v", err)
 			}
 		}
-		// only if we have no media in progress
-		if relatedMedia == nil {
-			info.LastCheckedID = message.ItemID
-			err := info.Save()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// some unfinished stuff
-	if relatedMedia != nil {
-		if err := addDirectActivity(relatedMedia, &resp.Thread, meta, ""); err != nil {
-			return err
-		}
-		info.LastCheckedID = msgs[0].ItemID
+		info.LastCheckedID = message.ItemID
 		err := info.Save()
 		if err != nil {
 			return err
