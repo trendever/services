@@ -5,4 +5,5 @@ const (
 	ThreadNotFound    = "thread not found"
 	BadDestination    = "bad destination"
 	InaccessibleMedia = "inaccessible media"
+	InvalidImage      = "invalid image"
 )

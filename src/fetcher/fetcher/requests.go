@@ -166,7 +166,14 @@ func sendImage(ig *instagram.Instagram, req *models.DirectRequest, result *bot.N
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	switch {
+	case resp.StatusCode == 200:
+
+	case resp.StatusCode >= 400 && resp.StatusCode < 500:
+		log.Errorf("failed to load image for request %v: bad status '%v(%v)'", req, resp.Status, resp.StatusCode)
+		result.Error = consts.InvalidImage
+		return nil
+	default:
 		return fmt.Errorf("failed to load image for request %v: bad status '%v(%v)'", req, resp.Status, resp.StatusCode)
 	}
 
@@ -175,7 +182,9 @@ func sendImage(ig *instagram.Instagram, req *models.DirectRequest, result *bot.N
 	case "", "application/octet-stream", "image/jpeg", "image/pjpeg":
 
 	default:
-		return fmt.Errorf("unexpected content type '%v' for request %v", contentType, req)
+		log.Errorf("unexpected content type '%v' for request %v", contentType, req)
+		result.Error = consts.InvalidImage
+		return nil
 	}
 
 	messageID, err := ig.SendPhoto(req.ThreadID, resp.Body)
