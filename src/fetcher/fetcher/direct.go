@@ -184,9 +184,9 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 				}
 				relatedMedia = nil
 			} else if info.LastCheckedID == "" { // new untracked thread
-				/*if err := addThreadActivity(message, &resp.Thread, meta); err != nil {
+				if err := addThreadActivity(message, &resp.Thread, meta); err != nil {
 					return err
-				}*/
+				}
 			}
 
 			err := nats.StanPublish(DirectNotifySubject, &notify)
