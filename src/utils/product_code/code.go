@@ -1,20 +1,41 @@
 package product_code
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
 const (
-	alphabet = "abcdefghijklmnopqrstuvwxyz"
-	numbers  = "0123456789"
+	alphabet  = "abcdefghijklmnopqrstuvwxyz"
+	numbers   = "0123456789"
+	base64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 )
 
 var (
 	// yeah, this is first code for product with ID==0
 	codeStart, _ = revCode("te2121")
 )
+
+// convert instagram decimal id to url part
+// 1436562162406503138_4118841035 -> BPvsazsAbLi
+func ID2URL(id string) (out string, err error) {
+	parts := strings.Split(id, "_")
+	num, err := strconv.ParseUint(parts[0], 10, 64)
+	if err != nil {
+		return "", errors.New("invalid id")
+	}
+	const maxLen = 11
+	var shift int
+	buf := make([]byte, maxLen)
+	for num > 0 {
+		shift++
+		buf[maxLen-shift] = base64URL[num%64]
+		num /= 64
+	}
+	return string(buf[maxLen-shift:]), nil
+}
 
 func int2ascii(num int64) (out string) {
 	radix := int64(len(alphabet))

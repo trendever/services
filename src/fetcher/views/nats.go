@@ -1,6 +1,7 @@
 package views
 
 import (
+	"errors"
 	"fetcher/models"
 	"golang.org/x/net/context"
 	"proto/bot"
@@ -26,7 +27,7 @@ func subscribe() {
 				Group:          "fetcher",
 				DurableName:    "fetcher",
 				AckTimeout:     time.Second * 10,
-				DecodedHandler: addDirectRequest,
+				DecodedHandler: saveRequest,
 			},
 			&nats.StanSubscription{
 				Subject:        CreateThreadSubject,
@@ -40,11 +41,14 @@ func subscribe() {
 }
 
 func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest) (*bot.SendDirectReply, error) {
-	addDirectRequest(in)
-	return &bot.SendDirectReply{}, nil
+	if saveRequest(in) {
+		return &bot.SendDirectReply{}, nil
+	} else {
+		return nil, errors.New("failed to save request")
+	}
 }
 
-func addDirectRequest(in *bot.SendDirectRequest) bool {
+func saveRequest(in *bot.SendDirectRequest) bool {
 	var req = models.DirectRequest{
 		Kind:         in.Type,
 		UserID:       in.SenderId,
@@ -55,7 +59,7 @@ func addDirectRequest(in *bot.SendDirectRequest) bool {
 	}
 	err := db.New().Save(&req).Error
 	if err != nil {
-		log.Errorf("failed to add direct request: %v", err)
+		log.Errorf("failed to save request: %v", err)
 		return false
 	}
 	return true
@@ -71,7 +75,7 @@ func createThread(in *bot.CreateThreadRequest) bool {
 		Data:         in.InitMessage,
 	}).Error
 	if err != nil {
-		log.Errorf("failed to add direct request: %v", err)
+		log.Errorf("failed to save request: %v", err)
 		return false
 	}
 	return true
