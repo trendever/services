@@ -84,7 +84,9 @@ type ConversationRepository interface {
 	EnableSync(chatID, primaryInstagram uint64, threadID, sinceID string, forceNowThread bool) (retry bool, err error)
 	SetRelatedThread(chat *Conversation, directThread, sinceID string) error
 	SetSyncError(chatID uint64) (retry bool, err error)
-	UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error
+	// Set instagram id and sync status for message with local id
+	// If cascade is true and status is error, status of whole chat will be changed to error as well
+	UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus, cascade bool) error
 }
 
 //Encode converts to protobuf model
@@ -711,9 +713,9 @@ func (c *conversationRepositoryImpl) syncRecent(chat *Conversation) {
 	global.syncLock.Unlock()
 }
 
-func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus) error {
+func (c *conversationRepositoryImpl) UpdateSyncStatus(localID uint64, instagramID string, status pb_chat.SyncStatus, cascade bool) error {
 	// @TODO what if related thread will be changed after sending sync request? we can get error status on valid thread rarely
-	if status == pb_chat.SyncStatus_ERROR {
+	if status == pb_chat.SyncStatus_ERROR && cascade {
 		// disable synchronization
 		var chat Conversation
 		scope := c.db.Preload("Members").

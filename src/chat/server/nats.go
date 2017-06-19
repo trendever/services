@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fetcher/consts"
 	"fmt"
 	"proto/bot"
 	proto "proto/chat"
@@ -180,19 +181,28 @@ func (cs *chatServer) handleMessageReply(notify *bot.Notify) (acknowledged bool)
 		return true
 	}
 	log.Debug("got message send reply for chat %v", msgID)
-	// @TODO check what kind of error we have. May be we should handle deleted threads in special way for example
 	var (
 		status      proto.SyncStatus
 		instagramID string
+		cascade     = true
 	)
-	if notify.Error != "" {
-		log.Errorf("error in send direct reply: %v", notify.Error)
-		status = proto.SyncStatus_ERROR
-	} else {
+
+	// @TODO user should be able to see what exactly happened probably. Save error messages?
+	switch notify.Error {
+	case "":
 		status = proto.SyncStatus_SYNCED
 		instagramID = notify.Messages[0].MessageId
+
+	case consts.BadDestination, consts.EmptyData, consts.InaccessibleMedia, consts.InvalidImage:
+		// just local troubles with single message, thread is fine still
+		cascade = false
+		fallthrough
+	default:
+		log.Errorf("error in send direct reply: %v", notify.Error)
+		status = proto.SyncStatus_ERROR
 	}
-	err = cs.chats.UpdateSyncStatus(msgID, instagramID, status)
+
+	err = cs.chats.UpdateSyncStatus(msgID, instagramID, status, cascade)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "unique_message_id"` {
 			log.Errorf("UpdateSyncStatus: message with instagram_id = %v already exists", notify.Messages[0].MessageId)
