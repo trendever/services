@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"fetcher/consts"
 	"fetcher/models"
 	"fmt"
 	"instagram"
@@ -38,7 +39,7 @@ func processRequest(meta *client.AccountMeta, req *models.DirectRequest) error {
 		if err != nil {
 			return fmt.Errorf("failed to remove handled request from pending table: %v", err)
 		}
-		reply.Error = "empty request data"
+		reply.Error = consts.EmptyData
 	} else {
 		ig, err := meta.Delayed()
 		if err != nil {
@@ -105,7 +106,7 @@ func sendText(ig *instagram.Instagram, req *models.DirectRequest, result *bot.No
 		result.ThreadId, messageID, err = ig.SendText(req.Data, req.Participants...)
 
 	default:
-		result.Error = "bad destination"
+		result.Error = consts.BadDestination
 		return nil
 	}
 
@@ -115,7 +116,7 @@ func sendText(ig *instagram.Instagram, req *models.DirectRequest, result *bot.No
 			{MessageId: messageID},
 		}
 	case err.Error() == "Thread does not exist":
-		result.Error = err.Error()
+		result.Error = consts.ThreadNotFound
 		return nil
 	default:
 		return err
@@ -132,7 +133,7 @@ func sendText(ig *instagram.Instagram, req *models.DirectRequest, result *bot.No
 
 func shareMedia(ig *instagram.Instagram, req *models.DirectRequest, result *bot.Notify) error {
 	if req.ThreadID == "" {
-		result.Error = "bad destination"
+		result.Error = consts.BadDestination
 		return nil
 	}
 	result.ThreadId = req.ThreadID
@@ -142,8 +143,10 @@ func shareMedia(ig *instagram.Instagram, req *models.DirectRequest, result *bot.
 		result.Messages = []*bot.Message{
 			{MessageId: messageID},
 		}
-	case err.Error() == "Media is not accessible", err.Error() == "Thread does not exist":
-		result.Error = err.Error()
+	case err.Error() == "Thread does not exist":
+		result.Error = consts.ThreadNotFound
+	case err.Error() == "Media is not accessible":
+		result.Error = consts.InaccessibleMedia
 	default:
 		return err
 	}
@@ -152,7 +155,7 @@ func shareMedia(ig *instagram.Instagram, req *models.DirectRequest, result *bot.
 
 func sendImage(ig *instagram.Instagram, req *models.DirectRequest, result *bot.Notify) error {
 	if req.ThreadID == "" {
-		result.Error = "bad destination"
+		result.Error = consts.BadDestination
 		return nil
 	}
 	result.ThreadId = req.ThreadID
@@ -182,7 +185,7 @@ func sendImage(ig *instagram.Instagram, req *models.DirectRequest, result *bot.N
 			{MessageId: messageID},
 		}
 	case err.Error() == "Thread does not exist":
-		result.Error = err.Error()
+		result.Error = consts.ThreadNotFound
 	default:
 		return err
 	}
@@ -191,17 +194,16 @@ func sendImage(ig *instagram.Instagram, req *models.DirectRequest, result *bot.N
 
 func sendComment(ig *instagram.Instagram, req *models.DirectRequest, result *bot.Notify) error {
 	if req.ThreadID == "" {
-		result.Error = "bad destination"
+		result.Error = consts.BadDestination
 		return nil
 	}
 	_, err := ig.CommentMedia(req.ThreadID, req.Data)
 	switch {
 	case err == nil:
 
-	// @TODO looks non-nice. Can we return status code inside error or instagram.Message?
 	// @TODO find out reply for deleted post
 	case err.Error() == "Sorry, this media has been deleted":
-		result.Error = err.Error()
+		result.Error = consts.InaccessibleMedia
 
 	default:
 		return err
@@ -211,7 +213,7 @@ func sendComment(ig *instagram.Instagram, req *models.DirectRequest, result *bot
 
 func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bot.Notify) error {
 	if req.ThreadID == "" {
-		result.Error = "empty thread id"
+		result.Error = consts.BadDestination
 		return nil
 	}
 	result.ThreadId = req.ThreadID
@@ -220,7 +222,7 @@ func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bo
 	switch {
 	case err == nil:
 	case err.Error() == "Thread does not exist":
-		result.Error = err.Error()
+		result.Error = consts.ThreadNotFound
 	default:
 		return err
 	}
