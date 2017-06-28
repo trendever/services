@@ -19,7 +19,6 @@ type Message struct {
 	Member         *Member
 	SyncStatus     chat.SyncStatus
 	Parts          []*MessagePart
-	// @TODO add flag that forbids sync for this message?
 }
 
 //MessagePart is model of part of message
