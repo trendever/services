@@ -62,6 +62,7 @@ type Settings struct {
 		SMS          string
 		Coins        string
 		Checker      string
+		Fetcher      string
 		AccountStore string
 	}
 

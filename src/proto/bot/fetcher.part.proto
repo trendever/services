@@ -2,6 +2,8 @@ service FetcherService {
   rpc RetrieveActivities (RetrieveActivitiesRequest) returns (RetrieveActivitiesReply) {}
 
   rpc SendDirect (SendDirectRequest) returns (SendDirectReply) {}
+  // perform get request for any uri from provided instagram user
+  rpc RawQuery (RawQueryRequest) returns (RawQueryReply) {}
 }
 
 // @TODO MentionedRole should be syhnonized with accountstore roles. any way to get normal imports?..
@@ -105,3 +107,14 @@ message CreateThreadRequest {
   // will be sent back in reply
   string reply_key = 5;
 }
+
+message RawQueryRequest {
+  uint64 instagram_id = 1;
+  string uri = 2;
+}
+
+message RawQueryReply {
+  string reply = 1;
+  string error = 2;
+}
+

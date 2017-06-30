@@ -10,6 +10,7 @@ api:
   checker: checker:2013
   payments: payments:7777
   accountstore: accountstore:5409
+  fetcher: fetcher:3006
 
 marketSMS: "Your ad could be here"
 

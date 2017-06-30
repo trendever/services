@@ -167,6 +167,18 @@ func (pool *AccountsPool) Get(id uint64) *instagram.Instagram {
 	}
 }
 
+func (pool *AccountsPool) GetByMane(username string) *instagram.Instagram {
+	pool.RLock()
+	defer pool.RUnlock()
+	for _, id := range pool.idSlice {
+		meta := pool.idMap[id]
+		if meta.Get().Username == username {
+			return meta.Get()
+		}
+	}
+	return nil
+}
+
 func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
 	pool.RLock()
 	defer pool.RUnlock()

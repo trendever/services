@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	"fetcher/fetcher"
 	"fetcher/models"
 	"proto/bot"
 	"strings"
@@ -53,4 +54,12 @@ func (s fetcherServer) RetrieveActivities(ctx context.Context, in *bot.RetrieveA
 	return &bot.RetrieveActivitiesReply{
 		Result: models.EncodeActivities(result),
 	}, nil
+}
+
+func (s fetcherServer) RawQuery(_ context.Context, req *bot.RawQueryRequest) (*bot.RawQueryReply, error) {
+	reply, err := fetcher.MakeQuery(req.InstagramId, req.Uri)
+	if err != nil {
+		return &bot.RawQueryReply{Error: err.Error()}, nil
+	}
+	return &bot.RawQueryReply{Reply: reply}, nil
 }

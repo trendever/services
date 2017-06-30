@@ -3,16 +3,19 @@ package views
 import (
 	"api/api"
 	"api/soso"
+	"encoding/json"
 	"errors"
+	"golang.org/x/net/context"
 	"net/http"
 	"proto/accountstore"
+	"proto/bot"
+	"strconv"
 	"utils/log"
 	"utils/rpc"
-
-	"golang.org/x/net/context"
 )
 
 var accountStoreServiceClient = accountstore.NewAccountStoreServiceClient(api.AccountStoreConn)
+var fetcherClient = bot.NewFetcherServiceClient(api.FetcherConn)
 
 func init() {
 	SocketRoutes = append(
@@ -21,6 +24,7 @@ func init() {
 		soso.Route{"list", "account", ListAccounts},
 		soso.Route{"confirm", "account", Confirm},
 		soso.Route{"set_proxy", "account", SetProxy},
+		soso.Route{"raw_query", "account", RawQuery},
 		//		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
@@ -200,4 +204,54 @@ func SetProxy(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"success": true,
 	})
+}
+
+func RawQuery(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("user not authorized"))
+		return
+	}
+	user, err := GetUser(c.Token.UID, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if !user.IsAdmin {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("permission denied"))
+		return
+	}
+
+	str, _ := c.RequestMap["user_id"].(string)
+	userID, err := strconv.ParseUint(str, 10, 64)
+	if err != nil || userID == 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid user id"))
+		return
+	}
+	uri, _ := c.RequestMap["uri"].(string)
+
+	resp, err := fetcherClient.RawQuery(context.Background(), &bot.RawQueryRequest{
+		InstagramId: userID,
+		Uri:         uri,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Error != "" {
+		c.SuccessResponse(map[string]interface{}{
+			"error": resp.Error,
+		})
+		return
+	}
+
+	var js json.RawMessage
+	if json.Unmarshal([]byte(resp.Reply), &js) == nil {
+		c.SuccessResponse(map[string]interface{}{
+			"reply": js,
+		})
+	} else {
+		c.SuccessResponse(map[string]interface{}{
+			"raw_reply": resp.Reply,
+		})
+	}
 }

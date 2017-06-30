@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"errors"
 	"fetcher/consts"
 	"fetcher/models"
 	"fmt"
@@ -236,4 +237,19 @@ func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bo
 		return err
 	}
 	return nil
+}
+
+func MakeQuery(userID uint64, uri string) (reply string, err error) {
+	ig := global.usersPool.Get(userID)
+	if ig == nil {
+		ig = global.pubPool.Get(userID)
+		if ig == nil {
+			return "", errors.New("user is unaviable")
+		}
+	}
+	body, err := ig.RequestRaw(uri)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
 }
