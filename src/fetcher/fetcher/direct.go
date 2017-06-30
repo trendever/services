@@ -154,6 +154,10 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 				return fmt.Errorf("failed to send message notification via stan: %v", err)
 			}
 
+		case "link":
+			message.Text = message.Link.Text
+			fallthrough
+
 		case "text":
 			notify := bot.Notify{
 				ThreadId: threadID,
@@ -241,6 +245,10 @@ func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*
 				Type:      bot.MessageType_Image,
 				Data:      message.Media.ImageVersions2.Largest(),
 			})
+
+		case "link":
+			message.Text = message.Link.Text
+			fallthrough
 
 		case "text":
 			ret = append(ret, &bot.Message{
