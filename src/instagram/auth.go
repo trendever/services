@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"utils/log"
 )
 
 // Possible auth instagram errors
@@ -80,7 +81,7 @@ func (ig *Instagram) Login() error {
 	return nil
 }
 
-var uidRegexp = regexp.MustCompile(`https://i.instagram.com/integrity/checkpoint/checkpoint_logged_out_main/([0-9]+)/`)
+var uidRegexp = regexp.MustCompile(`https://i.instagram.com/challenge/([0-9]+)/`)
 
 func (ig *Instagram) getUidByCheckpointLink() (uint64, error) {
 
@@ -104,6 +105,7 @@ func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 	}
 
 	methods, err := ig.checkpointStep1()
+	log.Debug("methods: %v, err: %v", methods, err)
 	if err != nil {
 		return "", err
 	}
@@ -133,6 +135,8 @@ func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 	return useMethod, nil
 }
 
+var dataRegexp = regexp.MustCompile(`window._sharedData\s*=\s*(.+);`)
+
 // step1: grab cookies and available login methods
 func (ig *Instagram) checkpointStep1() ([]string, error) {
 
@@ -141,16 +145,42 @@ func (ig *Instagram) checkpointStep1() ([]string, error) {
 		return nil, err
 	}
 
-	var methods []string
-	if strings.Contains(body, `<input type="submit" name="sms" class="checkpoint-button-neutral" value="`) {
-		methods = append(methods, MethodSms)
+	client := &http.Client{
+		Transport: ig.transport,
 	}
-	if strings.Contains(body, `<input type="submit" name="email" class="checkpoint-button-neutral" value="`) {
+	// fill-in headers
+	header := make(http.Header)
+	header.Add("Accept", "*/*")
+	header.Add("User-Agent", UserAgent)
+	header.Add("X-Instagram-AJAX", "1")
+	header.Add("X-Requested-With", "XMLHttpRequest")
+	header.Add("Accept-Language", "en-US")
+	req, err := http.NewRequest("GET", ig.CheckpointURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = header
+
+	res := dataRegexp.FindStringSubmatch(body)
+	if len(res) != 2 {
+		return nil, errors.New("Unknown format of challenge selection")
+	}
+
+	// there should be json in res[1] actuality, but data is mostly useless, no need in full decode i think
+	var methods []string
+	if !strings.Contains(res[1], "SelectVerificationMethodForm") {
+		return nil, errors.New("Unknown format of challenge selection")
+	}
+	if strings.Contains(res[1], `"email":`) {
 		methods = append(methods, MethodEmail)
+	}
+	// @TODO this is just a guess, we need blocked acc with phone for test
+	if strings.Contains(res[1], `"phone":`) {
+		methods = append(methods, MethodSms)
 	}
 
 	if len(methods) == 0 {
-		return nil, fmt.Errorf("Could not start checkpoint process")
+		return nil, errors.New("Failed to determine any known chalenge methonds")
 	}
 
 	ig.CheckpointCookies = cookies
@@ -160,21 +190,14 @@ func (ig *Instagram) checkpointStep1() ([]string, error) {
 
 // step2: send code using given method
 func (ig *Instagram) checkpointStep2(method string) error {
-
-	token, err := getToken(ig.CheckpointCookies)
-	if err != nil {
-		return err
-	}
-
-	values := map[string]string{
-		"csrfmiddlewaretoken": token,
-	}
+	values := map[string]string{}
 
 	switch method {
+	// @TODO check value
 	case MethodSms:
-		values["sms"] = "Verify by SMS"
+		values["choice"] = "0"
 	case MethodEmail:
-		values["email"] = "Verify by Email"
+		values["choice"] = "1"
 	default:
 		return fmt.Errorf("Incorrect method supplied")
 	}
@@ -183,6 +206,7 @@ func (ig *Instagram) checkpointStep2(method string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("body: %v", body)
 
 	if !strings.Contains(body, `<input id="id_response_code" inputmode="numeric" name="response_code"`) {
 		return fmt.Errorf("Code input form not found")
