@@ -228,6 +228,16 @@ type DirectMedia struct {
 	ImageVersions2 ImageVersions2 `json:"image_versions2"`
 }
 
+type Link struct {
+	Text    string `json:"text"`
+	Context struct {
+		URL      string `json:"link_url"`
+		Title    string `json:"link_title"`
+		Summary  string `json:"link_summary"`
+		ImageURL string `json:"link_image_url"`
+	} `json:"link_context"`
+}
+
 // ThreadItems contains messages from the chat
 type ThreadItems []ThreadItem
 
@@ -241,6 +251,7 @@ type ThreadItem struct {
 	ClientContext string       `json:"client_context"`
 	Media         *DirectMedia `json:"media"`
 	MediaShare    *MediaShare  `json:"media_share,omitempty"`
+	Link          *Link        `json:"link"`
 }
 
 // Sorting stuff
