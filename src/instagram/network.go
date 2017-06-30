@@ -162,6 +162,10 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 	return nil, errors.New("max_attempts")
 }
 
+func (ig *Instagram) RequestRaw(endpoint string) (body []byte, err error) {
+	return ig.tryRequest("GET", endpoint, "")
+}
+
 func (ig *Instagram) Request(method, endpoint string, result interface{}) error {
 
 	body, err := ig.tryRequest(method, endpoint, "")
