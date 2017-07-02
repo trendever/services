@@ -1,9 +1,11 @@
 package instagram
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -15,6 +17,11 @@ import (
 var (
 	ErrorEmptyPassword = errors.New("Login or password is empty")
 )
+
+type ChallengeReply struct {
+	Type   string
+	Status string
+}
 
 // Login to Instagram.
 func (ig *Instagram) Login() error {
@@ -97,15 +104,82 @@ func (ig *Instagram) updateRankToken() {
 	ig.RankToken = fmt.Sprintf("%d_%v", ig.UserID, ig.UUID)
 }
 
+func (ig *Instagram) checkpointRequest(addr string, referer string, cookies []*http.Cookie, payload string) (string, []*http.Cookie, error) {
+	client := &http.Client{
+		Transport: ig.transport,
+	}
+
+	var req *http.Request
+	var err error
+	if payload == "" {
+		req, err = http.NewRequest("GET", addr, nil)
+	} else {
+		req, err = http.NewRequest("POST", addr, bytes.NewReader([]byte(payload)))
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+		if cookie.Name == "csrftoken" {
+			req.Header.Add("X-CSRFToken", cookie.Value)
+		}
+	}
+
+	// fill-in headers
+	for k, v := range map[string]string{
+		"User-Agent":                checkpointUserAgent,
+		"Accept":                    "*/*",
+		"Accept-Language":           "en-US,en;q=0.5",
+		"Connection":                "keep-alive",
+		"Origin":                    "https://i.instagram.com",
+		"X-Instagram-AJAX":          "1",
+		"X-Requested-With":          "XMLHttpRequest",
+		"Upgrade-Insecure-Requests": "1",
+	} {
+		req.Header.Add(k, v)
+	}
+
+	if referer != "" {
+		req.Header.Add("Referer", referer)
+	}
+
+	if payload != "" {
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	}
+
+	// send request
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", nil, err
+	}
+	defer resp.Body.Close()
+
+	response, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if DoResponseLogging {
+		log.Debug("URL: %v", addr)
+		log.Debug("REQ headers: %v", req.Header)
+		log.Debug("REQ params: %v", payload)
+		log.Debug("RESP headers: %v", resp.Header)
+		log.Debug("Checkpoint POST result: %v", string(response))
+	}
+
+	return string(response), concatCookies(cookies, resp.Cookies()), nil
+}
+
 // SendCode sends checkpoint code
 func (ig *Instagram) SendCode(preferEmail bool) (string, error) {
 
 	if ig.CheckpointURL == "" {
-		return "", fmt.Errorf("Can not send code! Checkpoint URL is empty")
+		return "", errors.New("Can not send code! Checkpoint URL is empty")
 	}
 
 	methods, err := ig.checkpointStep1()
-	log.Debug("methods: %v, err: %v", methods, err)
 	if err != nil {
 		return "", err
 	}
@@ -139,43 +213,25 @@ var dataRegexp = regexp.MustCompile(`window._sharedData\s*=\s*(.+);`)
 
 // step1: grab cookies and available login methods
 func (ig *Instagram) checkpointStep1() ([]string, error) {
-
 	body, cookies, err := ig.browserRequest("GET", ig.CheckpointURL, "", nil, "")
 	if err != nil {
 		return nil, err
 	}
-
-	client := &http.Client{
-		Transport: ig.transport,
-	}
-	// fill-in headers
-	header := make(http.Header)
-	header.Add("Accept", "*/*")
-	header.Add("User-Agent", UserAgent)
-	header.Add("X-Instagram-AJAX", "1")
-	header.Add("X-Requested-With", "XMLHttpRequest")
-	header.Add("Accept-Language", "en-US")
-	req, err := http.NewRequest("GET", ig.CheckpointURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header = header
 
 	res := dataRegexp.FindStringSubmatch(body)
 	if len(res) != 2 {
 		return nil, errors.New("Unknown format of challenge selection")
 	}
 
-	// there should be json in res[1] actuality, but data is mostly useless, no need in full decode i think
-	var methods []string
+	// there should be json actuality, but data is complex mostly useless, no need in full decode i think
 	if !strings.Contains(res[1], "SelectVerificationMethodForm") {
 		return nil, errors.New("Unknown format of challenge selection")
 	}
+	var methods []string
 	if strings.Contains(res[1], `"email":`) {
 		methods = append(methods, MethodEmail)
 	}
-	// @TODO this is just a guess, we need blocked acc with phone for test
-	if strings.Contains(res[1], `"phone":`) {
+	if strings.Contains(res[1], `"phone_number":`) {
 		methods = append(methods, MethodSms)
 	}
 
@@ -190,26 +246,34 @@ func (ig *Instagram) checkpointStep1() ([]string, error) {
 
 // step2: send code using given method
 func (ig *Instagram) checkpointStep2(method string) error {
-	values := map[string]string{}
+	challenges := map[string]struct {
+		value    string
+		formName string
+	}{
+		MethodSms: {
+			"0", "VerifySMSCodeForm",
+		},
+		MethodEmail: {
+			"1", "VerifyEmailCodeForm",
+		},
+	}
 
-	switch method {
-	// @TODO check value
-	case MethodSms:
-		values["choice"] = "0"
-	case MethodEmail:
-		values["choice"] = "1"
-	default:
-		return fmt.Errorf("Incorrect method supplied")
+	ch, ok := challenges[method]
+	if !ok {
+		return errors.New("Incorrect method supplied")
+	}
+
+	values := map[string]string{
+		"choice": ch.value,
 	}
 
 	body, cookies, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, encode(values))
 	if err != nil {
 		return err
 	}
-	log.Debug("body: %v", body)
 
-	if !strings.Contains(body, `<input id="id_response_code" inputmode="numeric" name="response_code"`) {
-		return fmt.Errorf("Code input form not found")
+	if !strings.Contains(body, ch.formName) {
+		return errors.New("Code input form not found")
 	}
 
 	ig.CheckpointCookies = cookies
@@ -221,21 +285,18 @@ func (ig *Instagram) checkpointStep2(method string) error {
 // CheckCodeF tries to submit instagram checkpont code
 func (ig *Instagram) CheckpointStep3(code string) error {
 
-	token, err := getToken(ig.CheckpointCookies)
+	values := map[string]string{
+		"security_code": code,
+	}
+
+	body, cookies, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, encode(values))
 	if err != nil {
 		return err
 	}
-
-	// I wonder if Instagram devs made post parameters order matter INTENTIONALLY? If yes, they are fucken evil geniouses
-	params := fmt.Sprintf("response_code=%v&csrfmiddlewaretoken=%v", code, token)
-
-	body, cookies, err := ig.browserRequest("POST", ig.CheckpointURL, ig.CheckpointURL, ig.CheckpointCookies, params)
-	if err != nil {
-		return err
-	}
+	log.Debug(body)
 
 	if !strings.Contains(body, "Your account has been verified.") || !strings.Contains(body, "Thanks!") {
-		return fmt.Errorf("Bad code")
+		return errors.New("Bad code")
 	}
 
 	ig.CheckpointCookies = cookies

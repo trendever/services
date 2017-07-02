@@ -95,15 +95,20 @@ func (ig *Instagram) browserRequest(method, addr, referer string, cookies []*htt
 
 	for _, cookie := range cookies {
 		req.AddCookie((*fixedhttp.Cookie)(cookie))
+		if cookie.Name == "csrftoken" {
+			req.Header.Add("X-CSRFToken", cookie.Value)
+		}
 	}
 
 	// fill-in headers
 	for k, v := range map[string]string{
 		"User-Agent":                checkpointUserAgent,
-		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		"Accept":                    "*/*",
 		"Accept-Language":           "en-US,en;q=0.5",
 		"Connection":                "keep-alive",
 		"Origin":                    "https://i.instagram.com",
+		"X-Instagram-AJAX":          "1",
+		"X-Requested-With":          "XMLHttpRequest",
 		"Upgrade-Insecure-Requests": "1",
 	} {
 		req.Header.Add(k, v)
