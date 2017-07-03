@@ -270,7 +270,7 @@ func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 
 	act := &models.Activity{
 		Pk:                item.ItemID,
-		UserID:            item.UserID,
+		UserID:            thread.Users[0].Pk,
 		UserName:          thread.Users[0].Username,
 		MentionedUsername: meta.Get().Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
