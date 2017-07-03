@@ -55,8 +55,11 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		Group:       "chat",
 		DurableName: "chat",
 		DecodedHandler: func(id uint64) bool {
-			// @TODO check errors?
-			log.Error(chats.DeleteConversation(id))
+			err := chats.DeleteConversation(id)
+			if err != nil {
+				log.Errorf("failed to delete conversation %v: %v", id, err)
+				return false
+			}
 			return true
 		},
 	}, &nats.StanSubscription{
@@ -64,7 +67,11 @@ func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_ch
 		Group:       "chat",
 		DurableName: "chat",
 		DecodedHandler: func(req *proto_chat.SetStatusMessage) bool {
-			log.Error(chats.SetConversationStatus(req))
+			err := chats.SetConversationStatus(req)
+			if err != nil {
+				log.Errorf("failed to update status of conversation %v: %v", req.ConversationId, err)
+				return false
+			}
 			return true
 		},
 	})
@@ -210,7 +217,6 @@ func (cs *chatServer) sendMessage(chat *models.Conversation, messages ...*models
 		cs.queue.Push(message)
 		encoded = append(encoded, message.Encode())
 	}
-	// @TODO wrong place?
 	go cs.notifyChatAboutNewMessage(chat.Encode(), encoded)
 	return
 }

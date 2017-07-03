@@ -145,7 +145,7 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 			return false, nil
 		}
 		parts = append(parts,
-			// @CHECK actuality that could be done on front by using with part
+			// @CHECK actuality that could be done on front by using next part
 			&models.MessagePart{
 				Content:  "https://www.instagram.com/p/" + part + "/",
 				MimeType: "text/plain",
