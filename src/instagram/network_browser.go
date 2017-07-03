@@ -19,21 +19,6 @@ var checkpointUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_3 like Mac OS 
 	Version +
 	" (iPhone7,2; iPhone OS 9_3_3; cs_CZ; cs-CZ; scale=2.00; 750x1334)"
 
-// Possible checkpoint methods
-const (
-	MethodSms   = "sms"
-	MethodEmail = "email"
-)
-
-func encode(params map[string]string) string {
-	vals := url.Values{}
-	for k, v := range params {
-		vals.Add(k, v)
-	}
-
-	return vals.Encode()
-}
-
 // "fixedhttp" version
 func transportFromURL_WTFVersion(proxyURL string) (ret *fixedhttp.Transport, err error) {
 	// mostly copy of http.DefaultTransport
