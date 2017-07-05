@@ -281,7 +281,7 @@ func notifySupplierAboutSuspense(shop *models.Shop, renewal bool) {
 }
 
 func notifySupplierAboutSubscription(shop *models.Shop, topic string, ctx map[string]interface{}) {
-	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID)
+	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID).Error
 	if err != nil {
 		log.Errorf("failed to load supplier: %v", err)
 		return
