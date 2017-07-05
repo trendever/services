@@ -246,7 +246,10 @@ func (s *monetizationServer) loop() {
 
 			switch {
 			case err == nil:
-				notifySupplierAboutSuspense(shop, true)
+				go notifySupplierAboutSubscription(shop, subscriptionNotifyTopic, map[string]interface{}{
+					"shop":    shop,
+					"renewal": true,
+				})
 
 			case err.Error() == "insufficient funds":
 				log.Errorf("shop %v should be suspended due to not able to pay the subscription fee", shop.ID)
