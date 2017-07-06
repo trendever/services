@@ -21,6 +21,8 @@ func Start() error {
 	conn := rpc.Connect(settings.Instagram.StoreAddr)
 	cli := accountstore.NewAccountStoreServiceClient(conn)
 
+	go resendRepliesLoop()
+
 	var err error
 	global.pubPool, err = client.InitPoll(
 		accountstore.Role_AuxPublic, cli,
