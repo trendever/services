@@ -3,8 +3,6 @@ package api
 import (
 	"core/conf"
 	"fmt"
-	"github.com/timehop/go-bitly"
-	"google.golang.org/grpc"
 	"net/url"
 	"proto/auth"
 	"proto/chat"
@@ -18,6 +16,9 @@ import (
 	"utils/log"
 	"utils/nats"
 	"utils/rpc"
+
+	bitly "github.com/timehop/go-bitly"
+	"google.golang.org/grpc"
 )
 
 type callbackFunc func(*grpc.Server)
@@ -112,9 +113,29 @@ func GetChatURL(leadID uint, token string) string {
 	return u.String()
 }
 
+//GetMonetizationURL returns url to monetization
+func GetMonetizationURL(token string) string {
+	v := &url.Values{}
+	v.Add("token", token)
+	u, err := url.Parse(conf.GetSettings().SiteURL)
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+	u.Path = "monetization"
+	u.RawQuery = v.Encode()
+	return u.String()
+}
+
 //GetShortURL return short url for the url
-func GetShortURL(url string) (bitly.ShortenResult, error) {
-	return GetBitly().Shorten(url)
+func GetShortURL(url string) string {
+	short, err := GetBitly().Shorten(url)
+	if err != nil {
+		// non-critical, we can return long url still
+		log.Warn("GetShortURL: %v", err)
+		return url
+	}
+	return short.URL
 }
 
 //GetChatURLWithToken returns url to chat with token

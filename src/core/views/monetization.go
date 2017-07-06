@@ -4,13 +4,14 @@ import (
 	"core/api"
 	"core/models"
 	"errors"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"proto/core"
 	"time"
 	"utils/coins"
 	"utils/db"
 	"utils/log"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -236,9 +237,7 @@ func (s *monetizationServer) loop() {
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
 				} else {
-					go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
-						"shop": shop,
-					})
+					notifySupplierAboutSuspense(shop, false)
 				}
 				continue
 			}
@@ -258,10 +257,7 @@ func (s *monetizationServer) loop() {
 				if err != nil {
 					log.Errorf("failed to suspend shop: %v", err)
 				} else {
-					go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
-						"shop":    shop,
-						"renewal": true,
-					})
+					notifySupplierAboutSuspense(shop, true)
 				}
 
 			default:
@@ -271,8 +267,24 @@ func (s *monetizationServer) loop() {
 	}
 }
 
+func notifySupplierAboutSuspense(shop *models.Shop, renewal bool) {
+	token, err := api.GetNewAPIToken(shop.SupplierID)
+	if err != nil {
+		log.Errorf("can't get token for customer: %v", err)
+	}
+
+	monetizationURL := api.GetMonetizationURL(token)
+	shortURL := api.GetShortURL(monetizationURL)
+
+	go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{
+		"shop":    shop,
+		"renewal": renewal,
+		"URL":     shortURL,
+	})
+}
+
 func notifySupplierAboutSubscription(shop *models.Shop, topic string, ctx map[string]interface{}) {
-	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID)
+	err := db.New().First(&shop.Supplier, "id = ?", shop.SupplierID).Error
 	if err != nil {
 		log.Errorf("failed to load supplier: %v", err)
 		return

@@ -442,12 +442,6 @@ func mkShortChatUrl(userId uint, leadId uint) (url string, err error) {
 		return "", fmt.Errorf("can't get token for customer: %v", err)
 	}
 	url = api.GetChatURL(leadId, token)
-	result, err := api.GetShortURL(url)
-	if err != nil {
-		// non-critical, we can return long url still
-		log.Warn("GetShortURL: %v", err)
-	} else {
-		url = result.URL
-	}
-	return url, nil
+
+	return api.GetShortURL(url), nil
 }
