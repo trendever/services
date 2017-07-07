@@ -14,10 +14,9 @@ type DirectRequest struct {
 	ID        uint64 `gorm:"primary_key"`
 	CreatedAt time.Time
 
-	Kind   bot.MessageType
-	UserID uint64
-	//@CHECK i'm somewhat unsure whether ReplyKey should be unique
-	ReplyKey string // `gorm:"unique" sql:"default:NULL"`
+	Kind     bot.MessageType
+	UserID   uint64
+	ReplyKey string
 
 	ThreadID           string
 	Participants       []uint64 `gorm:"-"`
@@ -25,6 +24,9 @@ type DirectRequest struct {
 
 	Data    string `gorm:"text"`
 	Caption string `gorm:"text"`
+
+	// in case if we can not send reply we should save it
+	Reply string
 }
 
 func (r *DirectRequest) BeforeSave() {
@@ -37,13 +39,15 @@ func (r *DirectRequest) BeforeSave() {
 
 func (r *DirectRequest) AfterFind() {
 	r.Participants = []uint64{}
-	strs := strings.Split(r.ParticipantsPacked, ",")
-	for _, str := range strs {
-		id, err := strconv.ParseUint(strings.Trim(str, " \r\t\n"), 10, 64)
-		if err != nil {
-			log.Errorf("invalid format in ParticipantsPacked: %v:", str)
-			continue
+	if r.ParticipantsPacked != "" {
+		strs := strings.Split(r.ParticipantsPacked, ",")
+		for _, str := range strs {
+			id, err := strconv.ParseUint(strings.Trim(str, " \r\t\n"), 10, 64)
+			if err != nil {
+				log.Errorf("invalid format in ParticipantsPacked: %v", str)
+				continue
+			}
+			r.Participants = append(r.Participants, id)
 		}
-		r.Participants = append(r.Participants, id)
 	}
 }

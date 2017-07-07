@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"encoding/json"
 	"errors"
 	"fetcher/consts"
 	"fetcher/models"
@@ -9,6 +10,7 @@ import (
 	"instagram"
 	"net/http"
 	"proto/bot"
+	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -18,7 +20,11 @@ import (
 
 func processRequests(meta *client.AccountMeta) error {
 	var requests []models.DirectRequest
-	err := db.New().Where("user_id = ?", meta.Get().UserID).Order("id").Limit(100).Find(&requests).Error
+	err := db.New().
+		Where("user_id = ?", meta.Get().UserID).
+		Where("reply = '' OR reply IS NULL").
+		Order("id").Limit(100).
+		Find(&requests).Error
 	if err != nil {
 		return fmt.Errorf("failed to load requests: %v", err)
 	}
@@ -70,6 +76,10 @@ func processRequest(meta *client.AccountMeta, req *models.DirectRequest) error {
 
 	err := nats.StanPublish(DirectNotifySubject, &reply)
 	if err != nil {
+		if req.ID != 0 {
+			// we will send it later
+			saveReply(req, &reply)
+		}
 		return fmt.Errorf("failed to send reply via stan: %v", err)
 	}
 	if req.ID == 0 {
@@ -82,6 +92,63 @@ func processRequest(meta *client.AccountMeta, req *models.DirectRequest) error {
 		return fmt.Errorf("failed to remove handled request from pending table: %v", err)
 	}
 	return nil
+}
+
+func saveReply(req *models.DirectRequest, reply *bot.Notify) {
+	bytes, err := json.Marshal(reply)
+	if err != nil {
+		log.Errorf("failed to marshal reply '%v': %v", reply, err)
+		return
+	}
+	req.Reply = string(bytes)
+	err = db.New().Save(req).Error
+	if err != nil {
+		log.Errorf("failed to save reply: %v", err)
+	}
+}
+
+// resend replies for request that was performed while nats was unavailable
+func resendRepliesLoop() {
+	for range time.Tick(time.Minute) {
+		var requests []models.DirectRequest
+		err := db.New().
+			Select("id, reply").
+			Where("reply != '' AND reply IS NOT NULL").
+			Order("id").Limit(1000).
+			Find(&requests).Error
+		if err != nil {
+			log.Errorf("failed to load requests: %v", err)
+			continue
+		}
+		if len(requests) != 0 {
+			log.Warn("found %v request(s) with unsended reply, trying to resend", len(requests))
+		}
+		for _, req := range requests {
+			resendReplyAndDelete(&req)
+		}
+	}
+}
+
+func resendReplyAndDelete(req *models.DirectRequest) {
+	var reply bot.Notify
+	err := json.Unmarshal([]byte(req.Reply), &reply)
+	if err != nil {
+		log.Errorf("failed to unmarshal reply '%v': %v", req.Reply, err)
+		err := db.New().Delete(req).Error
+		if err != nil {
+			log.Errorf("failed to remove request with malformed saved reply: %v", err)
+		}
+		return
+	}
+	err = nats.StanPublish(DirectNotifySubject, &reply)
+	if err != nil {
+		// no need spam errors to log here, it will be processed again any way
+		return
+	}
+	err = db.New().Delete(req).Error
+	if err != nil {
+		log.Errorf("failed to remove request with resended reply: %v", err)
+	}
 }
 
 func createThread(ig *instagram.Instagram, req *models.DirectRequest, result *bot.Notify) error {

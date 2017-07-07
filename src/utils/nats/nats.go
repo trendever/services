@@ -195,7 +195,7 @@ func Init(config *Config, stanRequired bool) {
 }
 
 func connect(config *Config, stanRequired bool) error {
-	conn, err := nats.Connect(config.URL)
+	conn, err := nats.Connect(config.URL, nats.MaxReconnects(-1))
 	if err != nil {
 		return fmt.Errorf("connection to NATS failed: %v", err)
 	}

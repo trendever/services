@@ -50,12 +50,14 @@ func (s fetcherServer) SendDirect(ctx context.Context, in *bot.SendDirectRequest
 
 func saveRequest(in *bot.SendDirectRequest) bool {
 	var req = models.DirectRequest{
-		Kind:         in.Type,
-		UserID:       in.SenderId,
-		ReplyKey:     in.ReplyKey,
-		ThreadID:     in.ThreadId,
-		Participants: []uint64{in.RecieverId},
-		Data:         in.Data,
+		Kind:     in.Type,
+		UserID:   in.SenderId,
+		ReplyKey: in.ReplyKey,
+		ThreadID: in.ThreadId,
+		Data:     in.Data,
+	}
+	if in.RecieverId != 0 {
+		req.Participants = []uint64{in.RecieverId}
 	}
 	err := db.New().Save(&req).Error
 	if err != nil {
