@@ -2,11 +2,12 @@ package conf
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"utils/config"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
+
+	"github.com/spf13/viper"
 )
 
 var (
@@ -62,6 +63,7 @@ type Settings struct {
 		// duration multiplier for plans periods
 		PlansBaseDuration     string
 		SubscriptionCheckTick string
+		URL                   string
 	}
 
 	Comments struct {
