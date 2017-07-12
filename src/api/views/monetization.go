@@ -145,21 +145,26 @@ func SetAutorefill(c *soso.Context) {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
-	offerID, _ := c.RequestMap["offer_id"].(float64)
-	if offerID <= 0 {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid offer id"))
-		return
-	}
+	var offerID float64
 
-	balance, err := coinsBalance(c.Token.UID)
-	if err != nil {
-		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
-		return
-	}
+	disable, _ := c.RequestMap["disable"].(bool)
+	if !disable {
+		offerID, _ = c.RequestMap["offer_id"].(float64)
+		if offerID <= 0 {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid offer id"))
+			return
+		}
 
-	if balance <= 0 {
-		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("you should have positive balance to do this"))
-		return
+		balance, err := coinsBalance(c.Token.UID)
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+
+		if balance <= 0 {
+			c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("you should have positive balance to do this"))
+			return
+		}
 	}
 
 	ctx, cancel := rpc.DefaultContext()
@@ -168,6 +173,7 @@ func SetAutorefill(c *soso.Context) {
 	res, err := monetizationServiceClient.SetAutorefill(ctx, &core.SetAutorefillRequest{
 		UserId:  c.Token.UID,
 		OfferId: uint64(offerID),
+		Disable: disable,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
