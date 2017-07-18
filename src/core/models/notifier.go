@@ -232,8 +232,7 @@ func (n *Notifier) NotifyUserByTelegram(user *User, about string, context interf
 func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}) error {
 	log.Debug("Notify user %v about %v", user.Stringify(), about)
 	var smsError, emailError, telgramError error
-	// @WARN be aware: users from directbot never receive sms from here
-	if user.Phone != "" && user.Source != "directbot" {
+	if user.Phone != "" {
 		smsError = n.NotifyBySms(user.Phone, about, context)
 	}
 	if user.Email != "" {

@@ -117,12 +117,11 @@ func GetChatURL(leadID uint, token string) string {
 func GetMonetizationURL(token string) string {
 	v := &url.Values{}
 	v.Add("token", token)
-	u, err := url.Parse(conf.GetSettings().SiteURL)
+	u, err := url.Parse(conf.GetSettings().Monetization.URL)
 	if err != nil {
 		log.Error(err)
 		return ""
 	}
-	u.Path = "monetization"
 	u.RawQuery = v.Encode()
 	return u.String()
 }

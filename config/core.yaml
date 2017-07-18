@@ -30,6 +30,7 @@ monetization:
   initialPlanName: init
   plansBaseDuration: 1m
   subscriptionCheckTick: 5m
+  URL: https://directbot.io/monetization
 
 comments:
   allowed: "цена,цвет,размер,стоимость"

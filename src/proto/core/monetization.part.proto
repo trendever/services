@@ -78,6 +78,8 @@ message SubscribeReply {
 message SetAutorefillRequest {
     uint64 user_id = 1;
     uint64 offer_id = 2;
+    // disables autorefill if true
+    bool disable = 3;
 }
 
 message SetAutorefillReply {

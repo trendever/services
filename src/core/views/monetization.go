@@ -92,16 +92,21 @@ func (s *monetizationServer) GetCoinsOffers(_ context.Context, in *core.GetCoins
 }
 
 func (s *monetizationServer) SetAutorefill(_ context.Context, in *core.SetAutorefillRequest) (*core.SetAutorefillReply, error) {
-	autorefill := models.AutorefillInfo{
-		UserID: in.UserId,
+	var err error
+	if in.Disable {
+		err = db.New().Where("user_id = ?", in.UserId).Delete(&models.AutorefillInfo{}).Error
+	} else {
+		autorefill := models.AutorefillInfo{
+			UserID: in.UserId,
+		}
+		err = db.New().Where(models.AutorefillInfo{
+			UserID: in.UserId,
+		}).Assign(models.AutorefillInfo{
+			CoinsOffer: in.OfferId,
+		}).FirstOrCreate(&autorefill).Error
 	}
-	err := db.New().Where(models.AutorefillInfo{
-		UserID: in.UserId,
-	}).Assign(models.AutorefillInfo{
-		CoinsOffer: in.OfferId,
-	}).FirstOrCreate(&autorefill).Error
 	if err != nil {
-		log.Errorf("failed to create or update autorefill info: %v", err)
+		log.Errorf("failed update autorefill info: %v", err)
 		return &core.SetAutorefillReply{Error: err.Error()}, nil
 	}
 	return &core.SetAutorefillReply{}, nil

@@ -252,6 +252,7 @@ type ThreadItem struct {
 	Media         *DirectMedia `json:"media"`
 	MediaShare    *MediaShare  `json:"media_share,omitempty"`
 	Link          *Link        `json:"link"`
+	Like          string       `json:"like"`
 }
 
 // Sorting stuff
