@@ -8,6 +8,7 @@ import (
 	"instagram"
 	"proto/accountstore"
 	"proto/bot"
+	"time"
 	"utils/log"
 	"utils/nats"
 )
@@ -107,9 +108,16 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 		msgs = msgs[:len(msgs)-1]
 	}
 
+	if len(msgs) == 0 {
+		return nil
+	}
+
 	log.Debug("Got %v new messages for %v from thread %v", len(msgs), meta.Get().Username, threadID)
-	// @TODO send one notify for multiple messages where possible
 	sourceID := meta.Get().UserID
+	notify := bot.Notify{
+		ThreadId: threadID,
+		SourceId: sourceID,
+	}
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
@@ -124,63 +132,35 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 			}
 		}
 
-		switch message.ItemType {
-		// such a special case for shares feels somewhat inconsistent
-		// we can use notifications in wantit probably...
-		case "media_share":
-			if meta.Role() == accountstore.Role_User &&
-				message.MediaShare != nil &&
-				message.MediaShare.User.Pk == ig.UserID {
-				if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
-					return err
-				}
-			}
-
-		case "media":
-			notify := bot.Notify{
-				ThreadId: threadID,
-				SourceId: sourceID,
-				Messages: []*bot.Message{
-					{
-						MessageId: message.ItemID,
-						UserId:    message.UserID,
-						Type:      bot.MessageType_Image,
-						Data:      message.Media.ImageVersions2.Largest(),
-					},
-				},
-			}
-			err := nats.StanPublish(DirectNotifySubject, &notify)
-			if err != nil {
-				return fmt.Errorf("failed to send message notification via stan: %v", err)
-			}
-
-		case "link":
-			message.Text = message.Link.Text
-			fallthrough
-
-		case "text":
-			notify := bot.Notify{
-				ThreadId: threadID,
-				SourceId: sourceID,
-				Messages: []*bot.Message{
-					{
-						MessageId: message.ItemID,
-						UserId:    message.UserID,
-						Type:      bot.MessageType_Text,
-						Data:      message.Text,
-					},
-				},
-			}
-			err := nats.StanPublish(DirectNotifySubject, &notify)
-			if err != nil {
-				return fmt.Errorf("failed to send message notification via stan: %v", err)
+		if message.ItemType == "media_share" &&
+			meta.Role() == accountstore.Role_User &&
+			message.MediaShare.User.Pk == ig.UserID {
+			if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
+				return err
 			}
 		}
+		kind, data := mapFromInstagram(message)
+		if kind != bot.MessageType_None {
+			notify.Messages = append(notify.Messages, &bot.Message{
+				MessageId: message.ItemID,
+				UserId:    message.UserID,
+				Type:      kind,
+				Data:      data,
+			})
+		}
+
 		info.LastCheckedID = message.ItemID
-		err := info.Save()
+	}
+	if len(notify.Messages) != 0 {
+		err = nats.StanPublish(DirectNotifySubject, &notify)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to send message notification via stan: %v", err)
 		}
+	}
+
+	err = info.Save()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -190,6 +170,11 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 // returned instagram.DirectThreadResponse is from last page query
 func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *instagram.DirectThreadResponse, msgs []instagram.ThreadItem, err error) {
 	ig := meta.Get()
+	// limit loading depth by time
+	cutTime := time.Now().Add(-time.Hour * 24 * 7).Unix()
+	if meta.AddedAt > cutTime {
+		cutTime = meta.AddedAt
+	}
 	cursor := ""
 	for {
 		thread, err = ig.DirectThread(threadID, cursor)
@@ -198,7 +183,7 @@ func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *ins
 		}
 
 		items := thread.Thread.Items
-		if models.CompareID(thread.Thread.OldestCursor, sinceID) > 0 && items[len(items)-1].Timestamp/1000000 >= meta.AddedAt {
+		if models.CompareID(thread.Thread.OldestCursor, sinceID) > 0 && items[len(items)-1].Timestamp/1000000 >= cutTime {
 			msgs = append(msgs, items...)
 			cursor = thread.Thread.OldestCursor
 			if !thread.Thread.HasOlder {
@@ -213,7 +198,7 @@ func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *ins
 		}
 
 		for it, msg := range items {
-			if models.CompareID(msg.ItemID, sinceID) < 0 || msg.Timestamp/1000000 < meta.AddedAt {
+			if models.CompareID(msg.ItemID, sinceID) < 0 || msg.Timestamp/1000000 < cutTime {
 				msgs = append(msgs, items[:it]...)
 				break
 			}
@@ -229,37 +214,38 @@ func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
 
-		switch message.ItemType {
-		case "media_share":
+		kind, data := mapFromInstagram(message)
+		if kind != bot.MessageType_None {
 			ret = append(ret, &bot.Message{
 				MessageId: message.ItemID,
 				UserId:    message.UserID,
-				Type:      bot.MessageType_MediaShare,
-				Data:      message.MediaShare.ID,
-			})
-
-		case "media":
-			ret = append(ret, &bot.Message{
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				Type:      bot.MessageType_Image,
-				Data:      message.Media.ImageVersions2.Largest(),
-			})
-
-		case "link":
-			message.Text = message.Link.Text
-			fallthrough
-
-		case "text":
-			ret = append(ret, &bot.Message{
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				Type:      bot.MessageType_Text,
-				Data:      message.Text,
+				Type:      kind,
+				Data:      data,
 			})
 		}
 	}
 	return ret, nil
+}
+
+func mapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data string) {
+	switch msg.ItemType {
+	case "media_share":
+		return bot.MessageType_MediaShare, msg.MediaShare.ID
+	case "media":
+		return bot.MessageType_Image, msg.Media.ImageVersions2.Largest()
+	case "text":
+		return bot.MessageType_Text, msg.Text
+	case "link":
+		return bot.MessageType_Text, msg.Link.Text
+	case "like":
+		return bot.MessageType_Text, msg.Like
+	case "action_log":
+		// @CHECK can there be something useful? afaik it contains topic changes and join|leave notifies
+		return bot.MessageType_None, ""
+	default:
+		log.Debug("unknown type of direct item: %v", msg.ItemType)
+		return bot.MessageType_None, ""
+	}
 }
 
 func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta) error {
