@@ -21,7 +21,7 @@ type ChatTemplate struct {
 	Group string
 	// Specific product(if any)
 	ProductID sql.NullInt64
-	Product   Product `gorm:"save_associations:false"`
+	Product   Product
 	// When true this template will be used if there is no specific templates
 	IsDefault bool
 	// Specific lead source or 'any'
