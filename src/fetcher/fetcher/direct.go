@@ -132,11 +132,11 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 			}
 		}
 
-		if message.ItemType == "media_share" &&
-			meta.Role() == accountstore.Role_User &&
-			message.MediaShare.User.Pk == ig.UserID {
-			if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
-				return err
+		if message.ItemType == "media_share" {
+			if meta.Role() != accountstore.Role_User || message.MediaShare.User.Pk == ig.UserID {
+				if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
+					return err
+				}
 			}
 		}
 		kind, data := mapFromInstagram(message)
