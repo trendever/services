@@ -59,7 +59,7 @@ type Shop struct {
 
 	// monetization related stuff
 	PlanID uint64
-	Plan   MonetizationPlan `gorm:"save_associations:false"`
+	Plan   MonetizationPlan
 	// used to prevent repetitive actions
 	LastPlanUpdate time.Time
 	// zero time for plans without expiration
