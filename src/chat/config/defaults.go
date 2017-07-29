@@ -1,6 +1,7 @@
 package config
 
 import (
+	"chat/notifier"
 	"github.com/spf13/viper"
 	"utils/config"
 	"utils/db"
@@ -23,7 +24,8 @@ type Settings struct {
 		Core    string
 		Checker string
 	}
-	Nats nats.Config
+	Nats       nats.Config
+	Unanswered map[string]notifier.Config
 }
 
 var settings = &Settings{}

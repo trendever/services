@@ -1,4 +1,4 @@
-package common
+package notifier
 
 //Queue implements fifo stack (first in, first out)
 type Queue struct {

@@ -3,7 +3,6 @@ package server
 import (
 	"chat/config"
 	"chat/models"
-	"chat/queue"
 	"errors"
 	"golang.org/x/net/context"
 	proto_chat "proto/chat"
@@ -16,30 +15,20 @@ import (
 	"utils/rpc"
 )
 
-// NATS events
-const (
-	EventJoin            = "chat.member.join"
-	EventMessage         = "chat.message.new"
-	EventMessageReaded   = "chat.message.readed"
-	EventMessageAppended = "chat.message.appended"
-)
-
 type chatServer struct {
 	chats      models.ConversationRepository
-	queue      queue.Waiter
 	userCli    core.UserServiceClient
 	leadCli    core.LeadServiceClient
 	checkerCli checker.CheckerServiceClient
 }
 
 //NewChatServer returns implementation of protobuf ChatServiceServer
-func NewChatServer(chats models.ConversationRepository, q queue.Waiter) proto_chat.ChatServiceServer {
+func NewChatServer(chats models.ConversationRepository) proto_chat.ChatServiceServer {
 	conf := config.Get()
 
 	coreConn := rpc.Connect(conf.RPC.Core)
 	srv := &chatServer{
 		chats:      chats,
-		queue:      q,
 		userCli:    core.NewUserServiceClient(coreConn),
 		leadCli:    core.NewLeadServiceClient(coreConn),
 		checkerCli: checker.NewCheckerServiceClient(rpc.Connect(conf.RPC.Checker)),
@@ -138,13 +127,6 @@ func (cs *chatServer) JoinChat(ctx context.Context, req *proto_chat.JoinChatRequ
 		return
 	}
 	reply.Chat = chat.Encode()
-	for _, m := range req.Members {
-		mm := chat.GetMember(m.UserId)
-		if mm != nil {
-			go cs.notifyChatAboutNewMember(reply.Chat, mm.Encode())
-		}
-	}
-
 	return reply, err
 }
 
@@ -188,9 +170,14 @@ func (cs *chatServer) SendNewMessage(ctx context.Context, req *proto_chat.SendMe
 		msgs[i] = models.DecodeMessage(enc, member)
 	}
 
-	reply.Messages, err = cs.sendMessage(chat, msgs...)
+	err = cs.chats.AddMessages(chat, msgs)
+	if err != nil {
+		return reply, err
+	}
+
+	reply.Messages = models.EncodeMessages(msgs)
 	reply.Chat = chat.Encode()
-	return reply, err
+	return reply, nil
 }
 
 func (cs *chatServer) getChat(id uint64) (*models.Conversation, *proto_chat.Error, error) {
@@ -206,19 +193,6 @@ func (cs *chatServer) getChat(id uint64) (*models.Conversation, *proto_chat.Erro
 		}
 	}
 	return chat, chatErr, nil
-}
-
-func (cs *chatServer) sendMessage(chat *models.Conversation, messages ...*models.Message) (encoded []*proto_chat.Message, err error) {
-	err = cs.chats.AddMessages(chat, messages...)
-	if err != nil {
-		return
-	}
-	for _, message := range messages {
-		cs.queue.Push(message)
-		encoded = append(encoded, message.Encode())
-	}
-	go cs.notifyChatAboutNewMessage(chat.Encode(), encoded)
-	return
 }
 
 //GetChatHistory returns chat history
@@ -254,36 +228,10 @@ func (cs *chatServer) GetChatHistory(ctx context.Context, req *proto_chat.ChatHi
 }
 
 // updated last message id for member
-func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsReadedRequest) (reply *proto_chat.MarkAsReadedReply, err error) {
-	reply = &proto_chat.MarkAsReadedReply{}
-	var chat *models.Conversation
-	chat, reply.Error, err = cs.getChat(req.ConversationId)
-	if reply.Error != nil || err != nil {
-		return
-	}
-	var member *models.Member
-	member, err = cs.chats.GetMember(chat, req.UserId)
-	if err != nil {
-		return
-	}
-	if member == nil {
-		err = errors.New("User is not a member")
-		return
-	}
-	err = cs.chats.MarkAsReaded(member, req.MessageId)
-
-	if err != nil {
-		return
-	}
-
-	//We don't want make a new query only for get updated last_message_id
-	//so just update it in the structure
-	member = chat.GetMember(req.UserId)
-	member.LastMessageID = req.MessageId
-
-	go cs.notifyChatAboutReadedMessage(chat.Encode(), req.MessageId, req.UserId)
-
-	return
+func (cs *chatServer) MarkAsReaded(ctx context.Context, req *proto_chat.MarkAsReadedRequest) (*proto_chat.MarkAsReadedReply, error) {
+	reply := &proto_chat.MarkAsReadedReply{}
+	err := cs.chats.MarkAsReaded(req.ConversationId, req.UserId, req.MessageId)
+	return reply, err
 }
 
 func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendMessageRequest) (reply *proto_chat.AppendMessageReply, err error) {
@@ -293,50 +241,9 @@ func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendM
 		return nil, err
 	}
 
-	var encMsg = message.Encode()
-
-	go cs.notifyChatAboutAppendedMessage(encMsg)
-
 	return &proto_chat.AppendMessageReply{
-		Message: encMsg,
+		Message: message.Encode(),
 	}, nil
-}
-
-func (cs *chatServer) notifyChatAboutAppendedMessage(msg *proto_chat.Message) {
-
-	// api needs chat because it contains users who needs notification about an event
-	chat, err := cs.chats.GetByID(uint(msg.ConversationId))
-	if err != nil {
-		return
-	}
-
-	nats.StanPublish(EventMessageAppended, &proto_chat.MessageAppendedRequest{
-		Message: msg,
-		Chat:    chat.Encode(),
-	})
-}
-
-func (cs *chatServer) notifyChatAboutNewMessage(chat *proto_chat.Chat, messages []*proto_chat.Message) {
-	nats.StanPublish(EventMessage, &proto_chat.NewMessageRequest{
-		Chat:     chat,
-		Messages: messages,
-	})
-}
-
-func (cs *chatServer) notifyChatAboutReadedMessage(chat *proto_chat.Chat, messageID, userID uint64) {
-	nats.StanPublish(EventMessageReaded, &proto_chat.MessageReadedRequest{
-		Chat:      chat,
-		MessageId: messageID,
-		UserId:    userID,
-	})
-
-}
-
-func (cs *chatServer) notifyChatAboutNewMember(chat *proto_chat.Chat, member *proto_chat.Member) {
-	nats.StanPublish(EventJoin, &proto_chat.NewChatMemberRequest{
-		Chat: chat,
-		User: member,
-	})
 }
 
 func (cs *chatServer) GetTotalCountUnread(_ context.Context, req *proto_chat.TotalCountUnreadRequest) (reply *proto_chat.TotalCountUnreadReply, err error) {

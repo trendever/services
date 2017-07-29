@@ -3,14 +3,13 @@ package cmd
 import (
 	"chat/config"
 	"chat/models"
-	"chat/queue"
+	"chat/notifier"
 	"chat/server"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"proto/chat"
 	"syscall"
-	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
@@ -28,14 +27,15 @@ var cmdRun = &cobra.Command{
 
 		db.Init(&conf.DB)
 
+		models.SetNotifier(notifier.New(conf.Unanswered))
 		repository := models.NewConversationRepository(db.New())
+
 		nats.Init(&conf.Nats, true)
 
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)
 		s := rpc.Serve(conf.Host + ":" + conf.Port)
 		chat.RegisterChatServiceServer(s, server.NewChatServer(
 			repository,
-			queue.NewWaiter(time.Minute*5),
 		))
 
 		// interrupt

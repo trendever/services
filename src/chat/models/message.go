@@ -71,6 +71,13 @@ func (m *Message) Encode() *chat.Message {
 	return message
 }
 
+func EncodeMessages(msgs []*Message) (ret []*chat.Message) {
+	for _, msg := range msgs {
+		ret = append(ret, msg.Encode())
+	}
+	return
+}
+
 //EncodeParts converts MessageParts to protobuf model
 func (m *Message) EncodeParts() []*chat.MessagePart {
 	parts := []*chat.MessagePart{}

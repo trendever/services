@@ -18,3 +18,12 @@ nats:
     url: nats://nats:4222
     stanCluster: stan
     stanID: chat1
+    
+unanswered:
+    - short:
+        delay: 5s
+    - long:
+        delay: 3m
+    - user:
+        delay: 3m
+        forUser: true

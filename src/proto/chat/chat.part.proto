@@ -240,3 +240,10 @@ message EnableSyncRequest {
 message EnableSyncReply {
     string error = 1;
 }
+
+message UnansweredNotify {
+    uint64 chat_id = 1;
+    uint64 count = 2;
+    string group = 3;
+    bool forUser = 4;
+}
