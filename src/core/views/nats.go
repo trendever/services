@@ -27,10 +27,10 @@ func init() {
 		DurableName:    "core",
 		DecodedHandler: newMessage,
 	}, &nats.StanSubscription{
-		Subject:        "core.notify.message",
+		Subject:        "chat.unanswered",
 		Group:          "core",
 		DurableName:    "core",
-		DecodedHandler: notifyAboutUnreadMessage,
+		DecodedHandler: handleUnansweredMessages,
 	}, &nats.StanSubscription{
 		Subject:        "auth.login",
 		Group:          "core",
@@ -254,7 +254,7 @@ func newMessage(req *chat.NewMessageRequest) bool {
 		go log.Error(lead.TriggerEvent("SUBMIT", "", 0, nil))
 	}
 
-	//Уведомляем чувачков из мапы (вот ток нафига в мапе bool, можно просто слайс, не?)
+	//Уведомляем чувачков из мапы
 	n := models.GetNotifier()
 	for user := range users {
 		n.NotifyUserAboutNewMessages(user, lead, req.Messages)
@@ -262,26 +262,37 @@ func newMessage(req *chat.NewMessageRequest) bool {
 	return true
 }
 
-func notifyAboutUnreadMessage(msg *chat.Message) bool {
-	lead, err := models.GetLead(0, msg.ConversationId, "Shop", "Customer")
+func handleUnansweredMessages(notify *chat.UnansweredNotify) bool {
+	preload := []string{"Shop", "Customer"}
+	if !notify.ForUser {
+		preload = []string{"Customer", "Shop", "Shop.Supplier", "Shop.Sellers"}
+	}
+	lead, err := models.GetLead(0, notify.ChatId, preload...)
 	if err != nil {
 		log.Error(err)
 		return true
 	}
 
-	var count uint64
-	err = db.New().Model(&models.PushToken{}).Where("user_id = ?", lead.CustomerID).Count(&count).Error
-	if err != nil {
-		log.Errorf("failed to determinate whether user have active push tokens: %v", err)
-		return true
-	}
-
-	if count != 0 {
-		return true
-	}
-
 	n := models.GetNotifier()
-	log.Error(n.NotifyAboutUnreadMessage(&lead.Customer, lead, msg))
+	if notify.ForUser {
+		var count uint64
+		err = db.New().Model(&models.PushToken{}).Where("user_id = ?", lead.CustomerID).Count(&count).Error
+		if err != nil {
+			log.Errorf("failed to determinate whether user have active push tokens: %v", err)
+			return true
+		}
+
+		if count != 0 {
+			return true
+		}
+
+		log.Error(n.NotifyAboutUnansweredMessages(&lead.Customer, lead, notify.Count, notify.Group))
+	} else {
+		log.Error(n.NotifyAboutUnansweredMessages(&lead.Shop.Supplier, lead, notify.Count, notify.Group))
+		for _, seller := range lead.Shop.Sellers {
+			log.Error(n.NotifyAboutUnansweredMessages(seller, lead, notify.Count, notify.Group))
+		}
+	}
 	return true
 }
 

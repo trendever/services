@@ -73,7 +73,7 @@ func FindUserMatchAny(ID, instagramID uint64, name, instagramName, email, phone 
 		return nil, false, nil
 	}
 	if res.Error != nil {
-		return nil, false, fmt.Errorf("failed to find user: %v", err)
+		return nil, false, fmt.Errorf("failed to find user: %v", res.Error)
 	}
 	return user, true, nil
 }

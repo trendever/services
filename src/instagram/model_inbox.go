@@ -218,7 +218,8 @@ type DirectPhotoResponse struct {
 type MediaType int
 
 const (
-	MediaType_Image = 1
+	MediaType_Image    = 1
+	MediaType_Carousel = 8
 )
 
 type DirectMedia struct {

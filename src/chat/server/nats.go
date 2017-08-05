@@ -161,12 +161,14 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 		return false, nil
 	}
 
-	_, err = cs.sendMessage(chat, &models.Message{
-		MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
-		Member:      author,
-		InstagramID: msg.MessageId,
-		SyncStatus:  proto.SyncStatus_SYNCED,
-		Parts:       parts,
+	err = cs.chats.AddMessages(chat, []*models.Message{
+		{
+			MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
+			Member:      author,
+			InstagramID: msg.MessageId,
+			SyncStatus:  proto.SyncStatus_SYNCED,
+			Parts:       parts,
+		},
 	})
 	if err != nil {
 		return true, fmt.Errorf("failed to add message: %v", err)

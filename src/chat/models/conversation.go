@@ -22,13 +22,24 @@ const (
 	FetchReplyPrefix   = "fetch_thread."
 
 	DefaultSyncInitMessage = "direct sync enabled"
-
-	SyncEventTopic = "chat.sync_event"
 )
 
 var global struct {
 	syncLock    sync.Mutex
 	threadsLock sync.Mutex
+	notifier    Notifier
+}
+
+type Notifier interface {
+	NewEvent(*Conversation, ...*Message)
+	SyncEvent(*Conversation)
+	JoinEvent(*Conversation, ...*Member)
+	UpdateEvent(*Conversation, *Message)
+	ReadedEvent(chat *Conversation, messageID uint64, userID uint64)
+}
+
+func SetNotifier(n Notifier) {
+	global.notifier = n
 }
 
 //Conversation is representation of conversation model
@@ -56,7 +67,10 @@ type Conversations []*Conversation
 
 //NewConversationRepository returns repository for to work with models of conversation
 func NewConversationRepository(db *gorm.DB) ConversationRepository {
-	return &conversationRepositoryImpl{db: db, members: &memberRepository{db: db}}
+	return &conversationRepositoryImpl{
+		db:      db,
+		members: &memberRepository{db: db},
+	}
 }
 
 //ConversationRepository is repository interface of conversation models
@@ -68,12 +82,12 @@ type ConversationRepository interface {
 	GetByDirectThread(string) (*Conversation, error)
 	AddMembers(*Conversation, ...*Member) error
 	RemoveMembers(*Conversation, ...uint64) error
-	AddMessages(*Conversation, ...*Message) error
+	AddMessages(*Conversation, []*Message) error
 	GetMember(*Conversation, uint64) (*Member, error)
 	UpdateMember(member *Member) error
 	GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) ([]*Message, error)
 	TotalMessages(chat *Conversation) uint64
-	MarkAsReaded(member *Member, messageID uint64) error
+	MarkAsReaded(chatID, userID, msgID uint64) error
 	GetUnread(ids []uint64, userID uint64) (map[uint64]uint64, error)
 	GetTotalUnread(userID uint64) (uint64, error)
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
@@ -149,6 +163,7 @@ func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*
 			return err
 		}
 	}
+	global.notifier.JoinEvent(chat, members...)
 	return nil
 }
 
@@ -172,7 +187,10 @@ func (c *conversationRepositoryImpl) RemoveMembers(chat *Conversation, userIDs .
 	return nil
 }
 
-func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ...*Message) error {
+func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages []*Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
 	global.syncLock.Lock()
 	err := c.db.Model(chat).Association("Messages").Append(messages).Error
 	go func() {
@@ -196,6 +214,9 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages ..
 		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
 		global.syncLock.Unlock()
 	}()
+	if err == nil {
+		global.notifier.NewEvent(chat, messages...)
+	}
 	return err
 }
 
@@ -248,7 +269,8 @@ func (chat *Conversation) updateSyncStatus(status pb_chat.SyncStatus) error {
 	if err != nil {
 		return err
 	}
-	return nats.StanPublish(SyncEventTopic, chat.Encode())
+	global.notifier.SyncEvent(chat)
+	return nil
 }
 
 func mapToInstagram(chat *Conversation, message *Message) (kind bot.MessageType, data string) {
@@ -369,8 +391,24 @@ func (c *conversationRepositoryImpl) GetByUserID(userID uint) ([]*Conversation, 
 	return chats, err
 }
 
-func (c *conversationRepositoryImpl) MarkAsReaded(member *Member, messageID uint64) error {
-	return c.members.UpdateLastMessageID(member.ID, messageID)
+func (c *conversationRepositoryImpl) MarkAsReaded(chatID, userID, msgID uint64) error {
+	chat, err := c.GetByID(uint(chatID))
+	if err != nil {
+		return err
+	}
+
+	member := chat.GetMember(userID)
+	if member == nil {
+		return errors.New("User is not a member")
+	}
+
+	err = c.members.UpdateLastMessageID(member.ID, msgID)
+	if err != nil {
+		return err
+	}
+	member.LastMessageID = msgID
+	global.notifier.ReadedEvent(chat, msgID, member.ID)
+	return nil
 }
 
 // UpdateMessage appends new message part to given message; returns it
@@ -392,13 +430,13 @@ func (c *conversationRepositoryImpl) UpdateMessage(messageID uint64, parts []*Me
 	}
 
 	message.Parts = append(message.Parts, parts...)
-
-	log.Debug("ehohoh %#v", message)
-
 	err = c.db.Save(&message).Error
 	if err != nil {
 		return nil, err
 	}
+
+	chat, err := c.GetByID(message.ConversationID)
+	global.notifier.UpdateEvent(chat, &message)
 
 	return &message, nil
 }
