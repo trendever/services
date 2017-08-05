@@ -178,7 +178,7 @@ func retrieveActivities() (*bot.RetrieveActivitiesReply, error) {
 //  * retry bool
 //  * err error
 func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, error) {
-	mentionerID, mentioner, err := userID(mention.UserId, mention.UserName)
+	mentionerID, _, err := userID(mention.UserId, mention.UserName)
 	if err != nil {
 		return -1, err != instagram.ErrorPageNotFound, fmt.Errorf("unable to get metioner id: %v", err)
 	}
@@ -243,33 +243,32 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 		return -1, true, err
 	}
 
-	productID, retry, err := createProduct(mediaID, &productMedia, shopID, mentionerID)
+	productID, retry, err := createProduct(&productMedia, shopID, mentionerID)
 	if err != nil {
 		return -1, retry, err
-	}
-
-	if !mentioner.Confirmed {
-		err = notifyChat(mention)
-		if err != nil {
-			log.Errorf("Failed no reply in direct chat: %v", err)
-		}
 	}
 
 	return productID, false, nil
 }
 
-func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, retry bool, err error) {
-
-	// @CHECK so what? why not add product without image?
-	if media.MediaType != 1 || len(media.ImageVersions2.Candidates) < 1 {
-		return -1, false, errors.New("Product media has unsupported type or images are missing!")
+func createProduct(media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, retry bool, err error) {
+	var img *instagram.ImageCandidate
+	switch media.MediaType {
+	case instagram.MediaType_Image:
+		img = media.ImageVersions2.Largest()
+	case instagram.MediaType_Carousel:
+		if len(media.CarouselMedia) == 0 {
+			return -1, false, fmt.Errorf("Media %v has empty carousel", media.ID)
+		}
+		img = media.CarouselMedia[0].ImageVersions2.Largest()
+	default:
+		return -1, false, fmt.Errorf("Media %v has unsupported type", media.ID)
 	}
 
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	log.Debug("Creating producto! Supplier=%v Mentioner=%v", shopID, mentionerID)
-
-	img := media.ImageVersions2.Candidates[0]
+	// @CHECK so what? why to not add product without image?
+	if img == nil {
+		return -1, false, fmt.Errorf("Media %v does not have parsable images", media.ID)
+	}
 
 	candidates, err := generateThumbnails(img.URL)
 	switch resp := err.(type) {
@@ -279,7 +278,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 		if resp.Status < 400 || resp.Status >= 500 {
 			return -1, true, err
 		}
-		log.Warn("medai %v have invalid image", mediaID)
+		log.Warn("medai %v have invalid image", media.ID)
 
 	default:
 		return -1, true, err
@@ -288,7 +287,7 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 	request := &core.CreateProductRequest{Product: &core.Product{
 		SupplierId:            int64(shopID),
 		MentionedId:           int64(mentionerID),
-		InstagramImageId:      mediaID,
+		InstagramImageId:      media.ID,
 		InstagramImageCaption: media.Caption.Text,
 		InstagramLink:         fmt.Sprintf("https://www.instagram.com/p/%s/", media.Code),
 		InstagramLikesCount:   int32(media.LikeCount),
@@ -299,6 +298,10 @@ func createProduct(mediaID string, media *instagram.MediaInfo, shopID, mentioner
 		InstagramImageHeight: uint32(img.Height),
 		InstagramImageWidth:  uint32(img.Width),
 	}}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	log.Debug("Creating producto! Supplier=%v Mentioner=%v", shopID, mentionerID)
 
 	res, err := api.ProductClient.CreateProduct(ctx, request)
 	if err != nil {
@@ -440,20 +443,4 @@ func shopID(supplierID uint64) (uint64, error) {
 	}
 
 	return res.ShopId, nil
-}
-
-func notifyChat(mention *bot.Activity) error {
-
-	//ctx, cancel := rpc.DefaultContext()
-	//defer cancel()
-	//
-	//_, err := api.FetcherClient.SendDirect(ctx, &bot.SendDirectRequest{
-	//	ActivityPk: mention.Pk,
-	//	Text:       fmt.Sprintf(conf.GetSettings().DirectNotificationText, mention.UserName),
-	//})
-	//
-	//return err
-
-	// @TODO
-	return nil
 }

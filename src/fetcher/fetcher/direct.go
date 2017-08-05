@@ -232,7 +232,7 @@ func mapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data str
 	case "media_share":
 		return bot.MessageType_MediaShare, msg.MediaShare.ID
 	case "media":
-		return bot.MessageType_Image, msg.Media.ImageVersions2.Largest()
+		return bot.MessageType_Image, msg.Media.ImageVersions2.Largest().URL
 	case "text":
 		return bot.MessageType_Text, msg.Text
 	case "link":
