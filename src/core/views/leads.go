@@ -4,7 +4,6 @@ import (
 	"core/api"
 	"core/conf"
 	"core/models"
-	"core/telegram"
 	"errors"
 	"fmt"
 	"proto/core"
@@ -69,7 +68,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 
 		if !is_comment_matched {
 			//notify about skiped lead
-			go telegram.NotifyLeadCreated(lead_skipped, product, protoLead.InstagramLink, core.LeadAction_SKIP)
+			go models.NotifyLeadCreated(lead_skipped, product, protoLead.InstagramLink, core.LeadAction_SKIP)
 			//prevent next steps
 			return &core.CreateLeadResult{}, nil
 		}
@@ -141,7 +140,7 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		}
 	}()
 
-	go telegram.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
+	go models.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 
 	leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
 	if err != nil {

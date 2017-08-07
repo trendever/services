@@ -2,11 +2,13 @@ package models
 
 import (
 	"core/api"
+	"core/conf"
 	"errors"
 	"fmt"
 	"math/rand"
 	"proto/bot"
 	"proto/chat"
+	"proto/core"
 	"proto/mail"
 	"proto/push"
 	"proto/sms"
@@ -32,6 +34,8 @@ func init() {
 		"notify_user_about_new_messages",
 		"call_supplier_to_chat",
 		"call_customer_to_chat",
+		"product_addad_for_seller",
+		"product_addad_for_mentioner",
 	}
 	for _, t := range topics {
 		RegisterNotifyTemplate(t)
@@ -375,6 +379,62 @@ func (n *Notifier) CallSupplierToChat(supplier *User, lead *Lead) error {
 	)
 }
 
+func (n *Notifier) NotifyAboutProductAdded(product *Product) {
+	if product.MentionedBy.ID == 0 && product.MentionedByID > 0 {
+		if user, err := GetUserByID(product.MentionedByID); err == nil {
+			product.MentionedBy = *user
+		}
+	}
+
+	if product.Shop.ID == 0 && product.ShopID > 0 {
+		if shop, err := GetShopByID(product.ShopID, "Sellers"); err == nil {
+			product.Shop = *shop
+		}
+	}
+
+	url := fmt.Sprintf("%v/product/%v", conf.GetSettings().SiteURL, product.ID)
+	log.Error(api.NotifyByTelegram(api.TelegramChannelNewProduct,
+		fmt.Sprintf(
+			"%v added %v by %v\n"+ // [scout] added [product_code] by [shop]
+				"%v\n"+ // [instagram_link]
+				"%v", // [qor_link]
+			product.MentionedBy.Stringify(), product.Code, product.Shop.Stringify(),
+			product.InstagramLink,
+			fmt.Sprintf("%v/qor/products/%v", conf.GetSettings().SiteURL, product.ID),
+		),
+	))
+	notify_map := map[uint]*User{}
+	notify_map[product.Shop.SupplierID] = &product.Shop.Supplier
+	for _, seller := range product.Shop.Sellers {
+		notify_map[seller.ID] = seller
+	}
+
+	for _, user := range notify_map {
+		n.NotifyUserAbout(
+			user,
+			"product_addad_for_seller",
+			map[string]interface{}{
+				"user":    &product.MentionedBy,
+				"product": product,
+				"url":     url,
+			},
+		)
+	}
+	if _, ok := notify_map[product.MentionedByID]; !ok {
+		n.NotifyUserAbout(
+			&product.MentionedBy,
+			"product_addad_for_mentioner",
+			map[string]interface{}{
+				"user":    &product.MentionedBy,
+				"product": product,
+				"url":     url,
+			},
+		)
+	}
+	log.Error(nats.Publish("core.product.new", product.Encode()))
+
+}
+
 func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	url, err := mkShortChatUrl(customer.ID, lead.ID)
 	if err != nil {
@@ -444,4 +504,58 @@ func mkShortChatUrl(userId uint, leadId uint) (url string, err error) {
 	url = api.GetChatURL(leadId, token)
 
 	return api.GetShortURL(url), nil
+}
+
+// NotifyUserCreated notifies about user creation
+func NotifyUserCreated(u *User) {
+
+	api.NotifyByTelegram(api.TelegramChannelNewUser,
+		fmt.Sprintf(
+			`#%v:
+			New user %v registered
+			%v`,
+			u.Source,
+			u.Stringify(),
+			fmt.Sprintf("%v/qor/users/%v", conf.GetSettings().SiteURL, u.ID),
+		),
+	)
+}
+
+var actionText = map[core.LeadAction]string{
+	core.LeadAction_BUY:  "ordered",
+	core.LeadAction_INFO: "requested info about",
+	core.LeadAction_SKIP: "skiped product",
+}
+
+// NotifyLeadCreated notifies about lead creation
+func NotifyLeadCreated(l *Lead, p *Product, realInstLink string, action core.LeadAction) {
+
+	if p.Shop.ID == 0 && p.ShopID > 0 {
+		if shop, err := GetShopByID(p.ShopID); err == nil {
+			p.Shop = *shop
+		}
+	}
+	text := fmt.Sprintf(
+		"%v %v %v by %v from %v, comment: '%v'\n%v\n", // [client] [action] [product_code] in [shop] from [wantit or website] comment: '[comment]' \n [qor_link]
+		// first line
+		l.Customer.Stringify(),
+		actionText[action],
+		p.Code,
+		p.Shop.Stringify(),
+		l.Source,
+		l.Comment,
+		fmt.Sprintf("%v/qor/orders/%v", conf.GetSettings().SiteURL, l.ID),
+	)
+	if l.IsNew() {
+		text += "lead is new yet\n"
+	} else {
+		text += fmt.Sprintf("%v/chat/%v\n", conf.GetSettings().SiteURL, l.ID)
+	}
+	if realInstLink != "" {
+		text += realInstLink + "\n"
+	}
+	// tag for search
+	text += fmt.Sprintf("#%v", actionText[action])
+
+	api.NotifyByTelegram(api.TelegramChannelNewLead, text)
 }

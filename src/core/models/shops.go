@@ -234,10 +234,14 @@ func (s *Shop) HasSeller(userID uint) bool {
 	return false
 }
 
-//GetShopByID returns Shop by ID
-func GetShopByID(shopID uint) (*Shop, error) {
+//GetShopByID returns Shop by ID. By default only Supplier is preloaded
+func GetShopByID(shopID uint, extraPreload ...string) (*Shop, error) {
 	shop := &Shop{}
-	err := db.New().Preload("Supplier").Find(shop, shopID).Error
+	scope := db.New().Preload("Supplier")
+	for _, p := range extraPreload {
+		scope = scope.Preload(p)
+	}
+	err := scope.Find(shop, shopID).Error
 	return shop, err
 }
 

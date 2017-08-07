@@ -3,7 +3,6 @@ package views
 import (
 	"core/api"
 	"core/models"
-	"core/telegram"
 	"errors"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
@@ -151,20 +150,7 @@ func (s productServer) CreateProduct(ctx context.Context, request *core.CreatePr
 		db.New().Save(&product)
 	}
 
-	if product.MentionedBy.ID == 0 && product.MentionedByID > 0 {
-		if user, err := models.GetUserByID(product.MentionedByID); err == nil {
-			product.MentionedBy = *user
-		}
-	}
-
-	if product.Shop.ID == 0 && product.ShopID > 0 {
-		if shop, err := models.GetShopByID(product.ShopID); err == nil {
-			product.Shop = *shop
-		}
-	}
-
-	go telegram.NotifyProductCreated(&product)
-	go nats.Publish("core.product.new", product.Encode())
+	go models.GetNotifier().NotifyAboutProductAdded(&product)
 
 	return &core.CreateProductResult{
 		Id:   int64(product.ID),

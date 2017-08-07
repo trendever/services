@@ -15,9 +15,6 @@ import (
 	"utils/rpc"
 )
 
-//NotifyUserCreated is a notification function
-var NotifyUserCreated func(u *User)
-
 func (t Telegram) AfterSave(db *gorm.DB) {
 	err := db.Exec("UPDATE users_user SET has_telegram = EXISTS (SELECT 1 FROM telegrams WHERE user_id = ? AND confirmed) WHERE id = ?", t.UserID, t.UserID).Error
 	if err != nil {
