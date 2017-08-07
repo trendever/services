@@ -410,7 +410,7 @@ func (n *Notifier) NotifyAboutProductAdded(product *Product) {
 	}
 
 	for _, user := range notify_map {
-		n.NotifyUserAbout(
+		log.Error(n.NotifyUserAbout(
 			user,
 			"product_addad_for_seller",
 			map[string]interface{}{
@@ -418,10 +418,10 @@ func (n *Notifier) NotifyAboutProductAdded(product *Product) {
 				"product": product,
 				"url":     url,
 			},
-		)
+		))
 	}
 	if _, ok := notify_map[product.MentionedByID]; !ok {
-		n.NotifyUserAbout(
+		log.Error(n.NotifyUserAbout(
 			&product.MentionedBy,
 			"product_addad_for_mentioner",
 			map[string]interface{}{
@@ -429,7 +429,7 @@ func (n *Notifier) NotifyAboutProductAdded(product *Product) {
 				"product": product,
 				"url":     url,
 			},
-		)
+		))
 	}
 	log.Error(nats.Publish("core.product.new", product.Encode()))
 
