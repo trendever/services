@@ -62,6 +62,11 @@ func (t *Telegram) Listen() {
 	t.bot.Listen(messages, 1*time.Second)
 
 	for message := range messages {
+		log.Debug(
+			"got message from chat %v(%v):\n%v",
+			message.Chat.ID, message.Chat.Destination(),
+			message.Text,
+		)
 		if !message.IsPersonal() {
 			continue
 		}
@@ -103,6 +108,7 @@ func (t *Telegram) Notify(req *telegram.NotifyMessageRequest) (err error, retry 
 	if err == nil {
 		return nil, false
 	}
+	log.Error(err)
 	// ugly check, but probably it is shortest way to determinate kind of error without changes in telebot lib
 	return err, !strings.HasPrefix(err.Error(), "telebot:")
 }
