@@ -98,6 +98,7 @@ func (t *Telegram) Notify(req *telegram.NotifyMessageRequest) (err error, retry 
 			return err, false
 		}
 	}
+	log.Debug("sending message to chat %+v:\n%v", dest, req.Message)
 	err = t.bot.SendMessage(dest, req.Message, nil)
 	if err == nil {
 		return nil, false
