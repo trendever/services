@@ -15,6 +15,7 @@ func init() {
 	SocketRoutes = append(
 		SocketRoutes,
 		soso.Route{"retrieve", "shop", GetShopProfile},
+		soso.Route{"create", "shop", createShop},
 	)
 }
 
@@ -45,4 +46,29 @@ func GetShopProfile(c *soso.Context) {
 	}
 
 	c.SuccessResponse(resp)
+}
+
+func createShop(c *soso.Context) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	resp, err := shopServiceClient.FindOrCreateShopForSupplier(ctx, &core.FindOrCreateShopForSupplierRequest{
+		SupplierId:      c.Token.UID,
+		RecreateDeleted: true,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+		return
+	}
+	c.SuccessResponse(map[string]interface{}{
+		"shop_id": resp.ShopId,
+	})
 }
