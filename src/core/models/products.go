@@ -99,6 +99,15 @@ func (p *Product) BeforeUpdate() error {
 	return nil
 }
 
+func (p *Product) BeforeSave() {
+	if p.MentionedBy.ID != 0 {
+		p.MentionedByID = p.MentionedBy.ID
+	}
+	if p.Shop.ID != 0 {
+		p.ShopID = p.Shop.ID
+	}
+}
+
 func (p Product) AfterUpdate() error {
 	if p.oldShop != 0 && p.ShopID != p.oldShop {
 		err := p.onShopChanged()
