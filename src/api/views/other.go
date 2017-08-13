@@ -17,8 +17,8 @@ var checkerServiceClient = checker.NewCheckerServiceClient(api.CheckerConn)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"market_sms", "common", SendMarketSMS},
-		soso.Route{"get_profile", "instagram", GetInstagramProfile},
+		soso.Route{"common", "market_sms", SendMarketSMS},
+		soso.Route{"instagram", "get_profile", GetInstagramProfile},
 	)
 }
 

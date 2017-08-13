@@ -14,7 +14,7 @@ var tagServiceClient = core.NewTagServiceClient(api.CoreConn)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"retrieve", "tag", RetrieveTag},
+		soso.Route{"tag", "retrieve", RetrieveTag},
 	)
 }
 

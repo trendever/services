@@ -20,12 +20,12 @@ var monetizationServiceClient = core.NewMonetizationServiceClient(api.CoreConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"get_plan", "monetization", GetMonetizationPlan},
-		soso.Route{"plans_list", "monetization", GetMonetizationPlansList},
-		soso.Route{"coins_offers", "monetization", GetCoinsOffers},
-		soso.Route{"buy_coins", "monetization", BuyCoins},
-		soso.Route{"subscribe", "monetization", SubscribeToPlan},
-		soso.Route{"set_autorefill", "monetization", SetAutorefill},
+		soso.Route{"monetization", "get_plan", GetMonetizationPlan},
+		soso.Route{"monetization", "plans_list", GetMonetizationPlansList},
+		soso.Route{"monetization", "coins_offers", GetCoinsOffers},
+		soso.Route{"monetization", "buy_coins", BuyCoins},
+		soso.Route{"monetization", "subscribe", SubscribeToPlan},
+		soso.Route{"monetization", "set_autorefill", SetAutorefill},
 	)
 }
 

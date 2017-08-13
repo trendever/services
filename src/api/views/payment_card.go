@@ -11,9 +11,9 @@ import (
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"retrieve", "paymentcard", GetPaymentCards},
-		soso.Route{"create", "paymentcard", CreatePaymentCard},
-		soso.Route{"delete", "paymentcard", DeletePaymentCard},
+		soso.Route{"paymentcard", "retrieve", GetPaymentCards},
+		soso.Route{"paymentcard", "create", CreatePaymentCard},
+		soso.Route{"paymentcard", "delete", DeletePaymentCard},
 	)
 }
 

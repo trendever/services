@@ -17,10 +17,10 @@ var authClient = auth.Client
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"register", "auth", RegisterNewUser},
-		soso.Route{"login", "auth", Login},
-		soso.Route{"send_password", "auth", SendSmsPassword},
-		soso.Route{"fakeregister", "auth", RegisterFakeUser},
+		soso.Route{"auth", "register", RegisterNewUser},
+		soso.Route{"auth", "login", Login},
+		soso.Route{"auth", "send_password", SendSmsPassword},
+		soso.Route{"auth", "fakeregister", RegisterFakeUser},
 	)
 }
 

@@ -20,45 +20,40 @@ var fetcherClient = bot.NewFetcherServiceClient(api.FetcherConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"add", "account", AddBot},
-		soso.Route{"list", "account", ListAccounts},
-		soso.Route{"confirm", "account", Confirm},
-		soso.Route{"set_proxy", "account", SetProxy},
-		soso.Route{"raw_query", "account", RawQuery},
-		//		soso.Route{"account", "invalidate", MarkInvalid},
+		soso.Route{"account", "add", AddBot},
+		soso.Route{"account", "list", ListAccounts},
+		soso.Route{"account", "confirm", Confirm},
+		soso.Route{"account", "set_proxy", SetProxy},
+		soso.Route{"account", "raw_query", RawQuery},
+		//		soso.Route{"invalidate", "account", MarkInvalid},
 	)
 }
 
 // Confirm user -- apply instagram checkpoint
-func Confirm(c *soso.Context) {
+func Confirm(c *soso.Context, arg *struct {
+	Username string `json:"instagram_username"`
+	Code     string `json:"code"`
+	Password string `json:"password"`
+}) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
 
-	instagramUsername, _ := c.RequestMap["instagram_username"].(string)
-
-	if instagramUsername == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Zero instagram username"))
+	if arg.Username == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Empty instagram username"))
 		return
 	}
 
-	code, ok := c.RequestMap["code"].(string)
-	if !ok || code == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No code supplied"))
-		return
-	}
-
-	password, ok := c.RequestMap["password"].(string)
-	if !ok || code == "" {
-		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("No password supplied"))
+	if arg.Code == "" || arg.Password == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("Code and password required"))
 		return
 	}
 
 	_, err := accountStoreServiceClient.Confirm(context.Background(), &accountstore.ConfirmRequest{
-		InstagramUsername: instagramUsername,
-		Code:              code,
-		Password:          password,
+		InstagramUsername: arg.Username,
+		Code:              arg.Code,
+		Password:          arg.Password,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

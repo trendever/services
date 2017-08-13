@@ -20,14 +20,14 @@ var productServiceClient = core.NewProductServiceClient(api.CoreConn)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"retrieve", "product", RetrieveProduct},
-		soso.Route{"search", "product", SearchProduct},
-		soso.Route{"like", "product", LikeProduct},
-		soso.Route{"get_specials", "product", GetSpecialProducts},
-		soso.Route{"elastic_search", "product", ElasticSearch},
-		soso.Route{"get_liked_by", "product", GetLikedBy},
-		soso.Route{"lastid", "product", GetLastProductID},
-		soso.Route{"delete", "product", DelProduct},
+		soso.Route{"product", "retrieve", RetrieveProduct},
+		soso.Route{"product", "search", SearchProduct},
+		soso.Route{"product", "like", LikeProduct},
+		soso.Route{"product", "get_specials", GetSpecialProducts},
+		soso.Route{"product", "elastic_search", ElasticSearch},
+		soso.Route{"product", "get_liked_by", GetLikedBy},
+		soso.Route{"product", "lastid", GetLastProductID},
+		soso.Route{"product", "delete", DelProduct},
 	)
 }
 

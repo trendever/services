@@ -18,15 +18,15 @@ var chatClient = chat.Client
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"create", "message", ChatSendMessage},
-		soso.Route{"update", "message", ChatMessageMarkAsRead},
-		soso.Route{"count_unread", "message", ChatTotalCountUnread},
-		soso.Route{"join", "chat", ChatJoin},
-		soso.Route{"leave", "chat", ChatLeave},
-		soso.Route{"search", "message", ChatHistory},
-		soso.Route{"call_supplier", "chat", CallSupplierToChat},
-		soso.Route{"call_customer", "chat", CallCustomerToChat},
-		soso.Route{"enable_sync", "chat", EnableChatSync},
+		soso.Route{"message", "create", ChatSendMessage},
+		soso.Route{"message", "update", ChatMessageMarkAsRead},
+		soso.Route{"message", "count_unread", ChatTotalCountUnread},
+		soso.Route{"chat", "join", ChatJoin},
+		soso.Route{"chat", "leave", ChatLeave},
+		soso.Route{"message", "search", ChatHistory},
+		soso.Route{"chat", "call_supplier", CallSupplierToChat},
+		soso.Route{"chat", "call_customer", CallCustomerToChat},
+		soso.Route{"chat", "enable_sync", EnableChatSync},
 	)
 }
 

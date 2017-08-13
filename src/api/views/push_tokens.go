@@ -14,9 +14,9 @@ var pushTokensServiceClient = core.NewPushTokensServiceClient(api.CoreConn)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"add", "push_tokens", AddPushToken},
-		soso.Route{"del", "push_tokens", DelPushToken},
-		soso.Route{"get", "push_tokens", GetPushTokens},
+		soso.Route{"push_tokens", "add", AddPushToken},
+		soso.Route{"push_tokens", "del", DelPushToken},
+		soso.Route{"push_tokens", "get", GetPushTokens},
 	)
 }
 

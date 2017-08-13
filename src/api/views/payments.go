@@ -19,9 +19,9 @@ var paymentServiceClient = payment.NewPaymentServiceClient(api.PaymentsConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"create", "order", CreateOrder},
-		soso.Route{"cancel", "order", CancelOrder},
-		soso.Route{"create", "payment", CreatePayment},
+		soso.Route{"order", "create", CreateOrder},
+		soso.Route{"order", "cancel", CancelOrder},
+		soso.Route{"payment", "create", CreatePayment},
 	)
 }
 
