@@ -111,13 +111,12 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(lead.TriggerEvent(core.LeadStatusEvent_PROGRESS.String(), "", 0, &lead.Customer))
 	}
 
-	if protoLead.Action == core.LeadAction_BUY {
+	if protoLead.Action == core.LeadAction_BUY && len(product.Items) != 0 {
 		if count, err := models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)
 			return nil, err
 		} else if count == 0 {
-			// This mean the product already in the lead, or product without items,
-			// anyway we don't want to do anything more with this lead
+			// product already in the lead
 			leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
 			if err != nil {
 				log.Error(err)

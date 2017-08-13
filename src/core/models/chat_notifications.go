@@ -72,16 +72,40 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 	//Отправляем стандартные шаблоны после продукта
 
 	//Эти для buy и info
-	err = SendChatTemplates(templatesMap[action], lead, product, count == 0, source, comment)
-
-	//Если у нас новый чат, то шлем init темплейты
-	if err == nil && chat_init {
-		err = SendChatTemplates("product_chat_init", lead, product, count == 0, source, "")
+	messages, err := ExecuteChatTemplates(templatesMap[action], lead, product, count == 0, source, comment)
+	if err != nil {
+		log.Error(err)
+	} else if chat_init {
+		//Если у нас новый чат, то шлем init темплейты
+		init, err := ExecuteChatTemplates("product_chat_init", lead, product, count == 0, source, "")
+		if err != nil {
+			log.Error(err)
+		} else {
+			messages = append(messages, init...)
+		}
 	}
-	return err
+
+	if product.ChatMessage != "" {
+		messages = append(messages, &chat.Message{
+			UserId: uint64(SystemUser.ID),
+			Parts: []*chat.MessagePart{
+				{
+					Content:  product.ChatMessage,
+					MimeType: "text/plain",
+				},
+			},
+		})
+	}
+
+	err = SendChatMessages(lead.ConversationID, messages...)
+	if err != nil {
+		return fmt.Errorf("failed to send messages to chat: %v", err)
+	}
+
+	return nil
 }
 
-func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string, comment string) error {
+func ExecuteChatTemplates(group string, lead *Lead, product *Product, isNewUser bool, source string, comment string) (messages []*chat.Message, err error) {
 	// load templates
 	var template ChatTemplate
 	res := db.New().Preload("Messages").
@@ -90,19 +114,22 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 		Where("source = ? OR source = 'any'", source).
 		Order("product_id IS NULL, source = 'any'").
 		First(&template)
+
 	if res.RecordNotFound() {
-		log.Errorf(
+		log.Warn(
 			"suitable tamplate not found for productID = %v with group %v",
 			product.ID,
 			group,
 		)
+		return []*chat.Message{}, nil
 	}
-	if res.Error != nil {
-		return fmt.Errorf("failed to load templates: %v", res.Error)
-	}
-	template.MessagesSorter.Sort(&template.Messages)
 
-	messages := []*chat.Message{}
+	if res.Error != nil {
+		return nil, fmt.Errorf("failed to load templates: %v", res.Error)
+	}
+
+	messages = []*chat.Message{}
+	template.MessagesSorter.Sort(&template.Messages)
 
 	ctx := map[string]interface{}{
 		"lead":    lead,
@@ -135,11 +162,7 @@ func SendChatTemplates(group string, lead *Lead, product *Product, isNewUser boo
 			Parts:  parts,
 		})
 	}
-	err := SendChatMessages(lead.ConversationID, messages...)
-	if err != nil {
-		return fmt.Errorf("failed to send messages to chat: %v", err)
-	}
-	return nil
+	return messages, nil
 }
 
 // SendChatMessages sends messages to chat
