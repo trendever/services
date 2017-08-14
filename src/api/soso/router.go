@@ -84,7 +84,6 @@ func (r *Router) Handle(domain string, method string, handler interface{}) {
 				ctx.ErrorResponse(http.StatusBadRequest, LevelError, errors.New("bad request"))
 				return
 			}
-			log.Debug("'%s' -> %+v", string(ctx.RawRequest), argPtr)
 			hValue.Call([]reflect.Value{reflect.ValueOf(ctx), argPtr})
 		}
 	}

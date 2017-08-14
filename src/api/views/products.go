@@ -466,6 +466,7 @@ func EditProduct(c *soso.Context, arg *struct {
 	Title        string              `json:"title"`
 	Description  string              `json:"description"`
 	InstagramURL string              `json:"instagram_url"`
+	WebShopURL   string              `json:"web_shop_url"`
 	ChatMessage  string              `json:"chat_message"`
 	IsSale       bool                `json:"is_sale"`
 	ImageURL     string              `json:"image_url"`
@@ -482,12 +483,15 @@ func EditProduct(c *soso.Context, arg *struct {
 		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
+	log.Debug("arg: %+v", arg)
 	req := core.EditProductRequest{
 		EditorId: c.Token.UID,
 		Product: &core.Product{
 			Id:    int64(arg.ID),
 			Title: arg.Title,
 			InstagramImageCaption: arg.Description,
+			InstagramImageUrl:     arg.InstagramURL,
+			WebShopUrl:            arg.WebShopURL,
 			ChatMessage:           arg.ChatMessage,
 			IsSale:                arg.IsSale,
 			Items:                 arg.Items,
@@ -516,6 +520,8 @@ func EditProduct(c *soso.Context, arg *struct {
 			})
 		}
 		req.Product.InstagramImageUrl = arg.ImageURL
+		req.Product.InstagramImageHeight = uint32(resp.Height)
+		req.Product.InstagramImageWidth = uint32(resp.Width)
 		req.Product.InstagramImages = imgs
 	}
 

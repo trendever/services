@@ -94,6 +94,7 @@ message Product {
     int64 instagram_published_at = 8;
     int32 instagram_likes_count = 9;
     string chat_message = 21;
+    string web_shop_url = 22;
 
     int64 supplier_id = 10;
     Shop supplier = 11;
