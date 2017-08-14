@@ -1,134 +1,137 @@
 // BEGIN Product
 
 service ProductService {
-  // Get product by id
-  rpc GetProduct(GetProductRequest) returns (ProductSearchResult) {}
+    // Get product by id
+    rpc GetProduct(GetProductRequest) returns (ProductSearchResult) {}
 
-  // Same search, but return only id
-  rpc ReadProduct(GetProductRequest) returns (ProductReadResult) {}
+    // Same search, but return only id
+    rpc ReadProduct(GetProductRequest) returns (ProductReadResult) {}
 
-  // Search products
-  rpc SearchProducts(SearchProductRequest) returns (ProductSearchResult) {}
+    // Search products
+    rpc SearchProducts(SearchProductRequest) returns (ProductSearchResult) {}
 
-  // Create product
-  rpc CreateProduct(CreateProductRequest) returns (CreateProductResult) {}
+    // Create product
+    rpc CreateProduct(CreateProductRequest) returns (CreateProductResult) {}
 
-  rpc LikeProduct(LikeProductRequest) returns (LikeProductReply) {}
-  // returns list of product ids that are liked by user
-  rpc GetLikedBy(GetLikedByRequest) returns (GetLikedByReply) {}
-  // Method returns list of product with non-default chat templates
-  rpc GetSpecialProducts(GetSpecialProductsRequest) returns (GetSpecialProductsReply) {}
+    rpc LikeProduct(LikeProductRequest) returns (LikeProductReply) {}
+    // returns list of product ids that are liked by user
+    rpc GetLikedBy(GetLikedByRequest) returns (GetLikedByReply) {}
+    // Method returns list of product with non-default chat templates
+    rpc GetSpecialProducts(GetSpecialProductsRequest) returns (GetSpecialProductsReply) {}
 
-  // get last product ID
-  rpc GetLastProductID(GetLastProductIDRequest) returns (GetLastProductIDReply) {}
+    // get last product ID
+    rpc GetLastProductID(GetLastProductIDRequest) returns (GetLastProductIDReply) {}
 
-  // Del product
-  rpc DelProduct(DelProductRequest) returns (DelProductReply) {}
+    rpc EditProduct(EditProductRequest) returns (EditProductReply) {}
+
+    // Del product
+    rpc DelProduct(DelProductRequest) returns (DelProductReply) {}
 }
 
 message GetProductRequest {
-  oneof search_by {
-    int64 id = 1;
-    string code = 2;
-    string media_id = 3;
-  }
+    oneof search_by {
+        int64 id = 1;
+        string code = 2;
+        string media_id = 3;
+    }
 
-  bool with_deleted = 4;
-  //optional user id, we want to know if user liked this product before
-  uint64 user_id = 5;
+    bool with_deleted = 4;
+    //optional user id, we want to know if user liked this product before
+    uint64 user_id = 5;
 }
 
 message SearchProductRequest {
-  string keyword = 1;
-  repeated int64 tags = 2 [packed=true];
-  int64 limit = 3;
-  oneof offset_by{
-    int64 offset = 4;
-    uint64 from_id = 5;
-  }
-  bool is_sale_only = 6;
-  //false - desc, true - asc
-  bool offset_direction = 7;
+    string keyword = 1;
+    repeated int64 tags = 2 [packed=true];
+    int64 limit = 3;
+    oneof offset_by{
+        int64 offset = 4;
+        uint64 from_id = 5;
+    }
+    bool is_sale_only = 6;
+    //false - desc, true - asc
+    bool offset_direction = 7;
 
-  // that was one-of once
-  uint64 user_id = 8;
-  uint64 shop_id = 9;
-  //user or shop instagram_name
-  string instagram_name = 10;
+    // that was one-of once
+    uint64 user_id = 8;
+    uint64 shop_id = 9;
+    //user or shop instagram_name
+    string instagram_name = 10;
 }
 
 message ProductSearchResult {
-  repeated Product result = 1;
+    repeated Product result = 1;
 }
 
 message ProductReadResult {
-  int64 id = 1;
-  bool deleted = 2;
+    int64 id = 1;
+    bool deleted = 2;
 }
 
 message CreateProductRequest {
-  Product product = 1;
-  uint64 mentioned_by = 2;
+    Product product = 1;
+    uint64 mentioned_by = 2;
 }
 
 message CreateProductResult {
-  int64 id = 1;
-  bool exists = 2;
-  string code = 3;
+    int64 id = 1;
+    bool exists = 2;
+    string code = 3;
 }
 
 // representation of product model
 message Product {
-  int64 id = 1;
-  string title = 2;
-  string code = 3;
+    int64 id = 1;
+    string title = 2;
+    string code = 3;
 
-  string instagram_image_caption = 4;
-  string instagram_image_id = 5;
-  string instagram_image_url = 6;
-  string instagram_link = 7;
-  uint32 instagram_image_width = 16;
-  uint32 instagram_image_height = 17;
-  int64 instagram_published_at = 8;
-  int32 instagram_likes_count = 9;
+    string instagram_image_caption = 4;
+    string instagram_image_id = 5;
+    string instagram_image_url = 6;
+    string instagram_link = 7;
+    uint32 instagram_image_width = 16;
+    uint32 instagram_image_height = 17;
+    int64 instagram_published_at = 8;
+    int32 instagram_likes_count = 9;
+    string chat_message = 21;
 
-  int64 supplier_id = 10;
-  Shop supplier = 11;
+    int64 supplier_id = 10;
+    Shop supplier = 11;
 
-  int64 mentioned_id = 12;
-  User mentioned = 13;
+    int64 mentioned_id = 12;
+    User mentioned = 13;
 
-  bool isSale = 14;
+    bool isSale = 14;
 
-  repeated ProductItem items = 15;
-  repeated ImageCandidate instagram_images = 18;
-  repeated User liked_by = 19;
-  int64 instagram_published_at_ago = 20;
+    repeated ProductItem items = 15;
+    repeated ImageCandidate instagram_images = 18;
+    repeated User liked_by = 19;
+    int64 instagram_published_at_ago = 20;
 }
 
 
 message ProductItem {
-  int64 id = 1;
-  string name = 2;
+    int64 id = 1;
+    string name = 2;
 
-  uint64 price = 10;
-  uint64 discount_price = 11;
+    uint64 price = 10;
+    uint64 discount_price = 11;
 
-  repeated Tag tags = 13;
+    repeated Tag tags = 13;
 }
 
 message ImageCandidate {
-  int64 id = 1;
-  string url = 2;
-  string name = 3;
+    int64 id = 1;
+    string url = 2;
+    string name = 3;
 }
 
 message GetLikedByRequest{
-  uint64 user_id = 1;
+    uint64 user_id = 1;
 }
 
 message GetLikedByReply{
-  repeated uint64 product_ids = 1;
+    repeated uint64 product_ids = 1;
 }
 
 message LikeProductRequest {
@@ -158,6 +161,22 @@ message GetLastProductIDRequest {
 
 message GetLastProductIDReply {
     uint64 id = 1;
+}
+
+
+message EditProductRequest {
+    // if not zero core will perform permissions check
+    uint64 editor_id = 1;
+    Product product = 2;
+}
+
+
+message EditProductReply {
+    // true if user have no permission to edit this product(product and error will be empty)
+    bool forbidden = 1;
+    // edited product
+    Product product = 2;
+    string error = 3;
 }
 
 message DelProductRequest {

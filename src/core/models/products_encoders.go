@@ -62,6 +62,7 @@ func (p *Product) Encode() *core.Product {
 		InstagramPublishedAtAgo: int64(time.Since(p.InstagramPublishedAt).Seconds()),
 		InstagramLikesCount:     int32(p.InstagramLikesCount),
 		InstagramImages:         ImageCandidates(p.InstagramImages).Encode(),
+		ChatMessage:             p.ChatMessage,
 
 		IsSale: p.IsSale,
 
@@ -96,6 +97,7 @@ func (p Product) Decode(cp *core.Product) Product {
 		InstagramPublishedAt:  time.Unix(cp.InstagramPublishedAt, 0),
 		InstagramLikesCount:   int(cp.InstagramLikesCount),
 		InstagramImages:       ImageCandidates{}.Decode(cp.InstagramImages),
+		ChatMessage:           cp.ChatMessage,
 
 		IsSale: cp.IsSale,
 	}

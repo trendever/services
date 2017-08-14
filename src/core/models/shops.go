@@ -359,3 +359,15 @@ func FindOrCreateAttachedShop(supplierID uint64, shopInstagramUsername string) (
 	}
 	return uint64(shop.ID), nil
 }
+
+// determines whether user is supplier or seller of shop
+func IsUserSupplierOrSeller(userID, shopID uint64) (bool, error) {
+	var seller bool
+	err := db.New().Raw(`SELECT (
+		EXISTS(SELECT 1 FROM products_shops WHERE id = ? AND supplier_id = ?)
+		OR EXISTS(SELECT 1 FROM products_shops_sellers WHERE shop_id = ? AND user_id = ?)) AS yep`,
+		shopID, userID,
+		shopID, userID,
+	).Row().Scan(&seller)
+	return seller, err
+}

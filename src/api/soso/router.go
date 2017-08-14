@@ -80,10 +80,11 @@ func (r *Router) Handle(domain string, method string, handler interface{}) {
 			}
 			if err := json.Unmarshal([]byte(ctx.RawRequest), argPtr.Interface()); err != nil {
 				// probably there is no need to tell everyone what exactly happened
-				log.Errorf("failed to unmarshal argument for handler %v/%v: %v", domain, method, err)
+				log.Warn("failed to unmarshal argument for handler %v/%v: %v", domain, method, err)
 				ctx.ErrorResponse(http.StatusBadRequest, LevelError, errors.New("bad request"))
 				return
 			}
+			log.Debug("'%s' -> %+v", string(ctx.RawRequest), argPtr)
 			hValue.Call([]reflect.Value{reflect.ValueOf(ctx), argPtr})
 		}
 	}
