@@ -18,11 +18,11 @@ var leadServiceClient = core.NewLeadServiceClient(api.CoreConn)
 func init() {
 
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"create", "lead", CreateLead},
-		soso.Route{"list", "lead", GetUserLeads},
-		soso.Route{"retrieve", "lead", GetUserLead},
-		soso.Route{"event", "lead", SetLeadStatus},
-		soso.Route{"get_cancel_reasons", "lead", GetCancelReasons},
+		soso.Route{"lead", "create", CreateLead},
+		soso.Route{"lead", "list", GetUserLeads},
+		soso.Route{"lead", "retrieve", GetUserLead},
+		soso.Route{"lead", "event", SetLeadStatus},
+		soso.Route{"lead", "get_cancel_reasons", GetCancelReasons},
 	)
 }
 

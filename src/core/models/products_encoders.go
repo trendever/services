@@ -40,7 +40,7 @@ func (f *ProductFilter) Decode(req *core.SearchProductRequest) error {
 //Encode converts Product to core.Product
 func (p *Product) Encode() *core.Product {
 	// converts core product model to protoProduct
-	return &core.Product{
+	ret := &core.Product{
 		Id:    int64(p.ID),
 		Title: p.Title,
 		Code:  p.Code,
@@ -58,20 +58,25 @@ func (p *Product) Encode() *core.Product {
 		InstagramImageHeight:    uint32(p.InstagramImageHeight),
 		InstagramImageWidth:     uint32(p.InstagramImageWidth),
 		InstagramLink:           p.InstagramLink,
-		InstagramPublishedAt:    p.InstagramPublishedAt.Unix(),
 		InstagramPublishedAtAgo: int64(time.Since(p.InstagramPublishedAt).Seconds()),
 		InstagramLikesCount:     int32(p.InstagramLikesCount),
 		InstagramImages:         ImageCandidates(p.InstagramImages).Encode(),
+		ChatMessage:             p.ChatMessage,
+		WebShopUrl:              p.WebShopURL,
 
 		IsSale: p.IsSale,
 
 		LikedBy: Users(p.LikedBy).PublicEncode(),
 	}
+	if !p.InstagramPublishedAt.IsZero() {
+		ret.InstagramPublishedAt = p.InstagramPublishedAt.Unix()
+	}
+	return ret
 }
 
 //Decode converts core.Product to Product
 func (p Product) Decode(cp *core.Product) Product {
-	return Product{
+	ret := Product{
 		Model: gorm.Model{
 			ID: uint(cp.Id),
 		},
@@ -93,17 +98,23 @@ func (p Product) Decode(cp *core.Product) Product {
 		InstagramImageHeight:  uint(cp.InstagramImageHeight),
 		InstagramImageWidth:   uint(cp.InstagramImageWidth),
 		InstagramLink:         cp.InstagramLink,
-		InstagramPublishedAt:  time.Unix(cp.InstagramPublishedAt, 0),
 		InstagramLikesCount:   int(cp.InstagramLikesCount),
 		InstagramImages:       ImageCandidates{}.Decode(cp.InstagramImages),
+		ChatMessage:           cp.ChatMessage,
+		WebShopURL:            cp.WebShopUrl,
 
 		IsSale: cp.IsSale,
 	}
+	if cp.InstagramPublishedAt != 0 {
+		ret.InstagramPublishedAt = time.Unix(cp.InstagramPublishedAt, 0)
+	}
+	return ret
 }
 
 //Encode converts ProductItem to core.ProductItem
 func (i ProductItem) Encode() *core.ProductItem {
 	return &core.ProductItem{
+		Id:            int64(i.ID),
 		Name:          i.Name,
 		Price:         i.Price,
 		DiscountPrice: i.DiscountPrice,
@@ -114,6 +125,9 @@ func (i ProductItem) Encode() *core.ProductItem {
 //Decode converts core.ProductItem to ProductItem
 func (i ProductItem) Decode(ic *core.ProductItem) ProductItem {
 	return ProductItem{
+		Model: gorm.Model{
+			ID: uint(ic.Id),
+		},
 		Name:          ic.Name,
 		Price:         ic.Price,
 		DiscountPrice: ic.DiscountPrice,

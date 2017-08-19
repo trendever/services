@@ -6,7 +6,7 @@ const (
 )
 
 type Engine struct {
-	Router
+	*Router
 }
 
 func (s *Engine) RunReceiver(session Session) {
@@ -23,7 +23,7 @@ func (s *Engine) RunReceiver(session Session) {
 
 func New() *Engine {
 	soso := Engine{}
-	soso.Router = Router{}
+	soso.Router = NewRouter()
 	return &soso
 }
 

@@ -49,8 +49,9 @@ type Settings struct {
 	Debug       bool
 	ChannelPort string
 
-	SentryDSN string
-	Nats      nats.Config
+	SentryDSN   string
+	MandibleURL string
+	Nats        nats.Config
 
 	MarketSMS string
 
@@ -74,14 +75,6 @@ type Settings struct {
 		Host     string
 		Sender   string
 		Port     int
-	}
-
-	DB struct {
-		User     string
-		Password string
-		Host     string
-		Port     string
-		Name     string
 	}
 
 	Metrics struct {

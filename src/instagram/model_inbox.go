@@ -239,6 +239,18 @@ type Link struct {
 	} `json:"link_context"`
 }
 
+type Location struct {
+	ID               uint64  `json:"pk"`
+	Name             string  `json:"name"`
+	ShortName        string  `json:"short_name"`
+	Address          string  `json:"address"`
+	City             string  `json:"city"`
+	Longitude        float32 `json:"lng"`
+	Latitude         float32 `json:"lat"`
+	ExternalSource   string  `json:"external_source"`
+	FacebookPlacesID uint64  `json:"facebook_places_id"`
+}
+
 // ThreadItems contains messages from the chat
 type ThreadItems []ThreadItem
 
@@ -254,6 +266,13 @@ type ThreadItem struct {
 	MediaShare    *MediaShare  `json:"media_share,omitempty"`
 	Link          *Link        `json:"link"`
 	Like          string       `json:"like"`
+	Profile       *User        `json:"profile"`
+	Location      *Location    `json:"location"`
+	HashTag       *struct {
+		Name       string `json:"name"`
+		MediaCount uint64 `json:"media_count"`
+		// there is also some medias right in item, but there is no need to decode them
+	} `json:"hashtag"`
 }
 
 // Sorting stuff

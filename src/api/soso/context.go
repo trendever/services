@@ -29,10 +29,11 @@ var (
 
 // Context of the request
 type Context struct {
-	DataType   string
-	ActionStr  string
+	Domain     string
+	Method     string
 	LogList    []Log
 	RequestMap map[string]interface{}
+	RawRequest json.RawMessage
 	TransMap   map[string]interface{}
 
 	Response *Response
@@ -46,10 +47,10 @@ type Context struct {
 
 func NewContext(req *Request, session Session) *Context {
 	ctx := &Context{
-		DataType:   req.DataType,
-		ActionStr:  req.ActionStr,
+		Domain:     req.Domain,
+		Method:     req.Method,
 		Session:    session,
-		RequestMap: req.RequestMap,
+		RawRequest: req.RequestData,
 		TransMap:   req.TransMap,
 		LogList:    req.LogList,
 	}
@@ -105,8 +106,8 @@ func IPMiddleware(req *Request, ctx *Context, session Session) error {
 
 func NewRemoteContext(dataType, action string, response map[string]interface{}) *Context {
 	ctx := &Context{
-		DataType:  dataType,
-		ActionStr: action,
+		Domain: dataType,
+		Method: action,
 	}
 	ctx.Response = NewResponse(ctx)
 	ctx.Response.ResponseMap = response
@@ -124,7 +125,7 @@ func (c *Context) sendJSON(data interface{}) {
 }
 
 func (c *Context) SendResponse() {
-	c.Response.Log(log_code_by_action_type(c.ActionStr), LevelDebug, "")
+	c.Response.Log(log_code_by_action_type(c.Method), LevelDebug, "")
 	c.sendJSON(c.Response)
 }
 
@@ -135,7 +136,7 @@ func (c *Context) ErrorResponse(code int, level Level, err error) {
 
 func (c *Context) SuccessResponse(ResponseMap interface{}) {
 	c.Response.ResponseMap = ResponseMap
-	c.Response.Log(log_code_by_action_type(c.ActionStr), LevelDebug, "")
+	c.Response.Log(log_code_by_action_type(c.Method), LevelDebug, "")
 
 	c.sendJSON(c.Response)
 }

@@ -34,6 +34,8 @@ type Product struct {
 	InstagramImages       []ImageCandidate
 
 	WebShopURL string `gorm:"type:text"`
+	// it is send after main chat templates
+	ChatMessage string `gorm:"type:text"`
 
 	// Product shop
 	ShopID uint `gorm:"index:shops_index"`

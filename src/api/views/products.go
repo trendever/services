@@ -3,6 +3,7 @@ package views
 import (
 	"api/api"
 	"api/cache"
+	"api/conf"
 	"api/soso"
 	"encoding/json"
 	"errors"
@@ -11,23 +12,51 @@ import (
 	"proto/core"
 	ewrapper "utils/elastic"
 	"utils/log"
+	"utils/mandible"
 	"utils/rpc"
 )
 
 const SearchDefaultLimit = 9
 
 var productServiceClient = core.NewProductServiceClient(api.CoreConn)
+var productImagesUploader = mandible.New(conf.GetSettings().MandibleURL, []mandible.Thumbnail{
+	{
+		Name:   "XL",
+		Width:  1080,
+		Height: 1080,
+		Shape:  "thumb",
+	},
+	{
+		Name:   "L",
+		Width:  750,
+		Height: 7500,
+		Shape:  "thumb",
+	},
+	{
+		Name:   "M_square",
+		Width:  480,
+		Height: 480,
+		Shape:  "square",
+	},
+	{
+		Name:   "S_square",
+		Width:  306,
+		Height: 306,
+		Shape:  "square",
+	},
+}...)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"retrieve", "product", RetrieveProduct},
-		soso.Route{"search", "product", SearchProduct},
-		soso.Route{"like", "product", LikeProduct},
-		soso.Route{"get_specials", "product", GetSpecialProducts},
-		soso.Route{"elastic_search", "product", ElasticSearch},
-		soso.Route{"get_liked_by", "product", GetLikedBy},
-		soso.Route{"lastid", "product", GetLastProductID},
-		soso.Route{"delete", "product", DelProduct},
+		soso.Route{"product", "retrieve", RetrieveProduct},
+		soso.Route{"product", "search", SearchProduct},
+		soso.Route{"product", "like", LikeProduct},
+		soso.Route{"product", "get_specials", GetSpecialProducts},
+		soso.Route{"product", "elastic_search", ElasticSearch},
+		soso.Route{"product", "get_liked_by", GetLikedBy},
+		soso.Route{"product", "lastid", GetLastProductID},
+		soso.Route{"product", "delete", DelProduct},
+		soso.Route{"product", "edit", EditProduct},
 	)
 }
 
@@ -430,5 +459,87 @@ func DelProduct(c *soso.Context) {
 	c.SuccessResponse(map[string]interface{}{
 		"success": response.Success,
 	})
+}
 
+func EditProduct(c *soso.Context, arg *struct {
+	ID           uint64              `json:"id"`
+	Title        string              `json:"title"`
+	Description  string              `json:"description"`
+	InstagramURL string              `json:"instagram_url"`
+	WebShopURL   string              `json:"web_shop_url"`
+	ChatMessage  string              `json:"chat_message"`
+	IsSale       bool                `json:"is_sale"`
+	ImageURL     string              `json:"image_url"`
+	Items        []*core.ProductItem `json:"items"`
+	//Items        struct {
+	//	ID            uint64   `json:"id"`
+	//	Name          string   `json:"name"`
+	//	Price         uint64   `json:"price"`
+	//	DiscountPrice uint64   `json:"discount_price"`
+	//	Tags          []uint64 `json:"tags"`
+	//} `json:"items"`
+}) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+	log.Debug("arg: %+v", arg)
+	req := core.EditProductRequest{
+		EditorId: c.Token.UID,
+		Product: &core.Product{
+			Id:    int64(arg.ID),
+			Title: arg.Title,
+			InstagramImageCaption: arg.Description,
+			InstagramImageUrl:     arg.InstagramURL,
+			WebShopUrl:            arg.WebShopURL,
+			ChatMessage:           arg.ChatMessage,
+			IsSale:                arg.IsSale,
+			Items:                 arg.Items,
+		},
+	}
+	// @CHECK i think it's better to upload it here
+	// but that may lead to unlinked images if product will not be saved for whatever reason
+	// or useless work if link is actuality same as before
+	if arg.ImageURL != "" {
+		resp, err := productImagesUploader.DoRequest("url", arg.ImageURL)
+		if err != nil {
+			log.Warn("failed to upload image product image '%v': %v", arg.ImageURL, err)
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("failed to upload image"))
+			return
+		}
+		imgs := []*core.ImageCandidate{
+			{
+				Name: "Max",
+				Url:  resp.Link,
+			},
+		}
+		for name, url := range resp.Thumbs {
+			imgs = append(imgs, &core.ImageCandidate{
+				Name: name,
+				Url:  url,
+			})
+		}
+		req.Product.InstagramImageUrl = arg.ImageURL
+		req.Product.InstagramImageHeight = uint32(resp.Height)
+		req.Product.InstagramImageWidth = uint32(resp.Width)
+		req.Product.InstagramImages = imgs
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	resp, err := productServiceClient.EditProduct(ctx, &req)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if resp.Forbidden {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("permission denied"))
+	}
+	if resp.Error != "" {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New(resp.Error))
+		return
+	}
+
+	c.SuccessResponse(resp)
 }

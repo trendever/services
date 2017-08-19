@@ -40,7 +40,7 @@ func (s *Service) Run() error {
 	log.Info("Starting api service...")
 	metrics.Init(settings.Metrics.Addr, settings.Metrics.User, settings.Metrics.Password, settings.Metrics.DBName)
 	cache.Init()
-	SosoObj.HandleList(views.SocketRoutes)
+	SosoObj.HandleRoutes(views.SocketRoutes)
 	nats.Init(&settings.Nats, true)
 	elastic.Init(&settings.Elastic)
 	http.Handle("/channel/", GetMainHandler())

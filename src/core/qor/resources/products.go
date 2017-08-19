@@ -28,6 +28,7 @@ func initProductResource(res *admin.Resource) {
 	res.Meta(&admin.Meta{Name: "Code", Type: "string"})
 	res.Meta(&admin.Meta{Name: "Img", FieldName: "InstagramImageURL", Type: "image"})
 	res.Meta(&admin.Meta{Name: "InstagramImageCaption", Type: "text"})
+	res.Meta(&admin.Meta{Name: "ChatMessage", Type: "text"})
 	res.Meta(&admin.Meta{Name: "CreatedAt", Type: "date"})
 
 	res.SearchAttrs(
@@ -44,6 +45,7 @@ func initProductResource(res *admin.Resource) {
 				{"Code", "Title"},
 				{"IsSale"},
 				{"WebShopURL"},
+				{"ChatMessage"},
 			},
 		},
 		&admin.Section{
@@ -72,6 +74,7 @@ func initProductResource(res *admin.Resource) {
 				{"CreatedAt"},
 				{"IsSale"},
 				{"WebShopURL"},
+				{"ChatMessage"},
 			},
 		},
 		&admin.Section{

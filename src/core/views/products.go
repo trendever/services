@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"proto/core"
 	"utils/db"
+	"utils/log"
 	"utils/nats"
 	"utils/product_code"
 )
@@ -158,6 +159,48 @@ func (s productServer) CreateProduct(ctx context.Context, request *core.CreatePr
 	}, nil
 }
 
+func (s productServer) EditProduct(ctx context.Context, req *core.EditProductRequest) (*core.EditProductReply, error) {
+	updates := models.Product{}.Decode(req.Product)
+	if updates.ID == 0 {
+		return &core.EditProductReply{Error: "zero product id"}, nil
+	}
+
+	product, err := models.GetProductByID(uint64(updates.ID), "InstagramImages")
+	if err != nil {
+		return &core.EditProductReply{Error: err.Error()}, nil
+	}
+
+	if req.EditorId != 0 {
+		ok, err := models.IsUserSupplierOrSeller(req.EditorId, uint64(product.ShopID))
+		if err != nil {
+			return &core.EditProductReply{Error: err.Error()}, nil
+		}
+		if !ok {
+			return &core.EditProductReply{Forbidden: true}, nil
+		}
+	}
+
+	tx := db.NewTransaction()
+	if len(updates.InstagramImages) != 0 {
+		tx.Delete(&models.ImageCandidate{}, "product_id = ?", product.ID)
+	} else {
+		updates.InstagramImages = product.InstagramImages
+	}
+	tx.Model(product).Update(updates)
+	if !updates.IsSale {
+		tx.Model(product).Update(map[string]interface{}{"is_sale": false})
+	}
+	// @TODO tags
+	product.Items = nil
+	tx.Model(product).Association("Items").Find(&product.Items)
+	err = tx.Commit().Error
+	if err != nil {
+		log.Errorf("failed to update product %v: %v", updates.ID, err)
+		return &core.EditProductReply{Error: err.Error()}, nil
+	}
+	return &core.EditProductReply{Product: product.Encode()}, nil
+}
+
 func (s productServer) LikeProduct(_ context.Context, req *core.LikeProductRequest) (reply *core.LikeProductReply, err error) {
 	reply = &core.LikeProductReply{}
 
@@ -170,7 +213,7 @@ func (s productServer) LikeProduct(_ context.Context, req *core.LikeProductReque
 		return
 	}
 
-	product, err := models.GetProductByID(req.ProductId)
+	product, err := models.GetProductByID(uint64(req.ProductId))
 
 	if err != nil {
 		return

@@ -14,9 +14,9 @@ var shopCardServiceClient = core.NewShopCardServiceClient(api.CoreConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"retrieve", "card", GetShopCards},
-		soso.Route{"create", "card", CreateCard},
-		soso.Route{"delete", "card", DeleteCard},
+		soso.Route{"card", "retrieve", GetShopCards},
+		soso.Route{"card", "create", CreateCard},
+		soso.Route{"card", "delete", DeleteCard},
 	)
 }
 

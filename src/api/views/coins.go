@@ -13,8 +13,8 @@ var coinsServiceClient = trendcoin.NewTrendcoinServiceClient(api.CoinsConn)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"balance", "coins", CoinsBalance},
-		soso.Route{"log", "coins", CoinsLog},
+		soso.Route{"coins", "balance", CoinsBalance},
+		soso.Route{"coins", "log", CoinsLog},
 	)
 }
 

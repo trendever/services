@@ -238,9 +238,16 @@ func mapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data str
 	case "link":
 		return bot.MessageType_Text, msg.Link.Text
 	case "like":
-		return bot.MessageType_Text, msg.Like
+		return bot.MessageType_Text, "❤️"
+	case "profile":
+		// we could determinate our local user(if any) probably, but is it necessary?
+		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/%s/", msg.Profile.Username)
+	case "location":
+		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/locations/%v/", msg.Location.ID)
+	case "hashtag":
+		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/tags/%s/", msg.HashTag.Name)
 	case "action_log":
-		// @CHECK can there be something useful? afaik it contains topic changes and join|leave notifies
+		// @CHECK could there be something useful? afaik it contains topic changes and join|leave notifies
 		return bot.MessageType_None, ""
 	default:
 		log.Debug("unknown type of direct item: %v", msg.ItemType)

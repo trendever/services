@@ -10,7 +10,7 @@ import (
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
-		soso.Route{"create", "email", CreateEmail},
+		soso.Route{"email", "create", CreateEmail},
 	)
 }
 

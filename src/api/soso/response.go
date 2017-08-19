@@ -32,8 +32,8 @@ package soso
 
 // direct and indirect responses
 type Response struct {
-	DataType    string      `json:"data_type"`
-	ActionStr   string      `json:"action_str"`
+	Domain      string      `json:"data_type"`
+	Method      string      `json:"action_str"`
 	LogList     []Log       `json:"log_list"`
 	ResponseMap interface{} `json:"response_map"`
 	TransMap    interface{} `json:"trans_map"`
@@ -41,9 +41,9 @@ type Response struct {
 
 func NewResponse(ctx *Context) *Response {
 	return &Response{
-		ActionStr: reverse_action_type(ctx.ActionStr),
-		DataType:  ctx.DataType,
-		TransMap:  ctx.TransMap,
+		Domain:   ctx.Domain,
+		Method:   reverse_action_type(ctx.Method),
+		TransMap: ctx.TransMap,
 	}
 }
 

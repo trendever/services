@@ -14,8 +14,8 @@ var shopServiceClient = core.NewShopServiceClient(api.CoreConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"retrieve", "shop", GetShopProfile},
-		soso.Route{"create", "shop", createShop},
+		soso.Route{"shop", "retrieve", GetShopProfile},
+		soso.Route{"shop", "create", createShop},
 	)
 }
 

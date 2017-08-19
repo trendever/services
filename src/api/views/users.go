@@ -23,12 +23,12 @@ var authServiceClient = auth.NewAuthServiceClient(api.AuthConn)
 func init() {
 	SocketRoutes = append(
 		SocketRoutes,
-		soso.Route{"retrieve", "user", GetUserProfile},
-		soso.Route{"set_email", "user", SetEmail},
-		soso.Route{"set_data", "user", SetData},
-		soso.Route{"list_telegrams", "user", ListTelegrams},
-		soso.Route{"confirm_telegram", "user", ConfirmTelegram},
-		soso.Route{"del_telegram", "user", DelTelegram},
+		soso.Route{"user", "retrieve", GetUserProfile},
+		soso.Route{"user", "set_email", SetEmail},
+		soso.Route{"user", "set_data", SetData},
+		soso.Route{"user", "list_telegrams", ListTelegrams},
+		soso.Route{"user", "confirm_telegram", ConfirmTelegram},
+		soso.Route{"user", "del_telegram", DelTelegram},
 	)
 }
 

@@ -12,6 +12,7 @@ api:
   accountstore: accountstore:5409
   fetcher: fetcher:3006
 
+mandibleURL: 'http://mandible:8089/'
 marketSMS: "Your ad could be here"
 
 redis:
