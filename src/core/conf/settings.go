@@ -51,11 +51,12 @@ func GetSettings() *Settings {
 
 // Settings container
 type Settings struct {
-	Debug      bool
-	AppHost    string
-	SiteURL    string
-	SentryDSN  string
-	SystemUser string
+	Debug       bool
+	AppHost     string
+	SiteURL     string
+	SentryDSN   string
+	SystemUser  string
+	MandibleURL string
 
 	Monetization struct {
 		// name of plan that will be assigned to shop after creation. default is 'init'
