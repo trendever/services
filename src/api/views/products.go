@@ -6,9 +6,11 @@ import (
 	"api/soso"
 	"encoding/json"
 	"errors"
+	"golang.org/x/net/context"
 	"gopkg.in/olivere/elastic.v3"
 	"net/http"
 	"proto/core"
+	"time"
 	ewrapper "utils/elastic"
 	"utils/log"
 	"utils/product_code"
@@ -462,7 +464,7 @@ func EditProduct(c *soso.Context, product *core.Product) {
 		Restricted: true,
 	}
 
-	ctx, cancel := rpc.DefaultContext()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	resp, err := productServiceClient.EditProduct(ctx, &req)
