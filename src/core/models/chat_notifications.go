@@ -93,6 +93,10 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 					Content:  product.ChatMessage,
 					MimeType: "text/plain",
 				},
+				{
+					MimeType: "text/x-attrs",
+					Content:  fmt.Sprintf(`{"type": "product_message", "product_id": %v}`, product.ID),
+				},
 			},
 		})
 	}

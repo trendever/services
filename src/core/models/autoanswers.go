@@ -208,9 +208,9 @@ func IsMessagePartAuto(part *chat.MessagePart) (bool, error) {
 		return false, err
 	}
 
-	if val, ok := attrs["isAutoAnswer"]; ok {
-		b, isBool := val.(bool)
-		return isBool && b, nil
+	if val, ok := attrs["type"]; ok {
+		t, _ := val.(string)
+		return t == "auto_answer", nil
 	}
 
 	return false, nil
@@ -254,7 +254,7 @@ func SendAutoAnswers(msg *chat.Message, lead *Lead) {
 					},
 					{
 						MimeType: "text/x-attrs",
-						Content:  `{"isAutoAnswer": true}`,
+						Content:  `{"type": "auto_answer"}`,
 					},
 				},
 			})
