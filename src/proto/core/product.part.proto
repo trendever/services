@@ -169,6 +169,8 @@ message EditProductRequest {
     // if not zero core will perform permissions check
     uint64 editor_id = 1;
     Product product = 2;
+    // if true supplier, mentioner will not be updated
+    bool restricted = 3;
 }
 
 

@@ -1,6 +1,7 @@
 debug: true
 appHost: :3004
 siteURL: http://localhost
+mandibleURL: http://mandible:8089/
 
 nats:
   url: nats://nats:4222

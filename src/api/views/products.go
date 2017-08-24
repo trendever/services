@@ -3,48 +3,23 @@ package views
 import (
 	"api/api"
 	"api/cache"
-	"api/conf"
 	"api/soso"
 	"encoding/json"
 	"errors"
+	"golang.org/x/net/context"
 	"gopkg.in/olivere/elastic.v3"
 	"net/http"
 	"proto/core"
+	"time"
 	ewrapper "utils/elastic"
 	"utils/log"
-	"utils/mandible"
+	"utils/product_code"
 	"utils/rpc"
 )
 
 const SearchDefaultLimit = 9
 
 var productServiceClient = core.NewProductServiceClient(api.CoreConn)
-var productImagesUploader = mandible.New(conf.GetSettings().MandibleURL, []mandible.Thumbnail{
-	{
-		Name:   "XL",
-		Width:  1080,
-		Height: 1080,
-		Shape:  "thumb",
-	},
-	{
-		Name:   "L",
-		Width:  750,
-		Height: 7500,
-		Shape:  "thumb",
-	},
-	{
-		Name:   "M_square",
-		Width:  480,
-		Height: 480,
-		Shape:  "square",
-	},
-	{
-		Name:   "S_square",
-		Width:  306,
-		Height: 306,
-		Shape:  "square",
-	},
-}...)
 
 func init() {
 	SocketRoutes = append(SocketRoutes,
@@ -461,71 +436,35 @@ func DelProduct(c *soso.Context) {
 	})
 }
 
-func EditProduct(c *soso.Context, arg *struct {
-	ID           uint64              `json:"id"`
-	Title        string              `json:"title"`
-	Description  string              `json:"description"`
-	InstagramURL string              `json:"instagram_url"`
-	WebShopURL   string              `json:"web_shop_url"`
-	ChatMessage  string              `json:"chat_message"`
-	IsSale       bool                `json:"is_sale"`
-	ImageURL     string              `json:"image_url"`
-	Items        []*core.ProductItem `json:"items"`
-	//Items        struct {
-	//	ID            uint64   `json:"id"`
-	//	Name          string   `json:"name"`
-	//	Price         uint64   `json:"price"`
-	//	DiscountPrice uint64   `json:"discount_price"`
-	//	Tags          []uint64 `json:"tags"`
-	//} `json:"items"`
-}) {
+func EditProduct(c *soso.Context, product *core.Product) {
 	if c.Token == nil {
 		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
-	log.Debug("arg: %+v", arg)
-	req := core.EditProductRequest{
-		EditorId: c.Token.UID,
-		Product: &core.Product{
-			Id:    int64(arg.ID),
-			Title: arg.Title,
-			InstagramImageCaption: arg.Description,
-			InstagramImageUrl:     arg.InstagramURL,
-			WebShopUrl:            arg.WebShopURL,
-			ChatMessage:           arg.ChatMessage,
-			IsSale:                arg.IsSale,
-			Items:                 arg.Items,
-		},
+
+	if product.Id == 0 {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("zero product id"))
+		return
 	}
-	// @CHECK i think it's better to upload it here
-	// but that may lead to unlinked images if product will not be saved for whatever reason
-	// or useless work if link is actuality same as before
-	if arg.ImageURL != "" {
-		resp, err := productImagesUploader.DoRequest("url", arg.ImageURL)
-		if err != nil {
-			log.Warn("failed to upload image product image '%v': %v", arg.ImageURL, err)
-			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, errors.New("failed to upload image"))
-			return
-		}
-		imgs := []*core.ImageCandidate{
-			{
-				Name: "Max",
-				Url:  resp.Link,
-			},
-		}
-		for name, url := range resp.Thumbs {
-			imgs = append(imgs, &core.ImageCandidate{
-				Name: name,
-				Url:  url,
-			})
-		}
-		req.Product.InstagramImageUrl = arg.ImageURL
-		req.Product.InstagramImageHeight = uint32(resp.Height)
-		req.Product.InstagramImageWidth = uint32(resp.Width)
-		req.Product.InstagramImages = imgs
+	_, err := product_code.ParsePostURL(product.InstagramLink)
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("invalid instagram link"))
+		return
 	}
 
-	ctx, cancel := rpc.DefaultContext()
+	// strip some data that will not be used anyway
+	product.LikedBy = nil
+	product.Supplier = nil
+	product.Mentioned = nil
+	product.InstagramImages = nil
+
+	req := core.EditProductRequest{
+		EditorId:   c.Token.UID,
+		Product:    product,
+		Restricted: true,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	resp, err := productServiceClient.EditProduct(ctx, &req)

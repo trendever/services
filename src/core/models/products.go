@@ -1,19 +1,49 @@
 package models
 
 import (
+	"core/conf"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"proto/chat"
 	"proto/core"
 	"savetrend/tumbmap"
 	"time"
 	"utils/db"
+	"utils/mandible"
 	"utils/nats"
-
-	"github.com/jinzhu/gorm"
+	"utils/product_code"
 )
 
 const productTable = "products_product"
+
+var thumbsConfig = []mandible.Thumbnail{
+	{
+		Name:   "XL",
+		Width:  1080,
+		Height: 1080,
+		Shape:  "thumb",
+	},
+	{
+		Name:   "L",
+		Width:  750,
+		Height: 7500,
+		Shape:  "thumb",
+	},
+	{
+		Name:   "M_square",
+		Width:  480,
+		Height: 480,
+		Shape:  "square",
+	},
+	{
+		Name:   "S_square",
+		Width:  306,
+		Height: 306,
+		Shape:  "square",
+	},
+}
 
 // Product model
 type Product struct {
@@ -23,6 +53,11 @@ type Product struct {
 	Title  string `gorm:"text"`
 	IsSale bool
 
+	// @TODO garbage data all around:
+	// * InstagramImageID can be determined by InstagramLink and vice versa
+	// * original image size is available in "Max" ImageCandidate
+	// * InstagramLikesCount updates never
+	// * most of "Instagram" prefixes are useless and annoying
 	InstagramImageCaption string `gorm:"type:text"`
 	InstagramImageID      string
 	InstagramImageHeight  uint
@@ -273,4 +308,191 @@ func (p ProductItem) ToLeadInfoItem() *core.ProductItem {
 func (p ProductItem) GetURLValue() interface{} {
 	// return parent stub
 	return Product{Model: gorm.Model{ID: uint(p.ProductID)}}
+}
+
+func (p *Product) UpdateImage(url string) error {
+	if p.InstagramImageURL == url {
+		return nil
+	}
+	if p.ID == 0 {
+		return errors.New("zero product id")
+	}
+	if url == "" {
+		tx := db.NewTransaction()
+		err := tx.Delete(&ImageCandidate{}, "product_id = ?", p.ID).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		err = tx.Model(&p).Update(map[string]interface{}{
+			"InstagramImageURL":    "",
+			"InstagramImageHeight": 0,
+			"InstagramImageWidth":  0,
+		}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		p.InstagramImages = nil
+		return tx.Commit().Error
+	}
+
+	resp, err := mandible.New(conf.GetSettings().MandibleURL, thumbsConfig...).DoRequest("url", url)
+	if err != nil {
+		return err
+	}
+	imgs := []ImageCandidate{
+		{
+			Name: "Max",
+			URL:  resp.Link,
+		},
+	}
+	for name, url := range resp.Thumbs {
+		imgs = append(imgs, ImageCandidate{
+			Name: name,
+			URL:  url,
+		})
+	}
+
+	tx := db.NewTransaction()
+
+	err = tx.Delete(&ImageCandidate{}, "product_id = ?", p.ID).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Model(p).Association("InstagramImages").Append(&imgs).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Model(&p).Update(map[string]interface{}{
+		"InstagramImageURL":    url,
+		"InstagramImageHeight": resp.Height,
+		"InstagramImageWidth":  resp.Width,
+	}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+// saves updated product to database without risk to modify internal data of related objects
+// if editroID in not zero, checks whether user has permissions to modify this product
+// if restricted is true shop and mentioner will not be changed
+//
+// passed object will be filled with actual data
+func UpdateProduct(updated *Product, editorID uint64, restricted bool) error {
+	if updated.ID == 0 {
+		return errors.New("zero product id")
+	}
+
+	product, err := GetProductByID(uint64(updated.ID), "Shop", "MentionedBy", "Items", "InstagramImages")
+	if err != nil {
+		return err
+	}
+
+	if editorID != 0 {
+		ok, err := IsUserSupplierOrSeller(editorID, uint64(product.ShopID))
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("forbidden")
+		}
+	}
+
+	if product.InstagramLink != updated.InstagramLink {
+		updated.InstagramImageID, err = product_code.ParsePostURL(updated.InstagramLink)
+		if err != nil {
+			return errors.New("invalid instagram link")
+		}
+	}
+
+	// should not be updated here
+	updated.LikedBy = nil
+	// gorm tends to fuck everything up by saving nested objects recursive, tag data may be changed
+	// we will keep tags here and deal with them later
+	allTags := make([][]uint, len(updated.Items))
+	for i := range updated.Items {
+		itemTags := make([]uint, len(updated.Items[i].Tags))
+		for j, tag := range updated.Items[i].Tags {
+			if tag.ID == 0 {
+				return errors.New("zero tag id")
+			}
+			itemTags[j] = tag.ID
+		}
+		allTags[i] = itemTags
+		updated.Items[i].Tags = nil
+	}
+
+	tx := db.NewTransaction()
+	if restricted {
+		updated.Shop = product.Shop
+		updated.MentionedBy = product.MentionedBy
+		// disallow item relinking from other products
+		itemsMap := map[uint]bool{}
+		for _, item := range product.Items {
+			itemsMap[item.ID] = true
+		}
+		for _, item := range updated.Items {
+			if item.ID != 0 && !itemsMap[item.ID] {
+				return errors.New("item relinking is disallowed")
+			}
+		}
+	}
+
+	if product.InstagramImageURL == updated.InstagramImageURL {
+		updated.InstagramImages = product.InstagramImages
+	} else {
+		img := updated.InstagramImageURL
+		updated.InstagramImageURL = product.InstagramImageURL
+		err = updated.UpdateImage(img)
+		if err != nil {
+			return fmt.Errorf("failed to update image: %v", err)
+		}
+	}
+
+	err = tx.Save(&updated).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// we have ids for all items now, time to update tags. raw sql anyone?
+	itemIDs := make([]uint, len(updated.Items))
+	values := ""
+	for i, item := range updated.Items {
+		itemIDs[i] = item.ID
+		for _, tagID := range allTags[i] {
+			values = values + fmt.Sprintf("(%v, %v), ", item.ID, tagID)
+		}
+	}
+	err = tx.Exec("DELETE FROM products_product_item_tags WHERE product_item_id in (?)", itemIDs).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if values != "" {
+		// strip extra ", "
+		values = values[:len(values)-2]
+		err = tx.Exec("INSERT INTO products_product_item_tags (product_item_id, tag_id) VALUES " + values).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Model(&updated).Preload("Tags").Association("Items").Find(&updated.Items)
+	err = tx.Commit().Error
+	if err != nil {
+		return errors.New("transaction failed")
+	}
+	updated.LikedBy = product.LikedBy
+	return nil
 }
