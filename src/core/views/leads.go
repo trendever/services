@@ -112,21 +112,9 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 	}
 
 	if protoLead.Action == core.LeadAction_BUY && len(product.Items) != 0 {
-		if count, err := models.AppendLeadItems(lead, product.Items); err != nil {
+		if _, err := models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)
 			return nil, err
-		} else if count == 0 {
-			// product already in the lead
-			leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
-			if err != nil {
-				log.Error(err)
-				return nil, err
-			}
-
-			return &core.CreateLeadResult{
-				Id:   int64(lead.ID),
-				Lead: leadInfo.Encode(),
-			}, nil
 		}
 	}
 
