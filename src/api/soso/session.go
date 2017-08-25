@@ -48,7 +48,7 @@ func (s *SessionRepositoryImpl) Push(session Session, uid uint64) int {
 	if _, ok := s.sessions[session.ID()]; !ok {
 		s.users[uid] = append(sessions, session)
 		s.sessions[session.ID()] = uid
-		nats.Publish(NatsNewSessionSubject, uid)
+		nats.StanPublish(NatsNewSessionSubject, uid)
 	}
 	log.Debug("Session %s for user %v pushed, total %v", session.ID(), uid, len(s.users[uid]))
 	return len(s.users[uid])

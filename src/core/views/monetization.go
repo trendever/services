@@ -127,15 +127,25 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		return
 	}
 
+	defer func() {
+		if !ret.Ok {
+			log.Errorf("failed to subscribe shop %v to plan %v: %v", shop.ID, in.PlanId, ret.Error)
+		} else {
+			log.Info("shop %v is subscribed to plan %v", shop.ID, in.PlanId)
+		}
+	}()
+
 	// only supplier can set plan
 	if uint64(shop.SupplierID) != in.UserId {
 		ret.Error = "unsuitable user"
+		return
 	}
 
 	now := time.Now()
-	// @CHECK prolongation actuality may be repetitive. what about it?
+	// @CHECK prolongation may be repetitive actuality. what about it?
 	if now.Sub(shop.LastPlanUpdate) < time.Minute {
 		ret.Error = "action may be repetitive"
+		return
 	}
 
 	var plan models.MonetizationPlan
@@ -145,7 +155,6 @@ func (s *monetizationServer) Subscribe(_ context.Context, in *core.SubscribeRequ
 		return
 	}
 	if res.Error != nil {
-		log.Errorf("failed to load plan: %v", res.Error)
 		ret.Error = "db error"
 		return
 	}

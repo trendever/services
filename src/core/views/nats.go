@@ -308,11 +308,14 @@ func handleUserLogin(userID uint) bool {
 
 func handleNewSession(userID uint) bool {
 	now := time.Now()
-	err := db.New().Model(&models.User{}).
+	tx := db.NewTransaction()
+	err := tx.Model(&models.User{}).
 		Where("id = ?", userID).
 		UpdateColumn("last_login", now).Error
 	if err != nil {
 		log.Errorf("failed to update last session for user %v: %v", userID, err)
+		tx.Rollback()
+		return false
 	}
 
 	plan := &models.InitialPlan
@@ -326,19 +329,33 @@ func handleNewSession(userID uint) bool {
 	if plan.SubscriptionPeriod != 0 {
 		updateMap["plan_expires_at"] = time.Now().Add(models.PlansBaseDuration * time.Duration(plan.SubscriptionPeriod))
 	}
-	err = db.New().Model(&models.Shop{}).
+	// reset init plan expiration time on first login of supplier
+	err = tx.Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
+		Where("plan_id = ?", plan.ID).
 		Where("supplier_last_login = ? OR supplier_last_login IS NULL", time.Time{}).
 		UpdateColumns(updateMap).Error
+	if err != nil {
+		tx.Rollback()
+		log.Errorf("failed to update init plan expiration time for user %v: %v", userID, err)
+		return false
+	}
 
-	err = db.New().Model(&models.Shop{}).
+	err = tx.Model(&models.Shop{}).
 		Where("supplier_id = ?", userID).
 		UpdateColumns(map[string]interface{}{
 			"supplier_last_login": now,
 			"notify_supplier":     true,
 		}).Error
 	if err != nil {
+		tx.Rollback()
 		log.Errorf("failed to update last session in related shops for user %v: %v", userID, err)
+		return false
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		log.Errorf("db transaction failed when handling new session of user %v: %v", userID, err)
+		return false
 	}
 
 	return true
