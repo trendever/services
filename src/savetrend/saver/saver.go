@@ -254,7 +254,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 func createProduct(media *instagram.MediaInfo, shopID, mentionerID uint64) (id int64, retry bool, err error) {
 	var img *instagram.ImageCandidate
 	switch media.MediaType {
-	case instagram.MediaType_Image:
+	case instagram.MediaType_Image, instagram.MediaType_Video:
 		img = media.ImageVersions2.Largest()
 	case instagram.MediaType_Carousel:
 		if len(media.CarouselMedia) == 0 {
