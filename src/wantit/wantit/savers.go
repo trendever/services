@@ -43,8 +43,12 @@ func saveHelpProduct(mention *bot.Activity, code string, supplierId int64) (id i
 	}}
 
 	res, err := api.ProductClient.CreateProduct(ctx, request)
-	if err != nil {
+	switch {
+	case err == nil:
+		return res.Id, false, nil
+	case err.Error() == "Shop is deleted; product will not be added":
+		return -1, false, err
+	default:
 		return -1, true, err
 	}
-	return res.Id, false, nil
 }
