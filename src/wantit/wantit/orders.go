@@ -43,7 +43,7 @@ func processThreadOrder(mention *bot.Activity) (bool, error) {
 			return true, fmt.Errorf("Temporarily unable to save product (%v)", err)
 		}
 		if err != nil {
-			return true, err
+			return retry, err
 		}
 		if productID <= 0 {
 			return false, errors.New("Could not save product: SaveTrend returned negative or zero productID")
