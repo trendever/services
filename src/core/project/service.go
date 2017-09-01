@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"utils/coins"
 	"utils/db"
 	"utils/log"
@@ -65,6 +67,7 @@ func (s *Service) Run(cli *cli.Context) {
 	log.Info("Starting service")
 
 	go log.PanicLogger(func() {
+		rand.Seed(time.Now().Unix())
 		// connect to database
 		db.Init(&conf.GetSettings().DB)
 		if err := models.LoadOrCreateSystemUser(); err != nil {

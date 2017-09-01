@@ -5,7 +5,6 @@ import (
 	"core/conf"
 	"errors"
 	"fmt"
-	"math/rand"
 	"proto/bot"
 	"proto/chat"
 	"proto/core"
@@ -15,15 +14,12 @@ import (
 	"proto/telegram"
 	"push/typemap"
 	"reflect"
-	"strings"
-	"time"
 	"utils/db"
 	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 
 	"github.com/jinzhu/gorm"
-	pongo2 "gopkg.in/flosch/pongo2.v3"
 )
 
 func init() {
@@ -451,14 +447,6 @@ func (n *Notifier) CallCustomerToChat(customer *User, lead *Lead) error {
 	)
 }
 
-func randomComment(comments *pongo2.Value) *pongo2.Value {
-	rand.Seed(time.Now().UnixNano())
-	result := comments.String()
-	splitted := strings.Split(result, "?")
-	index := rand.Intn(len(splitted))
-	return pongo2.AsValue(splitted[index])
-}
-
 func SubmitCommentReply(lead *Lead) error {
 	tmpl, err := GetOther(InstagramSubmitReplyTemplate)
 	if err != nil {
@@ -466,8 +454,7 @@ func SubmitCommentReply(lead *Lead) error {
 	}
 
 	res, err := tmpl.Execute(map[string]interface{}{
-		"lead":           lead,
-		"randomfunction": randomComment,
+		"lead": lead,
 	})
 	if err != nil {
 		return err
