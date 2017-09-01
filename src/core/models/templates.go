@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"regexp"
 	"strings"
 	"utils/db"
@@ -294,6 +295,13 @@ func (t *PushTemplate) Execute(ctx interface{}) (interface{}, error) {
 	}, nil
 }
 
+func randomArgument(args ...*pongo2.Value) *pongo2.Value {
+	if len(args) == 0 {
+		return pongo2.AsValue("")
+	}
+	return pongo2.AsValue(args[rand.Intn(len(args))])
+}
+
 // applyTemplate applies template from string to ctx and returns result
 func applyTemplate(template string, ctx interface{}, escape bool) (string, error) {
 	// there is no other way to disable autoescape on global level... Looks very dirty
@@ -309,6 +317,7 @@ func applyTemplate(template string, ctx interface{}, escape bool) (string, error
 	if !ok {
 		arg = map[string]interface{}{"object": ctx}
 	}
+	arg["rand_arg"] = randomArgument
 	out, err := tmpl.Execute(pongo2.Context(arg))
 	if err != nil {
 		return "", err
