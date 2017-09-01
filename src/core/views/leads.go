@@ -111,23 +111,27 @@ func (s leadServer) CreateLead(ctx context.Context, protoLead *core.Lead) (*core
 		log.Error(lead.TriggerEvent(core.LeadStatusEvent_PROGRESS.String(), "", 0, &lead.Customer))
 	}
 
+	sendTemplates := true
 	if protoLead.Action == core.LeadAction_BUY && len(product.Items) != 0 {
-		if _, err := models.AppendLeadItems(lead, product.Items); err != nil {
+		var newItemsCount int
+		if newItemsCount, err = models.AppendLeadItems(lead, product.Items); err != nil {
 			log.Error(err)
 			return nil, err
 		}
+		sendTemplates = newItemsCount > 0
 	}
 
 	go func() {
 		if protoLead.Source == "direct" {
 			models.SetChatSync(lead.ConversationID, protoLead.DirectThread)
 		}
-		if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, protoLead.Comment, existsLead == nil); err != nil {
-			log.Error(fmt.Errorf("Warning! Could not send product to chat (%v)", err))
+		if sendTemplates {
+			if err := models.SendProductToChat(lead, product, protoLead.Action, protoLead.Source, protoLead.Comment, existsLead == nil); err != nil {
+				log.Error(fmt.Errorf("Could not send product to chat (%v)", err))
+			}
 		}
+		models.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 	}()
-
-	go models.NotifyLeadCreated(lead, product, protoLead.InstagramLink, protoLead.Action)
 
 	leadInfo, err := models.GetUserLead(&lead.Customer, uint64(lead.ID))
 	if err != nil {
