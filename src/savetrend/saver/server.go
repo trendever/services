@@ -14,6 +14,7 @@ func NewSaveServer() *SaveServer {
 }
 
 func (*SaveServer) SaveProduct(cxt context.Context, mention *bot.Activity) (*bot.SaveProductResult, error) {
+	log.Debug("processing activity %+v from rpc request")
 	id, retry, err := processProductMedia(mention.MediaId, mention)
 	if retry {
 		log.Debug("SaveProduct: temporarily unable to save: %v", err)

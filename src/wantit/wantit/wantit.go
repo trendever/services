@@ -118,7 +118,6 @@ func registerOrders() {
 			time.Sleep(timeout)
 		}
 		loopStarted = time.Now()
-		log.Debug("Checking for new mention orders (last processed at %v)...", lastChecked)
 
 		// Step #1: get new entries from fetcher
 		res, err := retrieveActivities()
@@ -128,16 +127,19 @@ func registerOrders() {
 			time.Sleep(time.Second)
 			continue
 		}
-		log.Debug("... got %v results", len(res.Result))
+		if len(res.Result) > 0 {
+			log.Debug("Got %v results since %v", len(res.Result), lastChecked)
+		}
 
-		for _, mention := range res.Result {
+		for _, activity := range res.Result {
+			log.Debug("processing activity %+v", activity)
 			var err error
 			var retry bool
 
-			if mention.Type == "thread" {
-				retry, err = processThreadOrder(mention)
+			if activity.Type == "thread" {
+				retry, err = processThreadOrder(activity)
 			} else {
-				retry, err = processPotentialOrder(mention.MediaId, mention)
+				retry, err = processPotentialOrder(activity.MediaId, activity)
 			}
 
 			if err != nil {
@@ -149,11 +151,10 @@ func registerOrders() {
 			}
 
 			if !retry {
-				lastChecked = mention.Id
+				lastChecked = activity.Id
 			} else {
 				break
 			}
-
 		}
 	}
 }
