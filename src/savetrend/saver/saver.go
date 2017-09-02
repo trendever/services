@@ -125,9 +125,6 @@ func registerProducts() {
 			time.Sleep(timeout)
 		}
 		loopStarted = time.Now()
-
-		log.Debug("Checking for new products (last checked at %v)", lastChecked)
-
 		// Step #1: get new entries from fetcher
 		res, err := retrieveActivities()
 
@@ -137,8 +134,13 @@ func registerProducts() {
 			continue
 		}
 
-		for _, mention := range res.Result {
-			if _, retry, err := processProductMedia(mention.MediaId, mention); err != nil {
+		if len(res.Result) > 0 {
+			log.Debug("Got %v results since %v", len(res.Result), lastChecked)
+		}
+
+		for _, activity := range res.Result {
+			log.Debug("processing activity %+v", activity)
+			if _, retry, err := processProductMedia(activity.MediaId, activity); err != nil {
 				if err != nil && retry {
 					log.Debug("Retrying (%v)", err)
 					break
@@ -148,7 +150,7 @@ func registerProducts() {
 			}
 
 			// update last checked ID
-			lastChecked = mention.Id
+			lastChecked = activity.Id
 		}
 	}
 }
