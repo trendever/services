@@ -264,7 +264,7 @@ func markBotInvalid(username, reason string) {
 		Reason:            reason,
 	})
 	if err != nil {
-		log.Errorf("failed to invalidate account %v: %v", username, err)
+		log.Warn("failed to invalidate account %v: %v", username, err)
 		return
 	}
 }
