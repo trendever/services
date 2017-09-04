@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"instagram"
 	"io/ioutil"
+	"proto/accountstore"
 	"proto/checker"
 	"regexp"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"time"
 	"utils/db"
 	"utils/log"
+	"utils/rpc"
 )
 
 type CheckerServer struct {
@@ -22,7 +24,7 @@ var nameValidator = regexp.MustCompile("^(\\w|\\.)*$")
 
 func NewCheckerServer() *CheckerServer {
 	c := &CheckerServer{
-		queryChan: make(chan uint64),
+		queryChan: make(chan uint64, 100),
 	}
 	go c.loop()
 	return c
@@ -41,12 +43,22 @@ func (c *CheckerServer) Stop() {
 	close(c.queryChan)
 }
 
-func (c *CheckerServer) GetProfile(_ context.Context, in *checker.GetProfileRequest) (ret *checker.GetProfileReply, _ error) {
+func (c *CheckerServer) GetProfile(ctx context.Context, in *checker.GetProfileRequest) (ret *checker.GetProfileReply, _ error) {
 	ret = &checker.GetProfileReply{}
+	timeout := time.Minute
+	deadline, ok := ctx.Deadline()
+	if ok {
+		timeout = time.Now().Sub(deadline)
+	}
 
 	switch {
 	case in.Id != 0:
-		profile, err := Instagram.GetFree().GetUserNameInfo(in.Id)
+		acc, err := pool.GetFree(timeout)
+		if err != nil {
+			ret.Error = err.Error()
+			return
+		}
+		profile, err := acc.GetUserNameInfo(in.Id)
 		switch err {
 		case nil:
 		case instagram.ErrorPageNotFound:
@@ -71,10 +83,17 @@ func (c *CheckerServer) GetProfile(_ context.Context, in *checker.GetProfileRequ
 
 	case in.Name != "":
 		if !nameValidator.MatchString(in.Name) {
-			ret.Error = "unvalid instagram name"
+			ret.Error = "invalid instagram name"
 			return
 		}
-		candidates, err := Instagram.GetFree().SearchUsers(in.Name)
+
+		acc, err := pool.GetFree(timeout)
+		if err != nil {
+			ret.Error = err.Error()
+			return
+		}
+
+		candidates, err := acc.SearchUsers(in.Name)
 		switch err {
 		case nil:
 		case instagram.ErrorPageNotFound:
@@ -129,7 +148,8 @@ func (u User) TableName() string {
 }
 
 func (s *CheckerServer) loop() {
-	ticker := time.NewTicker(time.Millisecond * time.Duration(settings.MinimalTickLen))
+	timeout, err := time.ParseDuration(settings.MinimalTickLen)
+	ticker := time.NewTicker(timeout)
 	lastChecked, err := loadLastChecked()
 	if err != nil {
 		log.Debug("failed to load last checked user id, starting from first")
@@ -186,7 +206,12 @@ func checkUser(user *User) {
 		updateMap["instagram_username"] = trimmed
 	}
 	if nameValidator.MatchString(user.InstagramUsername) {
-		candidates, err := Instagram.GetFree().SearchUsers(user.InstagramUsername)
+		acc, err := pool.GetFree(0)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		candidates, err := acc.SearchUsers(user.InstagramUsername)
 		if err != nil {
 			log.Errorf("failed to search user '%v' in instagram: %v", user.InstagramUsername, err)
 			return
@@ -203,8 +228,12 @@ func checkUser(user *User) {
 		if user.Name == "" {
 			updateMap["name"] = user.InstagramUsername
 		}
+		if trimmed != "" {
+			markBotInvalid(trimmed, "instagram user not found")
+		}
 		updateMap["instagram_username"] = ""
 		updateMap["instagram_id"] = 0
+
 	} else {
 		if uint64(instagramInfo.Pk) != user.InstagramID {
 			updateMap["instagram_id"] = instagramInfo.Pk
@@ -224,6 +253,19 @@ func checkUser(user *User) {
 		if err != nil {
 			log.Errorf("failed to update user %v: %v", user.ID, err)
 		}
+	}
+}
+
+func markBotInvalid(username, reason string) {
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	_, err := storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{
+		InstagramUsername: username,
+		Reason:            reason,
+	})
+	if err != nil {
+		log.Errorf("failed to invalidate account %v: %v", username, err)
+		return
 	}
 }
 

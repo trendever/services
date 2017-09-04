@@ -1,13 +1,14 @@
 package main
 
 import (
-	"errors"
+	"accountstore/client"
 	"fmt"
 	"github.com/spf13/cobra"
 	"instagram"
 	"math/rand"
 	"os"
 	"os/signal"
+	"proto/accountstore"
 	"proto/checker"
 	"syscall"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"utils/db"
 	"utils/log"
 	"utils/mandible"
+	"utils/nats"
 	"utils/rpc"
 )
 
@@ -25,24 +27,23 @@ var settings struct {
 
 	LastCheckedFile string
 
+	MinimalTickLen  string
+	RequestsPerTick uint64
+
 	DB db.Settings
 
-	RequestsPerTick uint64
-	MinimalTickLen  uint64
-
-	Pool            instagram.PoolSettings
+	StoreAddr       string
+	client.Settings `mapstructure:",squash"`
 	ResponseLogging bool
 
-	Users []struct {
-		Name string
-		Pass string
-	}
+	Nats      nats.Config
 	SentryDSN string
 }
 
 var (
 	ImageUploader *mandible.Uploader
-	Instagram     *instagram.Pool
+	storeCli      accountstore.AccountStoreServiceClient
+	pool          *client.AccountsPool
 )
 
 func init() {
@@ -71,25 +72,7 @@ func main() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "start",
 		Short: "Starts service",
-		Run: func(cmd *cobra.Command, args []string) {
-			log.Info("Starting service...")
-
-			initInstagramPool()
-			ImageUploader = mandible.New(settings.MandibleURL)
-			rpc := rpc.Serve(settings.RPC)
-			db.Init(&settings.DB)
-			server := NewCheckerServer()
-
-			log.Info("Registering server...")
-			checker.RegisterCheckerServiceServer(rpc, server)
-
-			interrupt := make(chan os.Signal)
-			signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-			<-interrupt
-			rpc.Stop()
-			server.Stop()
-		},
+		Run:   RunService,
 	})
 	log.PanicLogger(func() {
 		if err := cmd.Execute(); err != nil {
@@ -98,28 +81,36 @@ func main() {
 	})
 }
 
-func initInstagramPool() {
+func RunService(cmd *cobra.Command, args []string) {
+	log.Info("Starting service...")
 	rand.Seed(time.Now().Unix())
 	instagram.DoResponseLogging = settings.ResponseLogging
-	Instagram = instagram.NewPool(&settings.Pool)
-	if len(settings.Users) == 0 {
-		log.Fatal(errors.New("Instagram users are undefined"))
+
+	ImageUploader = mandible.New(settings.MandibleURL)
+	nats.Init(&settings.Nats, true)
+
+	storeCli = accountstore.NewAccountStoreServiceClient(rpc.Connect(settings.StoreAddr))
+
+	var err error
+	pool, err = client.InitPoll(
+		accountstore.Role_AuxPrivate, storeCli,
+		nil, nil,
+		&settings.Settings,
+	)
+	if err != nil {
+		log.Fatalf("failed to init acoounts pool: %v", err)
 	}
-	for {
-		activeCount := 0
-		for _, user := range settings.Users {
-			item, err := instagram.NewInstagram(user.Name, user.Pass, "")
-			if err != nil {
-				log.Errorf("failed to add instagram user %v: %v", user.Name, err)
-				continue
-			}
-			activeCount++
-			Instagram.Add(item)
-		}
-		if activeCount != 0 {
-			return
-		}
-		log.Error(errors.New("we don't have any active instagram accaounts"))
-		time.Sleep(5 * time.Second)
-	}
+
+	rpc := rpc.Serve(settings.RPC)
+	db.Init(&settings.DB)
+	server := NewCheckerServer()
+	log.Info("Registering server...")
+	checker.RegisterCheckerServiceServer(rpc, server)
+
+	interrupt := make(chan os.Signal)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	<-interrupt
+	rpc.Stop()
+	server.Stop()
 }
