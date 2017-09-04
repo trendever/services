@@ -190,7 +190,11 @@ func (pool *AccountsPool) GetRandom() (*instagram.Instagram, error) {
 	return meta.ig, nil
 }
 
-func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
+func (pool *AccountsPool) GetFree(timeout time.Duration) (*instagram.Instagram, error) {
+	var timeoutChan <-chan time.Time
+	if timeout != 0 {
+		timeoutChan = time.After(timeout)
+	}
 	for {
 		select {
 		case ig := <-pool.ready:
@@ -200,6 +204,8 @@ func (pool *AccountsPool) GetFree() (*instagram.Instagram, error) {
 			pool.Invalidate(ig.UserID, "Account is no longer logged in")
 		case <-pool.stopper.Chan():
 			return nil, errors.New("pool is stopped")
+		case <-timeoutChan:
+			return nil, errors.New("no accounts available")
 		}
 	}
 }

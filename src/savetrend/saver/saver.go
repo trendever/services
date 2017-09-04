@@ -207,7 +207,7 @@ func processProductMedia(mediaID string, mention *bot.Activity) (int64, bool, er
 	}
 
 	// read media info
-	ig, err := pool.GetFree()
+	ig, err := pool.GetFree(time.Minute)
 	if err != nil {
 		return -1, true, err
 	}
@@ -346,7 +346,7 @@ func userID(instagramID uint64, instagramUsername string) (uint64, *core.User, e
 	}
 
 	// secondly, get this user profile
-	ig, err := pool.GetFree()
+	ig, err := pool.GetFree(time.Minute)
 	if err != nil {
 		return 0, nil, err
 	}

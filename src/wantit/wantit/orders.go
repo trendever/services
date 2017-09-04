@@ -7,6 +7,7 @@ import (
 	"proto/bot"
 	"proto/core"
 	"strings"
+	"time"
 	"utils/log"
 	"utils/rpc"
 	"wantit/api"
@@ -89,7 +90,7 @@ func processPotentialOrder(mediaID string, mention *bot.Activity) (bool, error) 
 	}
 
 	// get product media
-	ig, err := pool.GetFree()
+	ig, err := pool.GetFree(time.Minute)
 	if err != nil {
 		return true, err
 	}
