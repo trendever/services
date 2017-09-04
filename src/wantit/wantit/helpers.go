@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"proto/core"
+	"time"
 	"utils/log"
 	"utils/mandible"
 	"utils/rpc"
@@ -95,7 +96,7 @@ func coreUser(instagramID uint64, instagramUsername string) (*core.User, error) 
 	}
 
 	// secondly, get this user profile
-	ig, err := pool.GetFree()
+	ig, err := pool.GetFree(time.Minute)
 	if err != nil {
 		return nil, err
 	}

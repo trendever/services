@@ -13,15 +13,14 @@ db:
   base:     postgres
 
 requestsPerTick: 10
-minimalTickLen:  100000
+minimalTickLen:  1s
 
-pool:
-  timeoutMin: 500
-  timeoutMax: 2000
-  reloginTimeout: 10000
-  
+storeAddr: accountstore:5409
 responseLogging: false
+timeoutMin: 2s
+timeoutMax: 3s
 
-users:
-- name: nmstrs1
-  pass: pass4ig
+nats:
+  url: nats://nats:4222
+  stanCluster: stan
+  stanID: checker1
