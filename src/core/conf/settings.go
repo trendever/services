@@ -64,7 +64,11 @@ type Settings struct {
 		// duration multiplier for plans periods
 		PlansBaseDuration     string
 		SubscriptionCheckTick string
-		URL                   string
+	}
+
+	URL struct {
+		Monetization string
+		ConnectBot   string
 	}
 
 	Comments struct {

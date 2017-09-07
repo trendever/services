@@ -26,12 +26,15 @@ db:
   host:     db
   port:     5432
   base:     postgres
+  
+URL:
+  monetization: http://localhost:3001/monetization
+  connectBot:   http://localhost:3001/connect-bot
 
 monetization:
   initialPlanName: init
   plansBaseDuration: 1m
   subscriptionCheckTick: 5m
-  URL: https://directbot.io/monetization
 
 comments:
   allowed: "цена,цвет,размер,стоимость"

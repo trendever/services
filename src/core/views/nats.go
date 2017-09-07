@@ -2,6 +2,7 @@ package views
 
 import (
 	"core/api"
+	"core/conf"
 	"core/models"
 	"fmt"
 	"proto/accountstore"
@@ -72,6 +73,9 @@ func handleAccountstoreNotify(acc *accountstore.Account) bool {
 	}
 	log.Error(models.GetNotifier().NotifyUserByID(acc.OwnerId, botAccountInvalidatedTopic, map[string]interface{}{
 		"account": acc,
+		"url": api.GetShortURL(
+			api.AddUserToken(conf.GetSettings().URL.ConnectBot, acc.OwnerId),
+		),
 	}))
 	return true
 }
