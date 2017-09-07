@@ -43,11 +43,13 @@ func RegisterTemplate(domain, name string) error {
 
 var notifyDomains = []string{"email", "sms", "push", "telegram"}
 
-func RegisterNotifyTemplate(name string) error {
-	for _, domain := range notifyDomains {
-		err := RegisterTemplate(domain, name)
-		if err != nil {
-			return err
+func RegisterNotifyTemplates(names ...string) error {
+	for _, name := range names {
+		for _, domain := range notifyDomains {
+			err := RegisterTemplate(domain, name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -34,7 +34,7 @@ func init() {
 		"product_addad_for_mentioner",
 	}
 	for _, t := range topics {
-		RegisterNotifyTemplate(t)
+		RegisterNotifyTemplates(t)
 	}
 }
 

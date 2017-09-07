@@ -22,7 +22,7 @@ func init() {
 const ConfirmedTelegramTopic = "telegram_conformed"
 
 func init() {
-	models.RegisterNotifyTemplate(ConfirmedTelegramTopic)
+	models.RegisterNotifyTemplates(ConfirmedTelegramTopic)
 }
 
 type userServer struct{}
