@@ -282,12 +282,7 @@ func (s *monetizationServer) loop() {
 }
 
 func notifySupplierAboutSuspense(shop *models.Shop, renewal bool) {
-	token, err := api.GetNewAPIToken(shop.SupplierID)
-	if err != nil {
-		log.Errorf("can't get token for customer: %v", err)
-	}
-
-	monetizationURL := api.GetMonetizationURL(token)
+	monetizationURL := api.GetMonetizationURL(uint64(shop.SupplierID))
 	shortURL := api.GetShortURL(monetizationURL)
 
 	go notifySupplierAboutSubscription(shop, suspendNotifyTopic, map[string]interface{}{

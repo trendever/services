@@ -114,16 +114,25 @@ func GetChatURL(leadID uint, token string) string {
 }
 
 //GetMonetizationURL returns url to monetization
-func GetMonetizationURL(token string) string {
-	v := &url.Values{}
-	v.Add("token", token)
-	u, err := url.Parse(conf.GetSettings().Monetization.URL)
+func GetMonetizationURL(userID uint64) string {
+	return AddUserToken(conf.GetSettings().URL.Monetization, userID)
+}
+
+func AddUserToken(link string, userID uint64) string {
+	token, err := GetNewAPIToken(uint(userID))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get token for user %v: %v", userID, err)
 		return ""
 	}
-	u.RawQuery = v.Encode()
-	return u.String()
+	parsed, err := url.Parse(link)
+	if err != nil {
+		log.Errorf("invalid URL passed to AddToken: \"%v\", %v", link, err)
+		return ""
+	}
+	values := parsed.Query()
+	values.Set("token", token)
+	parsed.RawQuery = values.Encode()
+	return parsed.String()
 }
 
 //GetShortURL return short url for the url
@@ -135,15 +144,6 @@ func GetShortURL(url string) string {
 		return url
 	}
 	return short.URL
-}
-
-//GetChatURLWithToken returns url to chat with token
-func GetChatURLWithToken(leadID uint, userID uint) (url string, err error) {
-	token, err := GetNewAPIToken(userID)
-	if err != nil {
-		return
-	}
-	return GetChatURL(leadID, token), err
 }
 
 // GetNewAPIToken returns login API token
