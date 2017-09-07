@@ -4,6 +4,7 @@ import (
 	"core/api"
 	"core/models"
 	"fmt"
+	"proto/accountstore"
 	"proto/chat"
 	"proto/payment"
 	"proto/trendcoin"
@@ -15,11 +16,15 @@ import (
 )
 
 const (
-	failedAutorefullTopic = "notify_about_failed_autorefill"
+	failedAutorefullTopic      = "notify_about_failed_autorefill"
+	botAccountInvalidatedTopic = "bot_account_invalidated"
 )
 
 func init() {
-	models.RegisterNotifyTemplate(failedAutorefullTopic)
+	models.RegisterNotifyTemplates(
+		failedAutorefullTopic,
+		botAccountInvalidatedTopic,
+	)
 
 	nats.StanSubscribe(&nats.StanSubscription{
 		Subject:        "chat.message.new",
@@ -53,7 +58,22 @@ func init() {
 		DurableName:    "core",
 		AckTimeout:     time.Second * 10,
 		DecodedHandler: handleSyncEvent,
+	}, &nats.StanSubscription{
+		Subject:        "accountstore.notify",
+		Group:          "core",
+		DurableName:    "core",
+		DecodedHandler: handleAccountstoreNotify,
 	})
+}
+
+func handleAccountstoreNotify(acc *accountstore.Account) bool {
+	if acc.Valid || acc.OwnerId == 0 {
+		return true
+	}
+	log.Error(models.GetNotifier().NotifyUserByID(acc.OwnerId, botAccountInvalidatedTopic, map[string]interface{}{
+		"account": acc,
+	}))
+	return true
 }
 
 func handleSyncEvent(in *chat.Chat) bool {

@@ -25,7 +25,7 @@ func init() {
 		suspendNotifyTopic,
 	}
 	for _, t := range topics {
-		models.RegisterNotifyTemplate(t)
+		models.RegisterNotifyTemplates(t)
 	}
 	api.AddOnStartCallback(func(s *grpc.Server) {
 		server := &monetizationServer{}
