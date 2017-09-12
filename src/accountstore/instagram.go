@@ -78,6 +78,7 @@ func (r *InstagramAccessImpl) Login(login, password, proxy string, preferEmail b
 	}
 
 	account.InstagramID = api.UserID
+	account.InstagramUsername = api.Username
 	account.Cookie = cookieJar
 
 	return account, nil
