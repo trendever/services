@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"proto/accountstore"
 	"proto/telegram"
+	"strings"
 	"sync"
 	"time"
 	"utils/db"
@@ -21,8 +22,8 @@ var global struct {
 
 // Account contains instagram account cookie
 type Account struct {
-	InstagramUsername string `gorm:"primary_key"`
-	InstagramID       uint64 `gorm:"index"`
+	InstagramID       uint64 `gorm:"primary_key"`
+	InstagramUsername string `gorm:"index"`
 	CreatedAt         time.Time
 	Role              accountstore.Role
 	Cookie            string `gorm:"text"`
@@ -32,8 +33,13 @@ type Account struct {
 	CodeSentBy        string
 }
 
+func (acc *Account) BeforeSave() {
+	acc.InstagramUsername = strings.ToLower(acc.InstagramUsername)
+}
+
 // Save it
 func Save(acc *Account) error {
+	// @TODO update instagram username of owner in core?
 	err := db.New().Save(acc).Error
 	if err != nil {
 		return err
@@ -90,7 +96,7 @@ func Find(in *accountstore.SearchRequest) ([]Account, error) {
 	req := db.New()
 
 	if in.InstagramUsername > "" {
-		req = req.Where("instagram_username = ?", in.InstagramUsername)
+		req = req.Where("instagram_username = ?", strings.ToLower(in.InstagramUsername))
 	}
 
 	if in.InstagramId > 0 {
@@ -118,6 +124,7 @@ func FindAccount(template *Account) (*Account, error) {
 	if *template == (Account{}) {
 		return nil, errors.New("empty conditions")
 	}
+	template.InstagramUsername = strings.ToLower(template.InstagramUsername)
 	var out Account
 	err := db.New().Where(template).Find(&out).Error
 	return &out, err

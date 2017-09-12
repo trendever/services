@@ -52,8 +52,10 @@ func (s *svc) Migrate(drop bool) {
 	if drop {
 		db.New().DropTable(models...)
 	}
-	db.New().AutoMigrate(models...)
+	log.Error(db.New().AutoMigrate(models...).Error)
 	fixIDs()
+	idShouldBePrimary()
+	log.Error(db.New().Exec("UPDATE accounts SET instagram_username = LOWER(instagram_username)").Error)
 }
 
 func fixIDs() {
@@ -73,4 +75,13 @@ func fixIDs() {
 			}
 		}
 	}
+}
+
+func idShouldBePrimary() {
+	tx := db.NewTransaction()
+	log.Error(tx.Where(`instagram_id IN (SELECT instagram_id FROM accounts GROUP BY instagram_id HAVING COUNT(1) > 1) AND NOT valid`).Delete(Account{}).Error)
+	log.Error(tx.Exec("ALTER TABLE accounts DROP CONSTRAINT accounts_pkey").Error)
+	log.Error(tx.Exec("ALTER TABLE accounts ADD PRIMARY KEY (instagram_id)").Error)
+	log.Error(tx.Model(&Account{}).AddIndex("idx_accounts_instagram_username", "instagram_username").Error)
+	log.Error(tx.Commit().Error)
 }
