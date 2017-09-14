@@ -631,8 +631,7 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 			}
 			c.syncRecent(&chat)
 			return false, nil
-		}
-		if scope.Error != nil {
+		} else if scope.Error != nil {
 			return true, fmt.Errorf("failed to determinate last synced message: %v", err)
 		}
 
