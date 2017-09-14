@@ -622,16 +622,8 @@ func (c *conversationRepositoryImpl) EnableSync(chatID, primaryInstagram uint64,
 
 	case pb_chat.SyncStatus_ERROR:
 		var lastSynced Message
-		scope := c.db.Where("chat_id = ?", chat.ID).Where("instagram_id != ''").Order("id DESC").First(&lastSynced)
-		// @TODO hm... well... we do not have anything synced yet. try to fetch something by time?
-		if scope.RecordNotFound() {
-			err = chat.updateSyncStatus(pb_chat.SyncStatus_SYNCED)
-			if err != nil {
-				return true, fmt.Errorf("failed to update chat info: %v", err)
-			}
-			c.syncRecent(&chat)
-			return false, nil
-		} else if scope.Error != nil {
+		scope := c.db.Where("conversation_id = ?", chat.ID).Where("instagram_id != ''").Order("id DESC").First(&lastSynced)
+		if scope.Error != nil && !scope.RecordNotFound() {
 			return true, fmt.Errorf("failed to determinate last synced message: %v", err)
 		}
 
