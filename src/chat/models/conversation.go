@@ -676,7 +676,7 @@ func (c *conversationRepositoryImpl) SetSyncError(chatID uint64) (retry bool, er
 	if res.Error != nil {
 		return true, res.Error
 	}
-	return true, chat.updateSyncStatus(pb_chat.SyncStatus_SYNCED)
+	return true, chat.updateSyncStatus(pb_chat.SyncStatus_ERROR)
 }
 
 // Set related thread and start sync with it.
