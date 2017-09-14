@@ -40,7 +40,7 @@ func processRequests(meta *client.AccountMeta) error {
 
 func processRequest(meta *client.AccountMeta, req *models.DirectRequest) error {
 	reply := bot.Notify{ReplyKey: req.ReplyKey, SourceId: meta.Get().UserID}
-	if req.Data == "" {
+	if req.Data == "" && req.Kind != bot.MessageType_FetchThread {
 		log.Warn("skipping empty message %v", req)
 		err := db.New().Delete(req).Error
 		if err != nil {
