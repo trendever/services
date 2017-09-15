@@ -246,4 +246,5 @@ message UnansweredNotify {
     uint64 count = 2;
     string group = 3;
     bool forUser = 4;
+    repeated Message messages = 5;
 }

@@ -216,7 +216,7 @@ func (cs *chatServer) GetChatHistory(ctx context.Context, req *proto_chat.ChatHi
 		return
 	}
 	reply.Chat = chat.Encode()
-	messages, err := cs.chats.GetHistory(chat, req.FromMessageId, req.Limit, req.Direction)
+	messages, err := cs.chats.GetHistory(chat.ID, req.FromMessageId, req.Limit, req.Direction, false)
 	if err != nil {
 		return
 	}

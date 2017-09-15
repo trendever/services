@@ -240,12 +240,18 @@ func (n *worker) loop() {
 					continue
 				}
 				delete(n.chatMap, node.chatID)
+				messages, err := models.DefaultRepo().GetHistory(node.chatID, node.msgID, info.count, false, true)
+				if err != nil {
+					log.Errorf("failed to load messages for chat %v: %v", node.chatID, err)
+					continue
+				}
 				select {
 				case n.notifyChan <- proto.UnansweredNotify{
-					ChatId:  node.chatID,
-					Count:   info.count,
-					Group:   n.name,
-					ForUser: n.forUser,
+					ChatId:   node.chatID,
+					Count:    info.count,
+					Group:    n.name,
+					ForUser:  n.forUser,
+					Messages: models.EncodeMessages(messages),
 				}:
 				default:
 					log.Errorf("notify channel capacity exceed, notify dropped")

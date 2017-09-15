@@ -341,7 +341,7 @@ func (n *Notifier) NotifyCustomerAboutLead(customer *User, lead *Lead) error {
 	)
 }
 
-func (n *Notifier) NotifyAboutUnansweredMessages(user *User, lead *Lead, count uint64, group string) error {
+func (n *Notifier) NotifyAboutUnansweredMessages(user *User, lead *Lead, count uint64, group string, msgs []*chat.Message) error {
 	url, err := mkShortChatUrl(user.ID, lead.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get lead url: %v", err)
@@ -350,11 +350,12 @@ func (n *Notifier) NotifyAboutUnansweredMessages(user *User, lead *Lead, count u
 		user,
 		"notify_about_unanswered_message",
 		map[string]interface{}{
-			"User":  user,
-			"URL":   url,
-			"Lead":  lead,
-			"Count": count,
-			"Group": group,
+			"User":     user,
+			"URL":      url,
+			"Lead":     lead,
+			"Count":    count,
+			"Group":    group,
+			"Messages": msgs,
 		},
 	)
 }
