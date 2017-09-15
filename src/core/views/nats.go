@@ -310,11 +310,11 @@ func handleUnansweredMessages(notify *chat.UnansweredNotify) bool {
 			return true
 		}
 
-		log.Error(n.NotifyAboutUnansweredMessages(&lead.Customer, lead, notify.Count, notify.Group))
+		log.Error(n.NotifyAboutUnansweredMessages(&lead.Customer, lead, notify.Count, notify.Group, notify.Messages))
 	} else {
-		log.Error(n.NotifyAboutUnansweredMessages(&lead.Shop.Supplier, lead, notify.Count, notify.Group))
+		log.Error(n.NotifyAboutUnansweredMessages(&lead.Shop.Supplier, lead, notify.Count, notify.Group, notify.Messages))
 		for _, seller := range lead.Shop.Sellers {
-			log.Error(n.NotifyAboutUnansweredMessages(seller, lead, notify.Count, notify.Group))
+			log.Error(n.NotifyAboutUnansweredMessages(seller, lead, notify.Count, notify.Group, notify.Messages))
 		}
 	}
 	return true

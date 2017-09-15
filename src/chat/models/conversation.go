@@ -28,6 +28,15 @@ var global struct {
 	syncLock    sync.Mutex
 	threadsLock sync.Mutex
 	notifier    Notifier
+	defaultRepo ConversationRepository
+	initRepo    sync.Once
+}
+
+func DefaultRepo() ConversationRepository {
+	global.initRepo.Do(func() {
+		global.defaultRepo = NewConversationRepository(db.New())
+	})
+	return global.defaultRepo
 }
 
 type Notifier interface {
@@ -85,7 +94,7 @@ type ConversationRepository interface {
 	AddMessages(*Conversation, []*Message) error
 	GetMember(*Conversation, uint64) (*Member, error)
 	UpdateMember(member *Member) error
-	GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) ([]*Message, error)
+	GetHistory(chatID uint64, fromMessageID uint64, limit uint64, direction, inclusive bool) ([]*Message, error)
 	TotalMessages(chat *Conversation) uint64
 	MarkAsReaded(chatID, userID, msgID uint64) error
 	GetUnread(ids []uint64, userID uint64) (map[uint64]uint64, error)
@@ -331,20 +340,28 @@ func (c *conversationRepositoryImpl) GetMember(model *Conversation, userID uint6
 	return
 }
 
-func (c *conversationRepositoryImpl) GetHistory(chat *Conversation, fromMessageID uint64, limit uint64, direction bool) ([]*Message, error) {
+func (c *conversationRepositoryImpl) GetHistory(chatID uint64, fromMessageID uint64, limit uint64, direction, inclusive bool) ([]*Message, error) {
 
 	messages := []*Message{}
 	scope := c.db.
 		Preload("Parts", func(db *gorm.DB) *gorm.DB { return db.Order("id asc") }). // force sorting of parts by id
 		Preload("Member").
 		Model(&Message{}).
-		Where("conversation_id = ?", chat.ID)
+		Where("conversation_id = ?", chatID)
 
 	if fromMessageID > 0 {
 		if direction { // if true -- from new to old
-			scope = scope.Where("id < ?", fromMessageID)
+			if inclusive {
+				scope = scope.Where("id <= ?", fromMessageID)
+			} else {
+				scope = scope.Where("id < ?", fromMessageID)
+			}
 		} else {
-			scope = scope.Where("id > ?", fromMessageID)
+			if inclusive {
+				scope = scope.Where("id >= ?", fromMessageID)
+			} else {
+				scope = scope.Where("id > ?", fromMessageID)
+			}
 		}
 	}
 
