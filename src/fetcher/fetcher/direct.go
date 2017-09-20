@@ -183,6 +183,11 @@ func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *ins
 		}
 
 		items := thread.Thread.Items
+		// empty page?.. that happens sometimes
+		if len(items) == 0 {
+			log.Debug("got page without items for direct thread %v with cursor %v", threadID, cursor)
+			return
+		}
 		if models.CompareID(thread.Thread.OldestCursor, sinceID) > 0 && items[len(items)-1].Timestamp/1000000 >= cutTime {
 			msgs = append(msgs, items...)
 			cursor = thread.Thread.OldestCursor
