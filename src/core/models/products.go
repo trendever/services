@@ -243,6 +243,18 @@ func (p Product) SmallestImg() *ImageCandidate {
 	return ret
 }
 
+func (p Product) ImageURL() string {
+	for _, c := range p.InstagramImages {
+		if c.Name == "Max" {
+			return c.URL
+		}
+	}
+	if len(p.InstagramImages) != 0 {
+		return p.InstagramImages[0].URL
+	}
+	return ""
+}
+
 // ImageCandidate contains instagram image info
 // @CHECK any seance in this compose key?
 type ImageCandidate struct {
