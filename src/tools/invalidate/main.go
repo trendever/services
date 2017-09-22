@@ -41,14 +41,14 @@ func main() {
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	_, err = instagram.NewInstagram(os.Args[1], os.Args[2], "")
+	_, err = instagram.NewInstagram(os.Args[1], os.Args[2], "", false)
 	if err != nil {
 		log.Fatalf("failed to initialize account without proxies %v", err)
 	}
 
 INV:
 	for _, proxy := range proxies {
-		ig, err := instagram.NewInstagram(os.Args[1], os.Args[2], proxy)
+		ig, err := instagram.NewInstagram(os.Args[1], os.Args[2], proxy, false)
 		if err != nil {
 			if ig.CheckpointURL != "" {
 				log.Info("checkpoint required!")

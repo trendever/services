@@ -34,7 +34,6 @@ func init() {
 		panic(fmt.Errorf("Config can not be unmarshaled: %v", err))
 	}
 	log.Init(settings.Debug, tagName, settings.SentryDSN)
-	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
 	instagram.DisableJSONIndent = !settings.Instagram.IndentLogging
 }
 

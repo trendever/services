@@ -28,6 +28,7 @@ func Start() error {
 		accountstore.Role_AuxPublic, cli,
 		nil, pubWorker,
 		&settings.Instagram.Settings,
+		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
@@ -37,6 +38,7 @@ func Start() error {
 		accountstore.Role_Wantit, cli,
 		nil, primaryWorker,
 		&settings.Instagram.Settings,
+		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
@@ -46,6 +48,7 @@ func Start() error {
 		accountstore.Role_Savetrend, cli,
 		nil, primaryWorker,
 		&settings.Instagram.Settings,
+		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
@@ -55,6 +58,7 @@ func Start() error {
 		accountstore.Role_User, cli,
 		nil, primaryWorker,
 		&settings.Instagram.Settings,
+		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)

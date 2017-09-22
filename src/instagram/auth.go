@@ -181,7 +181,7 @@ func (ig *Instagram) checkpointRequest(addr string, referer string, cookies []*h
 		return "", nil, err
 	}
 
-	if DoResponseLogging {
+	if ig.ResponseLogging {
 		log.Debug("URL: %v", addr)
 		log.Debug("REQ headers: %v", req.Header)
 		log.Debug("REQ params: %v", payload)

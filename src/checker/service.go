@@ -4,7 +4,6 @@ import (
 	"accountstore/client"
 	"fmt"
 	"github.com/spf13/cobra"
-	"instagram"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -84,7 +83,6 @@ func main() {
 func RunService(cmd *cobra.Command, args []string) {
 	log.Info("Starting service...")
 	rand.Seed(time.Now().Unix())
-	instagram.DoResponseLogging = settings.ResponseLogging
 
 	ImageUploader = mandible.New(settings.MandibleURL)
 	nats.Init(&settings.Nats, true)
@@ -96,6 +94,7 @@ func RunService(cmd *cobra.Command, args []string) {
 		accountstore.Role_AuxPrivate, storeCli,
 		nil, nil,
 		&settings.Settings,
+		settings.ResponseLogging,
 	)
 	if err != nil {
 		log.Fatalf("failed to init acoounts pool: %v", err)
