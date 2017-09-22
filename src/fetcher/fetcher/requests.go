@@ -295,7 +295,11 @@ func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bo
 	}
 	result.ThreadId = req.ThreadID
 	var err error
+	ig := meta.Get()
+	tmp := ig.ResponseLogging
+	ig.ResponseLogging = true
 	result.Messages, err = getEncodedThread(meta, req.ThreadID, req.Data)
+	ig.ResponseLogging = tmp
 	switch {
 	case err == nil:
 	case err.Error() == "Thread does not exist":
