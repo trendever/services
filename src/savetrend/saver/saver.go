@@ -60,11 +60,11 @@ func (svc *ProjectService) Run() (err error) {
 
 	conn := rpc.Connect(settings.Instagram.StoreAddr)
 	cli := accountstore.NewAccountStoreServiceClient(conn)
-	instagram.DoResponseLogging = settings.Instagram.ResponseLogging
 	pool, err = client.InitPoll(
 		accountstore.Role_AuxPrivate, cli,
 		nil, nil,
 		&settings.Instagram.Settings,
+		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)

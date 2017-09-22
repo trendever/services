@@ -32,7 +32,8 @@ type Instagram struct {
 	CheckpointCookies []*http.Cookie
 	Proxy             string
 
-	transport *http.Transport
+	ResponseLogging bool `json:"-"`
+	transport       *http.Transport
 
 	// needed only for auth, but leave it there to make auth more stable
 	UUID     string
@@ -41,24 +42,25 @@ type Instagram struct {
 }
 
 // NewInstagram initializes client for futher use
-func NewInstagram(userName, password, proxy string) (*Instagram, error) {
+func NewInstagram(userName, password, proxy string, responseLogging bool) (*Instagram, error) {
 	transport, err := transportFromURL(proxy)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &Instagram{
-		Username:  userName,
-		password:  password,
-		LoggedIn:  false,
-		UUID:      generateUUID(true),
-		PhoneID:   generateUUID(true),
-		DeviceID:  generateDeviceID(userName),
-		UserID:    0,
-		RankToken: "",
-		Cookies:   nil,
-		Proxy:     proxy,
-		transport: transport,
+		Username:        userName,
+		password:        password,
+		LoggedIn:        false,
+		UUID:            generateUUID(true),
+		PhoneID:         generateUUID(true),
+		DeviceID:        generateDeviceID(userName),
+		UserID:          0,
+		RankToken:       "",
+		Cookies:         nil,
+		Proxy:           proxy,
+		transport:       transport,
+		ResponseLogging: responseLogging,
 	}
 
 	err = i.Login()
