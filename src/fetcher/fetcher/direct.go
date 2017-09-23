@@ -214,6 +214,7 @@ func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *ins
 
 func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*bot.Message, err error) {
 	_, msgs, err := loadThread(meta, threadID, since)
+	log.Debug("loaded messages: %+v", msgs)
 	ret = []*bot.Message{}
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
