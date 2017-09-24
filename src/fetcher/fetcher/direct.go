@@ -139,7 +139,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 				}
 			}
 		}
-		kind, data := mapFromInstagram(message)
+		kind, data := MapFromInstagram(message)
 		if kind != bot.MessageType_None {
 			notify.Messages = append(notify.Messages, &bot.Message{
 				MessageId: message.ItemID,
@@ -220,7 +220,7 @@ func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
 
-		kind, data := mapFromInstagram(message)
+		kind, data := MapFromInstagram(message)
 		if kind != bot.MessageType_None {
 			ret = append(ret, &bot.Message{
 				MessageId: message.ItemID,
@@ -233,7 +233,7 @@ func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*
 	return ret, nil
 }
 
-func mapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data string) {
+func MapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data string) {
 	switch msg.ItemType {
 	case "media_share":
 		return bot.MessageType_MediaShare, msg.MediaShare.ID
@@ -255,6 +255,20 @@ func mapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data str
 	case "action_log":
 		// @CHECK could there be something useful? afaik it contains topic changes and join|leave notifies
 		return bot.MessageType_None, ""
+	case "reel_share":
+		if msg.ReelShare.Media.ExpiringAt == 0 {
+			data = "*media expired*"
+		} else {
+			if msg.ReelShare.Media.MediaType == instagram.MediaType_Video {
+				data = msg.ReelShare.Media.VideoVersions[0].URL
+			} else {
+				data = msg.ReelShare.Media.ImageVersions2.Largest().URL
+			}
+		}
+		if msg.ReelShare.Text != "" {
+			data += "\n" + msg.ReelShare.Text
+		}
+		return bot.MessageType_Text, data
 	default:
 		log.Debug("unknown type of direct item: %v", msg.ItemType)
 		return bot.MessageType_None, ""

@@ -73,6 +73,13 @@ func (img ImageVersions2) Largest() *ImageCandidate {
 	return largest
 }
 
+type VideoVersion struct {
+	Type   uint   `json:"type"`
+	URL    string `json:"url"`
+	Width  uint   `json:"width"`
+	Height uint   `json:"height"`
+}
+
 type MediaItem struct {
 	Pk               int64  `json:"pk"`
 	ID               string `json:"id"`
