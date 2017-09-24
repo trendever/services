@@ -228,6 +228,8 @@ type DirectMedia struct {
 	OriginalWidth  uint           `json:"original_width"`
 	OriginalHeight uint           `json:"original_height"`
 	ImageVersions2 ImageVersions2 `json:"image_versions2"`
+	VideoVersions  []VideoVersion `json:"video_versions"`
+	ExpiringAt     uint64         `json:"expiring_at"`
 }
 
 type Link struct {
@@ -257,23 +259,28 @@ type ThreadItems []ThreadItem
 
 // ThreadItem contains one message from the chat
 type ThreadItem struct {
-	UserID        uint64       `json:"user_id"`
-	Text          string       `json:"text,omitempty"`
-	ItemType      string       `json:"item_type"`
-	Timestamp     int64        `json:"timestamp"`
-	ItemID        string       `json:"item_id"`
-	ClientContext string       `json:"client_context"`
-	Media         *DirectMedia `json:"media"`
-	MediaShare    *MediaShare  `json:"media_share,omitempty"`
-	Link          *Link        `json:"link"`
-	Like          string       `json:"like"`
-	Profile       *User        `json:"profile"`
-	Location      *Location    `json:"location"`
-	HashTag       *struct {
+	UserID        uint64      `json:"user_id"`
+	Text          string      `json:"text,omitempty"`
+	ItemType      string      `json:"item_type"`
+	Timestamp     int64       `json:"timestamp"`
+	ItemID        string      `json:"item_id"`
+	ClientContext string      `json:"client_context"`
+	Media         DirectMedia `json:"media"`
+	MediaShare    *MediaShare `json:"media_share,omitempty"`
+	Link          Link        `json:"link"`
+	Like          string      `json:"like"`
+	Profile       *User       `json:"profile"`
+	Location      *Location   `json:"location"`
+	HashTag       struct {
 		Name       string `json:"name"`
 		MediaCount uint64 `json:"media_count"`
 		// there is also some medias right in item, but there is no need to decode them
 	} `json:"hashtag"`
+	ReelShare *struct {
+		Type  string      `json:"type"`
+		Text  string      `json:"text"`
+		Media DirectMedia `json:"media"`
+	} `json:"reel_share"`
 }
 
 // Sorting stuff
