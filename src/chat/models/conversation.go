@@ -165,10 +165,10 @@ func (c *conversationRepositoryImpl) GetByDirectThread(id string) (*Conversation
 }
 
 func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*Member) error {
-
 	for _, member := range members {
-		err := c.db.Model(chat).Association("Members").Append(member).Error
-		if err != nil && err.Error() != `pq: duplicate key value violates unique constraint "once_per_conv"` {
+		member.ConversationID = chat.ID
+		err := c.db.Save(member).Error
+		if err != nil {
 			return err
 		}
 	}
@@ -419,12 +419,12 @@ func (c *conversationRepositoryImpl) MarkAsReaded(chatID, userID, msgID uint64) 
 		return errors.New("User is not a member")
 	}
 
-	err = c.members.UpdateLastMessageID(member.ID, msgID)
+	err = member.UpdateLastMessageID(msgID)
 	if err != nil {
 		return err
 	}
 	member.LastMessageID = msgID
-	global.notifier.ReadedEvent(chat, msgID, member.ID)
+	global.notifier.ReadedEvent(chat, msgID, member.UserID)
 	return nil
 }
 
@@ -483,7 +483,7 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 		Joins("LEFT JOIN message_parts ON (message_parts.message_id = messages.id)").
 		Where("(messages.id > members.last_message_id OR members.last_message_id IS NULL)").
 		Where("messages.conversation_id in (?)", ids).
-		Where("messages.member_id != members.id").
+		Where("messages.user_id != ?", userID).
 		Where("message_parts.mime_type != 'json/status'").
 		Group("messages.conversation_id").
 		Rows()

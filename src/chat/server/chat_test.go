@@ -217,7 +217,7 @@ func TestGetChatHistory(t *testing.T) {
 	messages := []*models.Message{
 		{
 			ConversationID: 1,
-			MemberID:       sql.NullInt64{Int64: 1},
+			UserID:         sql.NullInt64{Int64: 1},
 			Model:          db.Model{CreatedAt: ct},
 		},
 	}
