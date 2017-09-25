@@ -52,6 +52,6 @@ func DecodeMember(pbmembers ...*chat.Member) (members []*Member) {
 	return
 }
 
-func (m Member) UpdateLastMessageID(messageID uint64) error {
-	return db.New().Model(&m).Update("last_message_id", messageID).Error
+func (m *Member) UpdateLastMessageID(messageID uint64) error {
+	return db.New().Model(m).Update("last_message_id", messageID).Error
 }
