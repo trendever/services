@@ -281,6 +281,11 @@ func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 		return nil
 	}
 
+	if len(thread.Users) == 0 {
+		log.Debug("thread %v do not have any users. wtf?\n%+v", thread.ThreadID, thread)
+		return fmt.Errorf("thread %v do not have any users", thread.ThreadID)
+	}
+
 	act := &models.Activity{
 		Pk:                item.ItemID,
 		UserID:            thread.Users[0].Pk,
