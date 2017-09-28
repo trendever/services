@@ -282,8 +282,9 @@ func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 	}
 
 	if len(thread.Users) == 0 {
-		log.Debug("thread %v do not have any users. wtf?\n%+v", thread.ThreadID, thread)
-		return fmt.Errorf("thread %v do not have any users", thread.ThreadID)
+		// patient speaks to himself probably
+		log.Debug("thread %v do not have any users. wtf?", thread.ThreadID, thread)
+		return nil
 	}
 
 	act := &models.Activity{
