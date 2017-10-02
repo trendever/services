@@ -1,11 +1,11 @@
 package qor
 
 import (
+	"common/log"
 	"core/models"
 	"core/utils"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"utils/log"
 )
 
 const (

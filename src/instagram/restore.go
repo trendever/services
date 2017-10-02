@@ -1,8 +1,8 @@
 package instagram
 
 import (
+	"common/log"
 	"encoding/json"
-	"utils/log"
 )
 
 // Save encodes connection to saveable string

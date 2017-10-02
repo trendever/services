@@ -2,12 +2,12 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"common/log"
 	"fetcher/models"
 	"fmt"
 	"instagram"
 	"proto/bot"
 	"strings"
-	"utils/log"
 )
 
 type textField struct {

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/log"
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
 	"proto/accountstore"
 	"proto/core"
-	"utils/log"
 	"utils/rpc"
 )
 

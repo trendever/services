@@ -1,13 +1,13 @@
 package models
 
 import (
+	"common/db"
 	"database/sql"
 	"fmt"
 	"proto/chat"
 	"proto/core"
 	"strings"
 	"time"
-	"utils/db"
 	"utils/nats"
 
 	"github.com/jinzhu/gorm"

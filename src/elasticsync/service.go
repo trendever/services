@@ -1,13 +1,13 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"elasticsync/config"
 	"elasticsync/models"
 	"elasticsync/sync"
 	"github.com/spf13/cobra"
-	"utils/db"
 	"utils/elastic"
-	"utils/log"
 )
 
 func main() {

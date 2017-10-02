@@ -1,6 +1,8 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/conf"
 	"errors"
@@ -14,8 +16,6 @@ import (
 	"proto/telegram"
 	"push/typemap"
 	"reflect"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 

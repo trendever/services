@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/log"
 	_ "github.com/lib/pq"
 	"os"
 	"sms/cmd"
-	"utils/log"
 )
 
 func main() {

@@ -1,16 +1,17 @@
 package project
 
 import (
+	"api/auth"
 	"api/cache"
 	"api/conf"
-	"api/soso"
 	"api/views"
+	"common/log"
+	"common/metrics"
+	"common/soso"
 	"fmt"
 	"github.com/igm/sockjs-go/sockjs"
 	"net/http"
 	"utils/elastic"
-	"utils/log"
-	"utils/metrics"
 	"utils/nats"
 
 	// nats subscriptions
@@ -38,6 +39,7 @@ type Service struct{}
 func (s *Service) Run() error {
 	settings := conf.GetSettings()
 	log.Info("Starting api service...")
+	soso.AddMiddleware(TokenMiddleware)
 	metrics.Init(settings.Metrics.Addr, settings.Metrics.User, settings.Metrics.Password, settings.Metrics.DBName)
 	cache.Init()
 	SosoObj.HandleRoutes(views.SocketRoutes)
@@ -50,4 +52,16 @@ func (s *Service) Run() error {
 		fmt.Sprintf(":%s", settings.ChannelPort),
 		nil,
 	)
+}
+
+func TokenMiddleware(req *soso.Request, ctx *soso.Context, session soso.Session) error {
+	if token, ok := req.TransMap["token"].(string); ok {
+		tokenObj, err := auth.GetTokenData(token)
+		if err != nil {
+			return err
+		}
+		ctx.Token = &soso.Token{UID: tokenObj.UID, Exp: tokenObj.Exp}
+	}
+
+	return nil
 }

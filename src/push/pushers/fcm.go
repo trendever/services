@@ -1,6 +1,7 @@
 package pushers
 
 import (
+	"common/log"
 	"encoding/json"
 	"errors"
 	"github.com/betrok/go-fcm"
@@ -8,7 +9,6 @@ import (
 	"push/config"
 	"push/models"
 	"time"
-	"utils/log"
 )
 
 func init() {

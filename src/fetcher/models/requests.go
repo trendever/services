@@ -1,11 +1,11 @@
 package models
 
 import (
+	"common/log"
 	"proto/bot"
 	"strconv"
 	"strings"
 	"time"
-	"utils/log"
 )
 
 type RequestType uint64

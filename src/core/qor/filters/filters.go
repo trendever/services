@@ -1,13 +1,13 @@
 package filters
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor/utils"
 	"time"
-	"utils/db"
-	"utils/log"
 )
 
 func SetDateFilters(res *admin.Resource, field string) {

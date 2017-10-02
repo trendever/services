@@ -1,10 +1,10 @@
 package cli
 
 import (
+	"common/log"
 	"os"
 	"os/signal"
 	"syscall"
-	"utils/log"
 )
 
 //Terminate waits os.Signal and exit

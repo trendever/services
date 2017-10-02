@@ -1,9 +1,9 @@
 package models
 
 import (
+	"common/db"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
-	"utils/db"
 )
 
 //Member is representation of conversation member

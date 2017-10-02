@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"bytes"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	"utils/log"
 )
 
 // Possible network instagram errors

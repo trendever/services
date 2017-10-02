@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"common/db"
+	"common/log"
 	"database/sql"
 	"elasticsync/config"
 	"elasticsync/models"
@@ -12,9 +14,7 @@ import (
 	"strconv"
 	"syscall"
 	"time"
-	"utils/db"
 	ewrapper "utils/elastic"
-	"utils/log"
 )
 
 type SyncStrategy int

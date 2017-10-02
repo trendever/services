@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"golang.org/x/net/context"
 	proto "proto/trendcoin"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

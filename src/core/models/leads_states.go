@@ -1,6 +1,7 @@
 package models
 
 import (
+	"common/log"
 	"core/api"
 	"core/conf"
 	"errors"
@@ -8,7 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"proto/core"
-	"utils/log"
 )
 
 // Possible lead states

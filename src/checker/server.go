@@ -1,6 +1,8 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"golang.org/x/net/context"
 	"instagram"
@@ -11,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

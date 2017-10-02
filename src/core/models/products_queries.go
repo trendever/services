@@ -1,10 +1,10 @@
 package models
 
 import (
+	"common/db"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"time"
-	"utils/db"
 )
 
 //GetProductByID returns product with preloaded models

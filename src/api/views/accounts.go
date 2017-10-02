@@ -2,7 +2,8 @@ package views
 
 import (
 	"api/api"
-	"api/soso"
+	"common/log"
+	"common/soso"
 	"encoding/json"
 	"errors"
 	"golang.org/x/net/context"
@@ -10,7 +11,6 @@ import (
 	"proto/accountstore"
 	"proto/bot"
 	"strconv"
-	"utils/log"
 	"utils/rpc"
 )
 

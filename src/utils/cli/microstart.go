@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"common/log"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
-	"utils/log"
 )
 
 // Service defines microservice entrypoints

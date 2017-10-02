@@ -2,10 +2,10 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"common/log"
 	"fetcher/models"
 	"fmt"
 	"proto/bot"
-	"utils/log"
 )
 
 func parseOwnPosts(meta *client.AccountMeta) error {

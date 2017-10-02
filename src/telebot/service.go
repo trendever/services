@@ -1,11 +1,11 @@
 package main
 
 import (
+	"common/log"
 	"os"
 	"os/signal"
 	"proto/core"
 	"syscall"
-	"utils/log"
 	"utils/rpc"
 
 	"github.com/codegangsta/cli"

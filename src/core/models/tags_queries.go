@@ -1,7 +1,7 @@
 package models
 
 import (
-	"utils/db"
+	"common/db"
 )
 
 // return tags from items that have all passed tags. Passed tags themselves are excluded

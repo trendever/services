@@ -1,9 +1,9 @@
 package soso
 
 import (
+	"common/log"
 	"github.com/igm/sockjs-go/sockjs"
 	"sync"
-	"utils/log"
 	"utils/nats"
 )
 

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/log"
 	"fmt"
 	"proto/telegram"
 	"strconv"
 	"strings"
 	"time"
-	"utils/log"
 
 	"github.com/tucnak/telebot"
 )

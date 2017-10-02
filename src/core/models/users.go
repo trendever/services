@@ -1,11 +1,11 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/conf"
 	"fmt"
 	"time"
-	"utils/db"
-	"utils/log"
 
 	"github.com/jinzhu/gorm"
 )

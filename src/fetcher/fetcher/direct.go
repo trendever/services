@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"common/log"
 	"errors"
 	"fetcher/models"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"proto/accountstore"
 	"proto/bot"
 	"time"
-	"utils/log"
 	"utils/nats"
 )
 

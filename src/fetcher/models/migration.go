@@ -1,10 +1,10 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"fetcher/conf"
 	"proto/bot"
-	"utils/db"
-	"utils/log"
 )
 
 var modelsList = []interface{}{

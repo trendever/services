@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"common/db"
+	"common/log"
 	"github.com/spf13/cobra"
 	"mail/config"
 	"mail/models"
-	"utils/db"
-	"utils/log"
 )
 
 var migrateCmd = &cobra.Command{

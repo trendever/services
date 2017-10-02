@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"common/db"
+	"common/log"
 	"payments/config"
 	"payments/views"
-	"utils/db"
-	"utils/log"
 
 	"utils/nats"
 )

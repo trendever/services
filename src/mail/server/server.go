@@ -1,12 +1,12 @@
 package server
 
 import (
+	"common/log"
 	"golang.org/x/net/context"
 	"mail/config"
 	"mail/models"
 	"proto/mail"
 	"strings"
-	"utils/log"
 )
 
 type Server struct {

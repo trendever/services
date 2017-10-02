@@ -1,9 +1,9 @@
 package metrics
 
 import (
+	"common/log"
 	"github.com/influxdata/influxdb/client/v2"
 	"time"
-	"utils/log"
 )
 
 var c client.Client

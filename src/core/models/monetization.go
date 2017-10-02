@@ -1,14 +1,14 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/conf"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"
 	"proto/core"
 	"time"
-	"utils/db"
-	"utils/log"
 )
 
 // duration multiplier for plans periods

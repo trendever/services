@@ -2,7 +2,7 @@ package views
 
 import (
 	"api/api"
-	"api/soso"
+	"common/soso"
 	"errors"
 	"github.com/asaskevich/govalidator"
 	"net/http"

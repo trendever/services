@@ -6,9 +6,9 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 
+	"common/db"
 	"core/models"
 	"core/qor/filters"
-	"utils/db"
 )
 
 func init() {

@@ -1,6 +1,8 @@
 package project
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/conf"
 	"core/models"
@@ -15,8 +17,6 @@ import (
 	"syscall"
 	"time"
 	"utils/coins"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

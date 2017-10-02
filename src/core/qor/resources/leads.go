@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"common/db"
+	"common/log"
 	"core/conf"
 	"core/models"
 	"core/qor/filters"
@@ -8,8 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"utils/db"
-	"utils/log"
 )
 
 func init() {

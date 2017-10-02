@@ -1,6 +1,8 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"core/conf"
 	"core/models"
 	"core/project"
@@ -11,8 +13,6 @@ import (
 	"golang.org/x/net/context"
 	"os"
 	"proto/core"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

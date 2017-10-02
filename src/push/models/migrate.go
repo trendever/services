@@ -1,8 +1,8 @@
 package models
 
 import (
-	"utils/db"
-	"utils/log"
+	"common/db"
+	"common/log"
 )
 
 var dbModels = []interface{}{

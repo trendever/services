@@ -11,7 +11,7 @@ func NewStopper() *Stopper {
 	return &Stopper{ch: make(chan struct{})}
 }
 
-func (s *Stopper) Chan() chan struct{} {
+func (s *Stopper) Chan() <-chan struct{} {
 	return s.ch
 }
 

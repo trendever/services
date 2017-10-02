@@ -3,6 +3,7 @@ package server
 import (
 	"chat/fixtures"
 	"chat/models"
+	"common/db"
 	"database/sql"
 	"errors"
 	"github.com/golang/mock/gomock"
@@ -10,7 +11,6 @@ import (
 	"proto/chat"
 	"testing"
 	"time"
-	"utils/db"
 	"utils/test_tools"
 )
 

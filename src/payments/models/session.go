@@ -1,8 +1,8 @@
 package models
 
 import (
+	"common/db"
 	"proto/payment"
-	"utils/db"
 )
 
 // Session once-used pay sess

@@ -3,9 +3,9 @@ package cmd
 import (
 	"chat/config"
 	"chat/models"
+	"common/db"
 	"github.com/spf13/cobra"
 	"log"
-	"utils/db"
 )
 
 var dbModels = []interface{}{

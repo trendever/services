@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"common/db"
+	"common/log"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"mail/config"
@@ -9,8 +11,6 @@ import (
 	"mail/server"
 	"net"
 	"proto/mail"
-	"utils/db"
-	"utils/log"
 )
 
 var startCmd = &cobra.Command{

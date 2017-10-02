@@ -1,8 +1,8 @@
 package views
 
 import (
+	"common/log"
 	"payments/models"
-	"utils/log"
 
 	"sync"
 	"time"

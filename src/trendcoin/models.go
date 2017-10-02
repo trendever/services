@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	proto "proto/trendcoin"
 	"time"
-	"utils/db"
-	"utils/log"
 )
 
 var dbModels = []interface{}{

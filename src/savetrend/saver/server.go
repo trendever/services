@@ -1,9 +1,9 @@
 package saver
 
 import (
+	"common/log"
 	"golang.org/x/net/context"
 	"proto/bot"
-	"utils/log"
 )
 
 // Implementation of SaveTrendService

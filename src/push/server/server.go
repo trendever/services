@@ -1,6 +1,8 @@
 package server
 
 import (
+	"common/db"
+	"common/log"
 	"golang.org/x/net/context"
 	"proto/core"
 	"proto/push"
@@ -10,8 +12,6 @@ import (
 	"push/pushers"
 	"push/typemap"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

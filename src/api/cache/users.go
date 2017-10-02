@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"utils/log"
+	"common/log"
 )
 
 // FlushUser flushes user cache

@@ -3,8 +3,8 @@ package notifications
 import (
 	"api/cache"
 	schat "api/chat"
-	"api/soso"
-	"utils/log"
+	"common/log"
+	"common/soso"
 	"utils/nats"
 
 	"proto/chat"

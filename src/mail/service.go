@@ -1,11 +1,11 @@
 package main
 
 import (
+	"common/log"
 	"mail/cmd"
 	_ "mail/common"
 	_ "mail/config"
 	"os"
-	"utils/log"
 )
 
 func main() {

@@ -1,13 +1,13 @@
 package server
 
 import (
+	"common/log"
 	"fmt"
 	"golang.org/x/net/context"
 	"proto/sms"
 	"proto/telegram"
 	"sms/conf"
 	"sms/models"
-	"utils/log"
 	"utils/nats"
 )
 

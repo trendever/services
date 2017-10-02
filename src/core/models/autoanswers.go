@@ -8,13 +8,13 @@ import (
 	"github.com/kljensen/snowball/russian"
 	//"github.com/kljensen/snowball/french"
 	//"github.com/kljensen/snowball/spanish"
+	"common/db"
+	"common/log"
 	"github.com/qor/validations"
 	"proto/chat"
 	"strings"
 	"sync"
 	"unicode"
-	"utils/db"
-	"utils/log"
 )
 
 var AnswersSupportedLanguages []string

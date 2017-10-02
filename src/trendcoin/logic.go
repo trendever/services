@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq"
-	"utils/db"
-	"utils/log"
 )
 
 var (

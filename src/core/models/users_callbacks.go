@@ -1,6 +1,8 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -8,8 +10,6 @@ import (
 	"proto/checker"
 	"proto/trendcoin"
 	"strings"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/phone"
 	"utils/rpc"

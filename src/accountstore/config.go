@@ -1,7 +1,7 @@
 package main
 
 import (
-	"utils/db"
+	"common/db"
 	"utils/nats"
 )
 

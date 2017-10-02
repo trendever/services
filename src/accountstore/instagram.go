@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/log"
 	"fmt"
 	"instagram"
 	"time"
-	"utils/log"
 
 	"github.com/jinzhu/gorm"
 )

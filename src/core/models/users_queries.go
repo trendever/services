@@ -1,11 +1,11 @@
 package models
 
 import (
+	"common/db"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"strings"
-	"utils/db"
 )
 
 //GetUserByID returns user by ID

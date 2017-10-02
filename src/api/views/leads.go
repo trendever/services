@@ -4,12 +4,12 @@ import (
 	"api/api"
 	"api/chat"
 	"api/models"
-	"api/soso"
+	"common/log"
+	"common/soso"
 	"errors"
 	"net/http"
 	"proto/core"
 	"strings"
-	"utils/log"
 	"utils/rpc"
 )
 

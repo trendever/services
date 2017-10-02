@@ -1,12 +1,12 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"database/sql"
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
-	"utils/db"
-	"utils/log"
 	"utils/mandible"
 )
 

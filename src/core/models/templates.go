@@ -1,14 +1,14 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
 	"regexp"
 	"strings"
-	"utils/db"
-	"utils/log"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/validations"

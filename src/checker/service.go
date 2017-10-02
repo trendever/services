@@ -2,6 +2,9 @@ package main
 
 import (
 	"accountstore/client"
+	"common/config"
+	"common/db"
+	"common/log"
 	"fmt"
 	"github.com/spf13/cobra"
 	"math/rand"
@@ -11,9 +14,6 @@ import (
 	"proto/checker"
 	"syscall"
 	"time"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 	"utils/mandible"
 	"utils/nats"
 	"utils/rpc"

@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"common/db"
 	"github.com/spf13/cobra"
 	"log"
 	"sms/conf"
 	"sms/models"
-	"utils/db"
 )
 
 var (

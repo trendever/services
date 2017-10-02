@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/log"
 	"github.com/tucnak/telebot"
 	"proto/core"
 	"strings"
-	"utils/log"
 	"utils/rpc"
 )
 

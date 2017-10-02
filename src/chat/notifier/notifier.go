@@ -2,9 +2,9 @@ package notifier
 
 import (
 	"chat/models"
+	"common/log"
 	proto "proto/chat"
 	"time"
-	"utils/log"
 	"utils/nats"
 )
 

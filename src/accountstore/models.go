@@ -1,6 +1,8 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"errors"
 	"fmt"
 	"proto/accountstore"
@@ -8,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

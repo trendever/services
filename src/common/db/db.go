@@ -1,11 +1,11 @@
 package db
 
 import (
+	"common/log"
 	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"time"
-	"utils/log"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )

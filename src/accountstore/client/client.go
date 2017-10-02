@@ -1,16 +1,16 @@
 package client
 
 import (
+	"common/log"
+	"common/stopper"
 	"errors"
 	"instagram"
 	"math/rand"
 	"proto/accountstore"
 	"sync"
 	"time"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
-	"utils/stopper"
 )
 
 func init() {
@@ -37,7 +37,7 @@ type AccountsPool struct {
 		min int
 		max int
 	}
-	individualWorker func(acc *AccountMeta, stopChan chan struct{})
+	individualWorker func(acc *AccountMeta, stopChan <-chan struct{})
 	// global stopper
 	stopper         *stopper.Stopper
 	responseLogging bool
@@ -82,8 +82,8 @@ type Settings struct {
 func InitPoll(
 	role accountstore.Role,
 	storeCli accountstore.AccountStoreServiceClient,
-	poolWorker func(pool *AccountsPool, stopChan chan struct{}),
-	individualWorker func(acc *AccountMeta, stopChan chan struct{}),
+	poolWorker func(pool *AccountsPool, stopChan <-chan struct{}),
+	individualWorker func(acc *AccountMeta, stopChan <-chan struct{}),
 	settings *Settings,
 	responseLogging bool,
 ) (*AccountsPool, error) {

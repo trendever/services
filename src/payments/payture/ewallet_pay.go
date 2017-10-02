@@ -1,11 +1,11 @@
 package payture
 
 import (
+	"common/log"
 	"errors"
 	"fmt"
 	"payments/models"
 	"proto/payment"
-	"utils/log"
 
 	"github.com/pborman/uuid"
 )

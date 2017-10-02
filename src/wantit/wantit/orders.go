@@ -1,6 +1,7 @@
 package wantit
 
 import (
+	"common/log"
 	"errors"
 	"fmt"
 	"instagram"
@@ -8,7 +9,6 @@ import (
 	"proto/core"
 	"strings"
 	"time"
-	"utils/log"
 	"utils/rpc"
 	"wantit/api"
 )

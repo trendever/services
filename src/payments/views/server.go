@@ -1,10 +1,10 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"utils/coins"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 

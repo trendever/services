@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"utils/db"
-	"utils/log"
 )
 
 var tests = []struct {

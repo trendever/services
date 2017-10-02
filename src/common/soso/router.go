@@ -1,14 +1,14 @@
 package soso
 
 import (
+	"common/log"
+	"common/metrics"
 	"encoding/json"
 	"errors"
 	"github.com/fatih/color"
 	"net/http"
 	"reflect"
 	"time"
-	"utils/log"
-	"utils/metrics"
 )
 
 type (
@@ -129,8 +129,8 @@ func (r *Router) execute(session Session, msg string) {
 		log.Debug("%s %s | %s -> %s | %s",
 			logPrefix,
 			time.Now().Format("2006/01/02 - 15:04:05"),
-			color.GreenString(req.Method),
 			color.RedString(req.Domain),
+			color.GreenString(req.Method),
 			"Route not found",
 		)
 		ctx.ErrorResponse(http.StatusNotFound, LevelError, errors.New("No model handler found"))

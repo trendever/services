@@ -3,7 +3,7 @@ package views
 import (
 	"api/api"
 	"api/conf"
-	"api/soso"
+	"common/soso"
 	"errors"
 	"net/http"
 	"proto/checker"

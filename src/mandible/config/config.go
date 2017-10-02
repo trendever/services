@@ -3,7 +3,7 @@ package config
 import (
 	"log"
 
-	"utils/config"
+	"common/config"
 )
 
 type Configuration struct {

@@ -1,15 +1,12 @@
 package soso
 
 import (
-	"api/auth"
-	. "api/debug"
+	"common/log"
 	"encoding/json"
 	"fmt"
 	"github.com/igm/sockjs-go/sockjs"
 	"net/http"
-	auth_protocol "proto/auth"
 	"strings"
-	"utils/log"
 )
 
 var (
@@ -22,10 +19,18 @@ var (
 	}
 
 	middlewares = []func(*Request, *Context, Session) error{
-		TokenMiddleware,
 		IPMiddleware,
 	}
 )
+
+func AddMiddleware(fn func(*Request, *Context, Session) error) {
+	middlewares = append(middlewares, fn)
+}
+
+type Token struct {
+	UID uint64
+	Exp int64
+}
 
 // Context of the request
 type Context struct {
@@ -41,7 +46,7 @@ type Context struct {
 	// Client socket session, public for testing convinience
 	Session Session
 
-	Token    *auth_protocol.Token
+	Token    *Token
 	RemoteIP string
 }
 
@@ -63,22 +68,11 @@ func NewContext(req *Request, session Session) *Context {
 			return nil
 		}
 	}
-
-	return ctx
-}
-
-func TokenMiddleware(req *Request, ctx *Context, session Session) error {
-	if token, ok := req.TransMap["token"].(string); ok {
-		tokenObj, err := auth.GetTokenData(token)
-		if err != nil {
-			return err
-		}
-
-		ctx.Token = tokenObj
-		Sessions.Push(session, tokenObj.UID)
+	if ctx.Token != nil {
+		Sessions.Push(session, ctx.Token.UID)
 	}
 
-	return nil
+	return ctx
 }
 
 func IPMiddleware(req *Request, ctx *Context, session Session) error {
@@ -117,7 +111,7 @@ func NewRemoteContext(dataType, action string, response map[string]interface{}) 
 func (c *Context) sendJSON(data interface{}) {
 	json_data, err := json.Marshal(data)
 	if err != nil {
-		DebugPrintError(err)
+		log.Errorf("failed to marshal json: %v", err)
 	}
 	if err := c.Session.Send(string(json_data)); err == sockjs.ErrSessionNotOpen {
 		Sessions.Pull(c.Session)
