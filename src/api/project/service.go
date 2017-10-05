@@ -18,6 +18,8 @@ import (
 	_ "api/notifications"
 )
 
+const NatsNewSessionSubject = "api.new_session"
+
 // SosoObj is soso controller
 var SosoObj = soso.Default()
 
@@ -40,6 +42,9 @@ func (s *Service) Run() error {
 	settings := conf.GetSettings()
 	log.Info("Starting api service...")
 	soso.AddMiddleware(TokenMiddleware)
+	soso.SetSessionNotifyFunc(func(uid uint64) {
+		nats.StanPublish(NatsNewSessionSubject, uid)
+	})
 	metrics.Init(settings.Metrics.Addr, settings.Metrics.User, settings.Metrics.Password, settings.Metrics.DBName)
 	cache.Init()
 	SosoObj.HandleRoutes(views.SocketRoutes)
