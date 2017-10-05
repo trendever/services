@@ -3,7 +3,6 @@ package server
 import (
 	"chat/config"
 	"chat/models"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fetcher/consts"
@@ -163,8 +162,8 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 
 	err = cs.chats.AddMessages(chat, []*models.Message{
 		{
-			MemberID:    sql.NullInt64{Int64: int64(author.ID), Valid: true},
-			Member:      author,
+			UserID:      author.UserID,
+			Member:      *author,
 			InstagramID: msg.MessageId,
 			SyncStatus:  proto.SyncStatus_SYNCED,
 			Parts:       parts,
