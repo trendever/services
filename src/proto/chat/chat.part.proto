@@ -96,7 +96,6 @@ message Chat {
 }
 
 message Member {
-    uint64 id = 1;
     uint64 user_id = 2;
     MemberRole role = 3;
     //display name for the member

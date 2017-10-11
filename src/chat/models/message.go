@@ -3,7 +3,6 @@ package models
 import (
 	"common/db"
 	"common/log"
-	"database/sql"
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"proto/chat"
@@ -15,8 +14,8 @@ type Message struct {
 	db.Model
 	ConversationID uint
 	InstagramID    string
-	MemberID       sql.NullInt64
-	Member         *Member
+	UserID         uint64
+	Member         Member `gorm:"ForeignKey:ConversationID,UserID;AssociationForeignKey:ConversationID,UserID"`
 	SyncStatus     chat.SyncStatus
 	Parts          []*MessagePart
 }
@@ -60,12 +59,12 @@ func (m *Message) Encode() *chat.Message {
 	message := &chat.Message{
 		Id:             uint64(m.ID),
 		ConversationId: uint64(m.ConversationID),
-		UserId:         uint64(m.MemberID.Int64),
+		UserId:         m.UserID,
 		Parts:          m.EncodeParts(),
 		CreatedAt:      m.CreatedAt.Unix(),
 		SyncStatus:     m.SyncStatus,
 	}
-	if m.Member != nil {
+	if m.Member.UserID != 0 {
 		message.User = m.Member.Encode()
 	}
 	return message
@@ -94,9 +93,9 @@ func (m *Message) EncodeParts() []*chat.MessagePart {
 //DecodeMessage creates message from protobuf model
 func DecodeMessage(pbMessage *chat.Message, member *Member) *Message {
 	message := &Message{
-		MemberID: sql.NullInt64{Int64: int64(member.ID), Valid: member.ID != 0},
-		Member:   member,
-		Parts:    DecodeParts(pbMessage.Parts),
+		UserID: member.UserID,
+		Member: *member,
+		Parts:  DecodeParts(pbMessage.Parts),
 	}
 	return message
 }
