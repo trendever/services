@@ -3,9 +3,9 @@
 cat > "$1/onbuild.sh" << EOF
   update-ca-certificates
   cat > /etc/apk/repositories << APK
-http://dl-cdn.alpinelinux.org/alpine/edge/main
-http://dl-cdn.alpinelinux.org/alpine/edge/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing
 APK
   apk update
   apk upgrade
