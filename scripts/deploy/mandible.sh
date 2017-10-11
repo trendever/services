@@ -5,7 +5,7 @@ cat > "$1/onbuild.sh" << EOF
   cat > /etc/apk/repositories << APK
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases
 APK
   apk update
   apk upgrade
