@@ -1,7 +1,7 @@
 package views
 
 import (
-	"api/soso"
+	"common/soso"
 )
 
 var SocketRoutes = []soso.Route{}

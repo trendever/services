@@ -1,6 +1,8 @@
 package main
 
 import (
+	"common/db"
+	"common/log"
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -14,8 +16,6 @@ import (
 	"push/server"
 	"syscall"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

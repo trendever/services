@@ -5,8 +5,8 @@ import (
 	"os"
 	//_ "chat/common"
 	_ "chat/config"
+	"common/log"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"utils/log"
 )
 
 func main() {

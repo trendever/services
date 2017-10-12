@@ -1,10 +1,10 @@
 package elastic
 
 import (
+	"common/log"
 	"errors"
 	"gopkg.in/olivere/elastic.v3"
 	"time"
-	"utils/log"
 )
 
 var cli *elastic.Client

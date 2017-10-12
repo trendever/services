@@ -1,6 +1,7 @@
 package pushers
 
 import (
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"proto/push"
 	"push/config"
 	"push/models"
-	"utils/log"
 )
 
 func init() {

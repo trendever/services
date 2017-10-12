@@ -2,10 +2,10 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"common/log"
 	"fetcher/conf"
 	"fmt"
 	"proto/accountstore"
-	"utils/log"
 	"utils/rpc"
 )
 
@@ -67,7 +67,7 @@ func Start() error {
 	return nil
 }
 
-func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
+func primaryWorker(meta *client.AccountMeta, stopChan <-chan struct{}) {
 	var step = 0
 	for {
 		select {
@@ -101,7 +101,7 @@ func primaryWorker(meta *client.AccountMeta, stopChan chan struct{}) {
 	}
 }
 
-func pubWorker(meta *client.AccountMeta, stopChan chan struct{}) {
+func pubWorker(meta *client.AccountMeta, stopChan <-chan struct{}) {
 	for {
 		select {
 		case <-stopChan:

@@ -5,8 +5,8 @@ import (
 
 	"proto/payment"
 
+	"common/db"
 	"github.com/durango/go-credit-card"
-	"utils/db"
 )
 
 // Payment defines payment order info

@@ -3,7 +3,8 @@ package views
 import (
 	"api/api"
 	"api/cache"
-	"api/soso"
+	"common/log"
+	"common/soso"
 	"encoding/json"
 	"errors"
 	"golang.org/x/net/context"
@@ -12,7 +13,6 @@ import (
 	"proto/core"
 	"time"
 	ewrapper "utils/elastic"
-	"utils/log"
 	"utils/product_code"
 	"utils/rpc"
 )

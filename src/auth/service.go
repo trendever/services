@@ -3,8 +3,8 @@ package main
 import (
 	"auth/cmd"
 	_ "auth/config"
+	"common/log"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"utils/log"
 )
 
 func main() {

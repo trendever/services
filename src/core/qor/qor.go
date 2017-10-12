@@ -4,9 +4,9 @@ import (
 	"core/conf"
 	"core/models"
 	//"core/qor/filters"
+	"common/db"
 	"core/qor/resources"
 	"net/http"
-	"utils/db"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qor/admin"

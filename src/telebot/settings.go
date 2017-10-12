@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/config"
+	"common/log"
 	"fmt"
 	"github.com/spf13/viper"
-	"utils/config"
-	"utils/log"
 	"utils/nats"
 )
 

@@ -1,14 +1,14 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"proto/chat"
 	"proto/core"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

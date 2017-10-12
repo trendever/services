@@ -1,8 +1,8 @@
 package main
 
 import (
+	"common/log"
 	"os"
-	"utils/log"
 
 	"wantit/wantit"
 

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"utils/db"
+	"common/db"
 )
 
 // ThreadInfo tells that this thread was processed

@@ -1,6 +1,8 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/conf"
 	"core/models"
@@ -10,8 +12,6 @@ import (
 	"proto/payment"
 	"proto/trendcoin"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 )

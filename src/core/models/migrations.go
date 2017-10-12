@@ -1,9 +1,9 @@
 package models
 
 import (
+	"common/db"
 	"fmt"
 	"time"
-	"utils/db"
 )
 
 //Migrate runs migrations

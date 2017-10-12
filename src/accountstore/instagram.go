@@ -1,10 +1,10 @@
 package main
 
 import (
+	"common/log"
 	"fmt"
 	"instagram"
 	"time"
-	"utils/log"
 
 	"github.com/jinzhu/gorm"
 )
@@ -54,7 +54,7 @@ func (r *InstagramAccessImpl) Login(login, password, proxy string, preferEmail b
 			return nil, err
 		}
 		_, err = api.GetRecentActivity()
-		if err != nil {
+		if err != nil && err != instagram.ErrorCheckpointRequired {
 			return nil, err
 		}
 	} else {

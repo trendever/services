@@ -1,6 +1,7 @@
 package views
 
 import (
+	"common/db"
 	"core/api"
 	"core/models"
 	"fmt"
@@ -8,7 +9,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
-	"utils/db"
 )
 
 type shopServer struct {

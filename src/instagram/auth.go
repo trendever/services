@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"bytes"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"utils/log"
 )
 
 // Possible auth instagram errors

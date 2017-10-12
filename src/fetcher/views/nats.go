@@ -1,14 +1,14 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"errors"
 	"fetcher/models"
 	"golang.org/x/net/context"
 	"proto/bot"
 	"sync"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

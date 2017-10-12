@@ -1,11 +1,11 @@
 package views
 
 import (
+	"common/log"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
-	"utils/log"
 
 	"payments/config"
 	"payments/models"

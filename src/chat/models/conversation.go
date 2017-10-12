@@ -1,6 +1,8 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"utils/db"
-	"utils/log"
 	"utils/mandible"
 	"utils/nats"
 )

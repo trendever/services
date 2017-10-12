@@ -1,6 +1,7 @@
 package models
 
 import (
+	"common/db"
 	"core/conf"
 	"database/sql"
 	"errors"
@@ -10,7 +11,6 @@ import (
 	"proto/core"
 	"savetrend/tumbmap"
 	"time"
-	"utils/db"
 	"utils/mandible"
 	"utils/nats"
 	"utils/product_code"

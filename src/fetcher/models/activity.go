@@ -1,11 +1,11 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"proto/bot"
-	"utils/db"
-	"utils/log"
 )
 
 // Activity is main fetcher element

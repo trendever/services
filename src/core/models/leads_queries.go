@@ -1,6 +1,8 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"database/sql"
 	"errors"
@@ -11,8 +13,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/rpc"
 )
 

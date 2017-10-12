@@ -1,13 +1,13 @@
 package resources
 
 import (
+	"common/log"
 	"core/models"
 	"core/qor/filters"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"reflect"
-	"utils/log"
 )
 
 func init() {

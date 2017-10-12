@@ -1,10 +1,10 @@
 package rpc
 
 import (
+	"common/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"
-	"utils/log"
 )
 
 //Connect makes new connection to a grpc server

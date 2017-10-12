@@ -4,12 +4,12 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	"common/db"
+	"common/log"
 	"fetcher/fetcher"
 	"fetcher/models"
 	"proto/bot"
 	"strings"
-	"utils/db"
-	"utils/log"
 )
 
 // Init binds server

@@ -1,12 +1,12 @@
 package views
 
 import (
+	"common/db"
 	"core/api"
 	"core/models"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
-	"utils/db"
 )
 
 type shopCardServer struct {

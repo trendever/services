@@ -1,7 +1,7 @@
 package views
 
 import (
-	"api/soso"
+	"common/soso"
 	"errors"
 	"net/http"
 	"proto/payment"

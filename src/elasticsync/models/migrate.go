@@ -1,12 +1,12 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"fmt"
 	"gopkg.in/olivere/elastic.v3"
 	"strconv"
-	"utils/db"
 	ewrapper "utils/elastic"
-	"utils/log"
 )
 
 var indices = []struct {

@@ -1,10 +1,10 @@
 package config
 
 import (
+	"common/config"
+	"common/db"
+	"common/log"
 	"github.com/spf13/viper"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 )
 
 const (

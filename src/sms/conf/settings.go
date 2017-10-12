@@ -1,11 +1,11 @@
 package conf
 
 import (
+	"common/config"
+	"common/db"
+	"common/log"
 	"fmt"
 	"github.com/spf13/viper"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

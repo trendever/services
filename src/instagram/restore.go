@@ -1,8 +1,9 @@
 package instagram
 
 import (
+	"common/log"
+	"common/proxy"
 	"encoding/json"
-	"utils/log"
 )
 
 // Save encodes connection to saveable string
@@ -30,7 +31,7 @@ func Restore(cookieJar, password string, tryPing, responseLogging bool) (*Instag
 	}
 
 	res.password = password
-	res.transport, err = transportFromURL(res.Proxy)
+	res.transport, err = proxy.TransportFromURL(res.Proxy)
 	if err != nil {
 		return nil, err
 	}

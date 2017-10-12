@@ -1,9 +1,9 @@
 package cache
 
 import (
+	"common/log"
 	"fmt"
 	"time"
-	"utils/log"
 )
 
 const keyPrefix = "tags#"

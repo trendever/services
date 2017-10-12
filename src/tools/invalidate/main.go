@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
+	"common/log"
 	"instagram"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
-	"utils/log"
 )
 
 type Proxy struct {

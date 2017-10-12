@@ -1,9 +1,9 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"proto/chat"
-	"utils/db"
-	"utils/log"
 )
 
 //Migrate executes additional migrations

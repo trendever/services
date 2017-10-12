@@ -1,9 +1,9 @@
 package cache
 
 import (
+	"common/log"
 	"proto/core"
 	"time"
-	"utils/log"
 )
 
 // SaveGetProduct puts to cache product

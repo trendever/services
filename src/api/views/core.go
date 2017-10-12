@@ -2,7 +2,7 @@ package views
 
 import (
 	"api/core"
-	"api/soso"
+	"common/soso"
 	"errors"
 	"fmt"
 	"net/http"

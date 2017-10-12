@@ -3,6 +3,7 @@ package server
 import (
 	"chat/config"
 	"chat/models"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fetcher/consts"
@@ -13,7 +14,6 @@ import (
 	"proto/core"
 	"strconv"
 	"strings"
-	"utils/log"
 	"utils/mandible"
 	code "utils/product_code"
 	"utils/rpc"

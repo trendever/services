@@ -16,11 +16,11 @@ import (
 	"savetrend/conf"
 
 	"accountstore/client"
+	"common/log"
 	"instagram"
 	"proto/accountstore"
 	"proto/bot"
 	"proto/core"
-	"utils/log"
 	"utils/mandible"
 	"utils/nats"
 	"utils/rpc"

@@ -12,8 +12,8 @@ import (
 	"fetcher/models"
 	"fetcher/views"
 
-	"utils/db"
-	"utils/log"
+	"common/db"
+	"common/log"
 	"utils/nats"
 	"utils/rpc"
 

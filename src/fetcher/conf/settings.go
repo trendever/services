@@ -1,11 +1,11 @@
 package conf
 
 import (
+	"common/config"
+	"common/db"
+	"common/log"
 	"fmt"
 	"instagram"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 
 	"accountstore/client"
 	"github.com/spf13/viper"

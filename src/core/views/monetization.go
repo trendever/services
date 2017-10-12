@@ -1,14 +1,14 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/models"
 	"errors"
 	"proto/core"
 	"time"
 	"utils/coins"
-	"utils/db"
-	"utils/log"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

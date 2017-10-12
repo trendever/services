@@ -2,7 +2,7 @@ package chat
 
 import (
 	"api/api"
-	"api/soso"
+	"common/soso"
 	"proto/chat"
 	"utils/rpc"
 )

@@ -11,16 +11,15 @@ import (
 	"syscall"
 	"time"
 
-	"wantit/api"
-	"wantit/conf"
-
 	"accountstore/client"
+	"common/log"
 	"proto/accountstore"
 	"proto/bot"
-	"utils/log"
 	"utils/mandible"
 	"utils/nats"
 	"utils/rpc"
+	"wantit/api"
+	"wantit/conf"
 )
 
 type textField struct {

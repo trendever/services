@@ -8,7 +8,7 @@ import (
 
 	"api/api"
 	"api/conf"
-	"api/soso"
+	"common/soso"
 	"proto/core"
 	"proto/payment"
 	"utils/rpc"

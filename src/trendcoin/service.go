@@ -1,6 +1,9 @@
 package main
 
 import (
+	"common/config"
+	"common/db"
+	"common/log"
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -8,9 +11,6 @@ import (
 	"os/signal"
 	"proto/trendcoin"
 	"syscall"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 )

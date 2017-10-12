@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	"accountstore/client"
+	"common/db"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fetcher/consts"
@@ -11,8 +13,6 @@ import (
 	"net/http"
 	"proto/bot"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

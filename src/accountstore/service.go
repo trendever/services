@@ -1,12 +1,12 @@
 package main
 
 import (
+	"common/config"
+	"common/db"
+	"common/log"
 	"instagram"
 	"proto/core"
 	"utils/cli"
-	"utils/config"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

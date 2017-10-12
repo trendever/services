@@ -1,6 +1,8 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/conf"
 	"core/models"
@@ -8,8 +10,6 @@ import (
 	"fmt"
 	"proto/core"
 	"strings"
-	"utils/db"
-	"utils/log"
 
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"

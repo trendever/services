@@ -1,6 +1,8 @@
 package nats
 
 import (
+	"common/db"
+	"common/log"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +12,6 @@ import (
 	"reflect"
 	"sync"
 	"time"
-	"utils/db"
-	"utils/log"
 )
 
 type Config struct {

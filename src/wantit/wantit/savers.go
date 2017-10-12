@@ -1,9 +1,9 @@
 package wantit
 
 import (
+	"common/log"
 	"proto/bot"
 	"proto/core"
-	"utils/log"
 	"utils/rpc"
 	"wantit/api"
 )

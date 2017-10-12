@@ -2,13 +2,13 @@ package views
 
 import (
 	"api/auth"
-	"api/soso"
+	"common/log"
+	"common/soso"
 	"errors"
 	"net/http"
 	auth_protocol "proto/auth"
 	"regexp"
 	"strings"
-	"utils/log"
 	"utils/rpc"
 )
 

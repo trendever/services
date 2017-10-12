@@ -4,6 +4,8 @@ import (
 	"auth/config"
 	"auth/models"
 	"auth/server"
+	"common/db"
+	"common/log"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -12,8 +14,6 @@ import (
 	protocol_core "proto/core"
 	protocol_sms "proto/sms"
 	"syscall"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 )

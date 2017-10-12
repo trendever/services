@@ -1,6 +1,8 @@
 package models
 
 import (
+	"common/db"
+	"common/log"
 	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -9,8 +11,6 @@ import (
 	"proto/chat"
 	"proto/core"
 	"time"
-	"utils/db"
-	"utils/log"
 	"utils/nats"
 )
 

@@ -3,9 +3,9 @@ package cmd
 import (
 	"auth/config"
 	"auth/models"
+	"common/db"
+	"common/log"
 	"github.com/spf13/cobra"
-	"utils/db"
-	"utils/log"
 )
 
 var dbModels = []interface{}{

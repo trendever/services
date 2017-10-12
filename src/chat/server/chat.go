@@ -3,6 +3,7 @@ package server
 import (
 	"chat/config"
 	"chat/models"
+	"common/log"
 	"errors"
 	"golang.org/x/net/context"
 	proto_chat "proto/chat"
@@ -10,7 +11,6 @@ import (
 	"proto/core"
 	"strings"
 	"time"
-	"utils/log"
 	"utils/nats"
 	"utils/rpc"
 )

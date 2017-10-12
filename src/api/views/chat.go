@@ -2,7 +2,7 @@ package views
 
 import (
 	"api/chat"
-	"api/soso"
+	"common/soso"
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"

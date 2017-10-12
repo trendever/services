@@ -1,6 +1,8 @@
 package views
 
 import (
+	"common/db"
+	"common/log"
 	"core/api"
 	"core/models"
 	"errors"
@@ -9,8 +11,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"proto/core"
-	"utils/db"
-	"utils/log"
 )
 
 func init() {
