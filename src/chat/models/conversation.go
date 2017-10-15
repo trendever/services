@@ -168,7 +168,8 @@ func (c *conversationRepositoryImpl) AddMembers(chat *Conversation, members ...*
 	for _, member := range members {
 		member.ConversationID = chat.ID
 		err := c.db.Save(member).Error
-		if err != nil {
+		// it seems like gorm checks for existence and creates new value in different transactions...
+		if err != nil && err.Error() != `pq: duplicate key value violates unique constraint "members_pkey"` {
 			return err
 		}
 	}
