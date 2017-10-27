@@ -199,6 +199,15 @@ func init() {
 					}
 				}
 
+				if shop.Sellers == nil {
+					var err error
+					shop.Sellers, err = GetSellersByShopID(shop.ID)
+					if err != nil {
+						log.Errorf("failed to load sellers: %v", err)
+						return
+					}
+				}
+
 				for _, seller := range shop.Sellers {
 					if err := n.NotifySellerAboutLead(seller, lead); err != nil {
 						log.Errorf("failed to send notify for supplier: %v", err)
