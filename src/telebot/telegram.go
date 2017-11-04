@@ -110,5 +110,5 @@ func (t *Telegram) Notify(req *telegram.NotifyMessageRequest) (err error, retry 
 	}
 	log.Error(err)
 	// ugly check, but probably it is shortest way to determinate kind of error without changes in telebot lib
-	return err, !strings.HasPrefix(err.Error(), "telebot:")
+	return err, !strings.HasPrefix(err.Error(), "api error:")
 }
