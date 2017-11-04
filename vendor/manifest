@@ -32,6 +32,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/armon/go-radix",
+			"repository": "https://github.com/armon/go-radix",
+			"revision": "1fca145dffbcaa8fe914309b1ec0cfc67500fe61",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/asaskevich/govalidator",
 			"repository": "https://github.com/asaskevich/govalidator",
 			"revision": "593d64559f7600f29581a3ee42177f5dbded27a9",
@@ -468,13 +474,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/nats-io/gnatsd/auth",
-			"repository": "https://github.com/nats-io/gnatsd",
-			"revision": "54b96e45272a9da6096d93c02d4cc737803313c0",
-			"branch": "master",
-			"path": "/auth"
-		},
-		{
 			"importpath": "github.com/nats-io/gnatsd/conf",
 			"repository": "https://github.com/nats-io/gnatsd",
 			"revision": "55404c70b0418a7017d05c504cf4a647afe91e25",
@@ -543,6 +542,12 @@
 			"importpath": "github.com/pborman/uuid",
 			"repository": "https://github.com/pborman/uuid",
 			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/pkg/errors",
+			"repository": "https://github.com/pkg/errors",
+			"revision": "f15c970de5b76fac0b59abb32d62c17cc7bed265",
 			"branch": "master"
 		},
 		{
@@ -754,7 +759,7 @@
 		{
 			"importpath": "github.com/tucnak/telebot",
 			"repository": "https://github.com/tucnak/telebot",
-			"revision": "6360f1f7d9464545d98f2b478cd83240a8ced98e",
+			"revision": "00cebf376d79ee4363a11cd66fbbdf565452e0ab",
 			"branch": "master"
 		},
 		{
