@@ -2,6 +2,7 @@ package telebot
 
 import (
 	"encoding/json"
+	"common/log"
 	"fmt"
 	"strconv"
 	"time"
@@ -126,6 +127,7 @@ func (b *Bot) SendMessage(recipient Recipient, message string, options *SendOpti
 		Description string
 	}
 
+	log.Debug("send to %v responce: %v", string(responseJSON))
 	err = json.Unmarshal(responseJSON, &responseReceived)
 	if err != nil {
 		return errors.Wrap(err, "bad response json")
