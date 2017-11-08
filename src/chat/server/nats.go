@@ -273,13 +273,13 @@ func (cs *chatServer) handleThreadReply(notify *bot.Notify) (acknowledged bool) 
 		return !retry
 	}
 
-	chat, err := cs.chats.GetByDirectThread(notify.ThreadId)
+	chat, err := cs.chats.GetByID(uint(chatID))
 	if err != nil {
-		log.Errorf("failed to load chat by direct thread %v: %v", notify.ThreadId, err)
+		log.Errorf("failed to load chat %v: %v", chatID, err)
 		return false
 	}
 	if chat == nil {
-		log.Debug("unknown thread %v", notify.ThreadId)
+		log.Errorf("unknown chat %v in thread reply", chatID)
 		return true
 	}
 
