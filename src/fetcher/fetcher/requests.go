@@ -157,7 +157,21 @@ func createThread(ig *instagram.Instagram, req *models.DirectRequest, result *bo
 		return err
 	}
 	req.Participants = append(req.Participants, bot.UserID)
-	return sendText(ig, req, result)
+	err = sendText(ig, req, result)
+	if err != nil {
+		return err
+	}
+	info := models.ThreadInfo{
+		ThreadID:      result.ThreadId,
+		SourceID:      result.SourceId,
+		LastCheckedID: result.Messages[0].MessageId,
+	}
+	err = info.Save()
+	if err != nil {
+		log.Errorf("failed to save thread info: %v", err)
+		// Request itself succeeded still
+	}
+	return nil
 }
 
 func sendText(ig *instagram.Instagram, req *models.DirectRequest, result *bot.Notify) error {
