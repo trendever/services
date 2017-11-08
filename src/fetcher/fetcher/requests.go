@@ -311,11 +311,11 @@ func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bo
 	result.ThreadId = req.ThreadID
 	var err error
 	ig := meta.Get()
-	tmp := ig.ResponseLogging
-	ig.ResponseLogging = true
+	tmp := ig.Debug
+	ig.Debug = true
 	result.Messages, err = getEncodedThread(meta, req.ThreadID, req.Data)
 	log.Debug("got %v messages, err: %v", len(result.Messages), err)
-	ig.ResponseLogging = tmp
+	ig.Debug = tmp
 	switch {
 	case err == nil:
 	case err.Error() == "Thread does not exist":

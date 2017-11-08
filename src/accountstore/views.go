@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
+	"instagram"
 	"proto/accountstore"
 	"proto/core"
 	"utils/rpc"
@@ -130,4 +131,31 @@ func (s *svc) SetProxy(_ context.Context, in *accountstore.SetProxyRequest) (*ac
 	}
 
 	return &accountstore.SetProxyReply{}, nil
+}
+
+func (s *svc) SetDebug(_ context.Context, in *accountstore.SetDebugRequest) (*accountstore.SetDebugReply, error) {
+	account, err := FindAccount(&Account{
+		InstagramUsername: in.InstagramUsername,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ig, err := instagram.Restore(account.Cookie, "", false)
+	if err != nil {
+		return nil, err
+	}
+
+	ig.Debug = in.Debug
+	account.Cookie, err = ig.Save()
+	if err != nil {
+		return nil, err
+	}
+
+	err = Save(account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &accountstore.SetDebugReply{}, nil
 }

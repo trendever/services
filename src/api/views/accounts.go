@@ -24,6 +24,7 @@ func init() {
 		soso.Route{"account", "list", ListAccounts},
 		soso.Route{"account", "confirm", Confirm},
 		soso.Route{"account", "set_proxy", SetProxy},
+		soso.Route{"account", "set_debug", SetDebug},
 		soso.Route{"account", "raw_query", RawQuery},
 		//		soso.Route{"invalidate", "account", MarkInvalid},
 	)
@@ -190,6 +191,45 @@ func SetProxy(c *soso.Context) {
 	_, err = accountStoreServiceClient.SetProxy(context.Background(), &accountstore.SetProxyRequest{
 		InstagramUsername: username,
 		Proxy:             proxy,
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"success": true,
+	})
+}
+
+func SetDebug(c *soso.Context, arg *struct {
+	Username string `json:"username"`
+	Debug    bool   `json:"debug"`
+}) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("user not authorized"))
+		return
+	}
+	user, err := GetUser(c.Token.UID, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+	if !user.IsAdmin {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("permission denied"))
+		return
+	}
+
+	if arg.Username == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty username"))
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+	_, err = accountStoreServiceClient.SetDebug(ctx, &accountstore.SetDebugRequest{
+		InstagramUsername: arg.Username,
+		Debug:             arg.Debug,
 	})
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)

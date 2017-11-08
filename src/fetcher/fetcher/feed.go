@@ -18,10 +18,12 @@ type textField struct {
 
 // get activity: fetch and parse instagram feed
 func getActivity(meta *client.AccountMeta) error {
-	log.Debug("Checking feed for %v", meta.Get().Username)
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
+	}
+	if ig.Debug {
+		log.Debug("Checking feed for %v", ig.Username)
 	}
 	// get recent activity
 	ract, err := ig.GetRecentActivity()

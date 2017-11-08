@@ -18,6 +18,7 @@ import (
 	"utils/rpc"
 
 	"github.com/codegangsta/cli"
+	"instagram"
 )
 
 func main() {
@@ -60,6 +61,7 @@ func main() {
 // Run main stuff
 func Run() error {
 	config := conf.GetSettings()
+	instagram.ForceDebug = config.Instagram.ResponseLogging
 	db.Init(&config.DB)
 	nats.Init(&conf.GetSettings().Nats, true)
 

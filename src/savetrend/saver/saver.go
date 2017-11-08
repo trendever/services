@@ -55,6 +55,7 @@ func (svc *ProjectService) Run() (err error) {
 	api.Start()
 
 	settings := conf.GetSettings()
+	instagram.ForceDebug = settings.Instagram.ResponseLogging
 
 	nats.Init(&settings.Nats, true)
 
@@ -64,7 +65,6 @@ func (svc *ProjectService) Run() (err error) {
 		accountstore.Role_AuxPrivate, cli,
 		nil, nil,
 		&settings.Instagram.Settings,
-		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)

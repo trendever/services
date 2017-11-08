@@ -23,7 +23,10 @@ func checkDirect(meta *client.AccountMeta) error {
 
 	threads := []models.ThreadInfo{}
 
-	log.Debug("Checking direct for %v", meta.Get().Username)
+	ig := meta.Get()
+	if ig.Debug {
+		log.Debug("Checking direct for %v", ig.Username)
+	}
 
 	cursor := ""
 	var upperTime int64
