@@ -45,7 +45,7 @@ func (r *InstagramAccessImpl) Login(login, password, proxy string, preferEmail b
 	)
 
 	if account.Cookie > "" && owner == account.OwnerID {
-		api, err = instagram.Restore(account.Cookie, password, false, settings.InstagramDebug)
+		api, err = instagram.Restore(account.Cookie, password, false)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func (r *InstagramAccessImpl) Login(login, password, proxy string, preferEmail b
 			return nil, err
 		}
 	} else {
-		api, err = instagram.NewInstagram(login, password, proxy, settings.InstagramDebug)
+		api, err = instagram.NewInstagram(login, password, proxy, false)
 	}
 
 	if err == instagram.ErrorCheckpointRequired {
@@ -98,7 +98,7 @@ func (r *InstagramAccessImpl) sendCode(api *instagram.Instagram, acc *Account, p
 // SendCode sends instagram checkpoint code
 func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmail bool) error {
 
-	api, err := instagram.Restore(acc.Cookie, "", false, settings.InstagramDebug)
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
 func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) error {
 
-	api, err := instagram.Restore(acc.Cookie, password, true, settings.InstagramDebug)
+	api, err := instagram.Restore(acc.Cookie, password, true)
 	log.Debug("Restored")
 	if err == instagram.ErrorCheckpointRequired && api != nil { // actual code checking
 		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
@@ -161,7 +161,7 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 }
 
 func (r *InstagramAccessImpl) SetProxy(acc *Account, proxy string) error {
-	api, err := instagram.Restore(acc.Cookie, "", false, settings.InstagramDebug)
+	api, err := instagram.Restore(acc.Cookie, "", false)
 	err = api.SetProxy(proxy)
 	if err != nil {
 		return err

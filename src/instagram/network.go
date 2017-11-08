@@ -19,6 +19,9 @@ var (
 	ErrorPageNotFound       = errors.New("Page not found")
 )
 
+// Dump all request even if account do not require that.
+var ForceDebug = false
+
 // DisableJSONIndent disables indenting json in logs
 var DisableJSONIndent = true
 
@@ -116,7 +119,7 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 			return nil, ErrorPageNotFound
 		}
 
-		if ig.ResponseLogging {
+		if ForceDebug || ig.Debug {
 			var buf bytes.Buffer
 			err := json.Indent(&buf, jsonBody, "  ", "  ")
 			if err == nil {
@@ -230,7 +233,7 @@ func (ig *Instagram) loginRequest(method, endpoint string, body, result interfac
 		return nil, err
 	}
 
-	if ig.ResponseLogging {
+	if ForceDebug || ig.Debug {
 		log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
 	}
 

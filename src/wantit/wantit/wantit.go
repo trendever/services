@@ -13,6 +13,7 @@ import (
 
 	"accountstore/client"
 	"common/log"
+	"instagram"
 	"proto/accountstore"
 	"proto/bot"
 	"utils/mandible"
@@ -47,7 +48,7 @@ func (svc *ProjectService) ResetLastChecked() error {
 
 // Run fetching
 func (svc *ProjectService) Run() (err error) {
-
+	instagram.ForceDebug = settings.Instagram.ResponseLogging
 	rand.Seed(time.Now().Unix())
 	api.Start()
 
@@ -59,7 +60,6 @@ func (svc *ProjectService) Run() (err error) {
 		accountstore.Role_AuxPrivate, cli,
 		nil, nil,
 		&settings.Instagram.Settings,
-		settings.Instagram.ResponseLogging,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)

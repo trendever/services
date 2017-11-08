@@ -27,6 +27,7 @@ func main() {
 func (s *svc) Load() {
 	config.LoadStruct("accountstore", &settings)
 	log.Init(settings.Debug, "accountstore", settings.SentryDSN)
+	instagram.ForceDebug = settings.InstagramDebug
 	db.Init(settings.DB)
 	go notifier()
 	nats.Init(&settings.Nats, true)
@@ -65,7 +66,7 @@ func fixIDs() {
 		return
 	}
 	for _, acc := range broken {
-		ig, _ := instagram.Restore(acc.Cookie, "", false, false)
+		ig, _ := instagram.Restore(acc.Cookie, "", false)
 		if ig.UserID != 0 {
 			acc.InstagramID = ig.UserID
 			err := db.New().Save(&acc).Error

@@ -39,8 +39,7 @@ type AccountsPool struct {
 	}
 	individualWorker func(acc *AccountMeta, stopChan <-chan struct{})
 	// global stopper
-	stopper         *stopper.Stopper
-	responseLogging bool
+	stopper *stopper.Stopper
 }
 
 type AccountMeta struct {
@@ -85,7 +84,6 @@ func InitPoll(
 	poolWorker func(pool *AccountsPool, stopChan <-chan struct{}),
 	individualWorker func(acc *AccountMeta, stopChan <-chan struct{}),
 	settings *Settings,
-	responseLogging bool,
 ) (*AccountsPool, error) {
 
 	min, err := time.ParseDuration(settings.TimeoutMin)
@@ -105,7 +103,6 @@ func InitPoll(
 		ready:            make(chan *instagram.Instagram),
 		stopper:          stopper.NewStopper(),
 		role:             role,
-		responseLogging:  responseLogging,
 		timeout: struct {
 			min int
 			max int
@@ -129,7 +126,7 @@ func InitPoll(
 	defer pool.Unlock()
 
 	for _, acc := range res.Accounts {
-		ig, err := instagram.Restore(acc.Cookie, "", true, responseLogging)
+		ig, err := instagram.Restore(acc.Cookie, "", true)
 		if err != nil {
 			log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
 			continue
@@ -237,7 +234,7 @@ func (pool *AccountsPool) Invalidate(id uint64, reason string) {
 }
 
 func (pool *AccountsPool) update(acc *accountstore.Account) {
-	ig, err := instagram.Restore(acc.Cookie, "", acc.Valid, pool.responseLogging)
+	ig, err := instagram.Restore(acc.Cookie, "", acc.Valid)
 	if err != nil {
 		log.Errorf("fialed to restore account %v: %v", acc.InstagramUsername, err)
 		pool.Invalidate(acc.InstagramId, "account can not be restored")

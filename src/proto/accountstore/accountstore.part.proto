@@ -1,21 +1,22 @@
 service AccountStoreService {
-	rpc Add(AddRequest) returns (AddReply) {}
-	rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
-	rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
-	rpc Search(SearchRequest) returns (SearchReply) {}
-	rpc SetProxy(SetProxyRequest) returns (SetProxyReply) {}
+  rpc Add(AddRequest) returns (AddReply) {}
+  rpc Confirm(ConfirmRequest) returns (ConfirmReply) {}
+  rpc MarkInvalid(MarkInvalidRequest) returns (MarkInvalidReply) {}
+  rpc Search(SearchRequest) returns (SearchReply) {}
+  rpc SetProxy(SetProxyRequest) returns (SetProxyReply) {}
+  rpc SetDebug(SetDebugRequest) returns (SetDebugReply) {}
 }
 
 enum Role {
-    // real user, probably shop
-    User = 0;
+  // real user, probably shop
+  User = 0;
 
-    Savetrend = 1;
-    Wantit = 2;
+  Savetrend = 1;
+  Wantit = 2;
 
-    // minor bots
-    AuxPrivate = 3; // any bots for fetching purposes
-    AuxPublic = 4;  // public bots, for example to create chats
+  // minor bots
+  AuxPrivate = 3; // any bots for fetching purposes
+  AuxPublic = 4;  // public bots, for example to create chats
 }
 
 message Account {
@@ -81,5 +82,14 @@ message SetProxyRequest {
 }
 
 message SetProxyReply {
+
+}
+
+message SetDebugRequest {
+  string instagram_username = 1;
+  bool debug = 2;
+}
+
+message SetDebugReply {
 
 }

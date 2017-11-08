@@ -7,6 +7,7 @@ import (
 	"common/log"
 	"fmt"
 	"github.com/spf13/cobra"
+	"instagram"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -51,6 +52,7 @@ func init() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to load config: %v", err))
 	}
+	instagram.ForceDebug = settings.ResponseLogging
 }
 
 // @TODO use accountstore client
@@ -94,7 +96,6 @@ func RunService(cmd *cobra.Command, args []string) {
 		accountstore.Role_AuxPrivate, storeCli,
 		nil, nil,
 		&settings.Settings,
-		settings.ResponseLogging,
 	)
 	if err != nil {
 		log.Fatalf("failed to init acoounts pool: %v", err)

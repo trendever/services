@@ -9,10 +9,12 @@ import (
 )
 
 func parseOwnPosts(meta *client.AccountMeta) error {
-	log.Debug("Parsing own posts for %v", meta.Get().Username)
 	ig, err := meta.Delayed()
 	if err != nil {
 		return err
+	}
+	if ig.Debug {
+		log.Debug("Parsing own posts for %v", ig.Username)
 	}
 
 	feed, err := ig.GetUserFeed(ig.UserID)
