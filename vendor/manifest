@@ -726,6 +726,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/streadway/amqp",
+			"repository": "https://github.com/streadway/amqp",
+			"revision": "ff791c2d22d3f1588b4e2cc71a9fba5e1da90654",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/stretchr/testify/assert",
 			"repository": "https://github.com/stretchr/testify",
 			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",
