@@ -5,7 +5,7 @@ import (
 	"os"
 	"utils/nats"
 
-	"github.com/davecgh/go-spew/spew"
+	"encoding/json"
 	"github.com/pborman/uuid"
 )
 
@@ -20,7 +20,8 @@ func main() {
 		Subject: os.Args[2],
 		Group:   uuid.New(),
 		DecodedHandler: func(message interface{}) bool {
-			spew.Dump(message)
+			bytes, _ := json.MarshalIndent(message, "", "  ")
+			fmt.Printf("%v\n", string(bytes))
 			return true
 		},
 	})

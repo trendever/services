@@ -8,7 +8,7 @@ import (
 	"time"
 	"utils/rpc"
 
-	"github.com/davecgh/go-spew/spew"
+	"encoding/json"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%#v\n", argument.Interface())
+	fmt.Printf("Argument:\n%v\n", dump(argument.Interface()))
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -72,5 +72,10 @@ func main() {
 
 	fmt.Printf("Request took %v\n", time.Since(then).String())
 	fmt.Printf("Error is: %v\n", result[1].Interface())
-	spew.Dump(result[0].Interface())
+	fmt.Printf("Reply:\n%v\n", dump(result[0].Interface()))
+}
+
+func dump(data interface{}) string {
+	bytes, _ := json.MarshalIndent(data, "", "  ")
+	return string(bytes)
 }
