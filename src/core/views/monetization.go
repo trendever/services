@@ -4,6 +4,7 @@ import (
 	"common/db"
 	"common/log"
 	"core/api"
+	"core/conf"
 	"core/models"
 	"errors"
 	"proto/core"
@@ -232,7 +233,12 @@ func subscribe(shop *models.Shop, plan *models.MonetizationPlan, autoRenewal boo
 }
 
 func (s *monetizationServer) loop() {
-	for now := range time.Tick(5 * time.Minute) {
+	tick, err := time.ParseDuration(conf.GetSettings().Monetization.SubscriptionCheckTick)
+	if err != nil || tick < time.Second {
+		log.Errorf("invalid SubscriptionCheckTick provided in config, using default one")
+		tick = 5 * time.Minute
+	}
+	for now := range time.Tick(tick) {
 		var shops []*models.Shop
 		err := db.New().Preload("Plan").
 			Where("plan_expires_at < ?", now).

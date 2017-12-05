@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -75,6 +76,8 @@ func (s *Service) Run(cli *cli.Context) {
 		}
 
 		// Initial web server
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = ioutil.Discard
 		r := gin.Default()
 		qor.Init(r) //start qor
 

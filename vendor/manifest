@@ -343,7 +343,7 @@
 		{
 			"importpath": "github.com/jinzhu/gorm",
 			"repository": "https://github.com/jinzhu/gorm",
-			"revision": "9acaa33324bbcc78239a1c913d4f1292c12177b9",
+			"revision": "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e",
 			"branch": "master"
 		},
 		{
@@ -723,6 +723,12 @@
 			"importpath": "github.com/spf13/viper",
 			"repository": "https://github.com/spf13/viper",
 			"revision": "c1ccc378a054ea8d4e38d8c67f6938d4760b53dd",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/streadway/amqp",
+			"repository": "https://github.com/streadway/amqp",
+			"revision": "ff791c2d22d3f1588b4e2cc71a9fba5e1da90654",
 			"branch": "master"
 		},
 		{
