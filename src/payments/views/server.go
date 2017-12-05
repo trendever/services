@@ -90,6 +90,7 @@ func (ps *paymentServer) crd(name string) (gateway.CardGateway, error) {
 }
 
 func (ps *paymentServer) CreateOrder(_ context.Context, req *payment.CreateOrderRequest) (*payment.CreateOrderReply, error) {
+	log.Debug("create order request:\n%v", log.IndentEncode(req))
 
 	if req.Data == nil {
 		// wut the fuck
@@ -213,6 +214,7 @@ func (ps *paymentServer) DelCard(_ context.Context, req *payment.DelCardRequest)
 }
 
 func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderRequest) (*payment.BuyOrderReply, error) {
+	log.Debug("buy order request:\n%v", log.IndentEncode(req))
 
 	// Step0: find pay
 	Payment, err := ps.repo.GetPayByID(req.PayId)
@@ -257,6 +259,7 @@ func (ps *paymentServer) BuyOrder(_ context.Context, req *payment.BuyOrderReques
 }
 
 func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequest) (*payment.BuyAsyncReply, error) {
+	log.Debug("buy async request:\n%v", log.IndentEncode(req))
 
 	create, err := ps.CreateOrder(ctx, &payment.CreateOrderRequest{
 		Data: req.Data,
@@ -326,6 +329,7 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 }
 
 func (ps *paymentServer) CancelOrder(_ context.Context, req *payment.CancelOrderRequest) (*payment.CancelOrderReply, error) {
+	log.Debug("cancel order request:\n%v", log.IndentEncode(req))
 
 	// Step0: find pay
 	pay, err := ps.repo.GetPayByID(req.PayId)

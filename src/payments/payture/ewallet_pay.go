@@ -60,7 +60,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		}
 
 		session.ExternalID = res.MerchantOrderID
-		session.UniqueID = res.SessionID
+		session.UniqueID = res.OrderID
 		session.Amount = res.Amount
 		session.Success = res.Success
 		session.Finished = true
