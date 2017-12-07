@@ -293,7 +293,6 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 		// Step1: init TX
 		sess, err := Gateway.Buy(Payment, req.User, true)
 		if err != nil {
-
 			log.Errorf("Warning! Async Buy returnted err: %v", err)
 			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
 				Id:    uint64(Payment.ID),
@@ -306,23 +305,28 @@ func (ps *paymentServer) BuyAsync(ctx context.Context, req *payment.BuyAsyncRequ
 		// Step2: save session
 		err = ps.repo.CreateSess(sess)
 		if err != nil {
+			// @TODO Though db errors should be rare, it would be real fuckup. What else could be done?
 			log.Errorf("Warning! Save session returnted err, this should not happen: %v", err)
+			if !sess.Success && sess.Finished {
+				log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
+					Id:    uint64(sess.PaymentID),
+					Data:  Payment.Encode(),
+					Event: payment.Event_PayFailed,
+					Info:  sess.Info(),
+				}))
+				return
+			}
+		}
+
+		// @CHECK But... Is it really success already?
+		if sess.Success && sess.Finished {
 			log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
 				Id:    uint64(sess.PaymentID),
 				Data:  Payment.Encode(),
-				Event: payment.Event_PayFailed,
+				Event: payment.Event_PaySuccess,
 				Info:  sess.Info(),
 			}))
-
 		}
-
-		log.Error(nats.StanPublish(natsStream, &payment.PaymentNotification{
-			Id:    uint64(sess.PaymentID),
-			Data:  Payment.Encode(),
-			Event: payment.Event_PaySuccess,
-			Info:  sess.Info(),
-		}))
-
 	}()
 
 	return &payment.BuyAsyncReply{}, nil

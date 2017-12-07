@@ -154,6 +154,7 @@ func registerOrders() {
 				break
 			}
 		}
+		saveLastChecked()
 	}
 }
 
