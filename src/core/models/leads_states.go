@@ -102,7 +102,6 @@ var (
 				leadStateEmpty,
 				leadStateNew,
 				leadStateInProgress,
-				leadStateSubmited,
 				leadStateOnDelivery,
 				leadStateCompleted,
 				leadStateCancelled,
