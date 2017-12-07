@@ -63,6 +63,7 @@ func (c *Ewallet) Buy(pay *models.Payment, info *payment.UserInfo, async bool) (
 		session.UniqueID = res.OrderID
 		session.Amount = res.Amount
 		session.Success = res.Success
+		// Eh? I doubt it
 		session.Finished = true
 
 		if !res.Success {
