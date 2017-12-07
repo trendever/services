@@ -152,6 +152,7 @@ func registerProducts() {
 			// update last checked ID
 			lastChecked = activity.Id
 		}
+		saveLastChecked()
 	}
 }
 
