@@ -14,6 +14,7 @@ import (
 )
 
 const DirectNotifySubject = "direct.notify"
+const ThreadsRerCheck = 30
 
 // direct activity: accept PM invites; read && parse them
 func checkDirect(meta *client.AccountMeta) error {
@@ -71,18 +72,20 @@ collectLoop:
 			if len(thread.Items) == 0 {
 				return fmt.Errorf("Thread (id=%v) got 0 msgs, should be at least 1!", thread.ThreadID)
 			}
-			if thread.Items[0].ItemID == info.LastCheckedID && !thread.HasNewer {
+			if models.CompareID(thread.Items[0].ItemID, info.LastCheckedID) <= 0 && !thread.HasNewer {
 				break collectLoop
 			}
 			threads = append(threads, info)
 		}
 
+		// limit amount of threads for single call
+		if len(threads) > ThreadsRerCheck {
+			threads = threads[len(threads)-ThreadsRerCheck:]
+		}
 		if !resp.Inbox.HasOlder {
 			break
 		}
 		cursor = resp.Inbox.OldestCursor
-		// process only last page in one call
-		threads = threads[:0]
 	}
 
 	for it := len(threads) - 1; it >= 0; it-- {
