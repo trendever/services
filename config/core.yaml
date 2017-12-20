@@ -34,7 +34,7 @@ URL:
 monetization:
   initialPlanName: init
   plansBaseDuration: 1m
-  subscriptionCheckTick: 5m
+  subscriptionCheckTick: 20s
 
 comments:
   allowed: "цена,цвет,размер,стоимость"
