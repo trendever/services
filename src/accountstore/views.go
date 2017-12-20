@@ -24,6 +24,7 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 
 	account, err := s.ig.Login(in.InstagramUsername, in.Password, in.Proxy, in.PreferEmail, in.OwnerId)
 	if err != nil {
+		log.Errorf("failed to login as '%v': %v", in.InstagramUsername, err)
 		notifyTelegram(fmt.Sprintf("failed to add bot '%v': %v", in.InstagramUsername, err))
 		return nil, err
 	}
@@ -44,9 +45,11 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 			},
 		)
 		if err != nil {
+			log.Errorf("failed to get attached shop for %v: %v", in.InstagramUsername, err)
 			return nil, fmt.Errorf("RPC error: %v", err)
 		}
 		if res.Error != "" {
+			log.Errorf("failed to get attached shop for %v: %v", in.InstagramUsername, res.Error)
 			return nil, errors.New(res.Error)
 		}
 
@@ -55,6 +58,7 @@ func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore
 	// save Creates if not exists
 	err = Save(account)
 	if err != nil {
+		log.Errorf("failed to save account %v: %v", in.InstagramUsername, err)
 		return nil, err
 	}
 
