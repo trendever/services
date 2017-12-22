@@ -303,7 +303,6 @@ func sendComment(ig *instagram.Instagram, req *models.DirectRequest, result *bot
 }
 
 func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bot.Notify) error {
-	log.Debug("fetch thread request: %+v", req)
 	if req.ThreadID == "" {
 		result.Error = consts.BadDestination
 		return nil
@@ -311,11 +310,13 @@ func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bo
 	result.ThreadId = req.ThreadID
 	var err error
 	ig := meta.Get()
-	tmp := ig.Debug
-	ig.Debug = true
+	if ig.Debug {
+		log.Debug("fetch thread request: %+v", req)
+	}
 	result.Messages, err = getEncodedThread(meta, req.ThreadID, req.Data)
-	log.Debug("got %v messages, err: %v", len(result.Messages), err)
-	ig.Debug = tmp
+	if ig.Debug {
+		log.Debug("got %v messages, err: %v", len(result.Messages), err)
+	}
 	switch {
 	case err == nil:
 	case err.Error() == "Thread does not exist":
