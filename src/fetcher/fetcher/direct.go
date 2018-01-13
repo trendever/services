@@ -16,6 +16,9 @@ import (
 const DirectNotifySubject = "direct.notify"
 const ThreadsRerCheck = 30
 
+// any direct activity happened before this timeout will be ignored
+const DirectExpirationTimeout = time.Hour * 24 * 7
+
 // direct activity: accept PM invites; read && parse them
 func checkDirect(meta *client.AccountMeta) error {
 	// get non-pending shiet
@@ -31,6 +34,11 @@ func checkDirect(meta *client.AccountMeta) error {
 
 	cursor := ""
 	var upperTime int64
+
+	cutTime := time.Now().Add(-DirectExpirationTimeout).Unix()
+	if meta.AddedAt > cutTime {
+		cutTime = meta.AddedAt
+	}
 
 collectLoop:
 	for {
@@ -65,7 +73,7 @@ collectLoop:
 				return err
 			}
 			// ignore too old activity
-			if thread.LastActivityAt/1000000 < meta.AddedAt {
+			if thread.LastActivityAt/1000000 < cutTime {
 				break collectLoop
 			}
 			// check if getting shiet is necessary
@@ -177,7 +185,7 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *instagram.DirectThreadResponse, msgs []instagram.ThreadItem, err error) {
 	ig := meta.Get()
 	// limit loading depth by time
-	cutTime := time.Now().Add(-time.Hour * 24 * 7).Unix()
+	cutTime := time.Now().Add(-DirectExpirationTimeout).Unix()
 	if meta.AddedAt > cutTime {
 		cutTime = meta.AddedAt
 	}
