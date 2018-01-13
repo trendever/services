@@ -65,7 +65,10 @@ collectLoop:
 			return nil
 		}
 
-		upperTime = resp.Inbox.Threads[0].LastActivityAt
+		// we will not process messages created after first current result to avoid possible shadowing in later calls
+		if cursor == "" {
+			upperTime = resp.Inbox.Threads[0].LastActivityAt
+		}
 
 		for _, thread := range resp.Inbox.Threads {
 			info, err := models.GetThreadInfo(thread.ThreadID, ig.UserID)
