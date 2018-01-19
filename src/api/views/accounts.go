@@ -2,7 +2,6 @@ package views
 
 import (
 	"api/api"
-	"common/log"
 	"common/soso"
 	"encoding/json"
 	"errors"
@@ -26,7 +25,7 @@ func init() {
 		soso.Route{"account", "set_proxy", SetProxy},
 		soso.Route{"account", "set_debug", SetDebug},
 		soso.Route{"account", "raw_query", RawQuery},
-		//		soso.Route{"invalidate", "account", MarkInvalid},
+		soso.Route{"account", "invalidate", MarkInvalid},
 	)
 }
 
@@ -64,7 +63,64 @@ func Confirm(c *soso.Context, arg *struct {
 	c.SuccessResponse(map[string]interface{}{
 		"success": true,
 	})
+}
 
+func MarkInvalid(c *soso.Context, arg *struct {
+	// instagram username of bot
+	Username string `json:"username"`
+	// allow invalidate foreign accounts to admin
+	Force bool `json:"force"`
+}) {
+	if c.Token == nil {
+		c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("User not authorized"))
+		return
+	}
+
+	if arg.Username == "" {
+		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("empty username"))
+		return
+	}
+
+	user, err := GetUser(c.Token.UID, false)
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	ctx, cancel := rpc.DefaultContext()
+	defer cancel()
+
+	if !arg.Force || !user.IsAdmin {
+		res, err := accountStoreServiceClient.Search(ctx, &accountstore.SearchRequest{
+			InstagramUsername: arg.Username,
+			IncludeInvalids:   true,
+		})
+		if err != nil {
+			c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+			return
+		}
+		if len(res.Accounts) == 0 {
+			c.ErrorResponse(http.StatusBadRequest, soso.LevelError, errors.New("unknown username"))
+			return
+		}
+		if res.Accounts[0].OwnerId != uint64(user.Id) {
+			c.ErrorResponse(http.StatusForbidden, soso.LevelError, errors.New("permission denied"))
+			return
+		}
+	}
+
+	_, err = accountStoreServiceClient.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{
+		InstagramUsername: arg.Username,
+		Reason:            "invalidated by user",
+	})
+	if err != nil {
+		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
+		return
+	}
+
+	c.SuccessResponse(map[string]interface{}{
+		"success": true,
+	})
 }
 
 // ListAccounts returns list of available accs
@@ -74,7 +130,6 @@ func ListAccounts(c *soso.Context) {
 		return
 	}
 	user, err := GetUser(c.Token.UID, false)
-	log.Debug("user: %v", log.IndentEncode(user))
 	if err != nil {
 		c.ErrorResponse(http.StatusInternalServerError, soso.LevelError, err)
 		return
