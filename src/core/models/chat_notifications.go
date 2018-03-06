@@ -85,6 +85,18 @@ func SendProductToChat(lead *Lead, product *Product, action core.LeadAction, sou
 		}
 	}
 
+	if comment != "" {
+		messages = append(messages, &chat.Message{
+			UserId: uint64(SystemUser.ID),
+			Parts: []*chat.MessagePart{
+				{
+					MimeType: "text/lead-comment",
+					Content:  string(comment),
+				},
+			},
+		})
+	}
+
 	if product.ChatMessage != "" {
 		messages = append(messages, &chat.Message{
 			UserId: uint64(SystemUser.ID),
