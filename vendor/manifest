@@ -900,7 +900,7 @@
 		{
 			"importpath": "golang.org/x/net/http2",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
+			"revision": "6078986fec03a1dcc236c34816c71b0e05018fda",
 			"branch": "master",
 			"path": "/http2"
 		},
@@ -1070,9 +1070,16 @@
 			"path": "/pubsub"
 		},
 		{
+			"importpath": "google.golang.org/genproto/googleapis/rpc/status",
+			"repository": "https://github.com/google/go-genproto",
+			"revision": "f8c8703595236ae70fdf8789ecb656ea0bcdcf46",
+			"branch": "master",
+			"path": "/googleapis/rpc/status"
+		},
+		{
 			"importpath": "google.golang.org/grpc",
 			"repository": "https://github.com/grpc/grpc-go",
-			"revision": "eca2ad68af4d7bf894ada6bd263133f069a441d5",
+			"revision": "8124abf74e7633d82a5b96585b0da487d0e6eed0",
 			"branch": "master"
 		},
 		{
@@ -1116,6 +1123,13 @@
 			"revision": "79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b",
 			"branch": "master",
 			"path": "/test"
+		},
+		{
+			"importpath": "google.golang.org/grpc/testdata",
+			"repository": "https://github.com/grpc/grpc-go",
+			"revision": "8124abf74e7633d82a5b96585b0da487d0e6eed0",
+			"branch": "master",
+			"path": "/testdata"
 		},
 		{
 			"importpath": "google.golang.org/grpc/transport",
