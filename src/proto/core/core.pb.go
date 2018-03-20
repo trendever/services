@@ -1480,7 +1480,7 @@ type EditProductRequest struct {
 	// if not zero core will perform permissions check
 	EditorId uint64   `protobuf:"varint,1,opt,name=editor_id,json=editorId,proto3" json:"editor_id,omitempty"`
 	Product  *Product `protobuf:"bytes,2,opt,name=product" json:"product,omitempty"`
-	// if true supplier, mentioner and likes will not be updated regardless of data in product
+	// if true supplier, mentioner will not be updated
 	Restricted bool `protobuf:"varint,3,opt,name=restricted,proto3" json:"restricted,omitempty"`
 }
 
