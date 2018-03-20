@@ -35,14 +35,15 @@ func main() {
 			exteral.Init()
 			db.Init(&config.Get().DB)
 			pushers.Init()
-			rpc := rpc.Serve(config.Get().RPC)
+			rpc := rpc.MakeServer(config.Get().RPC)
 			server := server.NewPushServer()
 
 			log.Info("Registering server...")
 			push.RegisterPushServiceServer(
-				rpc,
+				rpc.Server,
 				server,
 			)
+			rpc.StartServe()
 
 			interrupt := make(chan os.Signal)
 			signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)

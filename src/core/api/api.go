@@ -24,7 +24,7 @@ import (
 type callbackFunc func(*grpc.Server)
 
 var (
-	server    *grpc.Server
+	server    rpc.Server
 	callbacks = make([]callbackFunc, 0)
 )
 
@@ -49,13 +49,14 @@ const (
 
 // Start initializes server listening
 func Start() {
-	server = rpc.Serve(conf.GetSettings().RPC.Listen)
+	server = rpc.MakeServer(conf.GetSettings().RPC.Listen)
 
 	// callbacks are used to attach core service implementations
 	// see service/views/
 	for _, cb := range callbacks {
-		cb(server)
+		cb(server.Server)
 	}
+	server.StartServe()
 
 	startClients()
 }

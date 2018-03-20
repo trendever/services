@@ -46,13 +46,14 @@ func main() {
 			Init()
 			log.Info("Starting service...")
 
-			rpc := rpc.Serve(settings.RPC)
+			rpc := rpc.MakeServer(settings.RPC)
 			db.Init(&settings.DB)
 			nats.Init(&settings.Nats, true)
 			server := GetTrendcoinServer()
 
 			log.Info("Registering server...")
-			trendcoin.RegisterTrendcoinServiceServer(rpc, server)
+			trendcoin.RegisterTrendcoinServiceServer(rpc.Server, server)
+			rpc.StartServe()
 
 			interrupt := make(chan os.Signal)
 			signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)

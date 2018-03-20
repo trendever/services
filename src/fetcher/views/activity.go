@@ -2,19 +2,22 @@ package views
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 
 	"common/db"
 	"common/log"
+	"fetcher/conf"
 	"fetcher/fetcher"
 	"fetcher/models"
 	"proto/bot"
 	"strings"
+	"utils/rpc"
 )
 
 // Init binds server
-func Init(srv *grpc.Server) {
-	bot.RegisterFetcherServiceServer(srv, fetcherServer{})
+func Init() {
+	s := rpc.MakeServer(conf.GetSettings().RPC)
+	bot.RegisterFetcherServiceServer(s.Server, fetcherServer{})
+	s.StartServe()
 	subscribe()
 }
 
