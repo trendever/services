@@ -33,10 +33,11 @@ var cmdRun = &cobra.Command{
 		nats.Init(&conf.Nats, true)
 
 		log.Info("Starting chat service on %s:%s", conf.Host, conf.Port)
-		s := rpc.Serve(conf.Host + ":" + conf.Port)
-		chat.RegisterChatServiceServer(s, server.NewChatServer(
+		s := rpc.MakeServer(conf.Host + ":" + conf.Port)
+		chat.RegisterChatServiceServer(s.Server, server.NewChatServer(
 			repository,
 		))
+		s.StartServe()
 
 		// interrupt
 		interrupt := make(chan os.Signal)

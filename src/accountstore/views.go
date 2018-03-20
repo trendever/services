@@ -13,11 +13,12 @@ import (
 
 // StartServer inits grpc server
 func (s *svc) StartServer() {
-	server := rpc.Serve(settings.Listen)
-	accountstore.RegisterAccountStoreServiceServer(server, s)
-
 	// connect to RPCs
 	s.shopClient = core.NewShopServiceClient(rpc.Connect(settings.RPC.Core))
+
+	server := rpc.MakeServer(settings.Listen)
+	accountstore.RegisterAccountStoreServiceServer(server.Server, s)
+	server.StartServe()
 }
 
 func (s *svc) Add(_ context.Context, in *accountstore.AddRequest) (*accountstore.AddReply, error) {

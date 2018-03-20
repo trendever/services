@@ -15,7 +15,6 @@ import (
 	"common/db"
 	"common/log"
 	"utils/nats"
-	"utils/rpc"
 
 	"github.com/codegangsta/cli"
 	"instagram"
@@ -72,7 +71,7 @@ func Run() error {
 	}
 
 	// init api
-	views.Init(rpc.Serve(config.RPC))
+	views.Init()
 
 	// interrupt
 	interrupt := make(chan os.Signal)

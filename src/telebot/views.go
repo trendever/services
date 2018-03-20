@@ -11,12 +11,13 @@ import (
 // Init initializes telegram RPC service
 func InitViews(t *Telegram) {
 
-	grpcServer := rpc.Serve(GetSettings().RPC)
+	grpcServer := rpc.MakeServer(GetSettings().RPC)
 	srv := telebotServer{
 		Telegram: t,
 	}
 
-	telegram.RegisterTelegramServiceServer(grpcServer, srv)
+	telegram.RegisterTelegramServiceServer(grpcServer.Server, srv)
+	grpcServer.StartServe()
 
 	nats.StanSubscribe(&nats.StanSubscription{
 		Subject:        "telegram.notify",

@@ -28,7 +28,7 @@ var cmdStart = &cobra.Command{
 
 		addr := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
 		log.Info("Starting auth microservice on %s", addr)
-		s := rpc.Serve(addr)
+		s := rpc.MakeServer(addr)
 		sms := protocol_sms.NewSmsServiceClient(rpc.Connect(conf.SmsServer))
 		core := protocol_core.NewUserServiceClient(rpc.Connect(conf.CoreServer))
 		key := []byte(conf.Key)
@@ -37,7 +37,8 @@ var cmdStart = &cobra.Command{
 			log.Fatal(fmt.Errorf("Bad key (key len should be at least 16 bytes, got %v bytes)", len(key)))
 		}
 
-		protocol.RegisterAuthServiceServer(s, server.NewAuthServer(core, sms, models.MakeNewUserPasswords(db.New()), key))
+		protocol.RegisterAuthServiceServer(s.Server, server.NewAuthServer(core, sms, models.MakeNewUserPasswords(db.New()), key))
+		s.StartServe()
 
 		interrupt := make(chan os.Signal)
 		signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)

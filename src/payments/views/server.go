@@ -41,11 +41,13 @@ func Init() {
 
 	server.shed = createScheduler(server)
 
+	s := rpc.MakeServer(config.Get().RPC)
 	// register API calls
 	payment.RegisterPaymentServiceServer(
-		rpc.Serve(config.Get().RPC),
+		s.Server,
 		server,
 	)
+	s.StartServe()
 
 	// register HTTP calls; for notifications
 	router := gin.Default()

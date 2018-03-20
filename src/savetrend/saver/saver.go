@@ -70,8 +70,9 @@ func (svc *ProjectService) Run() (err error) {
 		return fmt.Errorf("failed to init acoounts pool: %v", err)
 	}
 
-	srv := rpc.Serve(settings.Rpc)
-	bot.RegisterSaveTrendServiceServer(srv, NewSaveServer())
+	srv := rpc.MakeServer(settings.Rpc)
+	bot.RegisterSaveTrendServiceServer(srv.Server, NewSaveServer())
+	srv.StartServe()
 
 	// interrupt
 	interrupt := make(chan os.Signal)

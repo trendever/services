@@ -32,17 +32,18 @@ var startCmd = &cobra.Command{
 		// start rpc server
 		log.Info("Starting rpc server...")
 		log.Info("Listen %s \n", settings.Rpc)
-		grpcServer := rpc.Serve(settings.Rpc)
+		grpcServer := rpc.MakeServer(settings.Rpc)
 
 		// register SmsServer
 		log.Info("Registering sms server...")
 		sms.RegisterSmsServiceServer(
-			grpcServer,
+			grpcServer.Server,
 			server.NewSmsServer(
 				sender,
 				models.MakeNewSmsRepository(db.New()),
 			),
 		)
+		grpcServer.StartServe()
 		nats.Init(&settings.Nats, true)
 
 		cli.Terminate(nil)

@@ -101,11 +101,12 @@ func RunService(cmd *cobra.Command, args []string) {
 		log.Fatalf("failed to init acoounts pool: %v", err)
 	}
 
-	rpc := rpc.Serve(settings.RPC)
+	rpc := rpc.MakeServer(settings.RPC)
 	db.Init(&settings.DB)
 	server := NewCheckerServer()
 	log.Info("Registering server...")
-	checker.RegisterCheckerServiceServer(rpc, server)
+	checker.RegisterCheckerServiceServer(rpc.Server, server)
+	rpc.StartServe()
 
 	interrupt := make(chan os.Signal)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)

@@ -6,15 +6,26 @@ import (
 	"net"
 )
 
+type Server struct {
+	*grpc.Server
+	listener net.Listener
+}
+
 //Serve starts grpc.Server and returns it instance
-func Serve(addr string) *grpc.Server {
+func MakeServer(addr string) Server {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	server := grpc.NewServer()
-	go server.Serve(lis)
+	server := Server{
+		Server:   grpc.NewServer(),
+		listener: lis,
+	}
 
 	return server
+}
+
+func (s Server) StartServe() {
+	go s.Server.Serve(s.listener)
 }
