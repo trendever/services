@@ -1185,6 +1185,12 @@
 			"repository": "https://gopkg.in/yaml.v2",
 			"revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
 			"branch": "v2"
+		},
+		{
+			"importpath": "mvdan.cc/xurls",
+			"repository": "https://github.com/mvdan/xurls",
+			"revision": "e0c138198c957afd5b210931d869fd6a66141c74",
+			"branch": "master"
 		}
 	]
 }

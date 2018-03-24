@@ -5,10 +5,12 @@ import (
 	"common/proxy"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"mvdan.cc/xurls"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -321,16 +323,29 @@ func (ig *Instagram) DirectThreadApproveAll() (*DirectThreadApproveAllResponse, 
 	return &object, err
 }
 
+var urls = xurls.Relaxed()
+
 //BroadcastText sends text to given chat
-func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, _ error) {
-
-	endpoint := "/direct_v2/threads/broadcast/text/"
-
+func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, err error) {
 	var object BroadcastResponse
-	err := ig.postRequest(endpoint, map[string]string{
-		"text":       message,
-		"thread_ids": fmt.Sprintf("[%v]", threadID),
-	}, &object)
+
+	urls := urls.FindAllString(message, -1)
+
+	if len(urls) == 0 {
+		endpoint := "/direct_v2/threads/broadcast/text/"
+		err = ig.postRequest(endpoint, map[string]string{
+			"text":       message,
+			"thread_ids": fmt.Sprintf("[%v]", threadID),
+		}, &object)
+	} else {
+		data, _ := json.Marshal(urls)
+		endpoint := "/direct_v2/threads/broadcast/link/"
+		err = ig.postRequest(endpoint, map[string]string{
+			"link_text":  message,
+			"thread_ids": fmt.Sprintf("[%v]", threadID),
+			"link_urls":  string(data),
+		}, &object)
+	}
 
 	if err != nil {
 		return "", err
