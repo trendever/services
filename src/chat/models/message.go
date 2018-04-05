@@ -70,6 +70,16 @@ func (m *Message) Encode() *chat.Message {
 	return message
 }
 
+func (m *Message) PrepareForSave() error {
+	for i := 0; i < len(m.Parts); i++ {
+		err := m.Parts[i].PrepareForSave()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func EncodeMessages(msgs []*Message) (ret []*chat.Message) {
 	for _, msg := range msgs {
 		ret = append(ret, msg.Encode())
@@ -116,8 +126,7 @@ func DecodeParts(parts []*chat.MessagePart) []*MessagePart {
 	return out
 }
 
-// BeforeSave hook
-func (mp *MessagePart) BeforeSave() error {
+func (mp *MessagePart) PrepareForSave() error {
 	switch mp.MimeType {
 	case "image/base64":
 		img, err := ImageUploader.DoRequest("base64", mp.Content)

@@ -201,33 +201,65 @@ func (c *conversationRepositoryImpl) AddMessages(chat *Conversation, messages []
 	if len(messages) == 0 {
 		return nil
 	}
+	// Heavy stuff, images uploading mostly
+	for i := 0; i < len(messages); i++ {
+		err := messages[i].PrepareForSave()
+		if err != nil {
+			return fmt.Errorf("failed to prepare message: %v", err)
+		}
+	}
+
 	global.syncLock.Lock()
-	err := c.db.Model(chat).Association("Messages").Append(messages).Error
+	err := c.saveMessages(chat, messages)
+	if err != nil {
+		global.syncLock.Unlock()
+		return err
+	}
+
 	go func() {
-		if err == nil {
-			switch chat.SyncStatus {
-			case pb_chat.SyncStatus_SYNCED:
-				c.syncMessages(chat, messages...)
-			case pb_chat.SyncStatus_DETACHED:
-				for _, msg := range messages {
-					if msg.InstagramID != "" {
-						continue
-					}
-					kind, data := mapToInstagram(chat, msg)
-					if kind != bot.MessageType_None && data != "" {
-						c.EnableSync(chat.ID, 0, "", "", true)
-						break
-					}
+		switch chat.SyncStatus {
+		case pb_chat.SyncStatus_SYNCED:
+			c.syncMessages(chat, messages...)
+		case pb_chat.SyncStatus_DETACHED:
+			for _, msg := range messages {
+				if msg.InstagramID != "" {
+					continue
+				}
+				kind, data := mapToInstagram(chat, msg)
+				if kind != bot.MessageType_None && data != "" {
+					c.EnableSync(chat.ID, 0, "", "", true)
+					break
 				}
 			}
 		}
 		// yes, it is fine to unlock in new gorutine(well, it's allowed at least)
 		global.syncLock.Unlock()
 	}()
-	if err == nil {
-		global.notifier.NewEvent(chat, messages...)
+
+	global.notifier.NewEvent(chat, messages...)
+	return nil
+}
+
+func (c *conversationRepositoryImpl) saveMessages(chat *Conversation, messages []*Message) error {
+	tx := db.NewTransaction()
+	for i := 0; i < len(messages); i++ {
+		messages[i].ConversationID = uint(chat.ID)
+		err := tx.Save(&messages[i]).Error
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to save message: %v", err)
+		}
 	}
-	return err
+
+	// That is somewhat tricky. We do not fetch older messages actuality.
+	// If they was not preloaded only new messages will be presented.
+	chat.Messages = append(chat.Messages, messages...)
+
+	err := tx.Commit().Error
+	if err != nil {
+		return fmt.Errorf("failed to commit messages save: %v", err)
+	}
+	return nil
 }
 
 func (c *conversationRepositoryImpl) syncMessages(chat *Conversation, messages ...*Message) {
