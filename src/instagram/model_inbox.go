@@ -94,9 +94,10 @@ type Thread struct {
 	LeftUsers      []interface{}  `json:"left_users"`
 	Muted          bool           `json:"muted"`
 	Items          ThreadItems    `json:"items"`
-	ThreadType     string         `json:"thread_type"`
-	ThreadTitle    string         `json:"thread_title"`
-	LastSeenAt     map[string]struct {
+	// no longer exists it seams
+	ThreadType  string `json:"thread_type"`
+	ThreadTitle string `json:"thread_title"`
+	LastSeenAt  map[string]struct {
 		ItemID    string `json:"item_id"`
 		Timestamp string `json:"timestamp"`
 	} `json:"last_seen_at"`

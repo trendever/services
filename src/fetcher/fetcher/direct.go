@@ -294,13 +294,7 @@ func MapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data str
 
 func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta) error {
 	// process private threads only
-	if thread.ThreadType != "private" || meta.Role() != accountstore.Role_User {
-		return nil
-	}
-
-	if len(thread.Users) == 0 {
-		// patient speaks to himself probably
-		log.Debug("thread %v do not have any users. wtf?", thread.ThreadID, thread)
+	if len(thread.Users) != 1 || meta.Role() != accountstore.Role_User {
 		return nil
 	}
 
