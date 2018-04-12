@@ -64,10 +64,12 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit ui
 			scope = scope.Where("pl.customer_id = ? OR state NOT IN (?)", user.ID, ignoreForSeller)
 		}
 	} else { // !user.SuperSeller
-		var or []interface{}
+		var or []string
+		var orArgs []interface{}
 
 		if hasLeadRole(core.LeadUserRole_CUSTOMER, roles) {
-			or = append(or, gorm.Expr("pl.customer_id = ?", user.ID))
+			or = append(or, "pl.customer_id = ?")
+			orArgs = append(orArgs, user.ID)
 		}
 
 		if hasLeadRole(core.LeadUserRole_SELLER, roles) {
@@ -76,8 +78,8 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit ui
 				return nil, err
 			}
 			if len(relatedSellerShops) > 0 {
-				or = append(or, gorm.Expr("(state NOT IN (?) AND pl.shop_id IN (?))",
-					ignoreForSeller, relatedSellerShops))
+				or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
+				orArgs = append(orArgs, ignoreForSeller, relatedSellerShops)
 			}
 		}
 
@@ -87,8 +89,8 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit ui
 				return nil, err
 			}
 			if len(relatedSupplierShops) > 0 {
-				or = append(or, gorm.Expr("(state NOT IN (?) AND pl.shop_id IN (?))",
-					ignoreForSeller, relatedSupplierShops))
+				or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
+				orArgs = append(orArgs, ignoreForSeller, relatedSupplierShops)
 			}
 		}
 
@@ -96,10 +98,9 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit ui
 		case 0:
 			return nil, nil
 		case 1:
-			scope = scope.Where("?", or[0])
+			scope = scope.Where(or[0], orArgs...)
 		default:
-			// We can have only 2 or 3 conditions... But hey, universal solution %)
-			scope = scope.Where("(?"+strings.Repeat(" OR ?", len(or)-1)+")", or...)
+			scope = scope.Where("("+strings.Join(or, ") OR (")+")", orArgs...)
 		}
 	}
 
