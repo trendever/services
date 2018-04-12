@@ -99,33 +99,25 @@ func CreateLead(c *soso.Context) {
 	})
 }
 
-func GetUserLeads(c *soso.Context) {
+func GetUserLeads(c *soso.Context, arg *struct {
+	Roles         string `json:"roles"`
+	RelatedShop   uint64 `json:"shop_id"`
+	FromUpdatedAt int64  `json:"from_updated_at"`
+	Limit         uint64 `json:"limit"`
+	Direction     bool   `json:"direction"`
+}) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
-	req := c.RequestMap
-	var limit uint64
-	var from_updated_at int64
+
 	var roles []core.LeadUserRole
 
-	if value, ok := req["roles"].(string); ok {
-		sroles := strings.Split(value, ",")
-		for _, r := range sroles {
-			rid, ok := core.LeadUserRole_value[strings.ToUpper(r)]
-			if ok {
-				roles = append(roles, core.LeadUserRole(rid))
-			}
+	for _, r := range strings.Split(arg.Roles, ",") {
+		rid, ok := core.LeadUserRole_value[strings.ToUpper(r)]
+		if ok {
+			roles = append(roles, core.LeadUserRole(rid))
 		}
-	}
-
-	if value, ok := req["from_updated_at"].(float64); ok {
-		from_updated_at = int64(value)
-	}
-
-	if value, ok := req["limit"].(float64); ok {
-		limit = uint64(value)
-
 	}
 
 	if len(roles) == 0 {
@@ -138,7 +130,7 @@ func GetUserLeads(c *soso.Context) {
 
 		for name, roles := range groups {
 			var err error
-			results[name], err = getUserLeads(c.Token.UID, roles, limit, false, from_updated_at)
+			results[name], err = getUserLeads(c.Token.UID, roles, arg.RelatedShop, arg.Limit, arg.Direction, arg.FromUpdatedAt)
 			if err != nil {
 				c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 				return
@@ -147,14 +139,9 @@ func GetUserLeads(c *soso.Context) {
 
 		c.SuccessResponse(results)
 		return
-
-	}
-	direction := false
-	if value, ok := req["direction"].(bool); ok {
-		direction = value
 	}
 
-	leads, err := getUserLeads(c.Token.UID, roles, limit, direction, from_updated_at)
+	leads, err := getUserLeads(c.Token.UID, roles, arg.RelatedShop, arg.Limit, arg.Direction, arg.FromUpdatedAt)
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
@@ -313,13 +300,14 @@ func GetUserLead(c *soso.Context) {
 	c.SuccessResponse(ret)
 }
 
-func getUserLeads(uid uint64, roles []core.LeadUserRole, limit uint64, direction bool, from_updated_at int64) (*models.Leads, error) {
+func getUserLeads(uid uint64, roles []core.LeadUserRole, relatedShop uint64, limit uint64, direction bool, fromUpdatedAt int64) (*models.Leads, error) {
 	request := &core.UserLeadsRequest{
 		UserId:        uid,
 		Role:          roles,
 		Limit:         limit,
-		FromUpdatedAt: from_updated_at,
+		FromUpdatedAt: fromUpdatedAt,
 		Direction:     direction,
+		RelatedShop:   relatedShop,
 	}
 
 	ctx, cancel := rpc.DefaultContext()

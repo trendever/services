@@ -28,33 +28,25 @@ func FindLeadByID(id uint) (Lead, error) {
 }
 
 //GetUserLeads returns user leads
-// @REFACTOR Code of this func looks non-nice. May be we should rewrite it
-func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
-	var relatedSellerShops []uint64
-	var relatedSupplierShops []uint64
-	if hasLeadRole(core.LeadUserRole_SELLER, roles) && !user.SuperSeller {
-		relatedSellerShops, err = GetShopsIDWhereUserIsSeller(user.ID)
-		if err != nil {
-			return
-		}
-	}
-
-	if hasLeadRole(core.LeadUserRole_SUPPLIER, roles) && !user.SuperSeller {
-		relatedSupplierShops, err = GetShopsIDWhereUserIsSupplier(user.ID)
-		if err != nil {
-			return
-		}
-	}
+// If shopID in not zero, limit query to this shop,
+// limit == 0 -> 20,
+// fromUpdatedAt is optional.
+// Results are sorted by updated_at, ascending if direction is true, descending otherwise
+func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
 	//First, we must find leads with passed parameters
-	userID := user.ID
-
 	scope := db.New().
 		Table("products_leads as pl").
 		Where("pl.deleted_at IS NULL").
-		Select("pl.id, pl.customer_id, pl.shop_id")
+		Select("pl.id")
 
-	or := []string{}
-	orArgs := []interface{}{}
+	if fromUpdatedAt != 0 {
+		t := time.Unix(0, fromUpdatedAt)
+		if direction {
+			scope = scope.Where("pl.chat_updated_at > ?", t)
+		} else {
+			scope = scope.Where("pl.chat_updated_at < ?", t)
+		}
+	}
 
 	// we don't want show leads for sellers before first customer message
 	ignoreForSeller := []string{
@@ -62,39 +54,53 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		core.LeadStatus_NEW.String(),
 	}
 
-	//we don't want to filter leads for super seller, he can see all
-	if hasLeadRole(core.LeadUserRole_CUSTOMER, roles) && !user.SuperSeller {
-		or = append(or, "pl.customer_id = ?")
-		orArgs = append(orArgs, userID)
-	}
-	if hasLeadRole(core.LeadUserRole_SUPPLIER, roles) && !user.SuperSeller && len(relatedSupplierShops) > 0 {
-		or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
-		orArgs = append(orArgs, ignoreForSeller, relatedSupplierShops)
-	}
-	if hasLeadRole(core.LeadUserRole_SELLER, roles) && !user.SuperSeller && len(relatedSellerShops) > 0 {
-		or = append(or, "(state NOT IN (?) AND pl.shop_id IN (?))")
-		orArgs = append(orArgs, ignoreForSeller, relatedSellerShops)
-	}
+	var relatedSellerShops []uint64
+	var relatedSupplierShops []uint64
 
-	//this mean we want get leads where super seller is customer
-	if user.SuperSeller && len(roles) == 1 && hasLeadRole(core.LeadUserRole_CUSTOMER, roles) {
-		or = append(or, "pl.customer_id = ?")
-		orArgs = append(orArgs, userID)
-	}
-
-	switch {
-	case len(or) == 0:
-		//User does request for leads without a customer role, and he hasn't linked shops, and he is not a super seller
-		//therefore we can't show for him anything
-		if !user.SuperSeller {
-			return
+	if user.SuperSeller {
+		if len(roles) == 1 && roles[0] == core.LeadUserRole_CUSTOMER {
+			scope = scope.Where("pl.customer_id = ?", user.ID)
+		} else {
+			scope = scope.Where("pl.customer_id = ? OR state NOT IN (?)", user.ID, ignoreForSeller)
 		}
-		// super seller
-		scope = scope.Where("pl.customer_id = ? OR state NOT IN (?)", userID, ignoreForSeller)
-	case len(or) > 1:
-		scope = scope.Where("("+strings.Join(or, " OR ")+")", orArgs...)
-	case len(or) == 1:
-		scope = scope.Where(or[0], orArgs...)
+	} else { // !user.SuperSeller
+		var or []interface{}
+
+		if hasLeadRole(core.LeadUserRole_CUSTOMER, roles) {
+			or = append(or, gorm.Expr("pl.customer_id = ?", user.ID))
+		}
+
+		if hasLeadRole(core.LeadUserRole_SELLER, roles) {
+			relatedSellerShops, err = GetShopsIDWhereUserIsSeller(user.ID)
+			if err != nil {
+				return nil, err
+			}
+			if len(relatedSellerShops) > 0 {
+				or = append(or, gorm.Expr("(state NOT IN (?) AND pl.shop_id IN (?))",
+					ignoreForSeller, relatedSellerShops))
+			}
+		}
+
+		if hasLeadRole(core.LeadUserRole_SUPPLIER, roles) {
+			relatedSupplierShops, err = GetShopsIDWhereUserIsSupplier(user.ID)
+			if err != nil {
+				return nil, err
+			}
+			if len(relatedSupplierShops) > 0 {
+				or = append(or, gorm.Expr("(state NOT IN (?) AND pl.shop_id IN (?))",
+					ignoreForSeller, relatedSupplierShops))
+			}
+		}
+
+		switch len(or) {
+		case 0:
+			return nil, nil
+		case 1:
+			scope = scope.Where("?", or[0])
+		default:
+			// We can have only 2 or 3 conditions... But hey, universal solution %)
+			scope = scope.Where("(?"+strings.Repeat(" OR ?", len(or)-1)+")", or...)
+		}
 	}
 
 	if limit != 0 {
@@ -103,17 +109,8 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		scope = scope.Limit(20)
 	}
 
-	if fromUpdatedAt != 0 {
-		t := time.Unix(0, fromUpdatedAt)
-		if direction {
-			scope = scope.Where("pl.chat_updated_at > ?", t.Format(time.RFC3339Nano))
-		} else {
-			scope = scope.Where("pl.chat_updated_at < ?", t.Format(time.RFC3339Nano))
-		}
-	}
-
-	if leadID != 0 {
-		scope = scope.Where("pl.id = ?", leadID)
+	if shopID != 0 {
+		scope = scope.Where("pl.shop_id = ?", shopID)
 	}
 
 	if direction {
@@ -122,29 +119,18 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		scope = scope.Order("pl.chat_updated_at desc")
 	}
 
-	var rows *sql.Rows
-	rows, err = scope.Rows()
-	if err != nil {
-		return
-	}
-	defer rows.Close()
 	var ids []uint64
-	rolesMap := make(map[uint64]core.LeadUserRole)
-	sellerShopMap := makeUintMap(relatedSellerShops)
-	supplierShopMap := makeUintMap(relatedSupplierShops)
-	for rows.Next() {
-		var id, customerID, shopID uint64
-		err = rows.Scan(&id, &customerID, &shopID)
-		if err != nil {
-			return
-		}
-		ids = append(ids, id)
-		rolesMap[id] = toRole(customerID, shopID, sellerShopMap, supplierShopMap, user)
-	}
-	if len(ids) == 0 {
-		return
+	err = scope.Pluck("pl.id", &ids).Error
+	if err != nil {
+		return nil, err
 	}
 
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	// @REFACTOR Part with products still looks doubtful
+	var rows *sql.Rows
 	//Second, we must search related products through products_leads_items
 	rows, err = db.New().
 		Table("products_product_item as ppi").
@@ -152,7 +138,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		Joins("LEFT JOIN  products_leads_items pli ON ppi.id = pli.product_item_id").
 		Where("pli.lead_id in (?)", ids).Rows()
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -163,7 +149,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 		var id, leadID uint
 		err = rows.Scan(&id, &leadID)
 		if err != nil {
-			return
+			return nil, err
 		}
 		productIDs = append(productIDs, id)
 		productMap[id] = append(productMap[id], leadID)
@@ -171,7 +157,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	products := []*Product{}
 	err = db.New().Preload("Items").Preload("InstagramImages").Where("id in (?)", productIDs).Find(&products).Error
 	if err != nil {
-		return
+		return nil, err
 	}
 	for _, product := range products {
 		lIDs, ok := productMap[product.ID]
@@ -197,7 +183,7 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 	err = leadsScope.Find(&leads).Error
 
 	if err != nil {
-		return
+		return nil, err
 	}
 	//Third, merge all
 	for _, lead := range leads {
@@ -206,46 +192,30 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, leadID uint64, limit ui
 			lead.Products = leadProducts
 		}
 
-		role, ok := rolesMap[uint64(lead.ID)]
-		if ok {
-			lead.UserRole = role
-		}
+		lead.UserRole = lead.RoleOf(user)
 	}
 
-	return
-}
-
-func toRole(customerID, shopID uint64, sellersSh map[uint64]int, suppliersSh map[uint64]int, user *User) core.LeadUserRole {
-	if customerID == uint64(user.ID) {
-		return core.LeadUserRole_CUSTOMER
-	}
-	if _, ok := suppliersSh[shopID]; ok {
-		return core.LeadUserRole_SUPPLIER
-	}
-	if _, ok := sellersSh[shopID]; ok {
-		return core.LeadUserRole_SELLER
-	}
-	if user.SuperSeller {
-		return core.LeadUserRole_SUPER_SELLER
-	}
-	return core.LeadUserRole_UNKNOWN
+	return leads, nil
 }
 
 //GetUserLead returns users's lead by lead ID
 func GetUserLead(user *User, leadID uint64) (*Lead, error) {
-	leads, err := GetUserLeads(user, []core.LeadUserRole{
-		core.LeadUserRole_CUSTOMER,
-		core.LeadUserRole_SUPPLIER,
-		core.LeadUserRole_SELLER,
-	}, leadID, 0, 0, false)
+	lead, err := GetLead(leadID, 0, "Customer", "Shop", "Shop.Supplier", "Shop.Sellers")
 	if err != nil {
 		return nil, err
 	}
-	if len(leads) != 1 {
-		return nil, errors.New("Lead not found")
+
+	lead.UserRole = lead.RoleOf(user)
+	if lead.UserRole == core.LeadUserRole_UNKNOWN {
+		return nil, errors.New("forbidden")
 	}
 
-	return leads[0], nil
+	lead.Products, err = GetLeadProducts(lead)
+	if err != nil {
+		return nil, err
+	}
+
+	return lead, nil
 }
 
 // FindActiveLead searches active lead for shop and customer,
