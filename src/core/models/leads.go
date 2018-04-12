@@ -157,6 +157,22 @@ func (l Lead) Decode(lead *core.Lead) *Lead {
 
 }
 
+// Shop with sellers must be loaded before this call
+func (lead Lead) RoleOf(user *User) core.LeadUserRole {
+	switch {
+	case lead.CustomerID == user.ID:
+		return core.LeadUserRole_CUSTOMER
+	case lead.Shop.SupplierID == user.ID:
+		return core.LeadUserRole_SUPPLIER
+	case lead.Shop.HasSeller(user.ID):
+		return core.LeadUserRole_SELLER
+	case user.SuperSeller:
+		return core.LeadUserRole_SUPER_SELLER
+	default:
+		return core.LeadUserRole_UNKNOWN
+	}
+}
+
 func (lead *Lead) TriggerEvent(eventName, statusComment string, cancelReason uint64, mover *User) error {
 	event, ok := leadEvents[eventName]
 	if !ok {

@@ -183,7 +183,7 @@ func (s leadServer) GetUserLeads(ctx context.Context, req *core.UserLeadsRequest
 	reply = &core.UserLeadsReply{
 		Leads: []*core.LeadInfo{},
 	}
-	leads, err := models.GetUserLeads(user, req.Role, req.LeadId, req.Limit, req.FromUpdatedAt, req.Direction)
+	leads, err := models.GetUserLeads(user, req.Role, req.RelatedShop, req.Limit, req.FromUpdatedAt, req.Direction)
 	if err != nil {
 		log.Error(err)
 		return
