@@ -345,7 +345,7 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 			"link_urls":  string(data),
 		}, &object)
 		// Instagram do not like one of our links...
-		if err.Error() == "Failed sentry check." {
+		if err != nil && err.Error() == "Failed sentry check." {
 			log.Warn("instagram blocked one of folloving links: %v", urls)
 			err = ig.postRequest("/direct_v2/threads/broadcast/text/", map[string]string{
 				"text":       message,
