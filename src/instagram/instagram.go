@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"bytes"
+	"common/log"
 	"common/proxy"
 	"crypto/md5"
 	"encoding/hex"
@@ -332,19 +333,25 @@ func (ig *Instagram) BroadcastText(threadID, message string) (messageID string, 
 	urls := urls.FindAllString(message, -1)
 
 	if len(urls) == 0 {
-		endpoint := "/direct_v2/threads/broadcast/text/"
-		err = ig.postRequest(endpoint, map[string]string{
+		err = ig.postRequest("/direct_v2/threads/broadcast/text/", map[string]string{
 			"text":       message,
 			"thread_ids": fmt.Sprintf("[%v]", threadID),
 		}, &object)
 	} else {
 		data, _ := json.Marshal(urls)
-		endpoint := "/direct_v2/threads/broadcast/link/"
-		err = ig.postRequest(endpoint, map[string]string{
+		err = ig.postRequest("/direct_v2/threads/broadcast/link/", map[string]string{
 			"link_text":  message,
 			"thread_ids": fmt.Sprintf("[%v]", threadID),
 			"link_urls":  string(data),
 		}, &object)
+		// Instagram do not like one of our links...
+		if err.Error() == "Failed sentry check." {
+			log.Warn("instagram blocked one of folloving links: %v", urls)
+			err = ig.postRequest("/direct_v2/threads/broadcast/text/", map[string]string{
+				"text":       message,
+				"thread_ids": fmt.Sprintf("[%v]", threadID),
+			}, &object)
+		}
 	}
 
 	if err != nil {
