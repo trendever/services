@@ -134,16 +134,11 @@ func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) er
 		if err != nil {
 			return err
 		}
-
 	} else if err != nil { // terminate on any other error
 		return err
 	}
 
-	// delogin
-	api.CheckpointURL = ""
-	api.CheckpointCookies = nil
-
-	_, err = api.GetRecentActivity()
+	err = api.Login()
 	if err != nil {
 		return err
 	}
