@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"common/log"
 	"instagram"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
 )
 
 type Proxy struct {
@@ -16,57 +14,72 @@ type Proxy struct {
 
 func main() {
 	log.Init(true, "invalidate", "")
-	if len(os.Args) != 4 {
-		log.Fatalf("Usage: %v username password proxyfile", os.Args[0])
+	if len(os.Args) < 2 {
+		log.Fatalf("Usage: %v accountsfile [proxyfile]", os.Args[0])
 	}
 
-	file, err := os.Open(os.Args[3])
-	if err != nil {
-		log.Fatalf("failed to open file: %v\n", err)
+	proxies := []string{""}
+
+	if len(os.Args) > 2 {
+		file, err := os.Open(os.Args[2])
+		if err != nil {
+			log.Fatalf("failed to open file: %v\n", err)
+		}
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			if strings.HasPrefix(scanner.Text(), "#") || scanner.Text() == "" {
+				continue
+			}
+			proxies = append(proxies, scanner.Text())
+		}
+		if scanner.Err() != nil {
+			log.Fatal(scanner.Err())
+		}
 	}
-	scanner := bufio.NewScanner(file)
-	var proxies []string
-	for scanner.Scan() {
-		if strings.HasPrefix(scanner.Text(), "#") || scanner.Text() == "" {
+
+	type auth struct {
+		login string
+		pass  string
+	}
+	var accs []auth
+
+	f, err := os.Open(os.Args[1])
+	log.Fatal(err)
+	scan := bufio.NewScanner(f)
+	for scan.Scan() {
+		trimmed := strings.Trim(scan.Text(), " \t\r")
+		if strings.HasPrefix(trimmed, "#") || trimmed == "" {
 			continue
 		}
-		proxies = append(proxies, scanner.Text())
-	}
-	if scanner.Err() != nil {
-		log.Fatal(scanner.Err())
-	}
-
-	if len(proxies) == 0 {
-		log.Fatalf("no usable proxies are presented")
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	_, err = instagram.NewInstagram(os.Args[1], os.Args[2], "", false)
-	if err != nil {
-		log.Fatalf("failed to initialize account without proxies %v", err)
-	}
-
-INV:
-	for _, proxy := range proxies {
-		ig, err := instagram.NewInstagram(os.Args[1], os.Args[2], proxy, false)
-		if err != nil {
-			if ig.CheckpointURL != "" {
-				log.Info("checkpoint required!")
-				return
-			}
-			log.Errorf("proxy %v: %v", proxy, err)
+		split := strings.Split(trimmed, " ")
+		if len(split) != 2 {
+			log.Warn("bad login pair: '%v'", scan.Text())
 			continue
 		}
-		_, err = ig.Inbox("")
-		if err != nil {
-			log.Errorf("proxy %v: %v", proxy, err)
-			if ig.CheckpointURL != "" {
-				log.Debug("got checkpoint!")
-				return
+		accs = append(accs, auth{login: split[0], pass: split[1]})
+	}
+
+	for _, acc := range accs {
+		for _, proxy := range proxies {
+			ig, err := instagram.NewInstagram(acc.login, acc.pass, proxy, false)
+			if err != nil {
+				if ig != nil && ig.CheckpointURL != "" {
+					log.Info("checkpoint required for %v!", acc.login)
+					return
+				}
+				log.Errorf("%v, proxy '%v': %v", acc.login, proxy, err)
+				continue
 			}
-		} else {
-			log.Info("proxy %v passed", proxy)
+			_, err = ig.Inbox("")
+			if err != nil {
+				log.Errorf("%v, proxy '%v': %v", acc.login, proxy, err)
+				if ig.CheckpointURL != "" {
+					log.Info("checkpoint required for %v!", acc.login)
+					return
+				}
+			} else {
+				log.Info("proxy '%v' passed for %v", proxy, acc.login)
+			}
 		}
 	}
-	goto INV
 }
