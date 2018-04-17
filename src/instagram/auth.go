@@ -44,6 +44,9 @@ var challenges = map[string]struct {
 
 // Login to Instagram.
 func (ig *Instagram) Login() error {
+	if ig.Username == "" || ig.password == "" {
+		return ErrorEmptyPassword
+	}
 
 	fetch := fmt.Sprintf("/si/fetch_headers/?challenge_type=signup&guid=%v", generateUUID(false))
 
@@ -56,10 +59,6 @@ func (ig *Instagram) Login() error {
 	token, err := getToken(resp.Cookies())
 	if err != nil {
 		return err
-	}
-
-	if ig.Username == "" || ig.password == "" {
-		return ErrorEmptyPassword
 	}
 
 	// login
@@ -304,13 +303,33 @@ func (ig *Instagram) CheckpointStep3(code string) error {
 		return err
 	}
 
-	// @TODO here could be better handler with decode of answer
-	if !strings.Contains(body, `"status": "ok"`) {
-		return errors.New("Bad code")
+	var reply struct {
+		Location string `json:"location"`
+		Type     string `json:"type"`
+		Status   string `json:"status"`
+		Message  string `json:"message"`
 	}
 
+	err = json.Unmarshal([]byte(body), &reply)
+	if err != nil {
+		log.Errorf("failed to parse checkpoint reply for %v: %v", ig.Username, err)
+		return errors.New("Failed to parse reply")
+	}
+
+	if reply.Status != "ok" {
+		return errors.New(reply.Message)
+	}
+
+	if reply.Type != "CHALLENGE_REDIRECTION" {
+		log.Errorf("unexpected reply for security code: %v", body)
+		return errors.New("Unexpected reply")
+	}
+	//@CHECK Well, according to reply we should go to instagram://checkpoint/dismiss here.
+	// But accidental login worked for me and i do not have accounts with checkpoints anymore..
+
+	ig.CheckpointURL = ""
 	ig.CheckpointCookies = nil
-	ig.LoggedIn = true
+	ig.LoggedIn = false
 	return nil
 }
 
