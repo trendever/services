@@ -20,4 +20,5 @@ type Settings struct {
 		Telegram string
 	}
 	UserURLTemplate string
+	DefaultProxy    string
 }

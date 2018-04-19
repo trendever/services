@@ -4,6 +4,7 @@ import (
 	"common/config"
 	"common/db"
 	"common/log"
+	"common/proxy"
 	"instagram"
 	"proto/core"
 	"utils/cli"
@@ -28,6 +29,7 @@ func (s *svc) Load() {
 	config.LoadStruct("accountstore", &settings)
 	log.Init(settings.Debug, "accountstore", settings.SentryDSN)
 	instagram.ForceDebug = settings.InstagramDebug
+	proxy.DefaultProxy = settings.DefaultProxy
 	db.Init(settings.DB)
 	go notifier()
 	nats.Init(&settings.Nats, true)
