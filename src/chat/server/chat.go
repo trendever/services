@@ -246,9 +246,17 @@ func (cs *chatServer) AppendMessage(ctx context.Context, req *proto_chat.AppendM
 	}, nil
 }
 
-func (cs *chatServer) GetTotalCountUnread(_ context.Context, req *proto_chat.TotalCountUnreadRequest) (reply *proto_chat.TotalCountUnreadReply, err error) {
-	reply = new(proto_chat.TotalCountUnreadReply)
-	reply.Count, err = cs.chats.GetTotalUnread(req.UserId)
+func (cs *chatServer) GetUnreadChatsCount(_ context.Context, req *proto_chat.UnreadChatsCountRequest) (reply *proto_chat.UnreadChatsCountReply, err error) {
+	total, groups, err := cs.chats.GetUnreadChatsCount(req.UserId)
+	if err != nil {
+		return &proto_chat.UnreadChatsCountReply{}, err
+	}
+	reply = &proto_chat.UnreadChatsCountReply{
+		Groups: make(map[uint64]uint64),
+	}
+	reply.Groups = groups
+	reply.Total = total
+	reply.Count = reply.Total
 	return
 }
 

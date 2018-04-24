@@ -360,22 +360,20 @@ func ChatTotalCountUnread(c *soso.Context) {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
 		return
 	}
-	request := &proto_chat.TotalCountUnreadRequest{
+	request := &proto_chat.UnreadChatsCountRequest{
 		UserId: c.Token.UID,
 	}
 
 	ctx, cancel := rpc.DefaultContext()
 	defer cancel()
 
-	resp, err := chatClient.GetTotalCountUnread(ctx, request)
+	resp, err := chatClient.GetUnreadChatsCount(ctx, request)
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
 	}
 
-	c.SuccessResponse(map[string]interface{}{
-		"count": resp.Count,
-	})
+	c.SuccessResponse(resp)
 }
 
 func EnableChatSync(c *soso.Context) {

@@ -12,7 +12,7 @@ import (
 //Message is model of message
 type Message struct {
 	db.Model
-	ConversationID uint
+	ConversationID uint `gorm:"index"`
 	InstagramID    string
 	UserID         uint64
 	Member         Member `gorm:"ForeignKey:ConversationID,UserID;AssociationForeignKey:ConversationID,UserID"`
