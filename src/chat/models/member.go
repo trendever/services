@@ -14,10 +14,10 @@ type Member struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time `sql:"index"`
-	Role           string
+	Role           string     `gorm:"index"`
 	Messages       []Message
 	Name           string
-	LastMessageID  uint64
+	LastMessageID  uint64 `gorm:"index"`
 	// effective id to answers, may be id of shop instead of user itself
 	InstagramID uint64
 }
