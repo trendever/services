@@ -54,9 +54,11 @@ func SetNotifier(n Notifier) {
 //Conversation is representation of conversation model
 type Conversation struct {
 	db.Model
-	Name         string
-	Members      []*Member
-	Messages     []*Message
+	Name     string
+	Members  []*Member
+	Messages []*Message
+	// Related shop id for now
+	GroupID      uint64 `gorm:"index;default:NULL"`
 	Caption      string `gorm:"text"`
 	Status       string `gorm:"index;default:'new'"`
 	UnreadCount  uint64 `sql:"-"`
@@ -98,7 +100,7 @@ type ConversationRepository interface {
 	TotalMessages(chat *Conversation) uint64
 	MarkAsReaded(chatID, userID, msgID uint64) error
 	GetUnread(ids []uint64, userID uint64) (map[uint64]uint64, error)
-	GetTotalUnread(userID uint64) (uint64, error)
+	GetUnreadChatsCount(userID uint64) (total uint64, byGroup map[uint64]uint64, err error)
 	UpdateMessage(messageID uint64, append []*MessagePart) (*Message, error)
 	DeleteConversation(id uint64) error
 	SetConversationStatus(req *pb_chat.SetStatusMessage) error
@@ -536,10 +538,13 @@ func (c *conversationRepositoryImpl) GetUnread(ids []uint64, userID uint64) (map
 	return unreadMap, nil
 }
 
-func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, error) {
-	var missed uint64
+func (c *conversationRepositoryImpl) GetUnreadChatsCount(userID uint64) (uint64, map[uint64]uint64, error) {
+	var scan []struct {
+		GroupID uint64
+		Count   uint64
+	}
 	err := c.db.
-		Select("COUNT(DISTINCT c.id)").
+		Select("COUNT(DISTINCT c.id), c.group_id").
 		Table("members u").
 		Joins("JOIN conversations c ON u.conversation_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN messages m ON m.conversation_id = c.id").
@@ -547,9 +552,18 @@ func (c *conversationRepositoryImpl) GetTotalUnread(userID uint64) (uint64, erro
 		Where("u.last_message_id < m.id").
 		Where("c.status != 'cancelled'").
 		Where("u.role = 'CUSTOMER' OR c.status != 'new'").
-		Row().
-		Scan(&missed)
-	return missed, err
+		Group("c.group_id").
+		Scan(&scan).Error
+	if err != nil {
+		return 0, nil, err
+	}
+	groups := make(map[uint64]uint64)
+	var total uint64
+	for _, group := range scan {
+		groups[group.GroupID] = group.Count
+		total += group.Count
+	}
+	return total, groups, err
 }
 
 //Encode converts to protobuf model

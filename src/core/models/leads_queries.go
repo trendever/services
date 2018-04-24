@@ -301,6 +301,7 @@ func CreateLead(protoLead *core.Lead, shopID uint) (lead *Lead, err error) {
 		genChatCaption(lead),
 		protoLead.DirectThread,
 		lead.Shop.Supplier.InstagramID,
+		uint64(shopID),
 	)
 
 	if err != nil {
@@ -315,7 +316,7 @@ func CreateLead(protoLead *core.Lead, shopID uint) (lead *Lead, err error) {
 	return lead, nil
 }
 
-func CreateChat(members []*chat.Member, caption, directThread string, primaryInstagram uint64) (chatID uint64, err error) {
+func CreateChat(members []*chat.Member, caption, directThread string, primaryInstagram uint64, groupID uint64) (chatID uint64, err error) {
 	context, cancel := rpc.DefaultContext()
 	defer cancel()
 
@@ -324,6 +325,7 @@ func CreateChat(members []*chat.Member, caption, directThread string, primaryIns
 			Members:      members,
 			Caption:      caption,
 			DirectThread: directThread,
+			GroupId:      groupID,
 		},
 		PrimaryInstagram: primaryInstagram,
 	})

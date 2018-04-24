@@ -15,7 +15,7 @@ service ChatService {
     //updated last message id for member
     rpc MarkAsReaded(MarkAsReadedRequest) returns (MarkAsReadedReply){}
     //returns total count of unread messages
-    rpc GetTotalCountUnread(TotalCountUnreadRequest) returns (TotalCountUnreadReply){}
+    rpc GetUnreadChatsCount(UnreadChatsCountRequest) returns (UnreadChatsCountReply){}
     //append message part
     rpc AppendMessage(AppendMessageRequest) returns (AppendMessageReply){}
     rpc EnableSync(EnableSyncRequest) returns (EnableSyncReply) {}
@@ -93,6 +93,7 @@ message Chat {
     string direct_thread = 6;
     string caption = 8;
     SyncStatus sync_status = 9;
+    uint64 group_id = 10;
 }
 
 message Member {
@@ -213,12 +214,16 @@ message MessageAppendedRequest{
 message NewChatMemberReply {
 }
 
-message TotalCountUnreadRequest {
+message UnreadChatsCountRequest {
     uint64 user_id = 1;
 }
 
-message TotalCountUnreadReply {
+message UnreadChatsCountReply {
+    // @TODO Remove 'count' in favor of 'total'
     uint64 count = 1;
+    uint64 total = 2;
+    // group(shop) id -> chats count
+    map<uint64, uint64> groups = 3;
 }
 
 message SetStatusMessage {
