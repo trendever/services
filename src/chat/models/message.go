@@ -26,7 +26,7 @@ type MessagePart struct {
 	Content   string
 	ContentID string
 	MimeType  string
-	MessageID uint
+	MessageID uint `gorm:"index"`
 }
 
 var ImageUploader *mandible.Uploader
