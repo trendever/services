@@ -28,10 +28,10 @@ type Lead struct {
 	// One of LeadSources
 	Source string
 
-	CustomerID uint
+	CustomerID uint `gorm:"index"`
 	Customer   User `gorm:"save_associations:false"`
 
-	ShopID uint
+	ShopID uint `gorm:"index"`
 	Shop   Shop `gorm:"save_associations:false"`
 
 	ProductItems []ProductItem `gorm:"many2many:products_leads_items"`
