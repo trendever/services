@@ -51,14 +51,6 @@ services:
     depends_on:
       - db
     command: sh -c './bin/sms migrate && exec ./bin/sms start'
-  push:
-    image: debian:jessie
-    volumes_from:
-      - data
-    working_dir: /services/
-    depends_on:
-      - db
-    command: sh -c './bin/push migrate && exec ./bin/push start'
   chat:
     image: debian:jessie
     volumes_from:

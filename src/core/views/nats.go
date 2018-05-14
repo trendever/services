@@ -299,17 +299,6 @@ func handleUnansweredMessages(notify *chat.UnansweredNotify) bool {
 
 	n := models.GetNotifier()
 	if notify.ForUser {
-		var count uint64
-		err = db.New().Model(&models.PushToken{}).Where("user_id = ?", lead.CustomerID).Count(&count).Error
-		if err != nil {
-			log.Errorf("failed to determinate whether user have active push tokens: %v", err)
-			return true
-		}
-
-		if count != 0 {
-			return true
-		}
-
 		log.Error(n.NotifyAboutUnansweredMessages(&lead.Customer, lead, notify.Count, notify.Group, notify.Messages))
 	} else {
 		log.Error(n.NotifyAboutUnansweredMessages(&lead.Shop.Supplier, lead, notify.Count, notify.Group, notify.Messages))

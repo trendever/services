@@ -10,7 +10,6 @@ import (
 	"proto/checker"
 	"proto/mail"
 	"proto/payment"
-	"proto/push"
 	"proto/sms"
 	"proto/telegram"
 	"proto/trendcoin"
@@ -34,7 +33,6 @@ var (
 	SmsServiceClient       sms.SmsServiceClient
 	ChatServiceClient      chat.ChatServiceClient
 	AuthServiceClient      auth.AuthServiceClient
-	PushServiceClient      push.PushServiceClient
 	CheckerServiceClient   checker.CheckerServiceClient
 	TrendcoinServiceClient trendcoin.TrendcoinServiceClient
 	PaymentsServiceClient  payment.PaymentServiceClient
@@ -80,9 +78,6 @@ func startClients() {
 
 	authConn := rpc.Connect(config.RPC.Auth)
 	AuthServiceClient = auth.NewAuthServiceClient(authConn)
-
-	pushConn := rpc.Connect(config.RPC.Push)
-	PushServiceClient = push.NewPushServiceClient(pushConn)
 
 	checkerConn := rpc.Connect(config.RPC.Checker)
 	CheckerServiceClient = checker.NewCheckerServiceClient(checkerConn)

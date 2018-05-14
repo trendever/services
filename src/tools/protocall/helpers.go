@@ -12,7 +12,6 @@ import "proto/checker"
 import "proto/core"
 import "proto/mail"
 import "proto/payment"
-import "proto/push"
 import "proto/sms"
 import "proto/telegram"
 import "proto/trendcoin"
@@ -32,14 +31,12 @@ func connect() {
 		"LeadService":         core.NewLeadServiceClient(conn),
 		"MonetizationService": core.NewMonetizationServiceClient(conn),
 		"ProductService":      core.NewProductServiceClient(conn),
-		"PushTokensService":   core.NewPushTokensServiceClient(conn),
 		"ShopCardService":     core.NewShopCardServiceClient(conn),
 		"ShopService":         core.NewShopServiceClient(conn),
 		"TagService":          core.NewTagServiceClient(conn),
 		"UserService":         core.NewUserServiceClient(conn),
 		"MailService":         mail.NewMailServiceClient(conn),
 		"PaymentService":      payment.NewPaymentServiceClient(conn),
-		"PushService":         push.NewPushServiceClient(conn),
 		"SmsService":          sms.NewSmsServiceClient(conn),
 		"TelegramService":     telegram.NewTelegramServiceClient(conn),
 		"TrendcoinService":    trendcoin.NewTrendcoinServiceClient(conn),

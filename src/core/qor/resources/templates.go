@@ -17,10 +17,6 @@ func init() {
 		Name: "Email templates",
 		Menu: []string{"Settings"},
 	}, initEmailTemplateResource)
-	addResource(&models.PushTemplate{}, &admin.Config{
-		Name: "Push templates",
-		Menu: []string{"Settings"},
-	}, initPushTemplateResource)
 	addResource(&models.ChatTemplate{}, &admin.Config{
 		Name: "Chat templates",
 		Menu: []string{"Settings"},
@@ -165,41 +161,6 @@ func initEmailTemplateResource(email *admin.Resource) {
 	}
 	email.NewAttrs(attrs)
 	email.EditAttrs(attrs)
-}
-
-func initPushTemplateResource(push *admin.Resource) {
-	push.Meta(&admin.Meta{
-		Name:       "TemplateID",
-		Type:       "select_one",
-		Collection: models.TemplatesList["push"],
-	})
-	push.Meta(&admin.Meta{
-		Name: "Body",
-		Type: "text",
-	})
-	push.IndexAttrs(
-		"TemplateID", "TemplateName", "Title",
-	)
-	push.SearchAttrs(
-		"TemplateName", "TemplateID",
-	)
-	attrs := []*admin.Section{
-		{
-			Title: "Template settings",
-			Rows: [][]string{
-				{"TemplateID", "TemplateName"},
-			},
-		},
-		{
-			Title: "Payload",
-			Rows: [][]string{
-				{"Title"},
-				{"Body"},
-			},
-		},
-	}
-	push.NewAttrs(attrs)
-	push.EditAttrs(attrs)
 }
 
 func initChatTemplateResource(chat *admin.Resource) {
