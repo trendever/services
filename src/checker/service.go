@@ -55,7 +55,6 @@ func init() {
 	instagram.ForceDebug = settings.ResponseLogging
 }
 
-// @TODO use accountstore client
 func main() {
 	var cmd = cobra.Command{
 		Use:   "service",
