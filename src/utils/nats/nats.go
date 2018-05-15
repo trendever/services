@@ -50,8 +50,6 @@ var (
 	subscriptions     []*Subscription
 	stanSubscriptions []*StanSubscription
 	lock              sync.Mutex
-
-	stanClientID string
 )
 
 // may be called before Init(), so it's fine to call it in package init
