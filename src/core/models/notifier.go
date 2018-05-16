@@ -11,10 +11,8 @@ import (
 	"proto/chat"
 	"proto/core"
 	"proto/mail"
-	"proto/push"
 	"proto/sms"
 	"proto/telegram"
-	"push/typemap"
 	"reflect"
 	"utils/nats"
 	"utils/rpc"
@@ -37,9 +35,6 @@ func init() {
 		RegisterNotifyTemplates(t)
 	}
 }
-
-// push notifications ttl in seconds
-var PushTTL uint64 = 60 * 3
 
 type Notifier struct {
 	mailClient mail.MailServiceClient
@@ -143,49 +138,6 @@ func (n *Notifier) NotifyBySms(phone, about string, model interface{}) error {
 	return err
 }
 
-func (n *Notifier) NotifyByPush(receivers []*push.Receiver, about string, model interface{}) error {
-	if receivers == nil || len(receivers) == 0 {
-		return errors.New("nil or empty receivers slice")
-	}
-	template := &PushTemplate{}
-	ret := n.db.Find(template, "template_id = ?", about)
-	if ret.RecordNotFound() {
-		return nil
-	}
-	if ret.Error != nil {
-		return ret.Error
-	}
-	result, err := template.Execute(model)
-	if err != nil {
-		return err
-	}
-
-	msg, ok := result.(*PushMessage)
-	if !ok {
-		return errors.New("expected PushMessage, but got " + reflect.TypeOf(msg).Name())
-	}
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-
-	if msg.Data == "" && msg.Body == "" {
-		return errors.New("empty message")
-	}
-
-	request := &push.PushRequest{
-		Receivers: receivers,
-		Message: &push.PushMessage{
-			Priority:   push.Priority_HING,
-			TimeToLive: PushTTL,
-			Title:      msg.Title,
-			Body:       msg.Body,
-			Data:       msg.Data,
-		},
-	}
-	_, err = api.PushServiceClient.Push(ctx, request)
-
-	return err
-}
-
 func (n *Notifier) NotifyUserByTelegram(user *User, about string, context interface{}) error {
 	template := &TelegramTemplate{}
 	ret := n.db.Find(template, "template_id = ?", about)
@@ -242,24 +194,7 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 		telgramError = n.NotifyUserByTelegram(user, about, context)
 	}
 
-	var pushError error
-	rep := GetPushTokensRepository()
-	tokens, err := rep.GetTokens(user.ID)
-	switch {
-	case err != nil:
-		pushError = err
-	case tokens != nil && len(tokens) != 0:
-		receivers := make([]*push.Receiver, 0, len(tokens))
-		for _, token := range tokens {
-			receivers = append(receivers, &push.Receiver{
-				Service: typemap.TokenTypeToService[token.Type],
-				Token:   token.Token,
-			})
-		}
-		pushError = n.NotifyByPush(receivers, about, context)
-	}
-
-	if smsError == nil && emailError == nil && pushError == nil && telgramError == nil {
+	if smsError == nil && emailError == nil && telgramError == nil {
 		return nil
 	}
 	strErr := fmt.Sprintf(
@@ -271,9 +206,6 @@ func (n *Notifier) NotifyUserAbout(user *User, about string, context interface{}
 	}
 	if emailError != nil {
 		strErr += fmt.Sprintf("\n\t email: %v", emailError)
-	}
-	if pushError != nil {
-		strErr += fmt.Sprintf("\n\t push: %v", pushError)
 	}
 	if telgramError != nil {
 		strErr += fmt.Sprintf("\n\t telegram: %v", telgramError)

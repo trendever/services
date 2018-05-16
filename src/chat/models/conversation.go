@@ -340,7 +340,10 @@ func mapToInstagram(chat *Conversation, message *Message) (kind bot.MessageType,
 			slice := strings.Split(part.Content, "~")
 			if len(slice) >= 3 {
 				kind = bot.MessageType_MediaShare
-				data = slice[2]
+				id := strings.Trim(slice[2], " \t\r\n")
+				if id != "0" {
+					data = id
+				}
 				return
 			}
 		case "instagram/share":

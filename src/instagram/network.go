@@ -25,6 +25,17 @@ var ForceDebug = false
 // DisableJSONIndent disables indenting json in logs
 var DisableJSONIndent = true
 
+// @TODO Use this everywhere
+type Error struct {
+	Code    int
+	Message string
+	Raw     []byte
+}
+
+func (e Error) Error() string {
+	return e.Message
+}
+
 type PostContent struct {
 	Type   string
 	Reader io.Reader
@@ -145,7 +156,11 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 				return nil, ErrorCheckpointRequired
 			}
 			if message.Message != "login_required" {
-				return nil, errors.New(message.Message)
+				return nil, Error{
+					Code:    resp.StatusCode,
+					Message: message.Message,
+					Raw:     jsonBody,
+				}
 			}
 			// relogin
 			ig.LoggedIn = false

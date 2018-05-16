@@ -2,8 +2,6 @@ package models
 
 import (
 	"common/db"
-	"common/log"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -41,7 +39,7 @@ func RegisterTemplate(domain, name string) error {
 	return nil
 }
 
-var notifyDomains = []string{"email", "sms", "push", "telegram"}
+var notifyDomains = []string{"email", "sms", "telegram"}
 
 func RegisterNotifyTemplates(names ...string) error {
 	for _, name := range names {
@@ -89,18 +87,6 @@ type SMSTemplate struct {
 	Message string `gorm:"type:text"`
 }
 
-type PushMessage struct {
-	Title string `gorm:"type:text"`
-	Body  string `gorm:"type:text"`
-	// always URL, there is no need in template
-	Data string `gorm:"-"`
-}
-
-type PushTemplate struct {
-	BaseNotifierTemplate
-	PushMessage
-}
-
 type TelegramTemplate struct {
 	BaseNotifierTemplate
 	Message string `gorm:"type:text"`
@@ -120,10 +106,6 @@ func (t EmailTemplate) TableName() string {
 // TableName for gorm
 func (t SMSTemplate) TableName() string {
 	return "settings_templates_sms"
-}
-
-func (t PushTemplate) TableName() string {
-	return "settings_templates_push"
 }
 
 func (t TelegramTemplate) TableName() string {
@@ -208,25 +190,6 @@ func (t TelegramTemplate) Validate(db *gorm.DB) {
 	}
 }
 
-func (t PushTemplate) Validate(db *gorm.DB) {
-	t.BaseNotifierTemplate.Validate(db)
-	sources := map[string]string{
-		"Title": t.Title,
-		"Body":  t.Body,
-		"Data":  t.Data,
-	}
-	for column, str := range sources {
-		_, err := pongo2.FromString(str)
-		if err != nil {
-			db.AddError(validations.NewError(
-				t,
-				column,
-				fmt.Sprintf("Failed to compile template: %v", err),
-			))
-		}
-	}
-}
-
 // Execute returns MessageFields object with ready-to-use fields
 func (t *EmailTemplate) Execute(ctx interface{}) (interface{}, error) {
 
@@ -263,38 +226,6 @@ func (t *TelegramTemplate) Execute(ctx interface{}) (interface{}, error) {
 
 func (t *OtherTemplate) Execute(ctx interface{}) (interface{}, error) {
 	return applyTemplate(t.Text, ctx, false)
-}
-
-// setting data to string from ctx["URL"] is hardcoded, you need this field in context or data will be empty
-func (t *PushTemplate) Execute(ctx interface{}) (interface{}, error) {
-	title, err := applyTemplate(t.Title, ctx, false)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := applyTemplate(t.Body, ctx, false)
-	if err != nil {
-		return nil, err
-	}
-
-	var data string
-	if ctxMap, ok := ctx.(map[string]interface{}); ok {
-		if url, ok := ctxMap["URL"]; ok {
-			if str, ok := url.(string); ok {
-				json, _ := json.Marshal(struct{ URL string }{URL: str})
-				data = string(json)
-			}
-		}
-	}
-	if data == "" {
-		log.Warn("push template: URL string field not found in context, data will be empty")
-	}
-
-	return &PushMessage{
-		Title: title,
-		Body:  body,
-		Data:  data,
-	}, nil
 }
 
 func randomArgument(args ...*pongo2.Value) *pongo2.Value {
