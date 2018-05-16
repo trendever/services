@@ -289,17 +289,36 @@ func sendComment(ig *instagram.Instagram, req *models.DirectRequest, result *bot
 		return nil
 	}
 	_, err := ig.CommentMedia(req.ThreadID, req.Data)
-	switch {
-	case err == nil:
-
-	// @TODO find out reply for deleted post
-	case err.Error() == "Sorry, this media has been deleted":
+	if err == nil {
+		return nil
+	}
+	switch err.Error() {
+	case "Sorry, this media has been deleted":
 		result.Error = consts.InaccessibleMedia
+		return nil
+
+	case "feedback_required":
+		if ierr, ok := err.(instagram.Error); ok {
+			var decoded struct {
+				FeedbackIgnoreLabel string `json:"feedback_ignore_label"`
+				FeedbackTitle       string `json:"feedback_title"`
+				FeedbackMessage     string `json:"feedback_message"`
+			}
+			err := json.Unmarshal(ierr.Raw, &decoded)
+			if err != nil {
+				return err
+			}
+			if decoded.FeedbackMessage == "The post you were viewing has been deleted." {
+				result.Error = consts.InaccessibleMedia
+				return nil
+			}
+		}
+
+		return err
 
 	default:
 		return err
 	}
-	return nil
 }
 
 func fetchThread(meta *client.AccountMeta, req *models.DirectRequest, result *bot.Notify) error {
