@@ -2,13 +2,14 @@ package main
 
 import (
 	"common/log"
+	"common/proxy"
+	"github.com/codegangsta/cli"
+	"net/http"
 	"os"
 	"os/signal"
 	"proto/core"
 	"syscall"
 	"utils/rpc"
-
-	"github.com/codegangsta/cli"
 )
 
 type projectService struct{}
@@ -44,18 +45,24 @@ func main() {
 
 // Run bot
 func (svc *projectService) run() error {
-
 	settings := GetSettings()
+
+	transport, err := proxy.TransportFromURL(settings.Proxy)
+	log.Fatal(err)
+	http.DefaultClient = &http.Client{
+		Transport: transport,
+	}
+
 	userServer = core.NewUserServiceClient(rpc.Connect(settings.CoreServer))
 
 	// init Telegram
-	t, err := InitBot(settings.Token, settings.Rooms)
+	bot, err := InitBot(settings.Token, settings.Rooms)
 	if err != nil {
 		return err
 	}
 
 	// init api
-	InitViews(t)
+	InitViews(bot)
 
 	// interrupt
 	interrupt := make(chan os.Signal)

@@ -2,6 +2,7 @@ debug: true
 coreServer: core:3005
 token: '307338702:AAFxxBxqaHGYYGG_xAZ1rSopzCmbFJhWS60'
 rpc:   ':4040'
+proxy: ''
 
 rooms: 
   - name: 'new_user'
