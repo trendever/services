@@ -34,8 +34,10 @@ enum MessageType {
   Text = 1;
   MediaShare = 2;
   Image = 3;
+  // stuff like notifies for deleted messages
+  System = 4;
 
-  // for internal usage inside fether only
+  // for internal usage inside fetсher only
   CreateThread = 127;
 
   FetchThread = 254;

@@ -282,6 +282,11 @@ type ThreadItem struct {
 		Text  string      `json:"text"`
 		Media DirectMedia `json:"media"`
 	} `json:"reel_share"`
+	Placeholder struct {
+		IsLinked bool   `json:"is_linked"`
+		Title    string `json:"title"`
+		Message  string `json:"message"`
+	} `json:"placeholder"`
 }
 
 // Sorting stuff
