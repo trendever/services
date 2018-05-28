@@ -286,6 +286,8 @@ func MapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data str
 			data += "\n" + msg.ReelShare.Text
 		}
 		return bot.MessageType_Text, data
+	case "placeholder":
+		return bot.MessageType_System, msg.Placeholder.Message
 	default:
 		log.Debug("unknown type of direct item: %v", msg.ItemType)
 		return bot.MessageType_None, ""

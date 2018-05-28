@@ -113,15 +113,28 @@ func (cs *chatServer) handleNewMessage(chat *models.Conversation, msg *bot.Messa
 			MimeType: "text/plain",
 		})
 
+	case bot.MessageType_System:
+		encoded, _ := json.Marshal(struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		}{
+			Type:  "instagram.placeholder",
+			Value: msg.Data,
+		})
+		parts = append(parts, &models.MessagePart{
+			Content:  string(encoded),
+			MimeType: "json/status",
+		})
+
 	case bot.MessageType_Image:
 		img, err := models.ImageUploader.DoRequest("url", msg.Data)
 		switch resp := err.(type) {
 		case nil:
-			j, _ := json.Marshal(img)
+			encoded, _ := json.Marshal(img)
 			parts = append(parts, &models.MessagePart{
 				MimeType:  "image/json",
 				ContentID: img.Hash,
-				Content:   string(j),
+				Content:   string(encoded),
 			})
 
 		case *mandible.ImageResp:

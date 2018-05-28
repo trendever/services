@@ -46,6 +46,7 @@ type Settings struct {
 	Rooms      []Room
 	SentryDSN  string
 	Nats       nats.Config
+	Proxy      string
 	Messages   struct {
 		Help          string
 		Subscribed    string

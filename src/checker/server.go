@@ -7,13 +7,11 @@ import (
 	"golang.org/x/net/context"
 	"instagram"
 	"io/ioutil"
-	"proto/accountstore"
 	"proto/checker"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"utils/rpc"
 )
 
 type CheckerServer struct {
@@ -228,12 +226,8 @@ func checkUser(user *User) {
 		if user.Name == "" {
 			updateMap["name"] = user.InstagramUsername
 		}
-		if trimmed != "" {
-			markBotInvalid(trimmed, "instagram user not found")
-		}
 		updateMap["instagram_username"] = ""
 		updateMap["instagram_id"] = 0
-
 	} else {
 		if uint64(instagramInfo.Pk) != user.InstagramID {
 			updateMap["instagram_id"] = instagramInfo.Pk
@@ -253,19 +247,6 @@ func checkUser(user *User) {
 		if err != nil {
 			log.Errorf("failed to update user %v: %v", user.ID, err)
 		}
-	}
-}
-
-func markBotInvalid(username, reason string) {
-	ctx, cancel := rpc.DefaultContext()
-	defer cancel()
-	_, err := storeCli.MarkInvalid(ctx, &accountstore.MarkInvalidRequest{
-		InstagramUsername: username,
-		Reason:            reason,
-	})
-	if err != nil {
-		log.Warn("failed to invalidate account %v: %v", username, err)
-		return
 	}
 }
 
