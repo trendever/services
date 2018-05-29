@@ -246,9 +246,9 @@ func (ig *Instagram) PendingInbox() (*PendingInboxResponse, error) {
 // Inbox returns usual normal chats
 func (ig *Instagram) Inbox(cursor string) (*InboxResponse, error) {
 
-	endpoint := "/direct_v2/inbox/?"
+	endpoint := "/direct_v2/inbox/?use_unified_inbox=true"
 	if cursor != "" {
-		endpoint += fmt.Sprintf("cursor=%v", url.QueryEscape(cursor))
+		endpoint += fmt.Sprintf("&cursor=%v", url.QueryEscape(cursor))
 	}
 
 	var object InboxResponse
@@ -271,9 +271,9 @@ func (ig *Instagram) RankedRecipients() (*RankedRecipientsResponse, error) {
 // DirectThread
 func (ig *Instagram) DirectThread(threadID, cursor string) (*DirectThreadResponse, error) {
 
-	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?", threadID)
+	endpoint := fmt.Sprintf("/direct_v2/threads/%v/?use_unified_inbox=true", threadID)
 	if cursor != "" {
-		endpoint += fmt.Sprintf("cursor=%v", url.QueryEscape(cursor))
+		endpoint += fmt.Sprintf("&cursor=%v", url.QueryEscape(cursor))
 	}
 
 	var object DirectThreadResponse

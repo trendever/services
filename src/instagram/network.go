@@ -61,7 +61,7 @@ func (ig *Instagram) requestMain(method, endpoint string, body interface{}, logi
 	header := make(http.Header)
 	header.Add("User-Agent", UserAgent)
 	header.Add("Accept", "*/*")
-	header.Add("X-IG-Capabilities", "3QI=")
+	header.Add("X-IG-Capabilities", X_IG_Capabilities)
 	header.Add("X-IG-Connection-Type", "WIFI")
 	header.Add("Accept-Language", "en-US")
 	header.Add("Cookie2", "$Version=1")
