@@ -10,7 +10,8 @@ How to:
 
 Output example:
 
-`---------------------------
+```
+---------------------------
 SigKey found: '20a8b13b818d739c88fb5c2602e720aa2572dcdcc46d2fd3d4f6d5473fafad61'
 ---------------------------
 
@@ -25,6 +26,7 @@ Cookie: "is_starred_enabled=yes; sessionid=IGSCc48588fb35f0c53bab36fcb6fa0b5203a
 Content-Type: "application/x-www-form-urlencoded; charset=UTF-8"
 Content-Length: "261"
 
-query_id=1403787716369569&locale=en_US&vc_policy=ads_viewer_context_policy&signed_body=5f6d65f4bf7aec00cc2c3b7c923c3dae9268453ceff1d0aa8b100972e20e32fa.&ig_sig_key_version=4&strip_nulls=true&strip_defaults=true&query_params=%7B%220%22%3A%22793736047497610%22%7D`
+query_id=1403787716369569&locale=en_US&vc_policy=ads_viewer_context_policy&signed_body=5f6d65f4bf7aec00cc2c3b7c923c3dae9268453ceff1d0aa8b100972e20e32fa.&ig_sig_key_version=4&strip_nulls=true&strip_defaults=true&query_params=%7B%220%22%3A%22793736047497610%22%7D
+```
 
 SigKey will be shown only once per session because its extraction slow down all the things.
