@@ -268,11 +268,15 @@ type ThreadItem struct {
 	ClientContext string      `json:"client_context"`
 	Media         DirectMedia `json:"media"`
 	MediaShare    *MediaShare `json:"media_share,omitempty"`
-	Link          Link        `json:"link"`
-	Like          string      `json:"like"`
-	Profile       *User       `json:"profile"`
-	Location      *Location   `json:"location"`
-	HashTag       struct {
+	DirectShare   *struct {
+		Text  string     `json:"text"`
+		Media MediaShare `json:"media"`
+	} `json:"direct_media_share"`
+	Link     Link      `json:"link"`
+	Like     string    `json:"like"`
+	Profile  *User     `json:"profile"`
+	Location *Location `json:"location"`
+	HashTag  struct {
 		Name       string `json:"name"`
 		MediaCount uint64 `json:"media_count"`
 		// there is also some medias right in item, but there is no need to decode them

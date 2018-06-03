@@ -150,22 +150,17 @@ func processThread(meta *client.AccountMeta, info *models.ThreadInfo, upperTime 
 		}
 
 		if message.ItemType == "media_share" {
-			if meta.Role() != accountstore.Role_User || message.MediaShare.User.Pk == ig.UserID {
-				if err := addDirectActivity(message, &resp.Thread, meta, ""); err != nil {
+			share := message.MediaShare
+			if share == nil {
+				share = &message.DirectShare.Media
+			}
+			if meta.Role() != accountstore.Role_User || share.User.Pk == ig.UserID {
+				if err := addDirectActivity(message, share, &resp.Thread, meta); err != nil {
 					return err
 				}
 			}
 		}
-		kind, data := MapFromInstagram(message)
-		if kind != bot.MessageType_None {
-			notify.Messages = append(notify.Messages, &bot.Message{
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				Type:      kind,
-				Data:      data,
-			})
-		}
-
+		notify.Messages = append(notify.Messages, MapFromInstagram(message)...)
 		info.LastCheckedID = message.ItemID
 	}
 	if len(notify.Messages) != 0 {
@@ -231,67 +226,88 @@ func loadThread(meta *client.AccountMeta, threadID, sinceID string) (thread *ins
 
 func getEncodedThread(meta *client.AccountMeta, threadID, since string) (ret []*bot.Message, err error) {
 	_, msgs, err := loadThread(meta, threadID, since)
-	log.Debug("loaded messages: %+v", msgs)
 	ret = []*bot.Message{}
 	// in slice messages are placed from most new to the oldest, so we want to iterate in reverse order
 	for it := len(msgs) - 1; it >= 0; it-- {
 		message := &msgs[it]
-
-		kind, data := MapFromInstagram(message)
-		if kind != bot.MessageType_None {
-			ret = append(ret, &bot.Message{
-				MessageId: message.ItemID,
-				UserId:    message.UserID,
-				Type:      kind,
-				Data:      data,
-			})
-		}
+		ret = append(ret, MapFromInstagram(message)...)
 	}
 	return ret, nil
 }
 
-func MapFromInstagram(msg *instagram.ThreadItem) (kind bot.MessageType, data string) {
-	switch msg.ItemType {
-	case "media_share":
-		return bot.MessageType_MediaShare, msg.MediaShare.ID
-	case "media":
-		return bot.MessageType_Image, msg.Media.ImageVersions2.Largest().URL
-	case "text":
-		return bot.MessageType_Text, msg.Text
-	case "link":
-		return bot.MessageType_Text, msg.Link.Text
-	case "like":
-		return bot.MessageType_Text, "❤️"
-	case "profile":
-		// we could determinate our local user(if any) probably, but is it necessary?
-		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/%s/", msg.Profile.Username)
-	case "location":
-		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/locations/%v/", msg.Location.ID)
-	case "hashtag":
-		return bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/tags/%s/", msg.HashTag.Name)
-	case "action_log":
-		// @CHECK could there be something useful? afaik it contains topic changes and join|leave notifies
-		return bot.MessageType_None, ""
-	case "reel_share":
-		if msg.ReelShare.Media.ExpiringAt == 0 {
-			data = "*media expired*"
-		} else {
-			if msg.ReelShare.Media.MediaType == instagram.MediaType_Video {
-				data = msg.ReelShare.Media.VideoVersions[0].URL
-			} else {
-				data = msg.ReelShare.Media.ImageVersions2.Largest().URL
-			}
-		}
-		if msg.ReelShare.Text != "" {
-			data += "\n" + msg.ReelShare.Text
-		}
-		return bot.MessageType_Text, data
-	case "placeholder":
-		return bot.MessageType_System, msg.Placeholder.Message
-	default:
-		log.Debug("unknown type of direct item: %v", msg.ItemType)
-		return bot.MessageType_None, ""
+func MapFromInstagram(msg *instagram.ThreadItem) (ret []*bot.Message) {
+	type mapped struct {
+		kind bot.MessageType
+		data string
 	}
+	for i, item := range (func(msg *instagram.ThreadItem) []mapped {
+		switch msg.ItemType {
+		case "media_share":
+			switch {
+			case msg.MediaShare != nil:
+				return []mapped{{bot.MessageType_MediaShare, msg.MediaShare.ID}}
+			case msg.DirectShare != nil:
+				ret := []mapped{{bot.MessageType_MediaShare, msg.DirectShare.Media.ID}}
+				if msg.DirectShare.Text != "" {
+					ret = append(ret, mapped{bot.MessageType_Text, msg.DirectShare.Text})
+				}
+				return ret
+			default:
+				log.Errorf("item %s do not have normal medai share nor direct one", msg.ItemID)
+				return nil
+			}
+		case "media":
+			return []mapped{{bot.MessageType_Image, msg.Media.ImageVersions2.Largest().URL}}
+		case "text":
+			return []mapped{{bot.MessageType_Text, msg.Text}}
+		case "link":
+			return []mapped{{bot.MessageType_Text, msg.Link.Text}}
+		case "like":
+			return []mapped{{bot.MessageType_Text, "❤️"}}
+		case "profile":
+			// we could determinate our local user(if any) probably, but is it necessary?
+			return []mapped{{bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/%s/", msg.Profile.Username)}}
+		case "location":
+			return []mapped{{bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/locations/%v/", msg.Location.ID)}}
+		case "hashtag":
+			return []mapped{{bot.MessageType_Text, fmt.Sprintf("https://www.instagram.com/explore/tags/%s/", msg.HashTag.Name)}}
+		case "action_log":
+			// @CHECK could there be something useful? afaik it contains topic changes and join|leave notifies
+			return nil
+		case "reel_share":
+			var data string
+			if msg.ReelShare.Media.ExpiringAt == 0 {
+				data = "*media expired*"
+			} else {
+				if msg.ReelShare.Media.MediaType == instagram.MediaType_Video {
+					data = msg.ReelShare.Media.VideoVersions[0].URL
+				} else {
+					data = msg.ReelShare.Media.ImageVersions2.Largest().URL
+				}
+			}
+			if msg.ReelShare.Text != "" {
+				data += "\n" + msg.ReelShare.Text
+			}
+			return []mapped{{bot.MessageType_Text, data}}
+		case "placeholder":
+			return []mapped{{bot.MessageType_System, msg.Placeholder.Message}}
+		default:
+			log.Debug("unknown type of direct item: %v", msg.ItemType)
+			return nil
+		}
+	}(msg)) {
+		id := msg.ItemID
+		if i != 0 {
+			id = fmt.Sprintf("%s#%d", id, i)
+		}
+		ret = append(ret, &bot.Message{
+			MessageId: id,
+			UserId:    msg.UserID,
+			Type:      item.kind,
+			Data:      item.data,
+		})
+	}
+	return ret
 }
 
 func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta) error {
@@ -313,8 +329,7 @@ func addThreadActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 }
 
 // fill database model by direct message
-func addDirectActivity(item *instagram.ThreadItem, thread *instagram.Thread, meta *client.AccountMeta, comment string) error {
-	share := item.MediaShare
+func addDirectActivity(item *instagram.ThreadItem, share *instagram.MediaShare, thread *instagram.Thread, meta *client.AccountMeta) error {
 	ig := meta.Get()
 
 	// find username
@@ -332,8 +347,6 @@ func addDirectActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 		return nil
 	}
 
-	log.Debug("Filling in new direct story")
-
 	act := &models.Activity{
 		Pk:                item.ItemID,
 		UserID:            item.UserID,
@@ -341,7 +354,6 @@ func addDirectActivity(item *instagram.ThreadItem, thread *instagram.Thread, met
 		MentionedUsername: ig.Username,
 		MentionedRole:     bot.MentionedRole(meta.Role()),
 		Type:              "direct",
-		Comment:           comment,
 		MediaId:           share.ID,
 		MediaURL:          fmt.Sprintf("https://instagram.com/p/%v/", share.Code),
 		ThreadID:          fmt.Sprintf("%v#%v", thread.ThreadID, item.ItemID),
