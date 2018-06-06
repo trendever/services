@@ -33,10 +33,11 @@ type RecentActivityStories struct {
 			ID    string `json:"id"`
 		} `json:"media"`
 		Links []struct {
-			Start int    `json:"start"`
-			End   int    `json:"end"`
-			ID    string `json:"id"`
-			Type  string `json:"type"`
+			Start int `json:"start"`
+			End   int `json:"end"`
+			// for some messy reason it can be string or integer in very same context
+			ID   interface{} `json:"id"`
+			Type string      `json:"type"`
 		} `json:"links"`
 		Text         string  `json:"text"`
 		ProfileID    uint64  `json:"profile_id"`
