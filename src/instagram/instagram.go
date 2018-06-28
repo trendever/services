@@ -25,15 +25,14 @@ type DialFunc func(network, addr string) (net.Conn, error)
 
 // Instagram defines client
 type Instagram struct {
-	Username          string
-	password          string
-	LoggedIn          bool
-	UserID            uint64 `json:"UserNameID"`
-	RankToken         string
-	CheckpointURL     string
-	Cookies           []*http.Cookie
-	CheckpointCookies []*http.Cookie
-	Proxy             string
+	Username      string
+	password      string
+	LoggedIn      bool
+	UserID        uint64 `json:"UserNameID"`
+	RankToken     string
+	CheckpointURL string
+	Cookies       []*http.Cookie
+	Proxy         string
 
 	Debug     bool
 	transport *http.Transport
@@ -83,6 +82,15 @@ func (ig *Instagram) SetProxy(proxyURL string) error {
 // IsLoggedIn returns if last request does not have auth error
 func (ig *Instagram) IsLoggedIn() bool {
 	return ig.LoggedIn
+}
+
+func (ig *Instagram) csrfToken() string {
+	for _, c := range ig.Cookies {
+		if c.Name == "csrftoken" {
+			return c.Value
+		}
+	}
+	return ""
 }
 
 // SetPassword for this instance (use for restored accs)

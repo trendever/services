@@ -1,7 +1,6 @@
 package main
 
 import (
-	"common/log"
 	"fmt"
 	"instagram"
 	"time"
@@ -122,19 +121,17 @@ func (r *InstagramAccessImpl) SendCode(acc *Account, password string, preferEmai
 
 // VerifyCode is verification process; can fail -- no err returned, but given account is still marked as invalid
 func (r *InstagramAccessImpl) VerifyCode(acc *Account, password, code string) error {
+	api, err := instagram.Restore(acc.Cookie, password, false)
+	if err != nil {
+		return err
+	}
 
-	api, err := instagram.Restore(acc.Cookie, password, true)
-	log.Debug("Restored")
-	if err == instagram.ErrorCheckpointRequired && api != nil { // actual code checking
-		if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
-			return fmt.Errorf("Timeout error")
-		}
+	if time.Now().Unix()-acc.CodeSent > int64((time.Minute * 15).Seconds()) {
+		return fmt.Errorf("Timeout error")
+	}
 
-		err = api.CheckpointStep3(code)
-		if err != nil {
-			return err
-		}
-	} else if err != nil { // terminate on any other error
+	err = api.SubmitCode(code)
+	if err != nil {
 		return err
 	}
 

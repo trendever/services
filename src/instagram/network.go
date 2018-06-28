@@ -132,7 +132,7 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 
 		if ForceDebug || ig.Debug {
 			var buf bytes.Buffer
-			err := json.Indent(&buf, jsonBody, "  ", "  ")
+			err := json.Indent(&buf, jsonBody, "", "  ")
 			if err == nil {
 				if DisableJSONIndent {
 					log.Debug("Instagram Response %v (%v): %v", resp.Status, endpoint, string(jsonBody))
@@ -151,7 +151,7 @@ func (ig *Instagram) tryRequest(method, endpoint string, body interface{}) ([]by
 		}
 
 		if message.Status == "fail" {
-			if message.Message == "checkpoint_required" {
+			if message.IsCheckpoint() {
 				ig.LoggedIn = false
 				return nil, ErrorCheckpointRequired
 			}
