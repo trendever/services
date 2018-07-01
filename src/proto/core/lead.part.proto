@@ -73,6 +73,8 @@ message UserLeadsRequest {
     int64 from_updated_at = 6;
     // fiter by shop if non-zero
     uint64 related_shop = 7;
+    // only return leads with at least one item with all these tags
+    repeated uint64 tags = 8;
 }
 
 enum LeadUserRole {

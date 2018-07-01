@@ -32,7 +32,7 @@ func FindLeadByID(id uint) (Lead, error) {
 // limit == 0 -> 20,
 // fromUpdatedAt is optional.
 // Results are sorted by updated_at, ascending if direction is true, descending otherwise
-func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
+func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, tags []uint64, limit uint64, fromUpdatedAt int64, direction bool) (leads LeadCollection, err error) {
 	//First, we must find leads with passed parameters
 	scope := db.New().
 		Table("products_leads as pl").
@@ -112,6 +112,16 @@ func GetUserLeads(user *User, roles []core.LeadUserRole, shopID uint64, limit ui
 
 	if shopID != 0 {
 		scope = scope.Where("pl.shop_id = ?", shopID)
+	}
+
+	if len(tags) > 0 {
+		// lead should have at least one item with all these tags
+		scope = scope.Where(`EXISTS (
+			SELECT 1 FROM products_leads_items item
+			WHERE item.lead_id = pl.id AND item.product_item_id IN (
+				SELECT tags.product_item_id FROM products_product_item_tags tags
+				WHERE tags.tag_id IN (?) GROUP BY tags.product_item_id  HAVING COUNT(1) = ?)
+			)`, tags, len(tags))
 	}
 
 	if direction {

@@ -94,6 +94,8 @@ func Migrate() error {
 		}
 	}
 
+	db.New().Table("products_product_item_tags").AddIndex("item_tag_idx", "tag_id")
+
 	return nil
 }
 

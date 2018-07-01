@@ -100,11 +100,12 @@ func CreateLead(c *soso.Context) {
 }
 
 func GetUserLeads(c *soso.Context, arg *struct {
-	Roles         string `json:"roles"`
-	RelatedShop   uint64 `json:"shop_id"`
-	FromUpdatedAt int64  `json:"from_updated_at"`
-	Limit         uint64 `json:"limit"`
-	Direction     bool   `json:"direction"`
+	Roles         string   `json:"roles"`
+	RelatedShop   uint64   `json:"shop_id"`
+	FromUpdatedAt int64    `json:"from_updated_at"`
+	Limit         uint64   `json:"limit"`
+	Direction     bool     `json:"direction"`
+	Tags          []uint64 `json:"tags"`
 }) {
 	if c.Token == nil {
 		c.ErrorResponse(403, soso.LevelError, errors.New("User not authorized"))
@@ -130,7 +131,9 @@ func GetUserLeads(c *soso.Context, arg *struct {
 
 		for name, roles := range groups {
 			var err error
-			results[name], err = getUserLeads(c.Token.UID, roles, arg.RelatedShop, arg.Limit, arg.Direction, arg.FromUpdatedAt)
+			results[name], err = getUserLeads(
+				c.Token.UID, roles, arg.RelatedShop, arg.Tags,
+				arg.Limit, arg.Direction, arg.FromUpdatedAt)
 			if err != nil {
 				c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 				return
@@ -141,7 +144,9 @@ func GetUserLeads(c *soso.Context, arg *struct {
 		return
 	}
 
-	leads, err := getUserLeads(c.Token.UID, roles, arg.RelatedShop, arg.Limit, arg.Direction, arg.FromUpdatedAt)
+	leads, err := getUserLeads(
+		c.Token.UID, roles, arg.RelatedShop, arg.Tags,
+		arg.Limit, arg.Direction, arg.FromUpdatedAt)
 	if err != nil {
 		c.ErrorResponse(http.StatusBadRequest, soso.LevelError, err)
 		return
@@ -300,7 +305,7 @@ func GetUserLead(c *soso.Context) {
 	c.SuccessResponse(ret)
 }
 
-func getUserLeads(uid uint64, roles []core.LeadUserRole, relatedShop uint64, limit uint64, direction bool, fromUpdatedAt int64) (*models.Leads, error) {
+func getUserLeads(uid uint64, roles []core.LeadUserRole, relatedShop uint64, tags []uint64, limit uint64, direction bool, fromUpdatedAt int64) (*models.Leads, error) {
 	request := &core.UserLeadsRequest{
 		UserId:        uid,
 		Role:          roles,
@@ -308,6 +313,7 @@ func getUserLeads(uid uint64, roles []core.LeadUserRole, relatedShop uint64, lim
 		FromUpdatedAt: fromUpdatedAt,
 		Direction:     direction,
 		RelatedShop:   relatedShop,
+		Tags:          tags,
 	}
 
 	ctx, cancel := rpc.DefaultContext()
